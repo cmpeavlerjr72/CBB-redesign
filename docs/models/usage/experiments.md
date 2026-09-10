@@ -715,3 +715,121 @@ so it PASSES the superseded gate -- and requires the amended gate to fail it,
 which is the fg_make failure reproduced in miniature; and
 `::test_d_the_small_span_clause_relaxes_the_step_count` exercises the sub-2 pp
 branch, which no real driver in this model reaches.
+
+---
+
+## 8. Round 2 (data fix): shooter label keyed on `shot_shooter_id`
+
+### 8.1 Pre-registration (authored 2026-09-10, BEFORE the re-run; committed in the same commit as this text)
+
+**Why there is a round 2.** Round 1 keyed the credited player of a field-goal
+event on CBBD `participant_1_id`, through
+`cbb_sim.models.event_stream.build_stream`. That column is not the shooter.
+CBBD emits a `participants` array and its ORDER IS NOT STABLE on a
+two-participant row: measured over every 2022-2025 row of this model's own
+universe, `participant_1_id == shot_shooter_id` on **51.02%** of assisted made
+field goals, and on the 48.98% that disagree `participant_1_id` equals
+`shot_assisted_by_id` -- the ASSISTER -- on **100.000%** of rows (and
+`participant_2_id` equals `shot_shooter_id` on 100.000%). Inside this model's
+window that mislabels **11.9% / 5.0% / 14.1%** of `FGA_rim` / `FGA_jump2` /
+`FGA_3` rows in 2024 and **12.0% / 4.9% / 14.1%** in 2025. The rate differs by a
+factor of ~3 between the classes and by 5.3-22.3% between teams, so it is a
+differential bias across exactly the classes and teams the allocator exists to
+distinguish, not symmetric noise. Round 1's coverage table did not catch it
+because the assister is a teammate on the floor and passes the `in_five` filter
+on 95-99% of the mislabelled rows. Full evidence, by season, event type and
+team: `docs/tests/shooter_key_audit_2026-09-10.md`.
+
+**THE ONLY CHANGE IS THE LABEL.** Everything else -- target, universe, arms,
+features, shrinkage grid, priors, folds, metric battery, gates, decision rule,
+tie-break, seeds and Monte-Carlo draw counts -- is unchanged and is IMPORTED
+from `scripts/train_usage_v1.py` by `scripts/train_usage_v2.py` rather than
+re-typed, so "identical apart from the label" is enforced by construction.
+Restated in full so this section stands alone:
+
+- **Target.** For each chance with a known offensive on-floor five (2024+), the
+  identity of the player credited with the terminal event, per class
+  {`FGA_rim`, `FGA_jump2`, `FGA_3`, `TOV`, `FT_trip`}, as a choice among the
+  five. **The three FGA classes now key the shooter on `shot_shooter_id`.**
+  `TOV` and `FT_trip` keep `participant_1_id` and are UNCHANGED by construction:
+  FTA rows agree with `shot_shooter_id` on 100.000% of rows in all four seasons,
+  and TOV rows carry no `shot_shooter_id` at all (0.000% populated), so
+  `participant_1_id` is the only and the correct key for both.
+- **Missing shooters are DROPPED, never imputed and never fallen back to
+  `participant_1_id`** (a fallback would reinstate the assister on exactly the
+  rows the fix removes). Expected loss 0.04-0.27% of FGA rows. The drop rate is
+  reported by season and by team.
+- **Universe.** D-I, non-truncated, `pbp_complete`; possessions `v2` (rim
+  override 2.27 ft). Identical to round 1.
+- **Folds.** F1 trains 2024 and tests 2025 and is the SELECTION fold. Robustness
+  fold: within-2025 walk-forward, train before 2025-01-15, test after. 2026
+  sealed (`seal.assert_not_sealed` on both slices). This model has no earlier
+  fold because on-floor ids do not exist before 2024 (L13); the project-standard
+  fold 1 (train through 2022-23, test 2023-24) and fold 2 (train through
+  2023-24, test 2024-25) map onto this model as "no fold 1" and "F1"
+  respectively, so **F1 is the fold-2 selection metric** and the within-season
+  walk-forward is the extra robustness check, exactly as in round 1.
+- **Arms.** U1 proportional, U2 Dirichlet, U3 hierarchical Dirichlet, U4
+  conditional logit (ridge), U5 LightGBM grouped-softmax choice arm. Same
+  parameter grids; the tree's parameters are searched on the 2024 training slice
+  only.
+- **Primary metric.** Per-class 5-way log loss of the credited player on the
+  fold's test slice.
+- **Gates (all pre-registered, all unchanged).** Calibration of predicted vs
+  actual share by player as-of-rate decile <= 2.0 pp; responsiveness under
+  Decision 8 (slope ratio in [0.8, 1.2] AND monotone in >= 4 of 4 quintile
+  steps, relaxing to 3 of 4 when the realised span is under 2 pp); game-level SD
+  ratio of per-player per-game counts in [0.9, 1.1]; players with >= 1 event per
+  team-game within +/- 0.5; top-1 and top-3 team usage share within +/- 2.0 pp.
+- **Segment breakdowns reported.** Per fold, per class, per arm; per-team log
+  loss distribution (teams with >= 200 test events of the class; teams below
+  that are counted as underpowered and excluded, never presented as signal); the
+  per-player-quintile responsiveness table (predicted vs actual share in each
+  quintile of the player's own shrunk as-of rate); transfer / continuing /
+  no-prior-season subsets; drop rate by season and team.
+- **Noise floor.** Game-level block-bootstrap SE of the log loss (200
+  replicates, seed 12345) per arm -- the floor the decision rule uses is the
+  largest over the eligible arms -- plus spec-identical LightGBM retrains under
+  seeds (0, 1, 2) with their SD reported. A winner must beat the next arm by
+  more than the floor.
+- **Decision rule.** Per class, the winner is the lowest log loss among the arms
+  passing every gate; U5 must additionally beat the best non-tree eligible arm
+  by more than the floor; ties (differences within the floor) go to the SIMPLER
+  arm in the order U1 < U2 < U3 < U4 < U5. If no arm is eligible, adopt nothing
+  and report.
+
+### 8.2 What would count as the fix mattering
+
+Stated in advance so the answer cannot be chosen after the fact:
+
+1. **A changed winner on F1 for any FGA class.** Round 1 adopted `lgbm` on all
+   five classes (section 6). Any class whose round-2 F1 winner is not `lgbm` is a
+   decision the data fix reversed.
+2. **A changed ELIGIBILITY verdict.** Round 1's U1/U2 were ineligible on
+   `FGA_rim`, `FGA_jump2` and `FT_trip` for under-concentrating top-3 share. If
+   cleaning the label moves the top-k gate, that is a substantive change even
+   where the winner's name does not move.
+3. **A materially different margin over the floor** on the two classes round 1
+   flagged as floor-thin and straddling (`FGA_jump2` at 2.1 floors, `FGA_3` at
+   1.2 floors) or as reversing (`TOV`).
+
+Log-loss LEVELS are NOT comparable between the rounds: the two rounds score
+different labels on nearly the same rows, so a level change is expected and is
+not evidence of anything. Only winners, gate verdicts and margins-in-floors are
+compared.
+
+### 8.3 Pre-committed handling of the two unaffected classes
+
+`TOV` and `FT_trip` are re-run because the trainer runs all five classes and
+because their as-of exposure denominators include the FGA classes' events (a
+player's `exposure_asof` counts every credited event of any class while he was
+on the floor, so a relabelled FGA row does move his denominator). Their labels
+are untouched. If either class's winner changes, the change must be attributed
+to the exposure denominator or to Monte-Carlo noise and reported as such, and
+the size of the log-loss move must be compared to the floor before anything is
+claimed.
+
+Trainer: `scripts/train_usage_v2.py`. Artifacts:
+`data/processed/models/usage_v2/` (a versioned sibling; nothing under
+`data/processed/models/usage/` is written or moved, because the engine worker
+reads it concurrently). Results are appended below as sections 8.4-8.9.
