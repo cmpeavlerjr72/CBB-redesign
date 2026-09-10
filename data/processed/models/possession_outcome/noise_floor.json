@@ -1,0 +1,50 @@
+{
+  "first": {
+    "population": "first",
+    "fold": "F2",
+    "tree": {
+      "arm": "lgbm",
+      "feature_set": "C_plus_state",
+      "seed_losses": [
+        1.518965,
+        1.519147,
+        1.51906,
+        1.518994,
+        1.51909
+      ],
+      "mean": 1.519051,
+      "sd": 7.3e-05
+    },
+    "linear": {
+      "arm": "cascade",
+      "feature_set": "D_plus_interactions",
+      "log_loss": 1.533645,
+      "block_bootstrap_se": 0.000723,
+      "n_replicates": 200
+    }
+  },
+  "cont": {
+    "population": "cont",
+    "fold": "F2",
+    "tree": {
+      "arm": "lgbm",
+      "feature_set": "C_plus_state",
+      "seed_losses": [
+        1.572479,
+        1.571743,
+        1.57175,
+        1.571707,
+        1.572638
+      ],
+      "mean": 1.572063,
+      "sd": 0.000456
+    },
+    "linear": {
+      "arm": "cascade",
+      "feature_set": "C_plus_state",
+      "log_loss": 1.566837,
+      "block_bootstrap_se": 0.002267,
+      "n_replicates": 200
+    }
+  }
+}

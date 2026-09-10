@@ -8,6 +8,7 @@ Training order and status (per `docs/FRAMEWORK_PLAN.md` §2.1 cascade order):
 |---|---|---|---|
 | L0 | Control engine (yardstick, not a candidate) | [`control_engine/`](control_engine/model.md) | BUILT AND GATED 2026-09-10 |
 | L2 | Pace (possessions per game) | [`pace/`](pace/model.md) | BAKE-OFF COMPLETE 2026-09-10 -- winner `multiplicative`/`A_tempo`, target T_pbp |
+| L3 | Possession outcome (terminal-event mix of a chance) | [`possession_outcome/`](possession_outcome/model.md) | BAKE-OFF RUN 2026-09-10 -- see model.md for the verdict |
 
 ---
 

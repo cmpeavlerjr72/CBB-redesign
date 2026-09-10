@@ -1,0 +1,268 @@
+{
+  "first": {
+    "population": "first",
+    "fold": "F2",
+    "n_arms_scored": 11,
+    "n_eligible": 0,
+    "noise_floor": {
+      "tree_seed_sd": 7.3e-05,
+      "linear_block_bootstrap_se": 0.000723,
+      "applied": 0.000723
+    },
+    "best_by_log_loss_ignoring_gates": {
+      "arm": "lgbm",
+      "feature_set": "C_plus_state",
+      "log_loss": 1.518965,
+      "worst_gated_gap_pp": 2.954,
+      "worst_gated_level_pp": 1.802,
+      "worst_gated_shape_pp": 1.152
+    },
+    "failed_gates": [
+      {
+        "arm": "lgbm",
+        "feature_set": "C_plus_state",
+        "calibration_pass": false,
+        "responsiveness_pass": true,
+        "worst_gated_gap_pp": 2.954,
+        "worst_gated_level_pp": 1.802,
+        "worst_gated_shape_pp": 1.152,
+        "log_loss": 1.518965
+      },
+      {
+        "arm": "cascade",
+        "feature_set": "D_plus_interactions",
+        "calibration_pass": false,
+        "responsiveness_pass": true,
+        "worst_gated_gap_pp": 2.19,
+        "worst_gated_level_pp": 1.708,
+        "worst_gated_shape_pp": 2.105,
+        "log_loss": 1.533645
+      },
+      {
+        "arm": "cascade",
+        "feature_set": "C_plus_state",
+        "calibration_pass": false,
+        "responsiveness_pass": true,
+        "worst_gated_gap_pp": 2.229,
+        "worst_gated_level_pp": 1.697,
+        "worst_gated_shape_pp": 2.148,
+        "log_loss": 1.533648
+      },
+      {
+        "arm": "ridge_logit",
+        "feature_set": "D_plus_interactions",
+        "calibration_pass": false,
+        "responsiveness_pass": true,
+        "worst_gated_gap_pp": 2.09,
+        "worst_gated_level_pp": 1.652,
+        "worst_gated_shape_pp": 1.901,
+        "log_loss": 1.53427
+      },
+      {
+        "arm": "ridge_logit",
+        "feature_set": "C_plus_state",
+        "calibration_pass": false,
+        "responsiveness_pass": true,
+        "worst_gated_gap_pp": 2.061,
+        "worst_gated_level_pp": 1.641,
+        "worst_gated_shape_pp": 1.929,
+        "log_loss": 1.53427
+      },
+      {
+        "arm": "cascade",
+        "feature_set": "B_plus_season",
+        "calibration_pass": false,
+        "responsiveness_pass": true,
+        "worst_gated_gap_pp": 2.093,
+        "worst_gated_level_pp": 1.636,
+        "worst_gated_shape_pp": 0.544,
+        "log_loss": 1.621769
+      },
+      {
+        "arm": "ridge_logit",
+        "feature_set": "B_plus_season",
+        "calibration_pass": false,
+        "responsiveness_pass": true,
+        "worst_gated_gap_pp": 2.134,
+        "worst_gated_level_pp": 1.615,
+        "worst_gated_shape_pp": 0.663,
+        "log_loss": 1.621815
+      },
+      {
+        "arm": "lgbm",
+        "feature_set": "B_plus_season",
+        "calibration_pass": false,
+        "responsiveness_pass": true,
+        "worst_gated_gap_pp": 2.592,
+        "worst_gated_level_pp": 1.82,
+        "worst_gated_shape_pp": 0.958,
+        "log_loss": 1.622017
+      },
+      {
+        "arm": "cascade",
+        "feature_set": "A_team",
+        "calibration_pass": false,
+        "responsiveness_pass": true,
+        "worst_gated_gap_pp": 2.449,
+        "worst_gated_level_pp": 1.892,
+        "worst_gated_shape_pp": 0.556,
+        "log_loss": 1.622213
+      },
+      {
+        "arm": "ridge_logit",
+        "feature_set": "A_team",
+        "calibration_pass": false,
+        "responsiveness_pass": true,
+        "worst_gated_gap_pp": 2.598,
+        "worst_gated_level_pp": 1.894,
+        "worst_gated_shape_pp": 0.703,
+        "log_loss": 1.622292
+      },
+      {
+        "arm": "lgbm",
+        "feature_set": "A_team",
+        "calibration_pass": false,
+        "responsiveness_pass": true,
+        "worst_gated_gap_pp": 2.78,
+        "worst_gated_level_pp": 1.934,
+        "worst_gated_shape_pp": 1.043,
+        "log_loss": 1.623143
+      }
+    ],
+    "winner": null,
+    "reason": "no arm passed both pre-registered gates, so the pre-registration yields NO WINNER and nothing is adopted"
+  },
+  "cont": {
+    "population": "cont",
+    "fold": "F2",
+    "n_arms_scored": 11,
+    "n_eligible": 0,
+    "noise_floor": {
+      "tree_seed_sd": 0.000456,
+      "linear_block_bootstrap_se": 0.002267,
+      "applied": 0.002267
+    },
+    "best_by_log_loss_ignoring_gates": {
+      "arm": "cascade",
+      "feature_set": "C_plus_state",
+      "log_loss": 1.566837,
+      "worst_gated_gap_pp": 7.482,
+      "worst_gated_level_pp": 6.913,
+      "worst_gated_shape_pp": 1.567
+    },
+    "failed_gates": [
+      {
+        "arm": "cascade",
+        "feature_set": "C_plus_state",
+        "calibration_pass": false,
+        "responsiveness_pass": true,
+        "worst_gated_gap_pp": 7.482,
+        "worst_gated_level_pp": 6.913,
+        "worst_gated_shape_pp": 1.567,
+        "log_loss": 1.566837
+      },
+      {
+        "arm": "cascade",
+        "feature_set": "D_plus_interactions",
+        "calibration_pass": false,
+        "responsiveness_pass": true,
+        "worst_gated_gap_pp": 7.359,
+        "worst_gated_level_pp": 6.911,
+        "worst_gated_shape_pp": 1.568,
+        "log_loss": 1.56684
+      },
+      {
+        "arm": "ridge_logit",
+        "feature_set": "C_plus_state",
+        "calibration_pass": false,
+        "responsiveness_pass": true,
+        "worst_gated_gap_pp": 7.563,
+        "worst_gated_level_pp": 6.919,
+        "worst_gated_shape_pp": 1.594,
+        "log_loss": 1.567678
+      },
+      {
+        "arm": "ridge_logit",
+        "feature_set": "D_plus_interactions",
+        "calibration_pass": false,
+        "responsiveness_pass": true,
+        "worst_gated_gap_pp": 7.482,
+        "worst_gated_level_pp": 6.922,
+        "worst_gated_shape_pp": 1.838,
+        "log_loss": 1.567701
+      },
+      {
+        "arm": "lgbm",
+        "feature_set": "C_plus_state",
+        "calibration_pass": false,
+        "responsiveness_pass": true,
+        "worst_gated_gap_pp": 12.208,
+        "worst_gated_level_pp": 6.933,
+        "worst_gated_shape_pp": 5.276,
+        "log_loss": 1.572479
+      },
+      {
+        "arm": "cascade",
+        "feature_set": "A_team",
+        "calibration_pass": false,
+        "responsiveness_pass": true,
+        "worst_gated_gap_pp": 7.32,
+        "worst_gated_level_pp": 6.845,
+        "worst_gated_shape_pp": 1.395,
+        "log_loss": 1.632362
+      },
+      {
+        "arm": "ridge_logit",
+        "feature_set": "A_team",
+        "calibration_pass": false,
+        "responsiveness_pass": true,
+        "worst_gated_gap_pp": 7.485,
+        "worst_gated_level_pp": 6.851,
+        "worst_gated_shape_pp": 1.458,
+        "log_loss": 1.632388
+      },
+      {
+        "arm": "cascade",
+        "feature_set": "B_plus_season",
+        "calibration_pass": false,
+        "responsiveness_pass": true,
+        "worst_gated_gap_pp": 7.717,
+        "worst_gated_level_pp": 6.9,
+        "worst_gated_shape_pp": 1.321,
+        "log_loss": 1.634775
+      },
+      {
+        "arm": "ridge_logit",
+        "feature_set": "B_plus_season",
+        "calibration_pass": false,
+        "responsiveness_pass": true,
+        "worst_gated_gap_pp": 7.542,
+        "worst_gated_level_pp": 6.898,
+        "worst_gated_shape_pp": 1.435,
+        "log_loss": 1.634868
+      },
+      {
+        "arm": "lgbm",
+        "feature_set": "B_plus_season",
+        "calibration_pass": false,
+        "responsiveness_pass": true,
+        "worst_gated_gap_pp": 10.427,
+        "worst_gated_level_pp": 7.166,
+        "worst_gated_shape_pp": 4.552,
+        "log_loss": 1.643241
+      },
+      {
+        "arm": "lgbm",
+        "feature_set": "A_team",
+        "calibration_pass": false,
+        "responsiveness_pass": true,
+        "worst_gated_gap_pp": 12.421,
+        "worst_gated_level_pp": 7.19,
+        "worst_gated_shape_pp": 5.231,
+        "log_loss": 1.643645
+      }
+    ],
+    "winner": null,
+    "reason": "no arm passed both pre-registered gates, so the pre-registration yields NO WINNER and nothing is adopted"
+  }
+}

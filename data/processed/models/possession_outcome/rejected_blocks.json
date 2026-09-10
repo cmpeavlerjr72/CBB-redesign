@@ -1,0 +1,41 @@
+{
+  "first": {
+    "season block": {
+      "from": "A_team",
+      "to": "B_plus_season",
+      "log_loss_gain": 0.001126,
+      "noise_floor": 0.000723,
+      "verdict": "KEPT"
+    },
+    "state block": {
+      "from": "B_plus_season",
+      "to": "C_plus_state",
+      "log_loss_gain": 0.103052,
+      "noise_floor": 0.000723,
+      "verdict": "KEPT"
+    }
+  },
+  "cont": {
+    "season block": {
+      "from": "A_team",
+      "to": "B_plus_season",
+      "log_loss_gain": -0.002413,
+      "noise_floor": 0.002267,
+      "verdict": "REJECTED"
+    },
+    "state block": {
+      "from": "B_plus_season",
+      "to": "C_plus_state",
+      "log_loss_gain": 0.067938,
+      "noise_floor": 0.002267,
+      "verdict": "KEPT"
+    },
+    "explicit interaction block": {
+      "from": "C_plus_state",
+      "to": "D_plus_interactions",
+      "log_loss_gain": -3e-06,
+      "noise_floor": 0.002267,
+      "verdict": "REJECTED"
+    }
+  }
+}
