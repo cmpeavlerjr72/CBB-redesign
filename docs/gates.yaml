@@ -1,0 +1,55 @@
+# Provisional gate tolerances -- SIM_GUARDRAILS.md section 3.
+#
+# "Tolerances are provisional until the seed-noise study (week 6) replaces
+# them with measured paired standard errors; until then a miss is a miss."
+# `scripts/eval_gates.py` and `scripts/grade_market_games.py` read this file
+# at run time so the seed-noise study can update tolerances in ONE place
+# without touching code. Values below are copied from
+# `scripts/grade_control.py`'s hardcoded TOL dict (the prototype) plus the
+# G2/G3/G4/G7/G8 rows SIM_GUARDRAILS.md's table specifies but the Control
+# report never exercised.
+
+min_cell_n: 300  # SIM_GUARDRAILS / leak-test convention: n < 300 cells are UNDERPOWERED, never PASS/FAIL
+
+# G1 -- possessions per game, mean and SD
+g1_mean: 1.0
+g1_sd: 0.75
+
+# G2 -- points per possession, per (offense tercile x defense tercile) cell
+g2_ppp: 0.02
+
+# G3 -- shot mix per possession (3PA share, rim share, FTA/FGA), percentage points
+g3_pp: 1.5
+
+# G4 -- four factors: eFG%, TOV%, OREB% (percentage points); FT rate (rate units)
+g4_pp: 1.0
+g4_ft_rate: 0.015
+
+# G5 -- dispersion
+g5_sd_ratio_lo: 0.95
+g5_sd_ratio_hi: 1.05
+g5_corr: 0.05
+g5_ks_p: 0.10
+
+# G6 -- home margin, non-neutral vs neutral, same games (points)
+g6_margin: 1.0
+
+# G7 -- overtime rate; first/second half scoring share (percentage points)
+g7_ot_pp: 1.0
+g7_half_pp: 1.0
+
+# G8 -- player layer
+g8_minutes_mean: 2.0
+g8_minutes_sd_ratio_lo: 0.9
+g8_minutes_sd_ratio_hi: 1.1
+g8_ks_p: 0.10
+
+# G9 -- spread/total accuracy
+g9_margin_bias: 0.5
+g9_total_bias: 1.0
+g9_slope_lo: 0.95
+g9_slope_hi: 1.05
+
+# G10 -- market leak screen (report-only otherwise)
+g10_surprise_corr: 0.15
+g10_clv_agreement: 0.53
