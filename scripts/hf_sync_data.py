@@ -91,7 +91,7 @@ def _root_for(d: str) -> Path:
 
 
 def push(dirs: list[str], token: str, max_attempts: int) -> None:
-    from huggingface_hub import upload_large_folder
+    from huggingface_hub import HfApi
 
     os.environ["HF_TOKEN"] = token  # upload_large_folder reads it from the env
     waves = [(name, pats) for name, pats in PUSH_WAVES
@@ -120,9 +120,12 @@ def push(dirs: list[str], token: str, max_attempts: int) -> None:
         log(f"--- {d}: uploading from {root}")
         ok = with_retry(
             f"push-{d}",
-            lambda d=d, root=root: upload_large_folder(
+            # huggingface-hub >= 1.x dropped path_in_repo from
+            # upload_large_folder; upload_folder still supports it and is
+            # fine at this size (single commit, ~1-2 GB).
+            lambda d=d, root=root: HfApi(token=token).upload_folder(
                 repo_id=REPO_ID, folder_path=str(root), repo_type="dataset",
-                path_in_repo=d, print_report=False,
+                path_in_repo=d, commit_message=f"sync {d}",
             ),
             max_attempts=max_attempts,
         )
