@@ -14,6 +14,9 @@ commit series as the change itself.
 | Attempt counts drawn as four INDEPENDENT overdispersed marginals | REFUTED (as a distributional model) 2026-09-10 | G5 margin SD ratio 1.678, total 1.318, home/away score corr 0.084 vs 0.229, PIT p=2e-79. Residual corr of the counts is -0.56 / -0.36 / -0.29; independent components imply team-points SD 13.87 vs actual 9.22. Waiting on the L3 possession-outcome model. Report section 10, D1 |
 | Pooled-season training with no season-level feature | CONFIRMED-DEFECT 2026-09-10 | G9 total bias -2.83 on F2 (-4.08 on F1) = 77% of the +3.69 season drift; close is unbiased at -0.56 on the same games. Fix is pre-registration of a season-aware level term at L2/L3. Report section 10, D2 |
 | Overtime stub (5/40 of the game's own possession draw, re-simulated until untied) | OPEN (known gap, flagged in output) | Sim OT rate 0.0183 vs actual 0.0558; the stub also double-counts ~+0.16 poss/game because the pace target already includes OT. Waiting on the L5 overtime model. Report section 10, D5 |
+| L2 pace bake-off: model class (multiplicative / ridge / Gaussian GLM / LightGBM) x feature set (A_tempo..D_plus_state) | DECIDED: `multiplicative`/`A_tempo` 2026-09-10 | F2 RMSE 4.8805 vs best raw arm 4.8177 (`lightgbm`/`B_plus_season`), inside the measured noise floor (0.157); every richer feature bundle and LightGBM land inside the same floor, so the zero-fitted-parameter formula wins the simplicity tie-break. `docs/models/pace/experiments.md` R2-R4 |
+| L2 pace target definition: T_box vs T_pbp | DECIDED: T_pbp 2026-09-10 | Pooled 2022-2025 corr 0.9717, mean abs diff 0.854 poss (possession SD ~5.6); reliable, pre-registered default applies. `docs/models/pace/experiments.md` R1 |
+| L2 pace distribution family: Gaussian fixed SD / heteroscedastic Gaussian / NegBin-Poisson count | DECIDED: `gaussian_hetero` (best-of-three, none pass PIT) 2026-09-10 | Every one of the 32 stage-1 arms fails the pre-registered PIT gate (F2 p < 1e-19 everywhere); traced to overtime games (~5.6% of games, +8.2 poss residual) plus residual excess kurtosis (~1.8) that persists even in regulation-only games. `docs/models/pace/experiments.md` R7-R8 |
 
 ## B. Features & training specs
 
@@ -33,6 +36,7 @@ commit series as the change itself.
 | Feature preflight before any draw | SHIPPED 2026-09-10 | `cbb_sim.control.models.preflight` raises `FeaturePreflightError`; every persisted model carries its feature list and train-time medians |
 | Artifact writer stamps created_at / tipoff / backtest | SHIPPED 2026-09-10 | `scripts/run_control.py`; `--live` asserts created_at < tipoff, backtests are stamped rather than faked |
 | Decision rules that need to resolve < ~0.05 margin MAE must use the paired per-game SE, not the unpaired seed-offset floor | OPEN | `experiments.md` R5-R6; MC SE of a game's predicted margin is 1.39 points at 200 seeds |
+| `pace.py` predictive sampler reuses `cbb_sim.control.rng` verbatim, keyed on (seed, game_id, "pace") | SHIPPED 2026-09-10 | `tests/test_pace.py` bit-identical/seed-independence checks, same contract as the Control |
 
 ## D. Data repairs & data defects
 

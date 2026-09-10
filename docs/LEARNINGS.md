@@ -81,3 +81,9 @@ For the sim: this is the bar. The possession engine must beat it on G9 and G10 b
 CBBD pbp `onFloor` completeness: 0% in 2022 and 2023 (empty at the source), 90% in 2024, 98% in 2025, 97% in 2026. hoopR Substitution events start in 2025. Evidence: `docs/tests/data_audit_cbbd_pbp_2026-09-10.md`.
 
 For the sim: team-level possession models (L3) train on all five seasons; lineup/rotation/usage models (L4) train on 2024 and 2025 only (F1 = train 2024 test 2025; within-season walk-forward inside 2025 as the second check), 2026 sealed. Sample size for lineup priors is two seasons, so shrinkage strength is a fitted parameter, never assumed.
+
+## L14. Game-level possession counts are not Gaussian; pace should be emergent (2026-09-10)
+
+L2 bake-off, 32 arms on F2: every arm fails PIT (p < 0.05). Overtime games (5.6%) add +8.2 possessions on average, and regulation-only residuals still carry excess kurtosis ~1.8. RMSE spread across all feature sets and model classes is 0.06 (4.82-4.88), inside the 0.157 noise floor; the zero-parameter multiplicative formula (tempo_A x tempo_B x league mean, all as-of) is as good as LightGBM with state features. Responsiveness: tempo-sum slopes correctly. Evidence: `docs/models/pace/experiments.md` R1-R8.
+
+For the sim: no game-level pace model is calibrated enough to draw possessions from. In the possession engine, possessions per game are emergent from per-possession clock consumption over 40 minutes plus the overtime model, which is where the skew comes from naturally. The multiplicative formula is kept as a pregame tempo prior (a feature for the clock-consumption model and the Control engine), not as a sampler. G1 is evaluated on the emergent count.

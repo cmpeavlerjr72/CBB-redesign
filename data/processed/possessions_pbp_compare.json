@@ -1,0 +1,72 @@
+{
+  "by_season": [
+    {
+      "season": 2022,
+      "n_box_universe": 5396,
+      "n_matched": 5282,
+      "n_missing_from_pbp": 114,
+      "box_mean": 68.0525823551685,
+      "box_sd": 5.539097115256173,
+      "pbp_mean": 68.27877697841727,
+      "pbp_sd": 5.781613094237633,
+      "corr": 0.9579877570071323,
+      "mean_diff_pbp_minus_box": 0.22619462324876918,
+      "sd_diff": 1.6582192678595216,
+      "mean_abs_diff": 0.9146232487694054
+    },
+    {
+      "season": 2023,
+      "n_box_universe": 5623,
+      "n_matched": 5542,
+      "n_missing_from_pbp": 81,
+      "box_mean": 67.86975821003249,
+      "box_sd": 5.534161680952126,
+      "pbp_mean": 68.0026163839769,
+      "pbp_sd": 5.643402334123305,
+      "corr": 0.9780748564160744,
+      "mean_diff_pbp_minus_box": 0.13285817394442415,
+      "sd_diff": 1.1753483762463697,
+      "mean_abs_diff": 0.8541862143630458
+    },
+    {
+      "season": 2024,
+      "n_box_universe": 5632,
+      "n_matched": 5551,
+      "n_missing_from_pbp": 81,
+      "box_mean": 68.40631597910286,
+      "box_sd": 5.483558661737448,
+      "pbp_mean": 68.72041073680418,
+      "pbp_sd": 5.572439863243306,
+      "corr": 0.9839910457033172,
+      "mean_diff_pbp_minus_box": 0.31409475770131473,
+      "sd_diff": 0.993108617138012,
+      "mean_abs_diff": 0.8115186452891371
+    },
+    {
+      "season": 2025,
+      "n_box_universe": 5700,
+      "n_matched": 5590,
+      "n_missing_from_pbp": 110,
+      "box_mean": 67.85278354203935,
+      "box_sd": 5.463567148359028,
+      "pbp_mean": 68.05563506261181,
+      "pbp_sd": 5.652498746736897,
+      "corr": 0.966909105208741,
+      "mean_diff_pbp_minus_box": 0.2028515205724504,
+      "sd_diff": 1.4420730035751932,
+      "mean_abs_diff": 0.8387513416815742
+    }
+  ],
+  "pooled": {
+    "season": "ALL",
+    "n_matched": 21965,
+    "box_mean": 68.04500159344411,
+    "box_sd": 5.508867696573344,
+    "pbp_mean": 68.26391987252447,
+    "pbp_sd": 5.668273796479853,
+    "corr": 0.9717084221352625,
+    "mean_diff_pbp_minus_box": 0.21891827908035483,
+    "sd_diff": 1.338754247323049,
+    "mean_abs_diff": 0.8540086501251991
+  }
+}

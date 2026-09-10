@@ -67,3 +67,15 @@ Every major design decision, the reasoning, and the alternatives considered. For
 **Decision:** Eight-week plan in `docs/FRAMEWORK_PLAN.md` section 7. Selection folds: train through 2022-23 / test 2023-24; train through 2023-24 / test 2024-25 (selection metric). 2025-26 with lines is sealed until selection is done. Validated game markets are the committed deliverable; player props are second; social publishing is out of scope.
 
 **Why:** Season tips Nov 1-3, 2026. The CFB project's highest-value phase was a dedicated audit sprint on a working engine; it is budgeted explicitly as week 6.
+
+---
+
+## Decision 7: Pace is emergent; the L2 winner is a prior feature, not a sampler (2026-09-10)
+
+**Decision:** The possession engine does not draw possessions per game. Possessions emerge from per-possession clock consumption (L5) across regulation and an explicit overtime model. The L2 bake-off winner (multiplicative as-of tempo formula, `docs/models/pace/`) is used as a pregame tempo prior feature and as the Control engine's pace model.
+
+**Why:** All 32 L2 arms failed PIT calibration on the game-level count, for the same reason (overtime and fat tails). Feature richness and model class were inside noise (L14). A sampler that is uniformly miscalibrated cannot be a gate-passing component; an emergent count gets the overtime skew for free.
+
+**Alternative considered:** Mixture or skewed families for the game-level count. Rejected: it models the symptom of a clock process the engine already simulates.
+
+**Risk acknowledged:** G1 now depends on the clock-consumption model being right by state; L5 carries a by-month and by-terminal-event duration gate.

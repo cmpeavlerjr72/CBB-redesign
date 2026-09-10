@@ -1,0 +1,186 @@
+{
+  "created_at": "2026-09-10T15:11:18.164882+00:00",
+  "target_decision": {
+    "chosen": "T_pbp",
+    "reason": "T_pbp is reliable (pooled corr 0.9717 with T_box, mean abs diff 0.854 poss, SD of the per-game difference 1.339), so the pre-registered default applies: simulate the pbp-derived count, the more direct measurement of an actual possession, rather than the box-score formula's estimate of one."
+  },
+  "compare_target_definitions": {
+    "by_season": [
+      {
+        "season": 2022,
+        "n_box_universe": 5396,
+        "n_matched": 5282,
+        "n_missing_from_pbp": 114,
+        "box_mean": 68.0525823551685,
+        "box_sd": 5.539097115256173,
+        "pbp_mean": 68.27877697841727,
+        "pbp_sd": 5.781613094237633,
+        "corr": 0.9579877570071323,
+        "mean_diff_pbp_minus_box": 0.22619462324876918,
+        "sd_diff": 1.6582192678595216,
+        "mean_abs_diff": 0.9146232487694054
+      },
+      {
+        "season": 2023,
+        "n_box_universe": 5623,
+        "n_matched": 5542,
+        "n_missing_from_pbp": 81,
+        "box_mean": 67.86975821003249,
+        "box_sd": 5.534161680952126,
+        "pbp_mean": 68.0026163839769,
+        "pbp_sd": 5.643402334123305,
+        "corr": 0.9780748564160744,
+        "mean_diff_pbp_minus_box": 0.13285817394442415,
+        "sd_diff": 1.1753483762463697,
+        "mean_abs_diff": 0.8541862143630458
+      },
+      {
+        "season": 2024,
+        "n_box_universe": 5632,
+        "n_matched": 5551,
+        "n_missing_from_pbp": 81,
+        "box_mean": 68.40631597910286,
+        "box_sd": 5.483558661737448,
+        "pbp_mean": 68.72041073680418,
+        "pbp_sd": 5.572439863243306,
+        "corr": 0.9839910457033172,
+        "mean_diff_pbp_minus_box": 0.31409475770131473,
+        "sd_diff": 0.993108617138012,
+        "mean_abs_diff": 0.8115186452891371
+      },
+      {
+        "season": 2025,
+        "n_box_universe": 5700,
+        "n_matched": 5590,
+        "n_missing_from_pbp": 110,
+        "box_mean": 67.85278354203935,
+        "box_sd": 5.463567148359028,
+        "pbp_mean": 68.05563506261181,
+        "pbp_sd": 5.652498746736897,
+        "corr": 0.966909105208741,
+        "mean_diff_pbp_minus_box": 0.2028515205724504,
+        "sd_diff": 1.4420730035751932,
+        "mean_abs_diff": 0.8387513416815742
+      }
+    ],
+    "pooled": {
+      "season": "ALL",
+      "n_matched": 21965,
+      "box_mean": 68.04500159344411,
+      "box_sd": 5.508867696573344,
+      "pbp_mean": 68.26391987252447,
+      "pbp_sd": 5.668273796479853,
+      "corr": 0.9717084221352625,
+      "mean_diff_pbp_minus_box": 0.21891827908035483,
+      "sd_diff": 1.338754247323049,
+      "mean_abs_diff": 0.8540086501251991
+    }
+  },
+  "noise_floor": 0.15704282043957998,
+  "noise_floor_bootstrap": [
+    {
+      "feature_set": "A_tempo",
+      "model_class": "multiplicative",
+      "rmse": 4.880520607466328,
+      "bootstrap_se": 0.07747178144448623,
+      "floor_1_96se": 0.15184469163119302
+    },
+    {
+      "feature_set": "A_tempo",
+      "model_class": "ridge",
+      "rmse": 4.858693507579343,
+      "bootstrap_se": 0.08012388797937754,
+      "floor_1_96se": 0.15704282043957998
+    },
+    {
+      "feature_set": "A_tempo",
+      "model_class": "glm_gaussian",
+      "rmse": 4.858535910069628,
+      "bootstrap_se": 0.08011391624721326,
+      "floor_1_96se": 0.15702327584453799
+    },
+    {
+      "feature_set": "B_plus_season",
+      "model_class": "multiplicative",
+      "rmse": 4.880520607466328,
+      "bootstrap_se": 0.07747178144448623,
+      "floor_1_96se": 0.15184469163119302
+    },
+    {
+      "feature_set": "B_plus_season",
+      "model_class": "ridge",
+      "rmse": 4.8432737721215355,
+      "bootstrap_se": 0.07745549921841795,
+      "floor_1_96se": 0.15181277846809918
+    },
+    {
+      "feature_set": "B_plus_season",
+      "model_class": "glm_gaussian",
+      "rmse": 4.843933280598755,
+      "bootstrap_se": 0.07737521773273684,
+      "floor_1_96se": 0.1516554267561642
+    },
+    {
+      "feature_set": "C_plus_style",
+      "model_class": "multiplicative",
+      "rmse": 4.880520607466328,
+      "bootstrap_se": 0.07747178144448623,
+      "floor_1_96se": 0.15184469163119302
+    },
+    {
+      "feature_set": "C_plus_style",
+      "model_class": "ridge",
+      "rmse": 4.83577146713361,
+      "bootstrap_se": 0.07683396072228296,
+      "floor_1_96se": 0.15059456301567462
+    },
+    {
+      "feature_set": "C_plus_style",
+      "model_class": "glm_gaussian",
+      "rmse": 4.835528041790553,
+      "bootstrap_se": 0.07678393365644318,
+      "floor_1_96se": 0.1504965099666286
+    },
+    {
+      "feature_set": "D_plus_state",
+      "model_class": "multiplicative",
+      "rmse": 4.880520607466328,
+      "bootstrap_se": 0.07747178144448623,
+      "floor_1_96se": 0.15184469163119302
+    },
+    {
+      "feature_set": "D_plus_state",
+      "model_class": "ridge",
+      "rmse": 4.8206839249242295,
+      "bootstrap_se": 0.07682503902464652,
+      "floor_1_96se": 0.15057707648830718
+    },
+    {
+      "feature_set": "D_plus_state",
+      "model_class": "glm_gaussian",
+      "rmse": 4.820382028984774,
+      "bootstrap_se": 0.0767781176082151,
+      "floor_1_96se": 0.1504851105121016
+    }
+  ],
+  "noise_floor_lgbm_seed_rmses": {
+    "B_plus_season": [
+      4.8177006739755335,
+      4.816109779575332,
+      4.818135535120854,
+      4.8167445166045155,
+      4.816586237345757
+    ]
+  },
+  "winner": {
+    "model_class": "multiplicative",
+    "feature_set": "A_tempo",
+    "rmse_f2": 4.880520607466328,
+    "mae_f2": 3.7023825176549385
+  },
+  "decision_notes": [
+    "NO ARM passed both pre-registered gates on F2: PIT K-S p > 0.05 failed for EVERY arm (every arm's F2 PIT p is below 1e-19; see the distribution-family diagnosis -- overtime games right-skew and fat-tail the residuals of every point-estimate model alike, a defect in the shared target, not a reason to prefer one arm over another). Falling back to the gate that IS achievable, by-month G1, and selecting only among arms that pass it.",
+    "Lowest-RMSE gate-passing arm: lightgbm/B_plus_season (RMSE 4.8177). 13 arm(s) within the noise floor (0.1570) of it; simplest of those (fewest features, linear before tree): multiplicative/A_tempo (RMSE 4.8805)."
+  ],
+  "chosen_distribution_family": "gaussian_hetero"
+}
