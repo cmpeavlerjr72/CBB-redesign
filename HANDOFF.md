@@ -26,3 +26,16 @@ Refuted this session: nothing yet.
 Evidence trail: `docs/tests/data_audit_hoopr_2026-09-10.md`, `docs/tests/data_audit_cbbd_2026-09-10.md`, `docs/tests/gate_reference_2026-09-10.md`, `docs/tests/leak_test_kenpom_2026-09-10.md`.
 
 Watch item (2026-09-10): CBBD /teams/roster season=2027 returns 0 players for every team; roster continuity is an upper bound until rosters populate. Recheck weekly; fallback is hoopR rosters_2027 or ESPN team roster endpoint (light use).
+
+## SHUTDOWN 2026-09-10 ~17:00 ET -- RESUME CHECKLIST (read before doing anything)
+
+State at shutdown: repo at the last commit on main (run `git log -1`). Five workers were told to checkpoint by 16:50 ET:
+1. Clock round 2: NO ARM ADOPTED (docs/models/clock/experiments.md sections 5-6). Emergent G1 still +1.5 to +2.6 possessions; end-of-half gate contaminated by feed truncation (6.3). Round 3 spec is the PM's next task: fix the end-of-half measurement first (exclude truncated final possessions), then revisit the state representation.
+2. Rotation round 2: NO ARM ADOPTED (docs/models/rotation/experiments.md section 4). R5 hybrid fixes lineup concentration (K-S D 0.03) and blowouts but under-keeps starters late in close games by 4-7 pp; R2 fails only blowouts. Round 3 = R5 with a close-game keep-starters override fitted like the other two.
+3. Possession-outcome round 2: winners lgbm+S1 (first) and cascade+S1 (cont), calibration 0.98 / 1.86 pp; noise floor may be PARTIAL (see experiments.md section marked PARTIAL). S1 (in-season monthly walk-forward refit) is the default training scheme for all sub-models per pre-registration.
+4. Engine v0: in progress under src/cbb_sim/engine/ and results/engine_v0/; see docs/models/engine/RESUME.md if written. Provisional adapters flagged in run_meta.json.
+5. Player attribution: in progress; see docs/models/attribution/RESUME.md and the PARTIAL marker in its experiments.md.
+
+On resume: (a) `git status` and commit anything the workers left uncommitted, excluding files > 50MB and anything under data/raw or results; (b) read the five docs above; (c) launch FRESH workers for clock round 3, rotation round 3, engine v0 completion and attribution completion, each briefed with the relevant experiments.md (do not resume the old agents; their contexts are too large); (d) then the seed-noise study and gates G1-G7 engine vs Control.
+
+Decided today and not to be reopened: Decisions 1-8; learnings L1-L19; winners for rebound, free throw, usage (5 classes), fg_make (3 classes), possession outcome (S1 arms).
