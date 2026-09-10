@@ -74,6 +74,10 @@ Remote: `https://github.com/cmpeavlerjr72/CBB-redesign.git`, branch `main`. Comm
 
 `scripts/` is flat and prefix-named: `pull_ build_ train_ run_ exp_ diag_ grade_ leak_ chain_ inv{N}_`. Trainers are versioned filenames (`train_x_v2.py`), never overwritten. `src/cbb_sim/` is the small tested core (game state, engine, usage allocation, lookups, variance decomposition, clients).
 
+## Worker discipline
+
+Workers run concurrently on one machine. Never kill, restart, or signal a process you did not start (`Stop-Process python` is banned); restart only your own PID. Never overwrite a data file another worker may be reading; write a versioned sibling and let the PM switch. Report any interruption you caused.
+
 ## Windows
 
 Set `PYTHONIOENCODING=utf-8` before running scripts that print non-ASCII. Use `.venv/Scripts/python.exe`.

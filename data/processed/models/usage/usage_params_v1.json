@@ -1,0 +1,261 @@
+{
+  "possessions_version": "v2",
+  "seed": 20260910,
+  "per_class": {
+    "FGA_rim": {
+      "prior_kind": "position",
+      "shrink_m": 50.0,
+      "winner": "lgbm",
+      "dirichlet_alphas": {
+        "a_between": null,
+        "a_handler": null,
+        "a_wing": null,
+        "a_big": null
+      },
+      "hier_alphas": {
+        "a_between": null,
+        "a_handler": 64.0,
+        "a_wing": null,
+        "a_big": 2.0
+      },
+      "cond_logit_l2": 0.001,
+      "inner_split": "2024-01-15",
+      "cond_logit_features": [
+        "log_share",
+        "log_exposure",
+        "log_minutes",
+        "is_G",
+        "is_F",
+        "is_C",
+        "log_share_x_scorediff",
+        "log_share_x_sec",
+        "log_share_x_chance",
+        "is_C_x_scorediff",
+        "is_C_x_sec"
+      ],
+      "cond_logit_coefficients": {
+        "log_share": 0.99474,
+        "log_exposure": 0.06063,
+        "log_minutes": 0.01941,
+        "is_G": -0.27217,
+        "is_F": -0.2247,
+        "is_C": -0.3325,
+        "log_share_x_scorediff": 0.00947,
+        "log_share_x_sec": 0.00601,
+        "log_share_x_chance": -0.0649,
+        "is_C_x_scorediff": 0.01092,
+        "is_C_x_sec": 0.0599
+      },
+      "lgbm_params": {
+        "num_leaves": 15,
+        "learning_rate": 0.08,
+        "n_estimators": 300,
+        "min_child_samples": 200
+      }
+    },
+    "FGA_jump2": {
+      "prior_kind": "league",
+      "shrink_m": 50.0,
+      "winner": "lgbm",
+      "dirichlet_alphas": {
+        "a_between": null,
+        "a_handler": null,
+        "a_wing": null,
+        "a_big": null
+      },
+      "hier_alphas": {
+        "a_between": null,
+        "a_handler": 64.0,
+        "a_wing": null,
+        "a_big": null
+      },
+      "cond_logit_l2": 0.001,
+      "inner_split": "2024-01-15",
+      "cond_logit_features": [
+        "log_share",
+        "log_exposure",
+        "log_minutes",
+        "is_G",
+        "is_F",
+        "is_C",
+        "log_share_x_scorediff",
+        "log_share_x_sec",
+        "log_share_x_chance",
+        "is_C_x_scorediff",
+        "is_C_x_sec"
+      ],
+      "cond_logit_coefficients": {
+        "log_share": 1.05434,
+        "log_exposure": 0.06756,
+        "log_minutes": 0.0764,
+        "is_G": 0.08286,
+        "is_F": 0.03601,
+        "is_C": -0.12452,
+        "log_share_x_scorediff": 0.02265,
+        "log_share_x_sec": -0.04219,
+        "log_share_x_chance": -0.19647,
+        "is_C_x_scorediff": 0.05925,
+        "is_C_x_sec": 0.07971
+      },
+      "lgbm_params": {
+        "num_leaves": 15,
+        "learning_rate": 0.08,
+        "n_estimators": 300,
+        "min_child_samples": 200
+      }
+    },
+    "FGA_3": {
+      "prior_kind": "position",
+      "shrink_m": 25.0,
+      "winner": "lgbm",
+      "dirichlet_alphas": {
+        "a_between": null,
+        "a_handler": null,
+        "a_wing": null,
+        "a_big": null
+      },
+      "hier_alphas": {
+        "a_between": null,
+        "a_handler": null,
+        "a_wing": null,
+        "a_big": null
+      },
+      "cond_logit_l2": 0.001,
+      "inner_split": "2024-01-15",
+      "cond_logit_features": [
+        "log_share",
+        "log_exposure",
+        "log_minutes",
+        "is_G",
+        "is_F",
+        "is_C",
+        "log_share_x_scorediff",
+        "log_share_x_sec",
+        "log_share_x_chance",
+        "is_C_x_scorediff",
+        "is_C_x_sec"
+      ],
+      "cond_logit_coefficients": {
+        "log_share": 1.02907,
+        "log_exposure": 0.03924,
+        "log_minutes": 0.01457,
+        "is_G": -0.33295,
+        "is_F": -0.36424,
+        "is_C": -0.46804,
+        "log_share_x_scorediff": 0.00853,
+        "log_share_x_sec": -0.03192,
+        "log_share_x_chance": -0.02447,
+        "is_C_x_scorediff": 0.0504,
+        "is_C_x_sec": 0.02614
+      },
+      "lgbm_params": {
+        "num_leaves": 15,
+        "learning_rate": 0.08,
+        "n_estimators": 300,
+        "min_child_samples": 200
+      }
+    },
+    "TOV": {
+      "prior_kind": "league",
+      "shrink_m": 200.0,
+      "winner": "lgbm",
+      "dirichlet_alphas": {
+        "a_between": null,
+        "a_handler": null,
+        "a_wing": null,
+        "a_big": null
+      },
+      "hier_alphas": {
+        "a_between": null,
+        "a_handler": 256.0,
+        "a_wing": null,
+        "a_big": 64.0
+      },
+      "cond_logit_l2": 0.1,
+      "inner_split": "2024-01-15",
+      "cond_logit_features": [
+        "log_share",
+        "log_exposure",
+        "log_minutes",
+        "is_G",
+        "is_F",
+        "is_C",
+        "log_share_x_scorediff",
+        "log_share_x_sec",
+        "log_share_x_chance",
+        "is_C_x_scorediff",
+        "is_C_x_sec"
+      ],
+      "cond_logit_coefficients": {
+        "log_share": 0.99461,
+        "log_exposure": 0.02705,
+        "log_minutes": 0.04233,
+        "is_G": 0.05462,
+        "is_F": 0.03061,
+        "is_C": -0.0924,
+        "log_share_x_scorediff": -0.01013,
+        "log_share_x_sec": -0.03235,
+        "log_share_x_chance": -0.25313,
+        "is_C_x_scorediff": 0.01865,
+        "is_C_x_sec": 0.08882
+      },
+      "lgbm_params": {
+        "num_leaves": 15,
+        "learning_rate": 0.08,
+        "n_estimators": 300,
+        "min_child_samples": 200
+      }
+    },
+    "FT_trip": {
+      "prior_kind": "position",
+      "shrink_m": 200.0,
+      "winner": "lgbm",
+      "dirichlet_alphas": {
+        "a_between": null,
+        "a_handler": null,
+        "a_wing": null,
+        "a_big": null
+      },
+      "hier_alphas": {
+        "a_between": null,
+        "a_handler": 16.0,
+        "a_wing": null,
+        "a_big": null
+      },
+      "cond_logit_l2": 10.0,
+      "inner_split": "2024-01-15",
+      "cond_logit_features": [
+        "log_share",
+        "log_exposure",
+        "log_minutes",
+        "is_G",
+        "is_F",
+        "is_C",
+        "log_share_x_scorediff",
+        "log_share_x_sec",
+        "log_share_x_chance",
+        "is_C_x_scorediff",
+        "is_C_x_sec"
+      ],
+      "cond_logit_coefficients": {
+        "log_share": 0.91443,
+        "log_exposure": 0.04198,
+        "log_minutes": 0.08246,
+        "is_G": 0.1291,
+        "is_F": 0.17832,
+        "is_C": 0.05251,
+        "log_share_x_scorediff": -0.03616,
+        "log_share_x_sec": 0.09323,
+        "log_share_x_chance": 0.10642,
+        "is_C_x_scorediff": 0.04062,
+        "is_C_x_sec": 0.08581
+      },
+      "lgbm_params": {
+        "num_leaves": 15,
+        "learning_rate": 0.08,
+        "n_estimators": 300,
+        "min_child_samples": 200
+      }
+    }
+  }
+}

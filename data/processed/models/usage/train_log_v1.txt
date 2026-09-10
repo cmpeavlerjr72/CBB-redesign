@@ -1,0 +1,746 @@
+events 1,634,792 asof 204,642 (0.1s)
+  [F1] FGA_rim: train 213,856 test 231,434
+    shrinkage: prior=position m=50.0 (train ll 1.521366)
+      a=1.0: sd_ratio 2.2317
+      a=2.0: sd_ratio 2.0103
+      a=4.0: sd_ratio 1.7566
+      a=8.0: sd_ratio 1.5119
+      a=16.0: sd_ratio 1.3203
+      a=32.0: sd_ratio 1.1863
+      a=64.0: sd_ratio 1.1072
+      a=128.0: sd_ratio 1.0607
+      a=256.0: sd_ratio 1.0364
+      a=512.0: sd_ratio 1.0247
+      a=1024.0: sd_ratio 1.0173
+      a=inf: sd_ratio 1.0114
+    dirichlet: alphas {'a': inf} marginal ll 1.523130 polya 1.52313
+      a_handler=1.0: role sd_ratio 1.5453
+      a_handler=2.0: role sd_ratio 1.3879
+      a_handler=4.0: role sd_ratio 1.2442
+      a_handler=8.0: role sd_ratio 1.1341
+      a_handler=16.0: role sd_ratio 1.0574
+      a_handler=32.0: role sd_ratio 1.0142
+      a_handler=64.0: role sd_ratio 0.9898
+      a_handler=128.0: role sd_ratio 0.9780
+      a_handler=256.0: role sd_ratio 0.9693
+      a_handler=512.0: role sd_ratio 0.9665
+      a_handler=1024.0: role sd_ratio 0.9643
+      a_handler=inf: role sd_ratio 0.9629
+      a_wing=1.0: role sd_ratio 1.7078
+      a_wing=2.0: role sd_ratio 1.5669
+      a_wing=4.0: role sd_ratio 1.4206
+      a_wing=8.0: role sd_ratio 1.2883
+      a_wing=16.0: role sd_ratio 1.1893
+      a_wing=32.0: role sd_ratio 1.1276
+      a_wing=64.0: role sd_ratio 1.0914
+      a_wing=128.0: role sd_ratio 1.0730
+      a_wing=256.0: role sd_ratio 1.0608
+      a_wing=512.0: role sd_ratio 1.0577
+      a_wing=1024.0: role sd_ratio 1.0542
+      a_wing=inf: role sd_ratio 1.0526
+      a_big=1.0: role sd_ratio 1.0187
+      a_big=2.0: role sd_ratio 0.9988
+      a_big=4.0: role sd_ratio 0.9808
+      a_big=8.0: role sd_ratio 0.9720
+      a_big=16.0: role sd_ratio 0.9667
+      a_big=32.0: role sd_ratio 0.9633
+      a_big=64.0: role sd_ratio 0.9594
+      a_big=128.0: role sd_ratio 0.9595
+      a_big=256.0: role sd_ratio 0.9589
+      a_big=512.0: role sd_ratio 0.9591
+      a_big=1024.0: role sd_ratio 0.9588
+      a_big=inf: role sd_ratio 0.9580
+      a_between=1.0: sd_ratio 1.5101
+      a_between=2.0: sd_ratio 1.3701
+      a_between=4.0: sd_ratio 1.2483
+      a_between=8.0: sd_ratio 1.1572
+      a_between=16.0: sd_ratio 1.0992
+      a_between=32.0: sd_ratio 1.0645
+      a_between=64.0: sd_ratio 1.0467
+      a_between=128.0: sd_ratio 1.0372
+      a_between=256.0: sd_ratio 1.0326
+      a_between=512.0: sd_ratio 1.0300
+      a_between=1024.0: sd_ratio 1.0283
+      a_between=inf: sd_ratio 1.0278
+    hier_dirichlet: alphas {'a_between': inf, 'a_handler': 64.0, 'a_wing': inf, 'a_big': 2.0} marginal ll 1.523298 polya 1.522956
+    cond_logit: l2=0.001 ll 1.521954
+      lgbm {'num_leaves': 15, 'learning_rate': 0.08, 'n_estimators': 300, 'min_child_samples': 200}: inner val ll 1.491019
+      lgbm {'num_leaves': 31, 'learning_rate': 0.06, 'n_estimators': 400, 'min_child_samples': 400}: inner val ll 1.492659
+      lgbm {'num_leaves': 63, 'learning_rate': 0.05, 'n_estimators': 500, 'min_child_samples': 800}: inner val ll 1.497001
+      lgbm {'num_leaves': 31, 'learning_rate': 0.03, 'n_estimators': 800, 'min_child_samples': 400}: inner val ll 1.492626
+    lgbm: {'num_leaves': 15, 'learning_rate': 0.08, 'n_estimators': 300, 'min_child_samples': 200} ll 1.502348 seed sd 1.2e-05
+    -> proportional    ll 1.523130 calib 0.349pp resp 4/4 sd 1.011 gt0 +0.265
+    -> dirichlet       ll 1.523130 calib 0.349pp resp 4/4 sd 1.011 gt0 +0.265
+    -> hier_dirichlet  ll 1.523298 calib 0.350pp resp 4/4 sd 1.029 gt0 +0.235
+    -> cond_logit      ll 1.521954 calib 0.372pp resp 4/4 sd 1.005 gt0 +0.216
+    -> lgbm            ll 1.502348 calib 0.411pp resp 4/4 sd 1.004 gt0 +0.197
+    DECISION: lgbm -- eligible: lgbm 1.502348, cond_logit 1.521954, hier_dirichlet 1.523298; floor 0.001157; clear of the next eligible arm by 0.019606 (16.9 floors)
+  [WF2025] FGA_rim: train 114,000 test 117,434
+    shrinkage: prior=position m=50.0 (train ll 1.536129)
+      a=1.0: sd_ratio 2.2033
+      a=2.0: sd_ratio 2.0090
+      a=4.0: sd_ratio 1.7638
+      a=8.0: sd_ratio 1.5254
+      a=16.0: sd_ratio 1.3327
+      a=32.0: sd_ratio 1.2017
+      a=64.0: sd_ratio 1.1163
+      a=128.0: sd_ratio 1.0702
+      a=256.0: sd_ratio 1.0460
+      a=512.0: sd_ratio 1.0338
+      a=1024.0: sd_ratio 1.0264
+      a=inf: sd_ratio 1.0207
+    dirichlet: alphas {'a': inf} marginal ll 1.510512 polya 1.510512
+      a_handler=1.0: role sd_ratio 1.5634
+      a_handler=2.0: role sd_ratio 1.4105
+      a_handler=4.0: role sd_ratio 1.2670
+      a_handler=8.0: role sd_ratio 1.1510
+      a_handler=16.0: role sd_ratio 1.0770
+      a_handler=32.0: role sd_ratio 1.0315
+      a_handler=64.0: role sd_ratio 1.0063
+      a_handler=128.0: role sd_ratio 0.9935
+      a_handler=256.0: role sd_ratio 0.9864
+      a_handler=512.0: role sd_ratio 0.9824
+      a_handler=1024.0: role sd_ratio 0.9816
+      a_handler=inf: role sd_ratio 0.9798
+      a_wing=1.0: role sd_ratio 1.7063
+      a_wing=2.0: role sd_ratio 1.5728
+      a_wing=4.0: role sd_ratio 1.4291
+      a_wing=8.0: role sd_ratio 1.2943
+      a_wing=16.0: role sd_ratio 1.1948
+      a_wing=32.0: role sd_ratio 1.1352
+      a_wing=64.0: role sd_ratio 1.0965
+      a_wing=128.0: role sd_ratio 1.0769
+      a_wing=256.0: role sd_ratio 1.0676
+      a_wing=512.0: role sd_ratio 1.0622
+      a_wing=1024.0: role sd_ratio 1.0606
+      a_wing=inf: role sd_ratio 1.0575
+      a_big=1.0: role sd_ratio 1.0463
+      a_big=2.0: role sd_ratio 1.0103
+      a_big=4.0: role sd_ratio 0.9918
+      a_big=8.0: role sd_ratio 0.9769
+      a_big=16.0: role sd_ratio 0.9706
+      a_big=32.0: role sd_ratio 0.9588
+      a_big=64.0: role sd_ratio 0.9587
+      a_big=128.0: role sd_ratio 0.9578
+      a_big=256.0: role sd_ratio 0.9578
+      a_big=512.0: role sd_ratio 0.9576
+      a_big=1024.0: role sd_ratio 0.9572
+      a_big=inf: role sd_ratio 0.9567
+      a_between=1.0: sd_ratio 1.5145
+      a_between=2.0: sd_ratio 1.3695
+      a_between=4.0: sd_ratio 1.2513
+      a_between=8.0: sd_ratio 1.1634
+      a_between=16.0: sd_ratio 1.1056
+      a_between=32.0: sd_ratio 1.0721
+      a_between=64.0: sd_ratio 1.0556
+      a_between=128.0: sd_ratio 1.0463
+      a_between=256.0: sd_ratio 1.0410
+      a_between=512.0: sd_ratio 1.0395
+      a_between=1024.0: sd_ratio 1.0379
+      a_between=inf: sd_ratio 1.0371
+    hier_dirichlet: alphas {'a_between': inf, 'a_handler': 64.0, 'a_wing': inf, 'a_big': 4.0} marginal ll 1.510602 polya 1.510658
+    cond_logit: l2=0.001 ll 1.510345
+      lgbm {'num_leaves': 15, 'learning_rate': 0.08, 'n_estimators': 300, 'min_child_samples': 200}: inner val ll 1.504648
+    lgbm: {'num_leaves': 15, 'learning_rate': 0.08, 'n_estimators': 300, 'min_child_samples': 200} ll 1.495627 seed sd None
+    -> proportional    ll 1.510512 calib 0.650pp resp 4/4 sd 0.992 gt0 +0.196
+    -> dirichlet       ll 1.510512 calib 0.650pp resp 4/4 sd 0.992 gt0 +0.196
+    -> hier_dirichlet  ll 1.510602 calib 0.727pp resp 4/4 sd 1.009 gt0 +0.174
+    -> cond_logit      ll 1.510345 calib 1.124pp resp 4/4 sd 0.989 gt0 +0.167
+    -> lgbm            ll 1.495627 calib 0.869pp resp 4/4 sd 0.985 gt0 +0.043
+    DECISION: lgbm -- eligible: lgbm 1.495627, cond_logit 1.510345, proportional 1.510512, dirichlet 1.510512, hier_dirichlet 1.510602; floor 0.001751; clear of the next eligible arm by 0.014718 (8.4 floors)
+  [F1] FGA_jump2: train 146,628 test 146,718
+    shrinkage: prior=league m=50.0 (train ll 1.504138)
+      a=1.0: sd_ratio 1.9989
+      a=2.0: sd_ratio 1.8099
+      a=4.0: sd_ratio 1.6007
+      a=8.0: sd_ratio 1.4127
+      a=16.0: sd_ratio 1.2629
+      a=32.0: sd_ratio 1.1674
+      a=64.0: sd_ratio 1.1093
+      a=128.0: sd_ratio 1.0741
+      a=256.0: sd_ratio 1.0564
+      a=512.0: sd_ratio 1.0503
+      a=1024.0: sd_ratio 1.0450
+      a=inf: sd_ratio 1.0401
+    dirichlet: alphas {'a': inf} marginal ll 1.498369 polya 1.498369
+      a_handler=1.0: role sd_ratio 1.4182
+      a_handler=2.0: role sd_ratio 1.2969
+      a_handler=4.0: role sd_ratio 1.1897
+      a_handler=8.0: role sd_ratio 1.1024
+      a_handler=16.0: role sd_ratio 1.0479
+      a_handler=32.0: role sd_ratio 1.0118
+      a_handler=64.0: role sd_ratio 0.9976
+      a_handler=128.0: role sd_ratio 0.9890
+      a_handler=256.0: role sd_ratio 0.9824
+      a_handler=512.0: role sd_ratio 0.9813
+      a_handler=1024.0: role sd_ratio 0.9805
+      a_handler=inf: role sd_ratio 0.9783
+      a_wing=1.0: role sd_ratio 1.5767
+      a_wing=2.0: role sd_ratio 1.4700
+      a_wing=4.0: role sd_ratio 1.3478
+      a_wing=8.0: role sd_ratio 1.2577
+      a_wing=16.0: role sd_ratio 1.1843
+      a_wing=32.0: role sd_ratio 1.1414
+      a_wing=64.0: role sd_ratio 1.1172
+      a_wing=128.0: role sd_ratio 1.1063
+      a_wing=256.0: role sd_ratio 1.0991
+      a_wing=512.0: role sd_ratio 1.0939
+      a_wing=1024.0: role sd_ratio 1.0934
+      a_wing=inf: role sd_ratio 1.0910
+      a_big=1.0: role sd_ratio 1.0926
+      a_big=2.0: role sd_ratio 1.0770
+      a_big=4.0: role sd_ratio 1.0593
+      a_big=8.0: role sd_ratio 1.0549
+      a_big=16.0: role sd_ratio 1.0456
+      a_big=32.0: role sd_ratio 1.0416
+      a_big=64.0: role sd_ratio 1.0419
+      a_big=128.0: role sd_ratio 1.0398
+      a_big=256.0: role sd_ratio 1.0404
+      a_big=512.0: role sd_ratio 1.0403
+      a_big=1024.0: role sd_ratio 1.0396
+      a_big=inf: role sd_ratio 1.0392
+      a_between=1.0: sd_ratio 1.4219
+      a_between=2.0: sd_ratio 1.3121
+      a_between=4.0: sd_ratio 1.2144
+      a_between=8.0: sd_ratio 1.1443
+      a_between=16.0: sd_ratio 1.1020
+      a_between=32.0: sd_ratio 1.0773
+      a_between=64.0: sd_ratio 1.0659
+      a_between=128.0: sd_ratio 1.0588
+      a_between=256.0: sd_ratio 1.0557
+      a_between=512.0: sd_ratio 1.0538
+      a_between=1024.0: sd_ratio 1.0525
+      a_between=inf: sd_ratio 1.0516
+    hier_dirichlet: alphas {'a_between': inf, 'a_handler': 64.0, 'a_wing': inf, 'a_big': inf} marginal ll 1.498540 polya 1.497856
+    cond_logit: l2=0.001 ll 1.494403
+      lgbm {'num_leaves': 15, 'learning_rate': 0.08, 'n_estimators': 300, 'min_child_samples': 200}: inner val ll 1.488107
+      lgbm {'num_leaves': 31, 'learning_rate': 0.06, 'n_estimators': 400, 'min_child_samples': 400}: inner val ll 1.492862
+      lgbm {'num_leaves': 63, 'learning_rate': 0.05, 'n_estimators': 500, 'min_child_samples': 800}: inner val ll 1.497825
+      lgbm {'num_leaves': 31, 'learning_rate': 0.03, 'n_estimators': 800, 'min_child_samples': 400}: inner val ll 1.490991
+    lgbm: {'num_leaves': 15, 'learning_rate': 0.08, 'n_estimators': 300, 'min_child_samples': 200} ll 1.491034 seed sd 0.000154
+    -> proportional    ll 1.498369 calib 0.514pp resp 4/4 sd 1.038 gt0 +0.235
+    -> dirichlet       ll 1.498369 calib 0.514pp resp 4/4 sd 1.038 gt0 +0.235
+    -> hier_dirichlet  ll 1.498540 calib 0.547pp resp 4/4 sd 1.048 gt0 +0.218
+    -> cond_logit      ll 1.494403 calib 0.654pp resp 4/4 sd 1.029 gt0 +0.186
+    -> lgbm            ll 1.491034 calib 0.373pp resp 4/4 sd 1.025 gt0 +0.153
+    DECISION: lgbm -- eligible: lgbm 1.491034, cond_logit 1.494403, hier_dirichlet 1.498540; floor 0.001607; clear of the next eligible arm by 0.003369 (2.1 floors)
+  [WF2025] FGA_jump2: train 72,089 test 74,629
+    shrinkage: prior=position m=100.0 (train ll 1.520895)
+      a=1.0: sd_ratio 1.9439
+      a=2.0: sd_ratio 1.7840
+      a=4.0: sd_ratio 1.5879
+      a=8.0: sd_ratio 1.4020
+      a=16.0: sd_ratio 1.2594
+      a=32.0: sd_ratio 1.1616
+      a=64.0: sd_ratio 1.1045
+      a=128.0: sd_ratio 1.0714
+      a=256.0: sd_ratio 1.0533
+      a=512.0: sd_ratio 1.0451
+      a=1024.0: sd_ratio 1.0421
+      a=inf: sd_ratio 1.0362
+    dirichlet: alphas {'a': inf} marginal ll 1.477853 polya 1.477853
+      a_handler=1.0: role sd_ratio 1.3532
+      a_handler=2.0: role sd_ratio 1.2407
+      a_handler=4.0: role sd_ratio 1.1396
+      a_handler=8.0: role sd_ratio 1.0594
+      a_handler=16.0: role sd_ratio 1.0112
+      a_handler=32.0: role sd_ratio 0.9825
+      a_handler=64.0: role sd_ratio 0.9624
+      a_handler=128.0: role sd_ratio 0.9562
+      a_handler=256.0: role sd_ratio 0.9516
+      a_handler=512.0: role sd_ratio 0.9491
+      a_handler=1024.0: role sd_ratio 0.9479
+      a_handler=inf: role sd_ratio 0.9469
+      a_wing=1.0: role sd_ratio 1.5902
+      a_wing=2.0: role sd_ratio 1.4831
+      a_wing=4.0: role sd_ratio 1.3734
+      a_wing=8.0: role sd_ratio 1.2802
+      a_wing=16.0: role sd_ratio 1.2063
+      a_wing=32.0: role sd_ratio 1.1608
+      a_wing=64.0: role sd_ratio 1.1372
+      a_wing=128.0: role sd_ratio 1.1243
+      a_wing=256.0: role sd_ratio 1.1156
+      a_wing=512.0: role sd_ratio 1.1119
+      a_wing=1024.0: role sd_ratio 1.1098
+      a_wing=inf: role sd_ratio 1.1080
+      a_big=1.0: role sd_ratio 1.1445
+      a_big=2.0: role sd_ratio 1.1239
+      a_big=4.0: role sd_ratio 1.1204
+      a_big=8.0: role sd_ratio 1.1170
+      a_big=16.0: role sd_ratio 1.1063
+      a_big=32.0: role sd_ratio 1.1033
+      a_big=64.0: role sd_ratio 1.1039
+      a_big=128.0: role sd_ratio 1.1035
+      a_big=256.0: role sd_ratio 1.1017
+      a_big=512.0: role sd_ratio 1.1003
+      a_big=1024.0: role sd_ratio 1.0997
+      a_big=inf: role sd_ratio 1.1011
+      a_between=1.0: sd_ratio 1.4136
+      a_between=2.0: sd_ratio 1.3105
+      a_between=4.0: sd_ratio 1.2220
+      a_between=8.0: sd_ratio 1.1580
+      a_between=16.0: sd_ratio 1.1208
+      a_between=32.0: sd_ratio 1.0986
+      a_between=64.0: sd_ratio 1.0869
+      a_between=128.0: sd_ratio 1.0814
+      a_between=256.0: sd_ratio 1.0776
+      a_between=512.0: sd_ratio 1.0765
+      a_between=1024.0: sd_ratio 1.0754
+      a_between=inf: sd_ratio 1.0746
+    hier_dirichlet: alphas {'a_between': inf, 'a_handler': 16.0, 'a_wing': inf, 'a_big': 1024.0} marginal ll 1.478457 polya 1.48047
+    cond_logit: l2=0.001 ll 1.473370
+      lgbm {'num_leaves': 15, 'learning_rate': 0.08, 'n_estimators': 300, 'min_child_samples': 200}: inner val ll 1.497392
+    lgbm: {'num_leaves': 15, 'learning_rate': 0.08, 'n_estimators': 300, 'min_child_samples': 200} ll 1.474558 seed sd None
+    -> proportional    ll 1.477853 calib 1.505pp resp 4/4 sd 1.024 gt0 +0.260
+    -> dirichlet       ll 1.477853 calib 1.505pp resp 4/4 sd 1.024 gt0 +0.260
+    -> hier_dirichlet  ll 1.478457 calib 1.623pp resp 4/4 sd 1.063 gt0 +0.200
+    -> cond_logit      ll 1.473370 calib 0.509pp resp 4/4 sd 1.014 gt0 +0.127
+    -> lgbm            ll 1.474558 calib 0.809pp resp 4/4 sd 1.011 gt0 +0.063
+    DECISION: cond_logit -- eligible: cond_logit 1.473370, lgbm 1.474558, hier_dirichlet 1.478457; floor 0.002249; cond_logit, lgbm are inside the floor of each other; the pre-registered tie-break takes the simplest
+  [F1] FGA_3: train 214,814 test 242,942
+    shrinkage: prior=position m=25.0 (train ll 1.459987)
+      a=1.0: sd_ratio 2.3355
+      a=2.0: sd_ratio 2.1103
+      a=4.0: sd_ratio 1.8382
+      a=8.0: sd_ratio 1.5942
+      a=16.0: sd_ratio 1.3899
+      a=32.0: sd_ratio 1.2563
+      a=64.0: sd_ratio 1.1755
+      a=128.0: sd_ratio 1.1289
+      a=256.0: sd_ratio 1.1025
+      a=512.0: sd_ratio 1.0918
+      a=1024.0: sd_ratio 1.0853
+      a=inf: sd_ratio 1.0780
+    dirichlet: alphas {'a': inf} marginal ll 1.461517 polya 1.461517
+      a_handler=1.0: role sd_ratio 1.6586
+      a_handler=2.0: role sd_ratio 1.4976
+      a_handler=4.0: role sd_ratio 1.3455
+      a_handler=8.0: role sd_ratio 1.2209
+      a_handler=16.0: role sd_ratio 1.1388
+      a_handler=32.0: role sd_ratio 1.0917
+      a_handler=64.0: role sd_ratio 1.0619
+      a_handler=128.0: role sd_ratio 1.0483
+      a_handler=256.0: role sd_ratio 1.0397
+      a_handler=512.0: role sd_ratio 1.0353
+      a_handler=1024.0: role sd_ratio 1.0356
+      a_handler=inf: role sd_ratio 1.0330
+      a_wing=1.0: role sd_ratio 1.7755
+      a_wing=2.0: role sd_ratio 1.6315
+      a_wing=4.0: role sd_ratio 1.4799
+      a_wing=8.0: role sd_ratio 1.3412
+      a_wing=16.0: role sd_ratio 1.2469
+      a_wing=32.0: role sd_ratio 1.1861
+      a_wing=64.0: role sd_ratio 1.1486
+      a_wing=128.0: role sd_ratio 1.1282
+      a_wing=256.0: role sd_ratio 1.1204
+      a_wing=512.0: role sd_ratio 1.1130
+      a_wing=1024.0: role sd_ratio 1.1116
+      a_wing=inf: role sd_ratio 1.1088
+      a_big=1.0: role sd_ratio 1.1871
+      a_big=2.0: role sd_ratio 1.1640
+      a_big=4.0: role sd_ratio 1.1655
+      a_big=8.0: role sd_ratio 1.1544
+      a_big=16.0: role sd_ratio 1.1465
+      a_big=32.0: role sd_ratio 1.1488
+      a_big=64.0: role sd_ratio 1.1494
+      a_big=128.0: role sd_ratio 1.1479
+      a_big=256.0: role sd_ratio 1.1468
+      a_big=512.0: role sd_ratio 1.1461
+      a_big=1024.0: role sd_ratio 1.1456
+      a_big=inf: role sd_ratio 1.1454
+      a_between=1.0: sd_ratio 1.5796
+      a_between=2.0: sd_ratio 1.4297
+      a_between=4.0: sd_ratio 1.3032
+      a_between=8.0: sd_ratio 1.2089
+      a_between=16.0: sd_ratio 1.1513
+      a_between=32.0: sd_ratio 1.1153
+      a_between=64.0: sd_ratio 1.0977
+      a_between=128.0: sd_ratio 1.0878
+      a_between=256.0: sd_ratio 1.0827
+      a_between=512.0: sd_ratio 1.0799
+      a_between=1024.0: sd_ratio 1.0796
+      a_between=inf: sd_ratio 1.0780
+    hier_dirichlet: alphas {'a_between': inf, 'a_handler': inf, 'a_wing': inf, 'a_big': inf} marginal ll 1.461517 polya 1.461517
+    cond_logit: l2=0.001 ll 1.460492
+      lgbm {'num_leaves': 15, 'learning_rate': 0.08, 'n_estimators': 300, 'min_child_samples': 200}: inner val ll 1.448422
+      lgbm {'num_leaves': 31, 'learning_rate': 0.06, 'n_estimators': 400, 'min_child_samples': 400}: inner val ll 1.448942
+      lgbm {'num_leaves': 63, 'learning_rate': 0.05, 'n_estimators': 500, 'min_child_samples': 800}: inner val ll 1.453675
+      lgbm {'num_leaves': 31, 'learning_rate': 0.03, 'n_estimators': 800, 'min_child_samples': 400}: inner val ll 1.448919
+    lgbm: {'num_leaves': 15, 'learning_rate': 0.08, 'n_estimators': 300, 'min_child_samples': 200} ll 1.458927 seed sd 5.3e-05
+    -> proportional    ll 1.461517 calib 0.523pp resp 4/4 sd 1.082 gt0 +0.131
+    -> dirichlet       ll 1.461517 calib 0.523pp resp 4/4 sd 1.082 gt0 +0.131
+    -> hier_dirichlet  ll 1.461517 calib 0.523pp resp 4/4 sd 1.082 gt0 +0.131
+    -> cond_logit      ll 1.460492 calib 0.361pp resp 4/4 sd 1.077 gt0 +0.121
+    -> lgbm            ll 1.458927 calib 0.255pp resp 4/4 sd 1.073 gt0 +0.094
+    DECISION: lgbm -- eligible: lgbm 1.458927, cond_logit 1.460492, proportional 1.461517, dirichlet 1.461517, hier_dirichlet 1.461517; floor 0.001302; clear of the next eligible arm by 0.001565 (1.2 floors)
+  [WF2025] FGA_3: train 120,453 test 122,489
+    shrinkage: prior=position m=25.0 (train ll 1.477341)
+      a=1.0: sd_ratio 2.4132
+      a=2.0: sd_ratio 2.1897
+      a=4.0: sd_ratio 1.9171
+      a=8.0: sd_ratio 1.6620
+      a=16.0: sd_ratio 1.4438
+      a=32.0: sd_ratio 1.2994
+      a=64.0: sd_ratio 1.2060
+      a=128.0: sd_ratio 1.1545
+      a=256.0: sd_ratio 1.1292
+      a=512.0: sd_ratio 1.1137
+      a=1024.0: sd_ratio 1.1067
+      a=inf: sd_ratio 1.0992
+    dirichlet: alphas {'a': inf} marginal ll 1.445956 polya 1.445956
+      a_handler=1.0: role sd_ratio 1.7147
+      a_handler=2.0: role sd_ratio 1.5421
+      a_handler=4.0: role sd_ratio 1.3719
+      a_handler=8.0: role sd_ratio 1.2423
+      a_handler=16.0: role sd_ratio 1.1582
+      a_handler=32.0: role sd_ratio 1.0994
+      a_handler=64.0: role sd_ratio 1.0703
+      a_handler=128.0: role sd_ratio 1.0545
+      a_handler=256.0: role sd_ratio 1.0439
+      a_handler=512.0: role sd_ratio 1.0411
+      a_handler=1024.0: role sd_ratio 1.0396
+      a_handler=inf: role sd_ratio 1.0366
+      a_wing=1.0: role sd_ratio 1.8646
+      a_wing=2.0: role sd_ratio 1.7100
+      a_wing=4.0: role sd_ratio 1.5398
+      a_wing=8.0: role sd_ratio 1.4031
+      a_wing=16.0: role sd_ratio 1.2955
+      a_wing=32.0: role sd_ratio 1.2248
+      a_wing=64.0: role sd_ratio 1.1848
+      a_wing=128.0: role sd_ratio 1.1603
+      a_wing=256.0: role sd_ratio 1.1531
+      a_wing=512.0: role sd_ratio 1.1466
+      a_wing=1024.0: role sd_ratio 1.1438
+      a_wing=inf: role sd_ratio 1.1401
+      a_big=1.0: role sd_ratio 1.2383
+      a_big=2.0: role sd_ratio 1.2316
+      a_big=4.0: role sd_ratio 1.2049
+      a_big=8.0: role sd_ratio 1.2018
+      a_big=16.0: role sd_ratio 1.1990
+      a_big=32.0: role sd_ratio 1.1923
+      a_big=64.0: role sd_ratio 1.1898
+      a_big=128.0: role sd_ratio 1.1913
+      a_big=256.0: role sd_ratio 1.1923
+      a_big=512.0: role sd_ratio 1.1924
+      a_big=1024.0: role sd_ratio 1.1917
+      a_big=inf: role sd_ratio 1.1911
+      a_between=1.0: sd_ratio 1.6316
+      a_between=2.0: sd_ratio 1.4732
+      a_between=4.0: sd_ratio 1.3370
+      a_between=8.0: sd_ratio 1.2370
+      a_between=16.0: sd_ratio 1.1759
+      a_between=32.0: sd_ratio 1.1401
+      a_between=64.0: sd_ratio 1.1194
+      a_between=128.0: sd_ratio 1.1096
+      a_between=256.0: sd_ratio 1.1044
+      a_between=512.0: sd_ratio 1.1019
+      a_between=1024.0: sd_ratio 1.1008
+      a_between=inf: sd_ratio 1.0992
+    hier_dirichlet: alphas {'a_between': inf, 'a_handler': inf, 'a_wing': inf, 'a_big': 64.0} marginal ll 1.445954 polya 1.445946
+    cond_logit: l2=0.001 ll 1.446399
+      lgbm {'num_leaves': 15, 'learning_rate': 0.08, 'n_estimators': 300, 'min_child_samples': 200}: inner val ll 1.466464
+    lgbm: {'num_leaves': 15, 'learning_rate': 0.08, 'n_estimators': 300, 'min_child_samples': 200} ll 1.445341 seed sd None
+    -> proportional    ll 1.445956 calib 0.402pp resp 4/4 sd 1.056 gt0 +0.090
+    -> dirichlet       ll 1.445956 calib 0.402pp resp 4/4 sd 1.056 gt0 +0.090
+    -> hier_dirichlet  ll 1.445954 calib 0.402pp resp 4/4 sd 1.056 gt0 +0.089
+    -> cond_logit      ll 1.446399 calib 0.859pp resp 4/4 sd 1.054 gt0 +0.080
+    -> lgbm            ll 1.445341 calib 0.467pp resp 4/4 sd 1.048 gt0 +0.021
+    DECISION: hier_dirichlet -- lgbm leads by 0.000613, inside the 0.001687 floor; the pre-registration requires the tree to beat the best non-tree arm by more than the floor
+  [F1] TOV: train 108,913 test 119,135
+    shrinkage: prior=league m=200.0 (train ll 1.584118)
+      a=1.0: sd_ratio 1.8898
+      a=2.0: sd_ratio 1.7317
+      a=4.0: sd_ratio 1.5421
+      a=8.0: sd_ratio 1.3698
+      a=16.0: sd_ratio 1.2429
+      a=32.0: sd_ratio 1.1524
+      a=64.0: sd_ratio 1.1007
+      a=128.0: sd_ratio 1.0741
+      a=256.0: sd_ratio 1.0601
+      a=512.0: sd_ratio 1.0524
+      a=1024.0: sd_ratio 1.0478
+      a=inf: sd_ratio 1.0448
+    dirichlet: alphas {'a': inf} marginal ll 1.582428 polya 1.582428
+      a_handler=1.0: role sd_ratio 1.3611
+      a_handler=2.0: role sd_ratio 1.2626
+      a_handler=4.0: role sd_ratio 1.1669
+      a_handler=8.0: role sd_ratio 1.0967
+      a_handler=16.0: role sd_ratio 1.0528
+      a_handler=32.0: role sd_ratio 1.0261
+      a_handler=64.0: role sd_ratio 1.0121
+      a_handler=128.0: role sd_ratio 1.0051
+      a_handler=256.0: role sd_ratio 0.9993
+      a_handler=512.0: role sd_ratio 0.9992
+      a_handler=1024.0: role sd_ratio 0.9969
+      a_handler=inf: role sd_ratio 0.9969
+      a_wing=1.0: role sd_ratio 1.4995
+      a_wing=2.0: role sd_ratio 1.4041
+      a_wing=4.0: role sd_ratio 1.3040
+      a_wing=8.0: role sd_ratio 1.2228
+      a_wing=16.0: role sd_ratio 1.1642
+      a_wing=32.0: role sd_ratio 1.1193
+      a_wing=64.0: role sd_ratio 1.1019
+      a_wing=128.0: role sd_ratio 1.0906
+      a_wing=256.0: role sd_ratio 1.0819
+      a_wing=512.0: role sd_ratio 1.0804
+      a_wing=1024.0: role sd_ratio 1.0794
+      a_wing=inf: role sd_ratio 1.0773
+      a_big=1.0: role sd_ratio 1.1117
+      a_big=2.0: role sd_ratio 1.0936
+      a_big=4.0: role sd_ratio 1.0783
+      a_big=8.0: role sd_ratio 1.0725
+      a_big=16.0: role sd_ratio 1.0666
+      a_big=32.0: role sd_ratio 1.0623
+      a_big=64.0: role sd_ratio 1.0622
+      a_big=128.0: role sd_ratio 1.0631
+      a_big=256.0: role sd_ratio 1.0628
+      a_big=512.0: role sd_ratio 1.0631
+      a_big=1024.0: role sd_ratio 1.0631
+      a_big=inf: role sd_ratio 1.0638
+      a_between=1.0: sd_ratio 1.3566
+      a_between=2.0: sd_ratio 1.2675
+      a_between=4.0: sd_ratio 1.1870
+      a_between=8.0: sd_ratio 1.1259
+      a_between=16.0: sd_ratio 1.0907
+      a_between=32.0: sd_ratio 1.0685
+      a_between=64.0: sd_ratio 1.0575
+      a_between=128.0: sd_ratio 1.0528
+      a_between=256.0: sd_ratio 1.0504
+      a_between=512.0: sd_ratio 1.0481
+      a_between=1024.0: sd_ratio 1.0479
+      a_between=inf: sd_ratio 1.0467
+    hier_dirichlet: alphas {'a_between': inf, 'a_handler': 256.0, 'a_wing': inf, 'a_big': 64.0} marginal ll 1.582482 polya 1.582452
+    cond_logit: l2=0.1 ll 1.580645
+      lgbm {'num_leaves': 15, 'learning_rate': 0.08, 'n_estimators': 300, 'min_child_samples': 200}: inner val ll 1.585019
+      lgbm {'num_leaves': 31, 'learning_rate': 0.06, 'n_estimators': 400, 'min_child_samples': 400}: inner val ll 1.585576
+      lgbm {'num_leaves': 63, 'learning_rate': 0.05, 'n_estimators': 500, 'min_child_samples': 800}: inner val ll 1.587943
+      lgbm {'num_leaves': 31, 'learning_rate': 0.03, 'n_estimators': 800, 'min_child_samples': 400}: inner val ll 1.585032
+    lgbm: {'num_leaves': 15, 'learning_rate': 0.08, 'n_estimators': 300, 'min_child_samples': 200} ll 1.577664 seed sd 3e-05
+    -> proportional    ll 1.582428 calib 0.702pp resp 4/4 sd 1.047 gt0 +0.031
+    -> dirichlet       ll 1.582428 calib 0.702pp resp 4/4 sd 1.047 gt0 +0.031
+    -> hier_dirichlet  ll 1.582482 calib 0.698pp resp 4/4 sd 1.049 gt0 +0.026
+    -> cond_logit      ll 1.580645 calib 0.316pp resp 4/4 sd 1.043 gt0 +0.018
+    -> lgbm            ll 1.577664 calib 0.274pp resp 4/4 sd 1.041 gt0 -0.007
+    DECISION: lgbm -- eligible: lgbm 1.577664, cond_logit 1.580645, proportional 1.582428, dirichlet 1.582428, hier_dirichlet 1.582482; floor 0.000791; clear of the next eligible arm by 0.002981 (3.8 floors)
+  [WF2025] TOV: train 60,876 test 58,259
+    shrinkage: prior=league m=200.0 (train ll 1.59018)
+      a=1.0: sd_ratio 1.9095
+      a=2.0: sd_ratio 1.7581
+      a=4.0: sd_ratio 1.5756
+      a=8.0: sd_ratio 1.3959
+      a=16.0: sd_ratio 1.2600
+      a=32.0: sd_ratio 1.1690
+      a=64.0: sd_ratio 1.1125
+      a=128.0: sd_ratio 1.0830
+      a=256.0: sd_ratio 1.0682
+      a=512.0: sd_ratio 1.0595
+      a=1024.0: sd_ratio 1.0545
+      a=inf: sd_ratio 1.0503
+    dirichlet: alphas {'a': inf} marginal ll 1.574327 polya 1.574327
+      a_handler=1.0: role sd_ratio 1.3749
+      a_handler=2.0: role sd_ratio 1.2733
+      a_handler=4.0: role sd_ratio 1.1784
+      a_handler=8.0: role sd_ratio 1.1003
+      a_handler=16.0: role sd_ratio 1.0558
+      a_handler=32.0: role sd_ratio 1.0265
+      a_handler=64.0: role sd_ratio 1.0117
+      a_handler=128.0: role sd_ratio 1.0042
+      a_handler=256.0: role sd_ratio 1.0007
+      a_handler=512.0: role sd_ratio 0.9972
+      a_handler=1024.0: role sd_ratio 0.9958
+      a_handler=inf: role sd_ratio 0.9963
+      a_wing=1.0: role sd_ratio 1.5320
+      a_wing=2.0: role sd_ratio 1.4374
+      a_wing=4.0: role sd_ratio 1.3308
+      a_wing=8.0: role sd_ratio 1.2443
+      a_wing=16.0: role sd_ratio 1.1806
+      a_wing=32.0: role sd_ratio 1.1355
+      a_wing=64.0: role sd_ratio 1.1135
+      a_wing=128.0: role sd_ratio 1.0996
+      a_wing=256.0: role sd_ratio 1.0921
+      a_wing=512.0: role sd_ratio 1.0869
+      a_wing=1024.0: role sd_ratio 1.0869
+      a_wing=inf: role sd_ratio 1.0845
+      a_big=1.0: role sd_ratio 1.1278
+      a_big=2.0: role sd_ratio 1.1063
+      a_big=4.0: role sd_ratio 1.1072
+      a_big=8.0: role sd_ratio 1.0918
+      a_big=16.0: role sd_ratio 1.0867
+      a_big=32.0: role sd_ratio 1.0825
+      a_big=64.0: role sd_ratio 1.0807
+      a_big=128.0: role sd_ratio 1.0768
+      a_big=256.0: role sd_ratio 1.0784
+      a_big=512.0: role sd_ratio 1.0783
+      a_big=1024.0: role sd_ratio 1.0781
+      a_big=inf: role sd_ratio 1.0778
+      a_between=1.0: sd_ratio 1.3662
+      a_between=2.0: sd_ratio 1.2694
+      a_between=4.0: sd_ratio 1.1928
+      a_between=8.0: sd_ratio 1.1349
+      a_between=16.0: sd_ratio 1.0937
+      a_between=32.0: sd_ratio 1.0762
+      a_between=64.0: sd_ratio 1.0641
+      a_between=128.0: sd_ratio 1.0579
+      a_between=256.0: sd_ratio 1.0550
+      a_between=512.0: sd_ratio 1.0543
+      a_between=1024.0: sd_ratio 1.0531
+      a_between=inf: sd_ratio 1.0522
+    hier_dirichlet: alphas {'a_between': inf, 'a_handler': 256.0, 'a_wing': inf, 'a_big': 128.0} marginal ll 1.574372 polya 1.574403
+    cond_logit: l2=0.001 ll 1.572825
+      lgbm {'num_leaves': 15, 'learning_rate': 0.08, 'n_estimators': 300, 'min_child_samples': 200}: inner val ll 1.590900
+    lgbm: {'num_leaves': 15, 'learning_rate': 0.08, 'n_estimators': 300, 'min_child_samples': 200} ll 1.585052 seed sd None
+    -> proportional    ll 1.574327 calib 0.667pp resp 4/4 sd 1.037 gt0 +0.010
+    -> dirichlet       ll 1.574327 calib 0.667pp resp 4/4 sd 1.037 gt0 +0.010
+    -> hier_dirichlet  ll 1.574372 calib 0.662pp resp 4/4 sd 1.040 gt0 +0.005
+    -> cond_logit      ll 1.572825 calib 0.963pp resp 4/4 sd 1.037 gt0 +0.002
+    -> lgbm            ll 1.585052 calib 1.537pp resp 4/4 sd 1.034 gt0 -0.115
+    DECISION: proportional -- eligible: cond_logit 1.572825, proportional 1.574327, dirichlet 1.574327, hier_dirichlet 1.574372, lgbm 1.585052; floor 0.001531; cond_logit, proportional, dirichlet are inside the floor of each other; the pre-registered tie-break takes the simplest
+  [F1] FT_trip: train 100,464 test 109,888
+    shrinkage: prior=position m=200.0 (train ll 1.540632)
+      a=1.0: sd_ratio 1.7595
+      a=2.0: sd_ratio 1.6141
+      a=4.0: sd_ratio 1.4392
+      a=8.0: sd_ratio 1.2896
+      a=16.0: sd_ratio 1.1763
+      a=32.0: sd_ratio 1.1005
+      a=64.0: sd_ratio 1.0580
+      a=128.0: sd_ratio 1.0327
+      a=256.0: sd_ratio 1.0187
+      a=512.0: sd_ratio 1.0148
+      a=1024.0: sd_ratio 1.0099
+      a=inf: sd_ratio 1.0066
+    dirichlet: alphas {'a': inf} marginal ll 1.540766 polya 1.540766
+      a_handler=1.0: role sd_ratio 1.2539
+      a_handler=2.0: role sd_ratio 1.1726
+      a_handler=4.0: role sd_ratio 1.0886
+      a_handler=8.0: role sd_ratio 1.0349
+      a_handler=16.0: role sd_ratio 0.9948
+      a_handler=32.0: role sd_ratio 0.9720
+      a_handler=64.0: role sd_ratio 0.9616
+      a_handler=128.0: role sd_ratio 0.9537
+      a_handler=256.0: role sd_ratio 0.9513
+      a_handler=512.0: role sd_ratio 0.9492
+      a_handler=1024.0: role sd_ratio 0.9485
+      a_handler=inf: role sd_ratio 0.9469
+      a_wing=1.0: role sd_ratio 1.4183
+      a_wing=2.0: role sd_ratio 1.3374
+      a_wing=4.0: role sd_ratio 1.2504
+      a_wing=8.0: role sd_ratio 1.1778
+      a_wing=16.0: role sd_ratio 1.1189
+      a_wing=32.0: role sd_ratio 1.0854
+      a_wing=64.0: role sd_ratio 1.0674
+      a_wing=128.0: role sd_ratio 1.0594
+      a_wing=256.0: role sd_ratio 1.0544
+      a_wing=512.0: role sd_ratio 1.0515
+      a_wing=1024.0: role sd_ratio 1.0505
+      a_wing=inf: role sd_ratio 1.0493
+      a_big=1.0: role sd_ratio 1.0473
+      a_big=2.0: role sd_ratio 1.0388
+      a_big=4.0: role sd_ratio 1.0264
+      a_big=8.0: role sd_ratio 1.0128
+      a_big=16.0: role sd_ratio 1.0119
+      a_big=32.0: role sd_ratio 1.0114
+      a_big=64.0: role sd_ratio 1.0078
+      a_big=128.0: role sd_ratio 1.0082
+      a_big=256.0: role sd_ratio 1.0082
+      a_big=512.0: role sd_ratio 1.0082
+      a_big=1024.0: role sd_ratio 1.0081
+      a_big=inf: role sd_ratio 1.0070
+      a_between=1.0: sd_ratio 1.3096
+      a_between=2.0: sd_ratio 1.2244
+      a_between=4.0: sd_ratio 1.1529
+      a_between=8.0: sd_ratio 1.1019
+      a_between=16.0: sd_ratio 1.0719
+      a_between=32.0: sd_ratio 1.0530
+      a_between=64.0: sd_ratio 1.0428
+      a_between=128.0: sd_ratio 1.0385
+      a_between=256.0: sd_ratio 1.0356
+      a_between=512.0: sd_ratio 1.0341
+      a_between=1024.0: sd_ratio 1.0332
+      a_between=inf: sd_ratio 1.0325
+    hier_dirichlet: alphas {'a_between': inf, 'a_handler': 16.0, 'a_wing': inf, 'a_big': inf} marginal ll 1.541230 polya 1.54149
+    cond_logit: l2=10.0 ll 1.536445
+      lgbm {'num_leaves': 15, 'learning_rate': 0.08, 'n_estimators': 300, 'min_child_samples': 200}: inner val ll 1.522387
+      lgbm {'num_leaves': 31, 'learning_rate': 0.06, 'n_estimators': 400, 'min_child_samples': 400}: inner val ll 1.525402
+      lgbm {'num_leaves': 63, 'learning_rate': 0.05, 'n_estimators': 500, 'min_child_samples': 800}: inner val ll 1.525177
+      lgbm {'num_leaves': 31, 'learning_rate': 0.03, 'n_estimators': 800, 'min_child_samples': 400}: inner val ll 1.525937
+    lgbm: {'num_leaves': 15, 'learning_rate': 0.08, 'n_estimators': 300, 'min_child_samples': 200} ll 1.522266 seed sd 9.7e-05
+    -> proportional    ll 1.540766 calib 1.775pp resp 4/4 sd 1.018 gt0 +0.280
+    -> dirichlet       ll 1.540766 calib 1.775pp resp 4/4 sd 1.018 gt0 +0.280
+    -> hier_dirichlet  ll 1.541230 calib 1.845pp resp 4/4 sd 1.044 gt0 +0.215
+    -> cond_logit      ll 1.536445 calib 0.304pp resp 4/4 sd 1.010 gt0 +0.201
+    -> lgbm            ll 1.522266 calib 0.384pp resp 4/4 sd 1.006 gt0 +0.185
+    DECISION: lgbm -- eligible: lgbm 1.522266; floor 0.001411; the only eligible arm
+  [WF2025] FT_trip: train 54,957 test 54,931
+    shrinkage: prior=position m=200.0 (train ll 1.554337)
+      a=1.0: sd_ratio 1.7580
+      a=2.0: sd_ratio 1.6194
+      a=4.0: sd_ratio 1.4593
+      a=8.0: sd_ratio 1.3040
+      a=16.0: sd_ratio 1.1868
+      a=32.0: sd_ratio 1.1110
+      a=64.0: sd_ratio 1.0628
+      a=128.0: sd_ratio 1.0373
+      a=256.0: sd_ratio 1.0232
+      a=512.0: sd_ratio 1.0172
+      a=1024.0: sd_ratio 1.0135
+      a=inf: sd_ratio 1.0101
+    dirichlet: alphas {'a': inf} marginal ll 1.527189 polya 1.527189
+      a_handler=1.0: role sd_ratio 1.2529
+      a_handler=2.0: role sd_ratio 1.1639
+      a_handler=4.0: role sd_ratio 1.0852
+      a_handler=8.0: role sd_ratio 1.0245
+      a_handler=16.0: role sd_ratio 0.9841
+      a_handler=32.0: role sd_ratio 0.9628
+      a_handler=64.0: role sd_ratio 0.9512
+      a_handler=128.0: role sd_ratio 0.9445
+      a_handler=256.0: role sd_ratio 0.9410
+      a_handler=512.0: role sd_ratio 0.9399
+      a_handler=1024.0: role sd_ratio 0.9395
+      a_handler=inf: role sd_ratio 0.9375
+      a_wing=1.0: role sd_ratio 1.4431
+      a_wing=2.0: role sd_ratio 1.3629
+      a_wing=4.0: role sd_ratio 1.2683
+      a_wing=8.0: role sd_ratio 1.1960
+      a_wing=16.0: role sd_ratio 1.1382
+      a_wing=32.0: role sd_ratio 1.1049
+      a_wing=64.0: role sd_ratio 1.0815
+      a_wing=128.0: role sd_ratio 1.0728
+      a_wing=256.0: role sd_ratio 1.0672
+      a_wing=512.0: role sd_ratio 1.0661
+      a_wing=1024.0: role sd_ratio 1.0637
+      a_wing=inf: role sd_ratio 1.0624
+      a_big=1.0: role sd_ratio 1.0566
+      a_big=2.0: role sd_ratio 1.0476
+      a_big=4.0: role sd_ratio 1.0270
+      a_big=8.0: role sd_ratio 1.0114
+      a_big=16.0: role sd_ratio 1.0133
+      a_big=32.0: role sd_ratio 1.0092
+      a_big=64.0: role sd_ratio 1.0085
+      a_big=128.0: role sd_ratio 1.0074
+      a_big=256.0: role sd_ratio 1.0071
+      a_big=512.0: role sd_ratio 1.0067
+      a_big=1024.0: role sd_ratio 1.0070
+      a_big=inf: role sd_ratio 1.0068
+      a_between=1.0: sd_ratio 1.3099
+      a_between=2.0: sd_ratio 1.2289
+      a_between=4.0: sd_ratio 1.1566
+      a_between=8.0: sd_ratio 1.1057
+      a_between=16.0: sd_ratio 1.0736
+      a_between=32.0: sd_ratio 1.0577
+      a_between=64.0: sd_ratio 1.0462
+      a_between=128.0: sd_ratio 1.0426
+      a_between=256.0: sd_ratio 1.0395
+      a_between=512.0: sd_ratio 1.0379
+      a_between=1024.0: sd_ratio 1.0382
+      a_between=inf: sd_ratio 1.0375
+    hier_dirichlet: alphas {'a_between': inf, 'a_handler': 16.0, 'a_wing': inf, 'a_big': 512.0} marginal ll 1.527528 polya 1.528291
+    cond_logit: l2=10.0 ll 1.522809
+      lgbm {'num_leaves': 15, 'learning_rate': 0.08, 'n_estimators': 300, 'min_child_samples': 200}: inner val ll 1.531665
+    lgbm: {'num_leaves': 15, 'learning_rate': 0.08, 'n_estimators': 300, 'min_child_samples': 200} ll 1.514025 seed sd None
+    -> proportional    ll 1.527189 calib 1.986pp resp 4/4 sd 1.000 gt0 +0.231
+    -> dirichlet       ll 1.527189 calib 1.986pp resp 4/4 sd 1.000 gt0 +0.231
+    -> hier_dirichlet  ll 1.527528 calib 2.071pp resp 4/4 sd 1.026 gt0 +0.173
+    -> cond_logit      ll 1.522809 calib 0.633pp resp 4/4 sd 0.993 gt0 +0.134
+    -> lgbm            ll 1.514025 calib 1.424pp resp 4/4 sd 0.991 gt0 +0.126
+    DECISION: lgbm -- eligible: lgbm 1.514025, cond_logit 1.522809; floor 0.002115; clear of the next eligible arm by 0.008784 (4.2 floors)

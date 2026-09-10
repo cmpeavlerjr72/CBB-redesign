@@ -1,0 +1,78 @@
+{
+  "possessions_version": "v2",
+  "rim_override_max_ft": 2.27,
+  "coverage": {
+    "2024": {
+      "FGA_rim": {
+        "n": 225021,
+        "five_resolved_pct": 95.8817,
+        "player_id_present_pct": 99.9996,
+        "modelled_pct": 95.0382
+      },
+      "FGA_jump2": {
+        "n": 153702,
+        "five_resolved_pct": 96.2642,
+        "player_id_present_pct": 99.9707,
+        "modelled_pct": 95.3976
+      },
+      "FGA_3": {
+        "n": 225731,
+        "five_resolved_pct": 95.9886,
+        "player_id_present_pct": 99.9991,
+        "modelled_pct": 95.1637
+      },
+      "TOV": {
+        "n": 121637,
+        "five_resolved_pct": 95.6239,
+        "player_id_present_pct": 94.9407,
+        "modelled_pct": 89.5394
+      },
+      "FT_trip": {
+        "n": 107004,
+        "five_resolved_pct": 95.617,
+        "player_id_present_pct": 100.0,
+        "modelled_pct": 93.8881
+      }
+    },
+    "2025": {
+      "FGA_rim": {
+        "n": 235458,
+        "five_resolved_pct": 99.1417,
+        "player_id_present_pct": 99.9983,
+        "modelled_pct": 98.291
+      },
+      "FGA_jump2": {
+        "n": 149087,
+        "five_resolved_pct": 99.0925,
+        "player_id_present_pct": 99.992,
+        "modelled_pct": 98.411
+      },
+      "FGA_3": {
+        "n": 246890,
+        "five_resolved_pct": 99.1871,
+        "player_id_present_pct": 99.998,
+        "modelled_pct": 98.4009
+      },
+      "TOV": {
+        "n": 128428,
+        "five_resolved_pct": 99.1116,
+        "player_id_present_pct": 94.6632,
+        "modelled_pct": 92.764
+      },
+      "FT_trip": {
+        "n": 112715,
+        "five_resolved_pct": 99.1048,
+        "player_id_present_pct": 99.9982,
+        "modelled_pct": 97.4919
+      }
+    }
+  },
+  "minutes_join_pct": 99.8148,
+  "n_events": 1634792,
+  "n_player_games": 204642,
+  "position_known_pct": 99.978,
+  "prior_season_pct": {
+    "2024": 0.0,
+    "2025": 67.7982
+  }
+}
