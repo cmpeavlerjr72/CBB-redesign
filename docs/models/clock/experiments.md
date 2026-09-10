@@ -485,3 +485,186 @@ possession whose terminal event coincides with 0:00 as right-censored (about 50%
 of possessions with under 10 s left, not the 0.2% currently flagged
 `end_period`), so the conditional law stops being a law that always fits inside
 the remaining clock. Nothing is adopted and no correction is applied.
+
+---
+
+## 8. Round 3 pre-registration (2026-09-10)
+
+Appended VERBATIM BEFORE any round-3 code was written or run. Sections 1 and 5
+(the round-1 and round-2 pre-registrations) are untouched. Written after the
+descriptive censoring audit `docs/tests/clock_censoring_audit_2026-09-10.md`
+(which fits no model and scores no arm) and before any arm exists.
+
+Round-2 diagnosis, carried forward as a decided direction and not reopened
+(`docs/LEARNINGS.md` L20): horn-ending possessions are TRUNCATED, not censored,
+in the training data. Round 3 models the duration the offence INTENDED, flags
+every horn-ending possession right-censored, and lets the engine truncate at the
+horn. The audit measures the size of the defect: the flag rounds 1-2 used
+(`terminal_event == "end_period"`) catches 0.2148% of rows; the correct flag
+(`end_clock <= 0`, the possession consumed every second that was left) catches
+0.6751%, 3.1x as many, and 61.1% / 36.4% of possessions starting with 0-5 s /
+5-10 s left are in it.
+
+### 8.1 Target, universe, folds
+
+Target: the INTENDED duration T of a possession. Observation mechanism:
+D = min(T, R) with R the seconds remaining at the possession's start; the row is
+right-censored at D iff `end_clock <= 0`. The censoring flag comes from
+`data/processed/clock_censoring/censoring_v1_{season}.parquet`, a SIDE TABLE
+keyed on (game_id, period, poss_index) written by the audit script; neither
+`data/processed/possessions/` nor `data/processed/possessions_v2/` is rewritten.
+(`duration_s`, `start_clock` and `end_clock` are byte-identical between the two
+possession layers, checked on 2025: 0 of 768,834 rows differ.)
+
+Universe, folds, seal, `DURATION_CAP = 90` and the zero-variance drop rule are
+UNCHANGED from rounds 1 and 2: D-I, hoopR feed not truncated, CBBD
+points-complete, seasons 2022-2025; F1 trains {2022, 2023} and tests 2024, F2
+trains {2022, 2023, 2024} and tests 2025 and is the SELECTION fold; 2026 sealed.
+
+Clock-completeness, used only to define the gate universe, is the audit's
+three-part definition: a period is clock-complete when its last logged
+possession ends within 2 s of the horn (C1), its first starts within 2 s of the
+period length (C2), and its summed durations are within 4 s of the period length
+(C3). A GAME is clock-complete when both regulation halves are. The flag is
+published on `data/processed/games_universe_v2.parquet`
+(`clock_complete_reg`, `clock_complete_all_periods`, `points_complete`), a
+VERSIONED SIBLING; `games_universe.parquet` is not rewritten, so the engine
+worker's reader is untouched.
+
+### 8.2 Arms
+
+State representation is round 2's, unchanged, for every arm (`R2_dummy` for the
+linear/cell arms, `R2_tree` for the tree arms), so round 3 differs from round 2
+in the censoring treatment and nothing else. Nine arms:
+
+| id | arm | censoring flag | what it is |
+|---|---|---|---|
+| A1 | `empirical_km3` | horn | round-2 fine cell grid, Kaplan-Meier, corrected flag AND the tail rule in 8.3 |
+| A2 | `empirical_km3_srfloor` | horn | A1 with the seconds-remaining dimension FLOORED at the 45-60 s bucket: every row with fewer than 45 s left is served the 45-60 s cell's intended-duration law. The strongest form of L20 (all end-of-period effect is truncation, none is behaviour) and a falsification arm |
+| A3 | `gamma_aft` | horn | heteroscedastic Gamma, censored MLE (unchanged code, corrected flag) |
+| A4 | `lognormal_aft` | horn | heteroscedastic log-normal, censored MLE |
+| A5 | `hazard3` | horn | discrete-time logistic hazard, censoring native |
+| A6 | `xgb_aft` | horn | XGBoost `survival:aft` -- a censoring-aware TREE loss. Error distribution chosen ON F1 ONLY from {normal, logistic, extreme}, recorded. Predictive pmf from the fitted location and scale |
+| B1 | `lgbm_quantile_r2` | old (excluded) | THE ROUND-2 REFERENCE, spec unchanged (censored rows excluded from training), refit inside the round-3 harness so the same code scores it on the same metrics |
+| B2 | `empirical_r2` | old | round-2 empirical verbatim (old flag, old KM tail handling). PAIRED CONTROL: A1 vs B2 differ only in the flag and the tail rule |
+| B3 | `gamma_r2` | old | round-2 gamma verbatim. Second paired control |
+
+No hyperparameter search beyond A6's F1-only distribution choice; A6 otherwise
+takes round 2's F1-chosen tree complexity (`num_leaves` 63,
+`min_child_samples` 500).
+
+### 8.3 The Kaplan-Meier tail rule (stated before it is used)
+
+Round 2's `kaplan_meier_pmf` DROPPED the survival that never resolves inside a
+cell and renormalised. With a 0.2% censoring flag that is immaterial; with the
+correct 61%-censored low-clock cells it puts the dropped mass straight back onto
+the SHORT durations and reproduces the truncated law -- it would silently undo
+the fix. Round 3 fixes it explicitly:
+
+> Within a cell, discrete-time Kaplan-Meier gives h(t), S(t) and
+> pmf(t) = S(t-1) - S(t) on t = 0..90. Let t-star be the largest t carrying an
+> uncensored exit in that cell and R = S(t-star) the unresolved survival. R is
+> distributed over t > t-star in proportion to the PARENT level's pmf restricted
+> to t > t-star and renormalised, recursing outward from the global cell, so a
+> cell whose observations are nearly all censored inherits the next-coarser
+> cell's TAIL rather than its own head. If the parent's restricted pmf is empty
+> (t-star = 90) the mass is dropped, which is the `_normalise` convention every
+> arm already uses.
+
+Cell eligibility for A1/A2: at least 300 training rows (round 2's
+`EMPIRICAL_MIN_CELL`) AND at least 100 uncensored exits; otherwise drop one
+dimension from the right, as round 2 did. The event minimum is stated because
+with the corrected flag a low-clock cell can hold 300 rows and 40 events.
+
+### 8.4 Metrics
+
+PRIMARY: **CRPS_trunc on uncensored test possessions.** A test row is uncensored
+iff T < R, so it is drawn from T | T < R; scoring the unconditional predictive
+law of T against it is improper and would reward exactly the truncated arms
+round 3 exists to refute. Every arm's pmf is therefore renormalised onto
+{0, ..., R-1} before CRPS is taken. For the 91.8% of rows with R > 90 the
+renormalisation is a no-op, so the number stays broadly comparable to rounds 1-2;
+the round-2 definition (all rows, censored rows scored as complete) is reported
+alongside it as an explicitly labelled bridge column, never as the decision
+metric.
+
+SECONDARY: **censored log-likelihood**, the mean over ALL test rows of
+log P(T = d) on uncensored rows and log P(T >= R) on censored rows. It is the
+only metric the censored rows enter, and it is proper under censoring.
+
+REPORTED: mean predicted survival beyond the censoring time on censored rows;
+the round-2 log score with its undefined share; predicted vs actual mean
+duration.
+
+### 8.5 Gates (all three must pass; a gate is never softened to let an arm through)
+
+- **G1-CC, the emergent gate and the selection gate.** `chain_halves` run over
+  the REAL sequence of previous-end types, with only the clock-derived columns
+  overridden by the simulated clock (no event model, no score model), restricted
+  to CLOCK-COMPLETE GAMES. Tolerances are `docs/SIM_GUARDRAILS.md` G1: mean
+  +/- 1.0, SD +/- 0.75, and EVERY powered month (>= 100 clock-complete games in
+  that month). The all-games read is reported as a labelled secondary and is
+  NOT the gate: the audit shows the all-games actual counts only LOGGED
+  possessions in halves whose feed stops early, which no correct sim can
+  reproduce. The re-basing is worth 0.00 to -0.20 possessions per team-game and
+  makes the round-2 arms look very slightly WORSE, so it is a grading-truth fix
+  and cannot be mistaken for a gap-closing one.
+- **PIT.** K-S D <= 0.05 in every powered cell (n >= 300) of the pre-registered
+  grid (previous end type x round-2 fine bucket), computed from the same
+  truncated pmf as CRPS_trunc, on uncensored rows. Cells n < 300 are reported
+  UNDERPOWERED and excluded from the decision.
+- **End-of-half, on clock-complete halves.** Share of halves whose last
+  possession starts with under 35 s left, and that possession's mean duration,
+  each within the F1-derived noise floor (round 2's construction verbatim: the
+  larger of the 5-seed spec-identical re-chain SD and the game-block bootstrap
+  SE of the actual, times k = 2.0).
+
+### 8.6 Segment breakdowns (reported for every arm)
+
+By half (H1 / H2 / OT); by score-margin bucket at possession start (the five
+`SCORE_BUCKET_LABELS`); by season. The pre-registration asks for a shot-clock-era
+segment: the NCAA men's shot clock is 30 s in every season 2022-2025, so that
+segment is DEGENERATE over this fold window and season is reported in its place,
+with this reason stated rather than the segment silently dropped. Responsiveness
+(CLAUDE.md standing rule) is the emergent count by team pace-prior QUINTILE with
+the slope check: span ratio sim/actual and the number of monotone agreeing steps,
+as in rounds 1 and 2.
+
+### 8.7 Noise floor
+
+Stochastic arms (A6, B1) refit spec-identically under a second seed;
+|dCRPS_trunc| is their floor. Deterministic arms take the game-block bootstrap
+SE of the mean CRPS_trunc. The floor used by the decision rule is the maximum of
+the two, as in rounds 1 and 2. The chain and end-of-half floors come from the
+5-seed re-chain described in 8.5.
+
+### 8.8 Decision rule
+
+Winner = lowest CRPS_trunc among arms passing ALL THREE gates on F2. A tree arm
+(A6, B1) must beat the best non-tree arm by more than the floor. Ties -- a CRPS
+gap inside the floor -- go to the simpler arm, ordered empirical < parametric <
+hazard < tree; between A1 and A2, A2 is the simpler (strictly fewer distinct
+cells). F1 is robustness only. If no arm passes, adopt nothing, report the
+diagnosis, and do not soften a gate. No multiplier, cap, clip, offset or
+calibration curve is fitted at any point (`docs/SIM_GUARDRAILS.md` core
+principle).
+
+### 8.9 Lookup-table export (deliverable, `docs/models/engine/RESUME.md` section 3 item 4)
+
+For the WINNING arm only, export a binned lookup pmf over the round-2
+discretised state grid (previous end type 6 x fine clock bucket 10 x period type
+2 x score state 3 x tempo tercile 3 = 1,080 cells x 91 durations) and report the
+binning error against the live model: mean and max |dCRPS_trunc| per row, the
+maximum total-variation distance between the live and binned pmfs, the emergent
+G1-CC mean/SD delta between them, and rows/s of each. If no arm wins, the export
+is run on the best-CRPS arm and labelled NOT ADOPTED, exactly as rounds 1 and 2
+labelled their reference pickles.
+
+### 8.10 Execution
+
+New trainer `scripts/train_clock_v3.py` (round 1's and round 2's scripts are
+never overwritten); new round-3 arm/metric module `src/cbb_sim/models/clock_v3.py`
+importing everything shared from `clock.py`, so no round-1/round-2 object or
+pickle changes. Artifacts take a `v3_` prefix in `data/processed/models/clock/`.
+Threads capped at 4 (`OMP_NUM_THREADS=4`, `n_jobs=4`); four other workers share
+the machine. One blind grading path scores every arm.
