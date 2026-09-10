@@ -87,3 +87,34 @@ For the sim: team-level possession models (L3) train on all five seasons; lineup
 L2 bake-off, 32 arms on F2: every arm fails PIT (p < 0.05). Overtime games (5.6%) add +8.2 possessions on average, and regulation-only residuals still carry excess kurtosis ~1.8. RMSE spread across all feature sets and model classes is 0.06 (4.82-4.88), inside the 0.157 noise floor; the zero-parameter multiplicative formula (tempo_A x tempo_B x league mean, all as-of) is as good as LightGBM with state features. Responsiveness: tempo-sum slopes correctly. Evidence: `docs/models/pace/experiments.md` R1-R8.
 
 For the sim: no game-level pace model is calibrated enough to draw possessions from. In the possession engine, possessions per game are emergent from per-possession clock consumption over 40 minutes plus the overtime model, which is where the skew comes from naturally. The multiplicative formula is kept as a pregame tempo prior (a feature for the clock-consumption model and the Control engine), not as a sampler. G1 is evaluated on the emergent count.
+
+## L15. CBB's variance decomposition does NOT reproduce CFB's "team-beyond-coach ~= 0%" -- team identity is a real term, and player identity dwarfs everything (2026-09-10)
+
+Sequential nested R^2 decomposition (`src/cbb_sim/analysis/variance.py`, ported from cfb-props-sim), coach_id -> (team_id, season) beyond coach -> opponent-coach beyond both -> residual, on 43,930 D-I non-truncated team-games, 2022-2025, weighted by pbp-derived possessions:
+
+| Metric | Coach (seq) | Team-beyond-coach (seq) | Opponent-coach (seq) | Residual |
+|---|---:|---:|---:|---:|
+| Tempo (possessions) | 13.9% | 5.9% | 12.6% | 67.6% |
+| 3PA share of FGA | 21.5% | 8.6% | 10.8% | 59.1% |
+| Rim share of FGA | 11.9% | 7.3% | 9.2% | 71.5% |
+| FTA/FGA | 6.4% | 4.6% | 8.3% | 80.7% |
+| TOV% (TOV/poss) | 8.8% | 5.8% | 10.1% | 75.3% |
+| OREB% | 14.2% | 5.8% | 5.7% | 74.3% |
+| eFG% | 8.1% | 3.8% | 7.2% | 80.8% |
+
+Team-beyond-coach is 3.6-8.6% on every metric (defensive sides too, `docs/tests/variance_decomp_2026-09-10.md`), never zero, and stable in sign across a 2022-23-only and 2024-25-only split. Opponent-coach is often as large as or larger than own-coach (FTA/FGA, TOV%) -- these carry a real matchup/defensive-scheme component, not just an own-team tendency.
+
+Player-game level (coach_id -> team-season beyond coach -> athlete_id beyond both -> residual, 340,801-346,559 player-games, players with >=10 minutes, weighted by minutes) shows player identity dominating everything else on every metric, and exceeding CFB's largest-ever measured single-player share (QB red-zone TD, 34%):
+
+| Metric | Coach (seq) | Team-beyond-coach (seq) | Player-beyond-both (seq) | Residual |
+|---|---:|---:|---:|---:|
+| Usage proxy ((FGA+0.44FTA+TOV)/min) | 1.0% | 0.3% | 34.1% | 64.7% |
+| 3PA share of own FGA | 2.9% | 1.2% | 51.7% | 44.2% |
+| FT rate (FTA/FGA) | 0.8% | 0.6% | 9.8% | 88.8% |
+| Assist rate (AST/min) | 1.6% | 0.7% | 28.9% | 68.9% |
+| Rebound rate (REB/min) | 1.0% | 0.5% | 35.9% | 62.7% |
+| Points per minute | 1.1% | 0.6% | 19.5% | 78.8% |
+
+Restricted to the 2,484 athletes who changed team_id across seasons in 2022-2025 (163,879 player-games, the transfer natural experiment that separates player identity from team identity the way CFB used coach moves and QB transfers): player-beyond-both stays the largest non-residual term on every metric but runs 5-12 points lower than pooled (e.g. 3PA share 51.7% -> 40.9%, usage proxy 34.1% -> 23.4%) -- a real effect that attenuates in a transfer's first season, not a with-team artifact. Evidence: `docs/tests/variance_decomp_2026-09-10.md`.
+
+For the sim: CFB's rule ("team identity beyond the coach is zero, key tendencies on (coach, season) alone") does not transfer to CBB and must not be copied. Per metric: (1) team-game tendencies (tempo, 3PA share, rim share, OREB%, eFG%) key primarily on (coach, season) but carry a (team_id, season)-level adjustment on top -- CBB's transfer-portal churn makes team identity a real, non-trivial term CFB never had to model; (2) FTA/FGA and TOV% key on the (own coach, opponent coach) pair jointly, since the opponent's scheme explains as much or more than the team's own coach; (3) every player-game rate stat (usage, shot mix, assist rate, rebound rate, scoring rate) keys on athlete_id first, full stop -- coach and team-season are nearly irrelevant (1-3% and 0.3-1.2%) next to a 10-52% player-beyond-both share, confirming the postmortem's prediction that a basketball player's share of team output would exceed CFB's largest QB effect; (4) a transferring player's first-season prior must shrink harder toward a career/position baseline than a continuing player's, same shape as CFB's HC/QB continuity-weighted prior (`docs/postmortem/05_cfb_methodology_extract.md` section 5) but re-derived, not copied, since CBB's attenuation-under-transfer is measured directly here rather than assumed; (5) residual is 60-89% everywhere in Study 1 and 44-89% in Study 2, so none of these become deterministic lookups -- every metric still needs a possession- or player-level stochastic draw on top of whatever prior it's keyed on.
