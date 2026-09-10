@@ -75,3 +75,9 @@ For the sim: outcome models need a season-level term or a recency-weighted refit
 2024-25 vs ESPN BET closes: margin MAE 9.106 vs 8.746; total 13.218 vs 12.680; ATS 49.5-50.3% in every disagreement bucket; Brier 0.188 vs 0.175 de-vigged; leak screen clean (surprise corr ~0, CLV agreement 0.53).
 
 For the sim: this is the bar. The possession engine must beat it on G9 and G10 before player props are built on it.
+
+## L13. On-floor lineups exist only from 2023-24 (2026-09-10)
+
+CBBD pbp `onFloor` completeness: 0% in 2022 and 2023 (empty at the source), 90% in 2024, 98% in 2025, 97% in 2026. hoopR Substitution events start in 2025. Evidence: `docs/tests/data_audit_cbbd_pbp_2026-09-10.md`.
+
+For the sim: team-level possession models (L3) train on all five seasons; lineup/rotation/usage models (L4) train on 2024 and 2025 only (F1 = train 2024 test 2025; within-season walk-forward inside 2025 as the second check), 2026 sealed. Sample size for lineup priors is two seasons, so shrinkage strength is a fitted parameter, never assumed.
