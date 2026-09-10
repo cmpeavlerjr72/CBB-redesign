@@ -833,3 +833,119 @@ Trainer: `scripts/train_usage_v2.py`. Artifacts:
 `data/processed/models/usage_v2/` (a versioned sibling; nothing under
 `data/processed/models/usage/` is written or moved, because the engine worker
 reads it concurrently). Results are appended below as sections 8.4-8.9.
+
+---
+
+## 9. Round 2b: S1 training-scheme confirmation
+
+### 9.1 Pre-registration (authored 2026-09-10 AFTER round 2 decided and BEFORE round 2b ran; committed in the same commit as this text, with no results)
+
+**Why.** Round 2 held the TRAINING SCHEME fixed at round 1's -- one static fit on
+the training seasons -- because holding it fixed is what isolates the shooter-label
+fix. L21 (`docs/LEARNINGS.md`; `docs/models/README.md`, "Standing result") then
+makes **S1 the standing default scheme for every sub-model**:
+
+> **S1** in-season walk-forward. Refit at each month boundary of the test season
+> on all prior seasons PLUS the test season to date, strictly before the refit
+> date. Each test event is scored by the most recent refit at or before its own
+> game date, so no event is ever in its own fit and every test event is still
+> scored -- which keeps S1's log loss comparable with the static arm's on the
+> identical test set.
+
+L21's measured claim is specific: on possession outcome, S1 was a CALIBRATION fix
+(worst decile gap 2.78 -> 0.98 pp) for a log-loss gain of only 0.0014. This
+section asks whether that carries to the allocator, which is a different kind of
+model (a within-lineup choice, normalised over five, with as-of features that
+already update inside the season). It is a confirmation, not a re-selection: the
+ARM is settled by round 2 and is not reopened here.
+
+**Fold.** The project-standard fold 2 -- train through 2023-24, test 2024-25 --
+which for this model is `F1` (train 2024, test 2025), the same selection fold
+round 2 decided on, for the reason given in 8.1 (L13 leaves no earlier fold).
+2026 stays sealed; `fold_slices` calls `assert_not_sealed` on both slices. The
+within-2025 walk-forward fold is NOT re-run: it is itself a within-season split
+and would confound the question.
+
+**Arms.** Per class, the round-2 F1 winner, PLUS the runner-up when that
+runner-up sits inside the round-2 floor -- the same "inside the floor" test the
+round-2 decision rule used to declare a tie, read off the same numbers, not a new
+threshold. On round 2's results that selects **`lgbm` alone on all five classes**
+(the nearest rival is 1.5-11.0 floors behind on every class). Each selected arm
+is run under exactly two schemes:
+
+- **S0** static: one fit on the 2024 training slice. This reproduces round 2's
+  own number and is the paired control.
+- **S1** monthly in-season walk-forward, as quoted above. Month boundaries come
+  from `possession_outcome.month_boundaries`, the same function the
+  possession-outcome S1 arms use, so the two models' schedules cannot drift.
+
+**What an S1 refit refits, stated in advance.** Everything the arm's fit chooses:
+the shrinkage prior and strength (`usage.fit_shrinkage`, refit on each segment's
+own training rows) and the tree itself. The LightGBM HYPER-PARAMETERS are NOT
+re-searched monthly -- they are carried unchanged from the round-2 F1 search,
+which saw the training season only. Re-searching them each month would let the
+test season choose its own capacity, which is the leak this pre-registration
+exists to avoid. The responsiveness/calibration driver (the player's own shrunk
+as-of rate) is likewise computed piecewise under the shrinkage each segment
+chose, so the axis moves with the fit rather than being frozen at S0's choice.
+
+**Primary metric.** Per-class 5-way log loss on the F1 test slice.
+
+**Also reported, per class and per scheme:** predicted-vs-actual share
+calibration by player as-of-rate decile (worst gap, pp; gate 2.0 pp); the
+Decision-8 quintile responsiveness (slope ratio in [0.8, 1.2] AND monotone in
+>= 4 of 4 steps, relaxing to 3 of 4 below a 2 pp realised span); Brier, top-1,
+top-3; the per-team log-loss distribution over teams with >= 200 test events of
+the class (teams below that counted as underpowered, never presented as signal);
+and the S1 refit schedule itself -- refit date, rows trained on, how many of them
+come from the test season, last training game date, rows scored -- so the
+scheme's cost is a number rather than an idea.
+
+**Noise floor.** As in rounds 1 and 2: the game-level block-bootstrap SE of the
+log loss (200 replicates, seed 12345) computed separately for each scheme, plus
+spec-identical LightGBM retrains under three seeds. **A seed-varied retrain of an
+S1 arm replays the entire monthly schedule**, because a retrain that skipped the
+schedule would be measuring a different spec. The floor used by the decision rule
+is the LARGER of the two schemes' own bootstrap SEs.
+
+**Decision rule (pre-committed).** Adopt **S1** unless it regresses: (a) log loss
+by more than the floor, or (b) the calibration gate -- S1 fails the 2.0 pp decile
+gate where S0 passes -- or (c) the responsiveness gate, where S0 passes. A log
+loss that is merely FLAT is NOT a reason to reject: L21 predicts a calibration
+gain and no log-loss gain, so requiring a log-loss win would be testing a claim
+nobody made. If S1 regresses on any of the three, the class stays on S0 and the
+reason is reported per class rather than pooled.
+
+### 9.2 Artifact naming (so the engine can select a fit by a game's month)
+
+S1 is a SCHEDULE, not a model, so what is persisted is every monthly fit plus a
+manifest. Written to `data/processed/models/usage_s1/` -- a versioned sibling;
+nothing under `models/usage/` or `models/usage_v2/` is touched.
+
+```
+data/processed/models/usage_s1/
+  {event_class}/{arm}_{YYYY-MM-DD}.joblib     one monthly refit (tree arms)
+  {event_class}/{arm}_{YYYY-MM-DD}.json       one monthly refit (shrinkage-only arms)
+  {event_class}/{arm}_static.json|joblib      the S0 control fit
+  s1_manifest.json                            every row above, plus provenance
+  results_v2b.json  train_log_v2b.txt
+```
+
+`{YYYY-MM-DD}` is the **refit date** -- the first day of the month at which that
+fit becomes current. **Selection rule for the engine: for a game, take the
+artifact with the LATEST refit date at or before the game's own date**; a game
+earlier than the first refit date uses the `static` row. Every manifest row also
+carries the `prior_kind` and `shrink_m` that fit chose, which is all the engine's
+current U1 proportional path needs (`engine/adapters.py` UsageAdapter) -- the tree
+booster is persisted for when that path is upgraded. The manifest records
+`shooter_key` and `possessions_version` so an artifact can never be paired with
+the wrong event table.
+
+### 9.3 What is NOT being decided here
+
+The arm (settled in round 2), the shooter label (settled in round 2), the folds,
+the feature set, and the gates. If S1 wins, the change is to the SCHEME only, and
+adopting it in the sim is a PM action that also requires
+`scripts/build_engine_inputs.py` to be repointed at the `usage_v2` / `usage_s1`
+artifacts. Trainer: `scripts/train_usage_v2b.py`. Results are appended below as
+sections 9.4-9.7; this commit contains no results.
