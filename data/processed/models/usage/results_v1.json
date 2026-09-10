@@ -256,7 +256,12 @@
           "span_pred": 0.21439,
           "span_actual": 0.21337,
           "slope_ratio": 1.0048,
-          "pass": true
+          "pass": true,
+          "span_actual_pp": 21.337,
+          "steps_required": 4,
+          "slope_pass": true,
+          "steps_pass": true,
+          "steps_only_pass": true
         },
         "resp_pass": true,
         "resp_steps": 4,
@@ -306,7 +311,9 @@
           "transfer_log_loss": 1.500334,
           "continuing_log_loss": 1.515145,
           "no_prior_season_log_loss": 1.568013
-        }
+        },
+        "resp_slope_ratio": 1.0048,
+        "resp_slope_pass": true
       },
       "dirichlet": {
         "n": 231434,
@@ -431,7 +438,12 @@
           "span_pred": 0.21439,
           "span_actual": 0.21337,
           "slope_ratio": 1.0048,
-          "pass": true
+          "pass": true,
+          "span_actual_pp": 21.337,
+          "steps_required": 4,
+          "slope_pass": true,
+          "steps_pass": true,
+          "steps_only_pass": true
         },
         "resp_pass": true,
         "resp_steps": 4,
@@ -574,7 +586,9 @@
             "top1_pp": -1.5831
           }
         ],
-        "polya_urn_log_loss": 1.52313
+        "polya_urn_log_loss": 1.52313,
+        "resp_slope_ratio": 1.0048,
+        "resp_slope_pass": true
       },
       "hier_dirichlet": {
         "n": 231434,
@@ -699,7 +713,12 @@
           "span_pred": 0.21341,
           "span_actual": 0.21337,
           "slope_ratio": 1.0002,
-          "pass": true
+          "pass": true,
+          "span_actual_pp": 21.337,
+          "steps_required": 4,
+          "slope_pass": true,
+          "steps_pass": true,
+          "steps_only_pass": true
         },
         "resp_pass": true,
         "resp_steps": 4,
@@ -1010,7 +1029,9 @@
             "players_gt0": 7.01106
           }
         ],
-        "polya_urn_log_loss": 1.522956
+        "polya_urn_log_loss": 1.522956,
+        "resp_slope_ratio": 1.0002,
+        "resp_slope_pass": true
       },
       "cond_logit": {
         "n": 231434,
@@ -1135,7 +1156,12 @@
           "span_pred": 0.21835,
           "span_actual": 0.21337,
           "slope_ratio": 1.0233,
-          "pass": true
+          "pass": true,
+          "span_actual_pp": 21.337,
+          "steps_required": 4,
+          "slope_pass": true,
+          "steps_pass": true,
+          "steps_only_pass": true
         },
         "resp_pass": true,
         "resp_steps": 4,
@@ -1242,7 +1268,9 @@
           "is_C_x_scorediff": 0.01092,
           "is_C_x_sec": 0.0599
         },
-        "converged": true
+        "converged": true,
+        "resp_slope_ratio": 1.0233,
+        "resp_slope_pass": true
       },
       "lgbm": {
         "n": 231434,
@@ -1367,7 +1395,12 @@
           "span_pred": 0.21813,
           "span_actual": 0.21337,
           "slope_ratio": 1.0223,
-          "pass": true
+          "pass": true,
+          "span_actual_pp": 21.337,
+          "steps_required": 4,
+          "slope_pass": true,
+          "steps_pass": true,
+          "steps_only_pass": true
         },
         "resp_pass": true,
         "resp_steps": 4,
@@ -1477,7 +1510,9 @@
           "sec_remaining": 600,
           "period": 12,
           "chance_number": 174
-        }
+        },
+        "resp_slope_ratio": 1.0223,
+        "resp_slope_pass": true
       }
     },
     "seconds": 136.5,
@@ -1837,7 +1872,12 @@
           "span_pred": 0.22537,
           "span_actual": 0.22872,
           "slope_ratio": 0.9853,
-          "pass": true
+          "pass": true,
+          "span_actual_pp": 22.872,
+          "steps_required": 4,
+          "slope_pass": true,
+          "steps_pass": true,
+          "steps_only_pass": true
         },
         "resp_pass": true,
         "resp_steps": 4,
@@ -1887,7 +1927,9 @@
           "transfer_log_loss": 1.478669,
           "continuing_log_loss": 1.504923,
           "no_prior_season_log_loss": 1.561227
-        }
+        },
+        "resp_slope_ratio": 0.9853,
+        "resp_slope_pass": true
       },
       "dirichlet": {
         "n": 117434,
@@ -2012,7 +2054,12 @@
           "span_pred": 0.22537,
           "span_actual": 0.22872,
           "slope_ratio": 0.9853,
-          "pass": true
+          "pass": true,
+          "span_actual_pp": 22.872,
+          "steps_required": 4,
+          "slope_pass": true,
+          "steps_pass": true,
+          "steps_only_pass": true
         },
         "resp_pass": true,
         "resp_steps": 4,
@@ -2155,7 +2202,9 @@
             "top1_pp": -1.7625
           }
         ],
-        "polya_urn_log_loss": 1.510512
+        "polya_urn_log_loss": 1.510512,
+        "resp_slope_ratio": 0.9853,
+        "resp_slope_pass": true
       },
       "hier_dirichlet": {
         "n": 117434,
@@ -2280,7 +2329,12 @@
           "span_pred": 0.22458,
           "span_actual": 0.22872,
           "slope_ratio": 0.9819,
-          "pass": true
+          "pass": true,
+          "span_actual_pp": 22.872,
+          "steps_required": 4,
+          "slope_pass": true,
+          "steps_pass": true,
+          "steps_only_pass": true
         },
         "resp_pass": true,
         "resp_steps": 4,
@@ -2591,7 +2645,9 @@
             "players_gt0": 7.36226
           }
         ],
-        "polya_urn_log_loss": 1.510658
+        "polya_urn_log_loss": 1.510658,
+        "resp_slope_ratio": 0.9819,
+        "resp_slope_pass": true
       },
       "cond_logit": {
         "n": 117434,
@@ -2716,7 +2772,12 @@
           "span_pred": 0.2193,
           "span_actual": 0.22872,
           "slope_ratio": 0.9588,
-          "pass": true
+          "pass": true,
+          "span_actual_pp": 22.872,
+          "steps_required": 4,
+          "slope_pass": true,
+          "steps_pass": true,
+          "steps_only_pass": true
         },
         "resp_pass": true,
         "resp_steps": 4,
@@ -2822,7 +2883,9 @@
           "is_C_x_scorediff": 0.03055,
           "is_C_x_sec": 0.07137
         },
-        "converged": true
+        "converged": true,
+        "resp_slope_ratio": 0.9588,
+        "resp_slope_pass": true
       },
       "lgbm": {
         "n": 117434,
@@ -2947,7 +3010,12 @@
           "span_pred": 0.24169,
           "span_actual": 0.22872,
           "slope_ratio": 1.0567,
-          "pass": true
+          "pass": true,
+          "span_actual_pp": 22.872,
+          "steps_required": 4,
+          "slope_pass": true,
+          "steps_pass": true,
+          "steps_only_pass": true
         },
         "resp_pass": true,
         "resp_steps": 4,
@@ -3033,7 +3101,9 @@
           "sec_remaining": 504,
           "period": 6,
           "chance_number": 159
-        }
+        },
+        "resp_slope_ratio": 1.0567,
+        "resp_slope_pass": true
       }
     },
     "seconds": 71.1,
@@ -3347,7 +3417,12 @@
           "span_pred": 0.23004,
           "span_actual": 0.23057,
           "slope_ratio": 0.9977,
-          "pass": true
+          "pass": true,
+          "span_actual_pp": 23.057,
+          "steps_required": 4,
+          "slope_pass": true,
+          "steps_pass": true,
+          "steps_only_pass": true
         },
         "resp_pass": true,
         "resp_steps": 4,
@@ -3397,7 +3472,9 @@
           "transfer_log_loss": 1.488913,
           "continuing_log_loss": 1.482348,
           "no_prior_season_log_loss": 1.541248
-        }
+        },
+        "resp_slope_ratio": 0.9977,
+        "resp_slope_pass": true
       },
       "dirichlet": {
         "n": 146718,
@@ -3522,7 +3599,12 @@
           "span_pred": 0.23004,
           "span_actual": 0.23057,
           "slope_ratio": 0.9977,
-          "pass": true
+          "pass": true,
+          "span_actual_pp": 23.057,
+          "steps_required": 4,
+          "slope_pass": true,
+          "steps_pass": true,
+          "steps_only_pass": true
         },
         "resp_pass": true,
         "resp_steps": 4,
@@ -3665,7 +3747,9 @@
             "top1_pp": -1.5913
           }
         ],
-        "polya_urn_log_loss": 1.498369
+        "polya_urn_log_loss": 1.498369,
+        "resp_slope_ratio": 0.9977,
+        "resp_slope_pass": true
       },
       "hier_dirichlet": {
         "n": 146718,
@@ -3790,7 +3874,12 @@
           "span_pred": 0.22964,
           "span_actual": 0.23057,
           "slope_ratio": 0.996,
-          "pass": true
+          "pass": true,
+          "span_actual_pp": 23.057,
+          "steps_required": 4,
+          "slope_pass": true,
+          "steps_pass": true,
+          "steps_only_pass": true
         },
         "resp_pass": true,
         "resp_steps": 4,
@@ -4101,7 +4190,9 @@
             "players_gt0": 5.82521
           }
         ],
-        "polya_urn_log_loss": 1.497856
+        "polya_urn_log_loss": 1.497856,
+        "resp_slope_ratio": 0.996,
+        "resp_slope_pass": true
       },
       "cond_logit": {
         "n": 146718,
@@ -4226,7 +4317,12 @@
           "span_pred": 0.22725,
           "span_actual": 0.23057,
           "slope_ratio": 0.9856,
-          "pass": true
+          "pass": true,
+          "span_actual_pp": 23.057,
+          "steps_required": 4,
+          "slope_pass": true,
+          "steps_pass": true,
+          "steps_only_pass": true
         },
         "resp_pass": true,
         "resp_steps": 4,
@@ -4333,7 +4429,9 @@
           "is_C_x_scorediff": 0.05925,
           "is_C_x_sec": 0.07971
         },
-        "converged": true
+        "converged": true,
+        "resp_slope_ratio": 0.9856,
+        "resp_slope_pass": true
       },
       "lgbm": {
         "n": 146718,
@@ -4458,7 +4556,12 @@
           "span_pred": 0.22657,
           "span_actual": 0.23057,
           "slope_ratio": 0.9826,
-          "pass": true
+          "pass": true,
+          "span_actual_pp": 23.057,
+          "steps_required": 4,
+          "slope_pass": true,
+          "steps_pass": true,
+          "steps_only_pass": true
         },
         "resp_pass": true,
         "resp_steps": 4,
@@ -4568,7 +4671,9 @@
           "sec_remaining": 624,
           "period": 7,
           "chance_number": 101
-        }
+        },
+        "resp_slope_ratio": 0.9826,
+        "resp_slope_pass": true
       }
     },
     "seconds": 217.1,
@@ -4928,7 +5033,12 @@
           "span_pred": 0.22862,
           "span_actual": 0.25054,
           "slope_ratio": 0.9125,
-          "pass": true
+          "pass": true,
+          "span_actual_pp": 25.054,
+          "steps_required": 4,
+          "slope_pass": true,
+          "steps_pass": true,
+          "steps_only_pass": true
         },
         "resp_pass": true,
         "resp_steps": 4,
@@ -4978,7 +5088,9 @@
           "transfer_log_loss": 1.468821,
           "continuing_log_loss": 1.461332,
           "no_prior_season_log_loss": 1.521579
-        }
+        },
+        "resp_slope_ratio": 0.9125,
+        "resp_slope_pass": true
       },
       "dirichlet": {
         "n": 74629,
@@ -5103,7 +5215,12 @@
           "span_pred": 0.22862,
           "span_actual": 0.25054,
           "slope_ratio": 0.9125,
-          "pass": true
+          "pass": true,
+          "span_actual_pp": 25.054,
+          "steps_required": 4,
+          "slope_pass": true,
+          "steps_pass": true,
+          "steps_only_pass": true
         },
         "resp_pass": true,
         "resp_steps": 4,
@@ -5246,7 +5363,9 @@
             "top1_pp": -2.8316
           }
         ],
-        "polya_urn_log_loss": 1.477853
+        "polya_urn_log_loss": 1.477853,
+        "resp_slope_ratio": 0.9125,
+        "resp_slope_pass": true
       },
       "hier_dirichlet": {
         "n": 74629,
@@ -5371,7 +5490,12 @@
           "span_pred": 0.22694,
           "span_actual": 0.25054,
           "slope_ratio": 0.9058,
-          "pass": true
+          "pass": true,
+          "span_actual_pp": 25.054,
+          "steps_required": 4,
+          "slope_pass": true,
+          "steps_pass": true,
+          "steps_only_pass": true
         },
         "resp_pass": true,
         "resp_steps": 4,
@@ -5682,7 +5806,9 @@
             "players_gt0": 6.06413
           }
         ],
-        "polya_urn_log_loss": 1.48047
+        "polya_urn_log_loss": 1.48047,
+        "resp_slope_ratio": 0.9058,
+        "resp_slope_pass": true
       },
       "cond_logit": {
         "n": 74629,
@@ -5807,7 +5933,12 @@
           "span_pred": 0.24626,
           "span_actual": 0.25054,
           "slope_ratio": 0.9829,
-          "pass": true
+          "pass": true,
+          "span_actual_pp": 25.054,
+          "steps_required": 4,
+          "slope_pass": true,
+          "steps_pass": true,
+          "steps_only_pass": true
         },
         "resp_pass": true,
         "resp_steps": 4,
@@ -5913,7 +6044,9 @@
           "is_C_x_scorediff": 0.01193,
           "is_C_x_sec": 0.03842
         },
-        "converged": true
+        "converged": true,
+        "resp_slope_ratio": 0.9829,
+        "resp_slope_pass": true
       },
       "lgbm": {
         "n": 74629,
@@ -6038,7 +6171,12 @@
           "span_pred": 0.25522,
           "span_actual": 0.25054,
           "slope_ratio": 1.0187,
-          "pass": true
+          "pass": true,
+          "span_actual_pp": 25.054,
+          "steps_required": 4,
+          "slope_pass": true,
+          "steps_pass": true,
+          "steps_only_pass": true
         },
         "resp_pass": true,
         "resp_steps": 4,
@@ -6124,7 +6262,9 @@
           "sec_remaining": 528,
           "period": 3,
           "chance_number": 75
-        }
+        },
+        "resp_slope_ratio": 1.0187,
+        "resp_slope_pass": true
       }
     },
     "seconds": 73.3,
@@ -6437,7 +6577,12 @@
           "span_pred": 0.26799,
           "span_actual": 0.2651,
           "slope_ratio": 1.0109,
-          "pass": true
+          "pass": true,
+          "span_actual_pp": 26.51,
+          "steps_required": 4,
+          "slope_pass": true,
+          "steps_pass": true,
+          "steps_only_pass": true
         },
         "resp_pass": true,
         "resp_steps": 4,
@@ -6487,7 +6632,9 @@
           "transfer_log_loss": 1.45596,
           "continuing_log_loss": 1.450267,
           "no_prior_season_log_loss": 1.489556
-        }
+        },
+        "resp_slope_ratio": 1.0109,
+        "resp_slope_pass": true
       },
       "dirichlet": {
         "n": 242942,
@@ -6612,7 +6759,12 @@
           "span_pred": 0.26799,
           "span_actual": 0.2651,
           "slope_ratio": 1.0109,
-          "pass": true
+          "pass": true,
+          "span_actual_pp": 26.51,
+          "steps_required": 4,
+          "slope_pass": true,
+          "steps_pass": true,
+          "steps_only_pass": true
         },
         "resp_pass": true,
         "resp_steps": 4,
@@ -6755,7 +6907,9 @@
             "top1_pp": -0.0235
           }
         ],
-        "polya_urn_log_loss": 1.461517
+        "polya_urn_log_loss": 1.461517,
+        "resp_slope_ratio": 1.0109,
+        "resp_slope_pass": true
       },
       "hier_dirichlet": {
         "n": 242942,
@@ -6880,7 +7034,12 @@
           "span_pred": 0.26799,
           "span_actual": 0.2651,
           "slope_ratio": 1.0109,
-          "pass": true
+          "pass": true,
+          "span_actual_pp": 26.51,
+          "steps_required": 4,
+          "slope_pass": true,
+          "steps_pass": true,
+          "steps_only_pass": true
         },
         "resp_pass": true,
         "resp_steps": 4,
@@ -7191,7 +7350,9 @@
             "players_gt0": 6.56648
           }
         ],
-        "polya_urn_log_loss": 1.461517
+        "polya_urn_log_loss": 1.461517,
+        "resp_slope_ratio": 1.0109,
+        "resp_slope_pass": true
       },
       "cond_logit": {
         "n": 242942,
@@ -7316,7 +7477,12 @@
           "span_pred": 0.26458,
           "span_actual": 0.2651,
           "slope_ratio": 0.998,
-          "pass": true
+          "pass": true,
+          "span_actual_pp": 26.51,
+          "steps_required": 4,
+          "slope_pass": true,
+          "steps_pass": true,
+          "steps_only_pass": true
         },
         "resp_pass": true,
         "resp_steps": 4,
@@ -7423,7 +7589,9 @@
           "is_C_x_scorediff": 0.0504,
           "is_C_x_sec": 0.02614
         },
-        "converged": true
+        "converged": true,
+        "resp_slope_ratio": 0.998,
+        "resp_slope_pass": true
       },
       "lgbm": {
         "n": 242942,
@@ -7548,7 +7716,12 @@
           "span_pred": 0.26373,
           "span_actual": 0.2651,
           "slope_ratio": 0.9948,
-          "pass": true
+          "pass": true,
+          "span_actual_pp": 26.51,
+          "steps_required": 4,
+          "slope_pass": true,
+          "steps_pass": true,
+          "steps_only_pass": true
         },
         "resp_pass": true,
         "resp_steps": 4,
@@ -7658,7 +7831,9 @@
           "sec_remaining": 720,
           "period": 15,
           "chance_number": 71
-        }
+        },
+        "resp_slope_ratio": 0.9948,
+        "resp_slope_pass": true
       }
     },
     "seconds": 299.0,
@@ -8020,7 +8195,12 @@
           "span_pred": 0.2756,
           "span_actual": 0.27774,
           "slope_ratio": 0.9923,
-          "pass": true
+          "pass": true,
+          "span_actual_pp": 27.774,
+          "steps_required": 4,
+          "slope_pass": true,
+          "steps_pass": true,
+          "steps_only_pass": true
         },
         "resp_pass": true,
         "resp_steps": 4,
@@ -8070,7 +8250,9 @@
           "transfer_log_loss": 1.437191,
           "continuing_log_loss": 1.432335,
           "no_prior_season_log_loss": 1.482903
-        }
+        },
+        "resp_slope_ratio": 0.9923,
+        "resp_slope_pass": true
       },
       "dirichlet": {
         "n": 122489,
@@ -8195,7 +8377,12 @@
           "span_pred": 0.2756,
           "span_actual": 0.27774,
           "slope_ratio": 0.9923,
-          "pass": true
+          "pass": true,
+          "span_actual_pp": 27.774,
+          "steps_required": 4,
+          "slope_pass": true,
+          "steps_pass": true,
+          "steps_only_pass": true
         },
         "resp_pass": true,
         "resp_steps": 4,
@@ -8338,7 +8525,9 @@
             "top1_pp": -0.3933
           }
         ],
-        "polya_urn_log_loss": 1.445956
+        "polya_urn_log_loss": 1.445956,
+        "resp_slope_ratio": 0.9923,
+        "resp_slope_pass": true
       },
       "hier_dirichlet": {
         "n": 122489,
@@ -8463,7 +8652,12 @@
           "span_pred": 0.2756,
           "span_actual": 0.27774,
           "slope_ratio": 0.9923,
-          "pass": true
+          "pass": true,
+          "span_actual_pp": 27.774,
+          "steps_required": 4,
+          "slope_pass": true,
+          "steps_pass": true,
+          "steps_only_pass": true
         },
         "resp_pass": true,
         "resp_steps": 4,
@@ -8774,7 +8968,9 @@
             "players_gt0": 7.14198
           }
         ],
-        "polya_urn_log_loss": 1.445946
+        "polya_urn_log_loss": 1.445946,
+        "resp_slope_ratio": 0.9923,
+        "resp_slope_pass": true
       },
       "cond_logit": {
         "n": 122489,
@@ -8899,7 +9095,12 @@
           "span_pred": 0.26737,
           "span_actual": 0.27774,
           "slope_ratio": 0.9627,
-          "pass": true
+          "pass": true,
+          "span_actual_pp": 27.774,
+          "steps_required": 4,
+          "slope_pass": true,
+          "steps_pass": true,
+          "steps_only_pass": true
         },
         "resp_pass": true,
         "resp_steps": 4,
@@ -9005,7 +9206,9 @@
           "is_C_x_scorediff": 0.03684,
           "is_C_x_sec": 0.01665
         },
-        "converged": true
+        "converged": true,
+        "resp_slope_ratio": 0.9627,
+        "resp_slope_pass": true
       },
       "lgbm": {
         "n": 122489,
@@ -9130,7 +9333,12 @@
           "span_pred": 0.27768,
           "span_actual": 0.27774,
           "slope_ratio": 0.9998,
-          "pass": true
+          "pass": true,
+          "span_actual_pp": 27.774,
+          "steps_required": 4,
+          "slope_pass": true,
+          "steps_pass": true,
+          "steps_only_pass": true
         },
         "resp_pass": true,
         "resp_steps": 4,
@@ -9216,7 +9424,9 @@
           "sec_remaining": 543,
           "period": 10,
           "chance_number": 37
-        }
+        },
+        "resp_slope_ratio": 0.9998,
+        "resp_slope_pass": true
       }
     },
     "seconds": 83.8,
@@ -9533,7 +9743,12 @@
           "span_pred": 0.12824,
           "span_actual": 0.1195,
           "slope_ratio": 1.0731,
-          "pass": true
+          "pass": true,
+          "span_actual_pp": 11.95,
+          "steps_required": 4,
+          "slope_pass": true,
+          "steps_pass": true,
+          "steps_only_pass": true
         },
         "resp_pass": true,
         "resp_steps": 4,
@@ -9583,7 +9798,9 @@
           "transfer_log_loss": 1.561141,
           "continuing_log_loss": 1.591375,
           "no_prior_season_log_loss": 1.593073
-        }
+        },
+        "resp_slope_ratio": 1.0731,
+        "resp_slope_pass": true
       },
       "dirichlet": {
         "n": 119135,
@@ -9708,7 +9925,12 @@
           "span_pred": 0.12824,
           "span_actual": 0.1195,
           "slope_ratio": 1.0731,
-          "pass": true
+          "pass": true,
+          "span_actual_pp": 11.95,
+          "steps_required": 4,
+          "slope_pass": true,
+          "steps_pass": true,
+          "steps_only_pass": true
         },
         "resp_pass": true,
         "resp_steps": 4,
@@ -9851,7 +10073,9 @@
             "top1_pp": -0.0789
           }
         ],
-        "polya_urn_log_loss": 1.582428
+        "polya_urn_log_loss": 1.582428,
+        "resp_slope_ratio": 1.0731,
+        "resp_slope_pass": true
       },
       "hier_dirichlet": {
         "n": 119135,
@@ -9976,7 +10200,12 @@
           "span_pred": 0.12814,
           "span_actual": 0.1195,
           "slope_ratio": 1.0723,
-          "pass": true
+          "pass": true,
+          "span_actual_pp": 11.95,
+          "steps_required": 4,
+          "slope_pass": true,
+          "steps_pass": true,
+          "steps_only_pass": true
         },
         "resp_pass": true,
         "resp_steps": 4,
@@ -10287,7 +10516,9 @@
             "players_gt0": 5.67549
           }
         ],
-        "polya_urn_log_loss": 1.582452
+        "polya_urn_log_loss": 1.582452,
+        "resp_slope_ratio": 1.0723,
+        "resp_slope_pass": true
       },
       "cond_logit": {
         "n": 119135,
@@ -10412,7 +10643,12 @@
           "span_pred": 0.11804,
           "span_actual": 0.1195,
           "slope_ratio": 0.9878,
-          "pass": true
+          "pass": true,
+          "span_actual_pp": 11.95,
+          "steps_required": 4,
+          "slope_pass": true,
+          "steps_pass": true,
+          "steps_only_pass": true
         },
         "resp_pass": true,
         "resp_steps": 4,
@@ -10519,7 +10755,9 @@
           "is_C_x_scorediff": 0.01865,
           "is_C_x_sec": 0.08882
         },
-        "converged": true
+        "converged": true,
+        "resp_slope_ratio": 0.9878,
+        "resp_slope_pass": true
       },
       "lgbm": {
         "n": 119135,
@@ -10644,7 +10882,12 @@
           "span_pred": 0.1179,
           "span_actual": 0.1195,
           "slope_ratio": 0.9866,
-          "pass": true
+          "pass": true,
+          "span_actual_pp": 11.95,
+          "steps_required": 4,
+          "slope_pass": true,
+          "steps_pass": true,
+          "steps_only_pass": true
         },
         "resp_pass": true,
         "resp_steps": 4,
@@ -10754,7 +10997,9 @@
           "sec_remaining": 630,
           "period": 10,
           "chance_number": 92
-        }
+        },
+        "resp_slope_ratio": 0.9866,
+        "resp_slope_pass": true
       }
     },
     "seconds": 110.0,
@@ -11116,7 +11361,12 @@
           "span_pred": 0.14005,
           "span_actual": 0.13687,
           "slope_ratio": 1.0232,
-          "pass": true
+          "pass": true,
+          "span_actual_pp": 13.687,
+          "steps_required": 4,
+          "slope_pass": true,
+          "steps_pass": true,
+          "steps_only_pass": true
         },
         "resp_pass": true,
         "resp_steps": 4,
@@ -11166,7 +11416,9 @@
           "transfer_log_loss": 1.549926,
           "continuing_log_loss": 1.586084,
           "no_prior_season_log_loss": 1.583505
-        }
+        },
+        "resp_slope_ratio": 1.0232,
+        "resp_slope_pass": true
       },
       "dirichlet": {
         "n": 58259,
@@ -11291,7 +11543,12 @@
           "span_pred": 0.14005,
           "span_actual": 0.13687,
           "slope_ratio": 1.0232,
-          "pass": true
+          "pass": true,
+          "span_actual_pp": 13.687,
+          "steps_required": 4,
+          "slope_pass": true,
+          "steps_pass": true,
+          "steps_only_pass": true
         },
         "resp_pass": true,
         "resp_steps": 4,
@@ -11434,7 +11691,9 @@
             "top1_pp": -0.7142
           }
         ],
-        "polya_urn_log_loss": 1.574327
+        "polya_urn_log_loss": 1.574327,
+        "resp_slope_ratio": 1.0232,
+        "resp_slope_pass": true
       },
       "hier_dirichlet": {
         "n": 58259,
@@ -11559,7 +11818,12 @@
           "span_pred": 0.13997,
           "span_actual": 0.13687,
           "slope_ratio": 1.0227,
-          "pass": true
+          "pass": true,
+          "span_actual_pp": 13.687,
+          "steps_required": 4,
+          "slope_pass": true,
+          "steps_pass": true,
+          "steps_only_pass": true
         },
         "resp_pass": true,
         "resp_steps": 4,
@@ -11870,7 +12134,9 @@
             "players_gt0": 6.15385
           }
         ],
-        "polya_urn_log_loss": 1.574403
+        "polya_urn_log_loss": 1.574403,
+        "resp_slope_ratio": 1.0227,
+        "resp_slope_pass": true
       },
       "cond_logit": {
         "n": 58259,
@@ -11995,7 +12261,12 @@
           "span_pred": 0.12354,
           "span_actual": 0.13687,
           "slope_ratio": 0.9026,
-          "pass": true
+          "pass": true,
+          "span_actual_pp": 13.687,
+          "steps_required": 4,
+          "slope_pass": true,
+          "steps_pass": true,
+          "steps_only_pass": true
         },
         "resp_pass": true,
         "resp_steps": 4,
@@ -12101,7 +12372,9 @@
           "is_C_x_scorediff": 0.03342,
           "is_C_x_sec": 0.0594
         },
-        "converged": true
+        "converged": true,
+        "resp_slope_ratio": 0.9026,
+        "resp_slope_pass": true
       },
       "lgbm": {
         "n": 58259,
@@ -12226,7 +12499,12 @@
           "span_pred": 0.13973,
           "span_actual": 0.13687,
           "slope_ratio": 1.0209,
-          "pass": true
+          "pass": true,
+          "span_actual_pp": 13.687,
+          "steps_required": 4,
+          "slope_pass": true,
+          "steps_pass": true,
+          "steps_only_pass": true
         },
         "resp_pass": true,
         "resp_steps": 4,
@@ -12312,7 +12590,9 @@
           "sec_remaining": 540,
           "period": 7,
           "chance_number": 100
-        }
+        },
+        "resp_slope_ratio": 1.0209,
+        "resp_slope_pass": true
       }
     },
     "seconds": 74.3,
@@ -12628,7 +12908,12 @@
           "span_pred": 0.17318,
           "span_actual": 0.19219,
           "slope_ratio": 0.9011,
-          "pass": true
+          "pass": true,
+          "span_actual_pp": 19.219,
+          "steps_required": 4,
+          "slope_pass": true,
+          "steps_pass": true,
+          "steps_only_pass": true
         },
         "resp_pass": true,
         "resp_steps": 4,
@@ -12678,7 +12963,9 @@
           "transfer_log_loss": 1.528728,
           "continuing_log_loss": 1.534386,
           "no_prior_season_log_loss": 1.567731
-        }
+        },
+        "resp_slope_ratio": 0.9011,
+        "resp_slope_pass": true
       },
       "dirichlet": {
         "n": 109888,
@@ -12803,7 +13090,12 @@
           "span_pred": 0.17318,
           "span_actual": 0.19219,
           "slope_ratio": 0.9011,
-          "pass": true
+          "pass": true,
+          "span_actual_pp": 19.219,
+          "steps_required": 4,
+          "slope_pass": true,
+          "steps_pass": true,
+          "steps_only_pass": true
         },
         "resp_pass": true,
         "resp_steps": 4,
@@ -12946,7 +13238,9 @@
             "top1_pp": -2.3632
           }
         ],
-        "polya_urn_log_loss": 1.540766
+        "polya_urn_log_loss": 1.540766,
+        "resp_slope_ratio": 0.9011,
+        "resp_slope_pass": true
       },
       "hier_dirichlet": {
         "n": 109888,
@@ -13071,7 +13365,12 @@
           "span_pred": 0.1721,
           "span_actual": 0.19219,
           "slope_ratio": 0.8955,
-          "pass": true
+          "pass": true,
+          "span_actual_pp": 19.219,
+          "steps_required": 4,
+          "slope_pass": true,
+          "steps_pass": true,
+          "steps_only_pass": true
         },
         "resp_pass": true,
         "resp_steps": 4,
@@ -13382,7 +13681,9 @@
             "players_gt0": 5.19137
           }
         ],
-        "polya_urn_log_loss": 1.54149
+        "polya_urn_log_loss": 1.54149,
+        "resp_slope_ratio": 0.8955,
+        "resp_slope_pass": true
       },
       "cond_logit": {
         "n": 109888,
@@ -13507,7 +13808,12 @@
           "span_pred": 0.19114,
           "span_actual": 0.19219,
           "slope_ratio": 0.9945,
-          "pass": true
+          "pass": true,
+          "span_actual_pp": 19.219,
+          "steps_required": 4,
+          "slope_pass": true,
+          "steps_pass": true,
+          "steps_only_pass": true
         },
         "resp_pass": true,
         "resp_steps": 4,
@@ -13614,7 +13920,9 @@
           "is_C_x_scorediff": 0.04062,
           "is_C_x_sec": 0.08581
         },
-        "converged": true
+        "converged": true,
+        "resp_slope_ratio": 0.9945,
+        "resp_slope_pass": true
       },
       "lgbm": {
         "n": 109888,
@@ -13739,7 +14047,12 @@
           "span_pred": 0.19022,
           "span_actual": 0.19219,
           "slope_ratio": 0.9898,
-          "pass": true
+          "pass": true,
+          "span_actual_pp": 19.219,
+          "steps_required": 4,
+          "slope_pass": true,
+          "steps_pass": true,
+          "steps_only_pass": true
         },
         "resp_pass": true,
         "resp_steps": 4,
@@ -13849,7 +14162,9 @@
           "sec_remaining": 705,
           "period": 15,
           "chance_number": 107
-        }
+        },
+        "resp_slope_ratio": 0.9898,
+        "resp_slope_pass": true
       }
     },
     "seconds": 189.8,
@@ -14207,7 +14522,12 @@
           "span_pred": 0.19189,
           "span_actual": 0.2098,
           "slope_ratio": 0.9146,
-          "pass": true
+          "pass": true,
+          "span_actual_pp": 20.98,
+          "steps_required": 4,
+          "slope_pass": true,
+          "steps_pass": true,
+          "steps_only_pass": true
         },
         "resp_pass": true,
         "resp_steps": 4,
@@ -14257,7 +14577,9 @@
           "transfer_log_loss": 1.511465,
           "continuing_log_loss": 1.523125,
           "no_prior_season_log_loss": 1.553647
-        }
+        },
+        "resp_slope_ratio": 0.9146,
+        "resp_slope_pass": true
       },
       "dirichlet": {
         "n": 54931,
@@ -14382,7 +14704,12 @@
           "span_pred": 0.19189,
           "span_actual": 0.2098,
           "slope_ratio": 0.9146,
-          "pass": true
+          "pass": true,
+          "span_actual_pp": 20.98,
+          "steps_required": 4,
+          "slope_pass": true,
+          "steps_pass": true,
+          "steps_only_pass": true
         },
         "resp_pass": true,
         "resp_steps": 4,
@@ -14525,7 +14852,9 @@
             "top1_pp": -2.3191
           }
         ],
-        "polya_urn_log_loss": 1.527189
+        "polya_urn_log_loss": 1.527189,
+        "resp_slope_ratio": 0.9146,
+        "resp_slope_pass": true
       },
       "hier_dirichlet": {
         "n": 54931,
@@ -14650,7 +14979,12 @@
           "span_pred": 0.19073,
           "span_actual": 0.2098,
           "slope_ratio": 0.9091,
-          "pass": true
+          "pass": true,
+          "span_actual_pp": 20.98,
+          "steps_required": 4,
+          "slope_pass": true,
+          "steps_pass": true,
+          "steps_only_pass": true
         },
         "resp_pass": true,
         "resp_steps": 4,
@@ -14961,7 +15295,9 @@
             "players_gt0": 5.5119
           }
         ],
-        "polya_urn_log_loss": 1.528291
+        "polya_urn_log_loss": 1.528291,
+        "resp_slope_ratio": 0.9091,
+        "resp_slope_pass": true
       },
       "cond_logit": {
         "n": 54931,
@@ -15086,7 +15422,12 @@
           "span_pred": 0.21441,
           "span_actual": 0.2098,
           "slope_ratio": 1.022,
-          "pass": true
+          "pass": true,
+          "span_actual_pp": 20.98,
+          "steps_required": 4,
+          "slope_pass": true,
+          "steps_pass": true,
+          "steps_only_pass": true
         },
         "resp_pass": true,
         "resp_steps": 4,
@@ -15192,7 +15533,9 @@
           "is_C_x_scorediff": 0.0207,
           "is_C_x_sec": 0.03524
         },
-        "converged": true
+        "converged": true,
+        "resp_slope_ratio": 1.022,
+        "resp_slope_pass": true
       },
       "lgbm": {
         "n": 54931,
@@ -15317,7 +15660,12 @@
           "span_pred": 0.20344,
           "span_actual": 0.2098,
           "slope_ratio": 0.9697,
-          "pass": true
+          "pass": true,
+          "span_actual_pp": 20.98,
+          "steps_required": 4,
+          "slope_pass": true,
+          "steps_pass": true,
+          "steps_only_pass": true
         },
         "resp_pass": true,
         "resp_steps": 4,
@@ -15403,7 +15751,9 @@
           "sec_remaining": 585,
           "period": 9,
           "chance_number": 99
-        }
+        },
+        "resp_slope_ratio": 0.9697,
+        "resp_slope_pass": true
       }
     },
     "seconds": 65.2,

@@ -19,6 +19,7 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import os
 import sys
 from pathlib import Path
 
@@ -42,7 +43,11 @@ def main() -> int:
     out, report = build_universe(seasons=args.seasons, hoopr_dir=args.hoopr_dir, cbbd_dir=args.cbbd_dir)
 
     args.out.parent.mkdir(parents=True, exist_ok=True)
-    out.to_parquet(args.out, index=False)
+    # Written via a temp file + replace: other workers read this table
+    # concurrently and must never observe a half-written parquet.
+    tmp = args.out.with_suffix(".parquet.tmp")
+    out.to_parquet(tmp, index=False)
+    os.replace(tmp, args.out)
     size_mb = args.out.stat().st_size / (1024 * 1024)
     print(f"Wrote {len(out):,} rows to {args.out} ({size_mb:.1f} MB)")
 
@@ -67,6 +72,14 @@ def main() -> int:
     print()
     print("=== CBBD<->hoopR join quality (sourceId == game_id) ===")
     print(report["join_quality"].to_string(index=False))
+
+    print()
+    print("=== CBBD feed completeness (pbp_complete), D-I games ===")
+    print("pbp_complete: the CBBD event stream's own scoring events (technical free throws")
+    print("included) account for the final score EXACTLY, for both teams. See the")
+    print("cbb_sim.data.universe module docstring for why this is stricter than the")
+    print("running-score check and than the hoopR-side pbp_truncated flag.")
+    print(report["pbp_complete_by_season"].to_string())
 
     print()
     print(f"n_periods missing (no linescores and no pbp): {report['n_periods_missing']:,} rows")

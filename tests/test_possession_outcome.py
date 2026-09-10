@@ -82,7 +82,8 @@ def test_unknown_play_type_raises():
 def _plays(rows: list[dict]) -> pd.DataFrame:
     """Build a minimal plays frame with the columns classify_frame needs."""
     defaults = dict(playType="JumpShot", shot_range=None, playText=None, scoreValue=0,
-                    shot_made=None, scoringPlay=False, shootingPlay=False)
+                    shot_made=None, scoringPlay=False, shootingPlay=False,
+                    shot_location_x=None, shot_location_y=None)
     return pd.DataFrame([{**defaults, **r} for r in rows])
 
 
@@ -382,7 +383,7 @@ def _toy_possessions() -> tuple[dict, pd.DataFrame]:
 
 def test_team_form_uses_only_strictly_earlier_games():
     poss_by_season, universe = _toy_possessions()
-    form = PO.build_team_form(poss_by_season, universe)
+    form = PO.build_team_form(poss_by_season, universe, style_source="all_chances")
     team = form[form["team_id"] == 10].sort_values("game_date")
 
     # game 1 is the team's first: no prior games, so every centred rate is
@@ -410,14 +411,14 @@ def test_a_games_own_events_cannot_change_its_own_features():
     """The direct statement of the leak rule: perturb a game's OWN rows beyond
     recognition and its own feature row must not move."""
     poss_by_season, universe = _toy_possessions()
-    before = PO.build_team_form(poss_by_season, universe)
+    before = PO.build_team_form(poss_by_season, universe, style_source="all_chances")
 
     corrupted = {2024: poss_by_season[2024].copy()}
     mask = (corrupted[2024]["game_id"] == 3) & (corrupted[2024]["offense_team_id"] == 10)
     corrupted[2024].loc[mask, "fga_3"] = 1
     corrupted[2024].loc[mask, "fga_rim"] = 0
     corrupted[2024].loc[mask, "fta"] = 99
-    after = PO.build_team_form(corrupted, universe)
+    after = PO.build_team_form(corrupted, universe, style_source="all_chances")
 
     cols = [f"off_{r}_c" for r in PO.RATE_DEFS]
     b = before[(before["game_id"] == 3) & (before["team_id"] == 10)][cols].to_numpy()
@@ -432,8 +433,8 @@ def test_a_games_own_events_cannot_change_its_own_features():
         game_id=4, poss_index=lambda d: d["poss_index"] + 1000)], ignore_index=True)
     universe4 = pd.concat([universe, pd.DataFrame(
         {"game_id": [4], "game_date": pd.to_datetime(["2024-12-01"])})], ignore_index=True)
-    b4 = PO.build_team_form(poss_by_season, universe4)
-    a4 = PO.build_team_form(corrupted, universe4)
+    b4 = PO.build_team_form(poss_by_season, universe4, style_source="all_chances")
+    a4 = PO.build_team_form(corrupted, universe4, style_source="all_chances")
     b4v = b4[(b4["game_id"] == 4) & (b4["team_id"] == 10)][cols].to_numpy()
     a4v = a4[(a4["game_id"] == 4) & (a4["team_id"] == 10)][cols].to_numpy()
     assert not np.allclose(a4v, b4v)
@@ -441,7 +442,7 @@ def test_a_games_own_events_cannot_change_its_own_features():
 
 def test_defence_allowed_form_is_what_opponents_did_to_this_team():
     poss_by_season, universe = _toy_possessions()
-    form = PO.build_team_form(poss_by_season, universe)
+    form = PO.build_team_form(poss_by_season, universe, style_source="all_chances")
     box = PO.team_game_box(poss_by_season[2024])
     # team 300's only game is game 3, so team 10's defence-allowed form going
     # into game 3 comes from games 1-2 only, i.e. what teams 100 and 200 did.
@@ -522,3 +523,318 @@ def test_block_bootstrap_se_is_seeded_and_reproducible():
     a = PO.block_bootstrap_se(d, p, n_rep=50, seed=99)
     b = PO.block_bootstrap_se(d, p, n_rep=50, seed=99)
     assert a == b and a > 0
+
+
+# ===========================================================================
+# 8. The rim-location override (added 2026-09-10)
+# ===========================================================================
+# `docs/tests/shot_classification_diag_2026-09-10.md` proved that ESPN's 2025
+# feed mistags a batch of true tip-ins as `JumpShot`, and that shot LOCATION is
+# the one signal the vendor got right. The override routes around it. What has
+# to be tested is not that it fires -- that is one line -- but that its SCOPE
+# holds: it must be able to move a two-point jumper toward the rim and must be
+# unable to do anything else, because "anything else" would silently change
+# points totals and the 2-vs-3 split that reconciles against hoopR's box score.
+
+
+def _at_basket(dx_ft: float = 0.0, basket: int = 0) -> tuple[float, float]:
+    """Shot-chart coordinates `dx_ft` feet from one of the two baskets, in the
+    raw 0-940 x 0-500 tenths-of-a-foot grid the feed uses."""
+    bx, by = EV.BASKET_XY[basket]
+    return (bx + dx_ft * 10.0, by)
+
+
+def test_a_near_rim_jumpshot_is_reclassified_as_a_rim_attempt():
+    """THE synthetic case: a row the feed calls a two-point `JumpShot`, taken
+    from under the basket. This is the 2025 tip-in mistag in miniature."""
+    x, y = _at_basket(0.39)  # the canned tip-in placeholder pixel
+    df = _plays([
+        {"playType": "JumpShot", "shot_range": "jumper", "playText": "X made Jumper.",
+         "shootingPlay": True, "shot_made": True, "scoreValue": 2,
+         "shot_location_x": x, "shot_location_y": y},
+    ])
+    assert list(EV.classify_frame(df)) == ["FGA_rim"]
+    # ... and with the override switched off it is what the feed said it was,
+    # so the test is measuring the override rather than some other rule.
+    assert list(EV.classify_frame(df, rim_override_max_ft=0.0)) == ["FGA_jump2"]
+
+
+def test_the_override_reaches_both_baskets():
+    rows = [{"playType": "JumpShot", "shot_range": "jumper", "shootingPlay": True,
+             "shot_location_x": _at_basket(0.39, b)[0], "shot_location_y": _at_basket(0.39, b)[1]}
+            for b in (0, 1)]
+    assert list(EV.classify_frame(_plays(rows))) == ["FGA_rim", "FGA_rim"]
+
+
+def test_the_override_stops_exactly_at_the_threshold():
+    inside, outside = EV.RIM_OVERRIDE_MAX_FT - 0.01, EV.RIM_OVERRIDE_MAX_FT + 0.01
+    df = _plays([
+        {"playType": "JumpShot", "shot_range": "jumper", "shootingPlay": True,
+         "shot_location_x": _at_basket(d)[0], "shot_location_y": _at_basket(d)[1]}
+        for d in (inside, outside)
+    ])
+    assert list(EV.classify_frame(df)) == ["FGA_rim", "FGA_jump2"]
+
+
+def test_the_override_cannot_touch_a_three_or_a_rim_tagged_row():
+    """Scope, stated as a test. A three-point row at the rim is a contradiction
+    in the feed, not an invitation to reclassify: turning it into `FGA_rim`
+    would silently move 3 points to 2 and break the 3PA reconciliation against
+    hoopR's box score. And a Dunk/LayUp/Tip row is already `FGA_rim`, so the
+    override has nothing to do to it."""
+    x, y = _at_basket(0.39)
+    df = _plays([
+        {"playType": "JumpShot", "shot_range": "three_pointer", "shootingPlay": True,
+         "playText": "X missed Three Point Jumper.",
+         "shot_location_x": x, "shot_location_y": y},
+        {"playType": "LayUpShot", "shot_range": "rim", "shootingPlay": True,
+         "shot_location_x": x, "shot_location_y": y},
+        {"playType": "DunkShot", "shot_range": "rim", "shootingPlay": True,
+         "shot_location_x": _at_basket(30.0)[0], "shot_location_y": _at_basket(30.0)[1]},
+    ])
+    assert list(EV.classify_frame(df)) == ["FGA_3", "FGA_rim", "FGA_rim"]
+
+
+def test_an_unlocated_jumpshot_keeps_its_feed_label():
+    """78-88% location coverage in 2022-2024 means most of the miss is here.
+    A row with no coordinates must keep the feed's own label -- that is a
+    missed repair, which is the safe direction, and never a guess."""
+    df = _plays([
+        {"playType": "JumpShot", "shot_range": "jumper", "shootingPlay": True},
+        {"playType": "JumpShot", "shot_range": "jumper", "shootingPlay": True,
+         "shot_location_x": float("nan"), "shot_location_y": float("nan")},
+    ])
+    assert list(EV.classify_frame(df)) == ["FGA_jump2", "FGA_jump2"]
+
+
+def test_shot_distance_is_measured_to_the_nearer_basket_in_feet():
+    df = _plays([
+        {"shot_location_x": EV.BASKET_XY[0][0], "shot_location_y": EV.BASKET_XY[0][1]},
+        {"shot_location_x": EV.BASKET_XY[1][0], "shot_location_y": EV.BASKET_XY[1][1] + 100.0},
+        {"shot_location_x": 470.0, "shot_location_y": 250.0},  # mid-court
+    ])
+    d = EV.shot_distance_ft(df)
+    assert d[0] == pytest.approx(0.0)
+    assert d[1] == pytest.approx(10.0)
+    # mid-court is equidistant from both baskets: ~41.75 ft either way
+    assert d[2] == pytest.approx((470.0 - EV.BASKET_XY[0][0]) / 10.0)
+
+
+def test_the_loader_asks_for_the_columns_the_override_needs():
+    """The override is only as good as the columns reaching it, and
+    `classify_frame` cannot repair a row whose coordinates were never loaded.
+    This is the one place that contract can be checked cheaply."""
+    assert "shot_location_x" in EV.PLAY_COLUMNS
+    assert "shot_location_y" in EV.PLAY_COLUMNS
+
+
+def test_the_threshold_is_a_quantile_of_the_feeds_own_rim_rows():
+    """The derivation helper must actually describe the rows the docstring says
+    it does, and must survive a frame where a type is absent entirely."""
+    df = _plays([
+        {"playType": "DunkShot", "shot_range": "rim", "shootingPlay": True,
+         "shot_location_x": _at_basket(d)[0], "shot_location_y": _at_basket(d)[1]}
+        for d in (1.0, 2.0, 3.0, 4.0, 5.0)
+    ] + [
+        {"playType": "JumpShot", "shot_range": "jumper", "shootingPlay": True,
+         "shot_location_x": _at_basket(12.0)[0], "shot_location_y": _at_basket(12.0)[1]},
+    ])
+    q = EV.rim_family_distance_quantiles(df)
+    assert q["DunkShot"]["n_rows"] == 5
+    assert q["DunkShot"]["quantiles_ft"]["p50"] == pytest.approx(3.0, abs=1e-6)
+    assert q["TipShot"]["n_rows"] == 0 and q["TipShot"]["quantiles_ft"]["p50"] is None
+    assert q["JumpShot(2)"]["quantiles_ft"]["p50"] == pytest.approx(12.0, abs=1e-6)
+
+
+# ===========================================================================
+# 9. First-chance-only style rates close the contamination channel
+# ===========================================================================
+def _toy_chances() -> tuple[dict, pd.DataFrame]:
+    """Two teams, three games, with first chances and continuation chances
+    given deliberately OPPOSITE shot mixes: every first chance is a three,
+    every continuation chance is a rim attempt. A rate built over all chances
+    must see the rim attempts; a first-chance-only rate must not."""
+    rows = []
+    for gid in (1, 2, 3):
+        for team, opp in ((10, 20), (20, 10)):
+            for k in range(20):
+                rows.append({"season": 2024, "game_id": gid, "offense_team_id": team,
+                             "defense_team_id": opp, "poss_index": k + 1, "chance_number": 1,
+                             "terminal_event": "FGA_3", "fga_rim": 0, "fga_jump2": 0,
+                             "fga_3": 1, "fta": 0, "points": 0})
+            for k in range(10):
+                rows.append({"season": 2024, "game_id": gid, "offense_team_id": team,
+                             "defense_team_id": opp, "poss_index": k + 1, "chance_number": 2,
+                             "terminal_event": "FGA_rim", "fga_rim": 1, "fga_jump2": 0,
+                             "fga_3": 0, "fta": 0, "points": 2})
+    universe = pd.DataFrame({"game_id": [1, 2, 3],
+                             "game_date": pd.to_datetime(["2024-11-05", "2024-11-10",
+                                                          "2024-11-20"])})
+    ch = pd.DataFrame(rows)
+    return {2024: ch}, universe
+
+
+def test_first_chance_style_rates_ignore_continuation_chances():
+    ch_by_season, universe = _toy_chances()
+    box = PO.team_game_box_first_chance(ch_by_season[2024])
+    one = box[(box["team_id"] == 10) & (box["game_id"] == 1)].iloc[0]
+    # 20 first chances, all threes: 20 possessions, 20 FGA, 0 rim attempts.
+    assert one["poss"] == 20
+    assert one["fga"] == 20 and one["fga_3"] == 20 and one["fga_rim"] == 0
+
+
+def test_a_continuation_chance_label_cannot_move_a_first_chance_feature():
+    """THE contamination test, and the reason the source changed. Season 2025's
+    continuation chances carried an upstream mislabel; under the round-1
+    `all_chances` source that defect moved `off_rim_c`, a PREDICTOR of the
+    `first` population whose targets the defect cannot reach
+    (`docs/tests/shot_classification_diag_2026-09-10.md` section 6). Relabel
+    every continuation chance and the first-chance-only feature must not
+    move -- while the all-chances feature demonstrably does, or this test would
+    pass for a builder that reads nothing."""
+    ch_by_season, universe = _toy_chances()
+    before = PO.build_team_form(ch_by_season, universe, style_source="first_chance")
+
+    mangled = {2024: ch_by_season[2024].copy()}
+    cont = mangled[2024]["chance_number"] > 1
+    mangled[2024].loc[cont, "fga_rim"] = 0
+    mangled[2024].loc[cont, "fga_jump2"] = 1
+    mangled[2024].loc[cont, "terminal_event"] = "FGA_jump2"
+    after = PO.build_team_form(mangled, universe, style_source="first_chance")
+
+    cols = [f"off_{r}_c" for r in PO.RATE_DEFS]
+    np.testing.assert_array_equal(after[cols].to_numpy(), before[cols].to_numpy())
+
+    # the same relabel DOES move the all-chances rate, which is the channel
+    poss_before = PO.team_game_box(ch_by_season[2024].assign(poss_index=range(len(ch_by_season[2024]))))
+    poss_after = PO.team_game_box(mangled[2024].assign(poss_index=range(len(mangled[2024]))))
+    assert poss_before["fga_rim"].sum() != poss_after["fga_rim"].sum()
+
+
+def test_first_chance_box_refuses_a_table_without_per_chance_counts():
+    """possessions v1 has no per-chance attempt columns. The builder must say
+    so and name the fix, not silently fall back to the contaminated source."""
+    ch_by_season, _ = _toy_chances()
+    v1_like = ch_by_season[2024].drop(columns=["fga_rim", "fga_jump2", "fga_3"])
+    with pytest.raises(KeyError, match="version v2"):
+        PO.team_game_box_first_chance(v1_like)
+
+
+def test_style_source_must_be_named():
+    ch_by_season, universe = _toy_chances()
+    with pytest.raises(KeyError):
+        PO.build_team_form(ch_by_season, universe, style_source="whatever_is_convenient")
+
+
+# ===========================================================================
+# 10. Possessions table versioning
+# ===========================================================================
+def test_possessions_version_resolves_and_refuses_an_unknown_label():
+    assert PS.possessions_dir("v1").name == "possessions"
+    assert PS.possessions_dir("v2").name == "possessions_v2"
+    assert PS.possessions_dir(None) == PS.POSSESSION_VERSIONS[PS.DEFAULT_POSSESSION_VERSION]
+    assert PS.possessions_dir("v1", "some/other/dir").as_posix() == "some/other/dir"
+    with pytest.raises(KeyError):
+        PS.possessions_dir("v3")
+
+
+def test_the_default_version_is_still_v1():
+    """The PM switches this in one place when the round-2 tables are adopted.
+    Until then a caller that names no version must keep reading v1, because
+    other workers hold long-running reads on it."""
+    assert PS.DEFAULT_POSSESSION_VERSION == "v1"
+
+
+# ===========================================================================
+# 11. Training schemes (round 2)
+# ===========================================================================
+def test_recency_weights_halve_at_the_half_life():
+    dates = pd.Series(pd.to_datetime(["2024-11-01", "2024-08-03", "2024-05-05", "2025-01-01"]))
+    ref = pd.Timestamp("2024-11-01")
+    w = PO.recency_weights(dates, ref, half_life_days=90)
+    assert w[0] == pytest.approx(1.0)
+    assert w[1] == pytest.approx(0.5)          # 90 days earlier
+    assert w[2] == pytest.approx(0.25)         # 180 days earlier
+    # a row that post-dates the reference is clipped to weight 1, never boosted
+    assert w[3] == pytest.approx(1.0)
+
+
+def test_month_boundaries_are_the_month_starts_that_contain_games():
+    d = pd.Series(pd.to_datetime(["2024-11-08", "2024-11-30", "2025-01-02", "2025-03-19"]))
+    assert PO.month_boundaries(d) == [pd.Timestamp("2024-11-01"), pd.Timestamp("2025-01-01"),
+                                      pd.Timestamp("2025-03-01")]
+    assert PO.month_boundaries(pd.Series([], dtype="datetime64[ns]")) == []
+
+
+def _toy_scheme_design(n: int = 3000, seed: int = 11) -> pd.DataFrame:
+    d = _toy_design(n=n, seed=seed)
+    rng = np.random.default_rng(seed)
+    d["season"] = np.where(rng.random(n) < 0.6, 2024, 2025)
+    start = np.where(d["season"] == 2024, np.datetime64("2023-11-06"), np.datetime64("2024-11-04"))
+    d["game_date"] = pd.to_datetime(start) + pd.to_timedelta(rng.integers(0, 150, n), unit="D")
+    return d
+
+
+def test_s1_never_lets_a_game_into_its_own_fit():
+    """The leak rule for the walk-forward scheme, checked on the schedule the
+    scheme actually ran rather than on the idea of it."""
+    d = _toy_scheme_design()
+    feats = PO.feature_set("A_team", "first")
+    tr = d[d["season"] == 2024]
+    te = d[d["season"] == 2025]
+    p, meta = PO.fit_predict_scheme("ridge_logit", "S1", tr, te, feats)
+    assert p.shape == (len(te), len(PO.CLASSES))
+    np.testing.assert_allclose(p.sum(axis=1), 1.0, atol=1e-6)
+    assert meta["n_fits"] == len(PO.month_boundaries(te["game_date"]))
+    for seg in meta["segments"]:
+        assert pd.Timestamp(seg["max_train_date"]) < pd.Timestamp(seg["refit_date"])
+    # every test chance is scored, so S1 and S0 are compared on one test set
+    assert sum(s["n_scored"] for s in meta["segments"]) == len(te)
+
+
+def test_s1_first_segment_has_no_test_season_rows_and_later_ones_do():
+    d = _toy_scheme_design()
+    feats = PO.feature_set("A_team", "first")
+    tr, te = d[d["season"] == 2024], d[d["season"] == 2025]
+    _p, meta = PO.fit_predict_scheme("ridge_logit", "S1", tr, te, feats)
+    assert meta["segments"][0]["n_train_from_test_season"] == 0
+    assert meta["segments"][-1]["n_train_from_test_season"] > 0
+
+
+def test_s2_weights_the_fit_and_s0_does_not():
+    d = _toy_scheme_design()
+    feats = PO.feature_set("A_team", "first")
+    tr, te = d[d["season"] == 2024], d[d["season"] == 2025]
+    p0, m0 = PO.fit_predict_scheme("ridge_logit", "S0", tr, te, feats)
+    p2, m2 = PO.fit_predict_scheme("ridge_logit", "S2", tr, te, feats, half_life_days=90)
+    assert m0["n_fits"] == 1 and m2["half_life_days"] == 90
+    # a 90-day half-life over a 150-day training span must throw away real
+    # sample, or the scheme is not doing anything
+    assert m2["effective_sample_fraction"] < 0.95
+    assert not np.allclose(p0, p2)
+
+
+def test_s2_needs_a_half_life_and_unknown_schemes_raise():
+    d = _toy_scheme_design()
+    feats = PO.feature_set("A_team", "first")
+    tr, te = d[d["season"] == 2024], d[d["season"] == 2025]
+    with pytest.raises(ValueError):
+        PO.fit_predict_scheme("ridge_logit", "S2", tr, te, feats)
+    with pytest.raises(KeyError):
+        PO.fit_predict_scheme("ridge_logit", "S9", tr, te, feats)
+
+
+def test_the_baseline_refuses_sample_weights():
+    d = _toy_scheme_design()
+    with pytest.raises(ValueError):
+        PO.fit_arm("baseline", d, [], sample_weight=np.ones(len(d)))
+
+
+def test_the_default_style_source_still_reproduces_round_one():
+    """The version default and the style-source default have to move together:
+    `first_chance` needs per-chance attempt counts that only possessions v2
+    writes. A caller that names neither must get the round-1 behaviour, because
+    `scripts/train_possession_outcome_v1.py` is such a caller and the scripts
+    convention forbids editing it."""
+    assert PO.DEFAULT_STYLE_SOURCE == "all_chances"
+    assert PS.DEFAULT_POSSESSION_VERSION == "v1"

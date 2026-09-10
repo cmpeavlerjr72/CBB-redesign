@@ -71,3 +71,52 @@ def test_crosswalk_espn_id_is_unique_and_well_matched():
     assert crosswalk["espn_team_id"].duplicated().sum() == 0
     assert report["n_cbbd_matched"] / report["n_teams"] >= 0.95
     assert report["n_kenpom_matched"] / report["n_teams"] >= 0.90
+
+
+def test_pbp_complete_is_present_and_behaves(universe):
+    """The CBBD-side feed-completeness flag added 2026-09-10.
+
+    Three cheap properties that would each catch a real regression: the column
+    and its three audit companions exist at all; a complete game must have CBBD
+    rows and zero point delta on BOTH sides (the flag and the deltas cannot
+    disagree); and the share rises across the five seasons, which is the shape
+    the feed-quality story in `docs/tests/possessions_build_v2_2026-09-10.md`
+    section 2.1 predicts -- 2022-2023 are the bad years and 2026 is nearly
+    clean."""
+    out, _ = universe
+    for col in ("pbp_complete", "cbbd_pbp_rows", "cbbd_pts_delta_home", "cbbd_pts_delta_away"):
+        assert col in out.columns, f"{col} missing from games_universe"
+
+    ok = out[out["pbp_complete"]]
+    assert (ok["cbbd_pbp_rows"] > 0).all()
+    assert (ok["cbbd_pts_delta_home"] == 0).all()
+    assert (ok["cbbd_pts_delta_away"] == 0).all()
+
+    d1 = out[out["is_d1_game"]]
+    share = d1.groupby("season")["pbp_complete"].mean()
+    assert share.loc[2022] < share.loc[2024] < share.loc[2026]
+    assert share.min() > 0.70 and share.max() <= 1.0
+
+
+def test_pbp_complete_does_not_replace_pbp_truncated(universe):
+    """The two flags come from independently sourced feeds and are kept side by
+    side on purpose; a build that quietly made one an alias of the other would
+    destroy the disagreement that tells you which feed failed."""
+    out, _ = universe
+    d1 = out[out["is_d1_game"]]
+    disagree = d1[d1["pbp_complete"] & d1["pbp_truncated"]]
+    # hoopR says truncated, CBBD's own events reach the final score: real, rare
+    assert 0 < len(disagree) < 0.01 * len(d1)
+
+
+def test_every_pre_existing_universe_column_survived(universe):
+    """`pbp_complete` was added as a NEW column. Anything that silently dropped
+    one of the originals would break every downstream loader at once."""
+    out, _ = universe
+    expected = {
+        "game_id", "cbbd_game_id", "season", "season_type", "game_date", "tipoff_utc",
+        "home_team_id", "away_team_id", "home_display_name", "away_display_name",
+        "neutral_site", "home_score", "away_score", "n_periods", "is_d1_game",
+        "has_pbp", "pbp_truncated", "has_player_box", "has_cbbd_line", "sealed",
+    }
+    assert expected <= set(out.columns)

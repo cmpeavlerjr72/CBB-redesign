@@ -6,10 +6,19 @@ build_possessions.py -- build the L3 possession event layer from CBBD pbp.
     .venv/Scripts/python.exe scripts/build_possessions.py --seasons 2025
     .venv/Scripts/python.exe scripts/build_possessions.py --validate-only
 
-Writes, per season:
-    data/processed/possessions/possessions_{season}.parquet   one row / possession
-    data/processed/possessions/chances_{season}.parquet       one row / chance
-    data/processed/possessions/build_report.json              validation numbers
+    .venv/Scripts/python.exe scripts/build_possessions.py --version v2
+    .venv/Scripts/python.exe scripts/build_possessions.py --threshold-ladder
+
+Writes, per season, into the directory the `--version` label resolves to
+(`cbb_sim.pbp.possessions.POSSESSION_VERSIONS`):
+    possessions_{season}.parquet   one row / possession
+    chances_{season}.parquet       one row / chance
+    build_report.json              validation numbers
+
+VERSIONS. `--version` DEFAULTS TO `v2`, not to v1. v1
+(`data/processed/possessions/`) is frozen: it is the table other workers hold
+long-running reads on, and a bare re-run must never overwrite it. Building v1
+again requires asking for it by name.
 
 The segmentation rule itself lives in `src/cbb_sim/pbp/possessions.py` (module
 docstring) and the event vocabulary in `src/cbb_sim/pbp/events.py`. This script
@@ -43,13 +52,14 @@ import pandas as pd
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
+from cbb_sim.pbp import events as EV  # noqa: E402
 from cbb_sim.pbp import possessions as poss_mod  # noqa: E402
 from cbb_sim.pbp.events import classify_frame, load_plays, three_point_signal_disagreement  # noqa: E402
 from cbb_sim.pbp.report import render_doc  # noqa: E402
 
 DEFAULT_SEASONS = [2022, 2023, 2024, 2025, 2026]
 DEFAULT_UNIVERSE = Path("data/processed/games_universe.parquet")
-DEFAULT_OUT_DIR = Path("data/processed/possessions")
+DEFAULT_VERSION = "v2"
 DEFAULT_PBP_DIR = Path("data/raw/cbbd/pbp")
 
 
@@ -123,6 +133,236 @@ def feed_points(season: int, universe: pd.DataFrame, pbp_dir: Path) -> pd.DataFr
     agg = agg.merge(meta.reset_index(), on="cbbd_game_id", how="left")
     agg["offense_team_id"] = np.where(agg["side"] == 0, agg["home_team_id"], agg["away_team_id"])
     return agg[["game_id", "offense_team_id", "pv"]].rename(columns={"pv": "feed_points"})
+
+
+def feed_completeness(season: int, universe_all: pd.DataFrame, pbp_dir: Path) -> dict:
+    """Reconcile the two feed-completeness numbers that were in circulation,
+    and report the `pbp_complete` share.
+
+      A) EVENT SUM vs final -- `possessions_build_2026-09-10.md` section 2's
+         19.5% for 2022. The classified scoring events do not add up to the
+         box score.
+      B) RUNNING SCORE vs final -- `shot_classification_diag_2026-09-10.md`
+         section 8's 3.6% for 2022. The feed's own last `homeScore`/`awayScore`
+         does not reach the box score.
+
+    The candidate explanations are each measured rather than argued: points on
+    rows with no usable team, `Not Available` rows flagged `scoringPlay`,
+    field-goal rows flagged `scoringPlay` whose made flag says otherwise, and
+    technical free throws (which are counted on BOTH sides of A, so they cannot
+    open a gap -- `n_technical_ft_points` is reported to show their size).
+    Whatever those four do not explain is the residual: scoring ROWS absent
+    from the stream while the running-score column, carried forward on every
+    later row, still reaches the final."""
+    u = universe_all[(universe_all["season"] == int(season))
+                     & universe_all["is_d1_game"] & universe_all["cbbd_game_id"].notna()].copy()
+    u["cbbd_game_id"] = u["cbbd_game_id"].astype("int64")
+    plays = load_plays(season, pbp_dir=pbp_dir, game_ids=set(u["cbbd_game_id"]))
+    cls = classify_frame(plays).to_numpy()
+
+    made = plays["shot_made"]
+    if made.dtype == object:
+        made = made.map({True: True, False: False})
+    made = made.astype("boolean").fillna(plays["scoringPlay"].astype("boolean")).fillna(False).to_numpy(dtype=bool)
+    pv = np.where(cls == "FGA_3", 3, np.where(np.isin(cls, ["FGA_rim", "FGA_jump2"]), 2,
+                  np.where(cls == "FT_made", 1, 0)))
+    pv = np.where(np.isin(cls, ["FGA_3", "FGA_rim", "FGA_jump2"]) & ~made, 0, pv)
+
+    is_home = plays["isHomeTeam"]
+    if is_home.dtype == object:
+        is_home = is_home.map({True: True, False: False})
+    is_home = is_home.astype("boolean")
+    has_team = (pd.to_numeric(plays["teamId"], errors="coerce").notna() & is_home.notna()).to_numpy()
+    side = np.where(is_home.fillna(False).to_numpy(), 0, 1)
+    side = poss_mod._fix_flipped_sides(plays, side, has_team)
+
+    # technical free throws: the FT rows whose preceding non-inert row is a
+    # technical foul. Sized here only to show they are not the explanation.
+    keep = ~pd.Series(cls).isin(list(poss_mod.INERT_CLASSES)).to_numpy()
+    c_keep = cls[keep]
+    prev_tech = np.concatenate([[False], c_keep[:-1] == "technical"])
+    n_tech_ft_pts = int((prev_tech & (c_keep == "FT_made")).sum())
+
+    scoring_flag = plays["scoringPlay"].fillna(False).astype(bool).to_numpy()
+    g = plays["gameId"].to_numpy()
+    df = pd.DataFrame({
+        "cbbd_game_id": g,
+        "home_pts": np.where(has_team & (side == 0), pv, 0),
+        "away_pts": np.where(has_team & (side == 1), pv, 0),
+        "pts_no_team": np.where(~has_team, pv, 0),
+        "unknown_scoring_rows": ((cls == "unknown") & scoring_flag).astype("int64"),
+        "fga_scoringplay_not_made": (np.isin(cls, ["FGA_3", "FGA_rim", "FGA_jump2"])
+                                     & scoring_flag & ~made).astype("int64"),
+        "rows": 1,
+    }).groupby("cbbd_game_id", as_index=True).sum()
+    last = pd.DataFrame({
+        "cbbd_game_id": g,
+        "hs": pd.to_numeric(plays["homeScore"], errors="coerce").ffill().fillna(0).to_numpy(),
+        "as_": pd.to_numeric(plays["awayScore"], errors="coerce").ffill().fillna(0).to_numpy(),
+    }).groupby("cbbd_game_id").last()
+
+    m = u[["cbbd_game_id", "game_id", "home_score", "away_score", "pbp_truncated"]].join(
+        df, on="cbbd_game_id").join(last, on="cbbd_game_id")
+    has_rows = m["rows"].notna().to_numpy()
+    for c in ("home_pts", "away_pts", "pts_no_team", "unknown_scoring_rows",
+              "fga_scoringplay_not_made", "hs", "as_"):
+        m[c] = m[c].fillna(0)
+    ev_bad = ((m["home_pts"] != m["home_score"]) | (m["away_pts"] != m["away_score"])).to_numpy()
+    run_bad = ((m["hs"] != m["home_score"]) | (m["as_"] != m["away_score"])).to_numpy()
+    ev_vs_run = (m["hs"] + m["as_"] - m["home_pts"] - m["away_pts"]).to_numpy()
+    n = len(m)
+    complete = has_rows & ~ev_bad
+    return {
+        "n_d1_games": int(n),
+        "n_no_cbbd_rows": int((~has_rows).sum()),
+        "A_event_sum_vs_final_incomplete_pct": round(100.0 * float(ev_bad.mean()), 2),
+        "B_running_score_vs_final_incomplete_pct": round(100.0 * float(run_bad.mean()), 2),
+        "events_disagree_with_running_score_pct": round(100.0 * float((ev_vs_run != 0).mean()), 2),
+        "mean_running_minus_events_pts": round(float(ev_vs_run.mean()), 3),
+        "explained_pts_on_rows_with_no_team": int(m["pts_no_team"].sum()),
+        "explained_unknown_rows_flagged_scoring": int(m["unknown_scoring_rows"].sum()),
+        "explained_fga_scoringplay_but_not_made": int(m["fga_scoringplay_not_made"].sum()),
+        "n_technical_ft_points": n_tech_ft_pts,
+        "pbp_complete_games": int(complete.sum()),
+        "pbp_complete_pct": round(100.0 * float(complete.mean()), 2),
+        "pbp_complete_pct_of_not_truncated": round(
+            100.0 * float(complete[~m["pbp_truncated"].to_numpy()].mean()), 2),
+    }
+
+
+def threshold_ladder(seasons: list[int], universe: pd.DataFrame, pbp_dir: Path) -> dict:
+    """Derive the rim-override threshold from the data and measure every rung.
+
+    Step 1 -- the distribution the cutoff comes out of: release-distance
+    quantiles of the rows the FEED ITSELF calls a rim attempt (`DunkShot`,
+    `LayUpShot`, `TipShot`), per season and pooled.
+    Step 2 -- for each stated quantile of that distribution, re-segment every
+    season and record the continuation-chance and first-chance rim / jump2
+    shares.
+
+    The selection rule was fixed before the numbers were looked at: 2025's
+    continuation-chance rim and jump2 shares must land inside the
+    2022-2024/2026 band, and no clean season may move by 0.5 pp or more.
+    `pick` applies it mechanically."""
+    per_season, dunk_pool, fam_pool, calib = {}, [], [], {}
+    for s in seasons:
+        p = load_plays(s, pbp_dir=pbp_dir)
+        per_season[str(s)] = EV.rim_family_distance_quantiles(p)
+        calib[str(s)] = EV.basket_calibration(p)
+        d = EV.shot_distance_ft(p)
+        pt = p["playType"].astype("string").fillna("").to_numpy(dtype=object)
+        dunk_pool.append(d[(pt == "DunkShot") & np.isfinite(d)])
+        fam_pool.append(d[np.isin(pt, list(EV.RIM_PLAY_TYPES)) & np.isfinite(d)])
+        del p, d
+    dunk = np.concatenate(dunk_pool)
+    fam = np.concatenate(fam_pool)
+
+    rungs: list[dict] = []
+    for q in (0.10, 0.25, 0.50, 0.75, 0.90, 0.95):
+        rungs.append({"label": f"DunkShot p{int(q * 100)}", "ft": round(float(np.quantile(dunk, q)), 3)})
+    for q in (0.25, 0.50):
+        rungs.append({"label": f"rim_family p{int(q * 100)}", "ft": round(float(np.quantile(fam, q)), 3)})
+    merged: list[dict] = []
+    for r in sorted(rungs, key=lambda r: r["ft"]):
+        if merged and merged[-1]["ft"] == r["ft"]:
+            merged[-1]["label"] += " / " + r["label"]
+            continue
+        merged.append(dict(r))
+
+    orig = EV.classify_frame
+    rows: list[dict] = []
+    try:
+        for t in [0.0] + [r["ft"] for r in merged]:
+            poss_mod.classify_frame = (lambda pl, _t=t: orig(pl, rim_override_max_ft=_t))
+            for s in seasons:
+                _poss, ch, _diag = poss_mod.segment_season(s, universe, pbp_dir=pbp_dir)
+                first = ch[ch["chance_number"] == 1]["terminal_event"].value_counts(normalize=True) * 100
+                cont = ch[ch["chance_number"] > 1]["terminal_event"].value_counts(normalize=True) * 100
+                row = {"threshold_ft": t, "season": int(s)}
+                for k in ("FGA_rim", "FGA_jump2", "FGA_3"):
+                    row[f"cont_{k}"] = round(float(cont.get(k, 0.0)), 3)
+                    row[f"first_{k}"] = round(float(first.get(k, 0.0)), 3)
+                rows.append(row)
+                print(f"  ladder t={t:5.3f} {s}: cont rim {row['cont_FGA_rim']:.3f} "
+                      f"jump2 {row['cont_FGA_jump2']:.3f}", flush=True)
+    finally:
+        poss_mod.classify_frame = orig
+
+    return {"rungs": merged, "per_season_quantiles": per_season, "basket_calibration": calib,
+            "pooled_n_dunk": int(len(dunk)), "pooled_n_rim_family": int(len(fam)),
+            "effect": rows, "selection": pick_threshold(rows, merged)}
+
+
+CLEAN_SEASONS = (2022, 2023, 2024, 2026)
+CONTAMINATED_SEASON = 2025
+CLEAN_SEASON_MAX_MOVE_PP = 0.5
+GATED_CLASSES = ("FGA_rim", "FGA_jump2")
+
+
+def pick_threshold(effect_rows: list[dict], rungs: list[dict]) -> dict:
+    """Apply the pre-stated selection rule to the ladder, mechanically.
+
+    THE RULE, fixed before any rung was measured, and transcribed here rather
+    than restated:
+
+      * HARD GATE -- "2022-2024 and 2026 must move by < 0.5 pp, otherwise the
+        override is over-reaching". A rung is disqualified if ANY clean season's
+        continuation-chance `FGA_rim` or `FGA_jump2` share moves 0.5 pp or more
+        away from its v1 value. This is the false-positive test: those seasons
+        are not mislabelled, so anything the override does to them is damage.
+      * OBJECTIVE among the survivors -- "2025 returns to the 2022-2024/2026
+        band". Minimise how far outside that band 2025 still sits (zero if it
+        is inside), taking the worse of the two classes. The band is the
+        four clean seasons' own min-max AT THAT RUNG, so it moves with the
+        rung and is never a frozen target.
+      * TIE-BREAK -- the SMALLER threshold. Two rungs that restore 2025 equally
+        well are not equal: the narrower one touches fewer rows, and a repair
+        should be the smallest one that works.
+
+    `band_distance_pp` is reported for every rung, passing or not, so the shape
+    of the trade-off is visible instead of just its argmax."""
+    df = pd.DataFrame(effect_rows)
+    base = df[df["threshold_ft"] == 0.0].set_index("season")
+    out = []
+    for r in rungs:
+        t = r["ft"]
+        sub = df[df["threshold_ft"] == t].set_index("season")
+        moves = {int(s): {k: round(float(sub.loc[s, f"cont_{k}"] - base.loc[s, f"cont_{k}"]), 3)
+                          for k in GATED_CLASSES} for s in sub.index}
+        clean_move = max(abs(v[k]) for s, v in moves.items() if s in CLEAN_SEASONS
+                         for k in GATED_CLASSES)
+        band = {k: (min(float(sub.loc[s, f"cont_{k}"]) for s in CLEAN_SEASONS),
+                    max(float(sub.loc[s, f"cont_{k}"]) for s in CLEAN_SEASONS))
+                for k in GATED_CLASSES}
+        dist = {}
+        for k in GATED_CLASSES:
+            v = float(sub.loc[CONTAMINATED_SEASON, f"cont_{k}"])
+            lo, hi = band[k]
+            dist[k] = round(max(0.0, lo - v, v - hi), 3)
+        out.append({
+            "threshold_ft": t, "quantile": r["label"],
+            "cont_2025_rim": float(sub.loc[CONTAMINATED_SEASON, "cont_FGA_rim"]),
+            "cont_2025_jump2": float(sub.loc[CONTAMINATED_SEASON, "cont_FGA_jump2"]),
+            "clean_band_rim": [round(band["FGA_rim"][0], 3), round(band["FGA_rim"][1], 3)],
+            "clean_band_jump2": [round(band["FGA_jump2"][0], 3), round(band["FGA_jump2"][1], 3)],
+            "band_distance_pp": round(max(dist.values()), 3),
+            "band_distance_by_class_pp": dist,
+            "worst_clean_season_move_pp": round(clean_move, 3),
+            "moves_pp": moves,
+            "in_band": bool(max(dist.values()) == 0.0),
+            "clean_move_ok": bool(clean_move < CLEAN_SEASON_MAX_MOVE_PP),
+        })
+    survivors = [r for r in out if r["clean_move_ok"]]
+    chosen = min(survivors, key=lambda r: (r["band_distance_pp"], r["threshold_ft"])) if survivors else None
+    return {
+        "rungs": out,
+        "chosen": chosen,
+        "rule": ("hard gate: every clean season (2022-2024, 2026) moves < "
+                 f"{CLEAN_SEASON_MAX_MOVE_PP} pp on cont FGA_rim and FGA_jump2. Among survivors, "
+                 "minimise how far 2025 still sits outside the clean-season band; ties to the "
+                 "smaller threshold."),
+        "adopted_constant": EV.RIM_OVERRIDE_MAX_FT,
+    }
 
 
 def putback_label_drift(season: int, universe: pd.DataFrame, pbp_dir: Path) -> dict:
@@ -281,18 +521,26 @@ def validate_chances(chances: pd.DataFrame) -> dict:
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--seasons", type=int, nargs="+", default=DEFAULT_SEASONS)
-    ap.add_argument("--out-dir", type=Path, default=DEFAULT_OUT_DIR)
+    ap.add_argument("--version", default=DEFAULT_VERSION,
+                    choices=sorted(poss_mod.POSSESSION_VERSIONS),
+                    help="which possessions table to build (default v2; v1 is frozen)")
+    ap.add_argument("--out-dir", type=Path, default=None,
+                    help="explicit output directory; overrides --version")
     ap.add_argument("--pbp-dir", type=Path, default=DEFAULT_PBP_DIR)
     ap.add_argument("--universe", type=Path, default=DEFAULT_UNIVERSE)
     ap.add_argument("--write-doc", action="store_true",
-                    help="render docs/tests/possessions_build_2026-09-10.md from build_report.json")
+                    help="render the build/validation doc for this version from build_report.json")
     ap.add_argument("--validate-only", action="store_true",
                     help="re-run the validation battery off existing parquet files")
+    ap.add_argument("--threshold-ladder", action="store_true",
+                    help="derive the rim-override threshold from the data and measure every rung "
+                         "(slow: it re-segments every season once per candidate cutoff)")
     args = ap.parse_args()
 
-    out_dir = Path(args.out_dir)
+    out_dir = poss_mod.possessions_dir(args.version, args.out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
     universe = load_universe(args.universe)
+    universe_all = pd.read_parquet(args.universe)
 
     report: dict = {"built_at": time.strftime("%Y-%m-%dT%H:%M:%S"), "seasons": {}}
     rp = out_dir / "build_report.json"
@@ -300,6 +548,20 @@ def main() -> None:
         with contextlib.suppress(json.JSONDecodeError):
             report = json.loads(rp.read_text())
     report.setdefault("seasons", {})
+
+    report["version"] = args.version
+    report["rim_override"] = {
+        "max_ft": EV.RIM_OVERRIDE_MAX_FT,
+        "basket_xy": [list(b) for b in EV.BASKET_XY],
+        "rim_play_types": list(EV.RIM_PLAY_TYPES),
+    }
+    if args.threshold_ladder:
+        print("deriving the rim-override threshold from the data ...", flush=True)
+        report["rim_override_threshold_ladder"] = threshold_ladder(
+            list(args.seasons), universe, Path(args.pbp_dir))
+        rp0 = out_dir / "build_report.json"
+        rp0.write_text(json.dumps(report, indent=2, default=str))
+        print(f"wrote the ladder to {rp0}")
 
     for season in args.seasons:
         t0 = time.time()
@@ -327,6 +589,13 @@ def main() -> None:
         v["machine_diag"] = diag
         v["three_point_signal"] = sig
         v["chances"] = validate_chances(chances)
+        v["feed_completeness"] = feed_completeness(season, universe_all, Path(args.pbp_dir))
+        raw_cols = load_plays(season, pbp_dir=Path(args.pbp_dir),
+                              game_ids=set(universe.loc[universe["season"] == season, "cbbd_game_id"]))
+        v["rim_override_counts"] = EV.rim_override_counts(raw_cols)
+        v["rim_family_quantiles"] = EV.rim_family_distance_quantiles(raw_cols)
+        v["basket_calibration"] = EV.basket_calibration(raw_cols)
+        del raw_cols
         report["seasons"][str(season)] = v
         print(f"[{season}] poss/game seg {v['poss_per_game_seg_mean']:.2f} vs box "
               f"{v['poss_per_game_box_mean']:.2f} (diff {v['diff_mean']:+.3f}, sd {v['diff_sd']:.3f}, "
@@ -337,7 +606,7 @@ def main() -> None:
     rp.write_text(json.dumps(report, indent=2, default=str))
     print(f"wrote {rp}")
     if args.write_doc:
-        print(f"wrote {render_doc(report)}")
+        print(f"wrote {render_doc(report, version=args.version)}")
 
 
 if __name__ == "__main__":
