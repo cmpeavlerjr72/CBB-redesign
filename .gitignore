@@ -1,0 +1,46 @@
+# Secrets
+.env
+.env.local
+*.key
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.venv/
+venv/
+ENV/
+env/
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Claude Code
+.claude/worktrees
+
+# Data — bulk / rebuildable stays local, mirrored to a PRIVATE HuggingFace
+# dataset instead of git: huggingface.co/datasets/mvpeav/cbb-sim-data.
+# On a new machine: scripts/hf_sync_data.py pull.
+#
+# data/processed/ and data/reference/ ARE tracked in git: trained models,
+# lookup tables, and reference/crosswalk data are the unrecoverable state
+# this repo exists to protect. Keep every tracked file under 50MB.
+data/raw/**
+data/hoopr/**
+results/**
+data/raw/**/*.parquet
+
+# Node (if a dashboard is ever added)
+node_modules/
+dist/
+
+# Notebooks
+.ipynb_checkpoints/
+
+# IDE / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

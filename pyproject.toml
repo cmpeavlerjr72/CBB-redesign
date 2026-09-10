@@ -1,0 +1,47 @@
+[project]
+name = "cbb_sim"
+version = "0.1.0"
+description = "College basketball possession-level Monte Carlo simulation for market pricing"
+requires-python = ">=3.11"
+readme = "PROJECT_STATUS.md"
+dependencies = [
+    "requests>=2.32",
+    "python-dotenv>=1.0",
+    "pandas>=2.2",
+    "numpy>=1.26",
+    "pyyaml>=6.0",
+    "pyarrow>=17.0",
+    "huggingface-hub>=0.34",
+]
+
+[project.optional-dependencies]
+sim = [
+    "scipy>=1.13",
+    "scikit-learn>=1.5",
+    "xgboost>=2.1",
+    "lightgbm>=4.5",
+    "numba>=0.60",
+    "statsmodels>=0.14",
+    "duckdb>=1.0",
+    "polars>=1.5",
+]
+dev = [
+    "pytest>=8.0",
+    "ruff>=0.5",
+    "matplotlib>=3.9",
+]
+
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.ruff]
+line-length = 120
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B", "SIM"]
+ignore = ["E501"]
