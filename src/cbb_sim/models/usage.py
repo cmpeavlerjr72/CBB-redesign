@@ -195,6 +195,19 @@ ALPHA_GRID: tuple[float, ...] = (1.0, 2.0, 4.0, 8.0, 16.0, 32.0, 64.0, 128.0,
 #: Pre-registered gates.
 CALIB_GATE_PP = 2.0
 RESP_MIN_STEPS = 4
+#: Decision 8 (`ARCHITECTURE_DECISIONS.md`, 2026-09-10) amends the responsiveness
+#: gate in EVERY bake-off, superseding the steps-only wording of this model's own
+#: pre-registration: the predicted-vs-actual slope ratio across the driver's
+#: quintiles must also sit inside `SLOPE_BAND`, and the 4-of-4 step requirement
+#: relaxes to `RESP_MIN_STEPS_SMALL_SPAN` when the driver's REALISED quintile
+#: span is under `SMALL_SPAN_PP` (below which the steps are noise). The
+#: amendment exists because a steps-only gate admitted a flat fg_make arm whose
+#: shooter slope ratio was 0.0086; it is enforced here so a later re-run cannot
+#: silently revert to the superseded wording. Its effect on this model is nil --
+#: `experiments.md` section 7.
+SLOPE_BAND = (0.8, 1.2)
+RESP_MIN_STEPS_SMALL_SPAN = 3
+SMALL_SPAN_PP = 2.0
 SD_RATIO_BAND = (0.9, 1.1)
 GT0_TOL = 0.5
 TOPSHARE_TOL_PP = 2.0
@@ -1344,10 +1357,28 @@ def share_calibration(te: pd.DataFrame, p: np.ndarray, driver: np.ndarray,
 
 def share_responsiveness(te: pd.DataFrame, p: np.ndarray, driver: np.ndarray,
                          n_q: int = 5) -> dict:
+    """Quintile responsiveness on the player's own as-of rate, under the
+    Decision-8 gate: slope ratio inside `SLOPE_BAND` AND monotone in enough
+    steps, where "enough" relaxes from 4 of 4 to `RESP_MIN_STEPS_SMALL_SPAN` when
+    the driver's realised span is under `SMALL_SPAN_PP`.
+
+    The slope half is what stops a FLAT model passing: an arm can be monotone in
+    every step and still sit at the league mean, which violates the standing
+    matchup-specific rule. The raw numbers are returned either way, so the
+    steps-only reading stays on record alongside the amended one."""
     obs, pred, dr = _alt_long(te, p, driver)
     out = PM.quintile_responsiveness(dr, obs, np.column_stack([1 - pred, pred]), 1,
                                      n_q=n_q)
-    out["pass"] = bool(out["pred_monotone_steps"] >= RESP_MIN_STEPS)
+    span_pp = abs(float(out["span_actual"])) * 100
+    need = RESP_MIN_STEPS if span_pp >= SMALL_SPAN_PP else RESP_MIN_STEPS_SMALL_SPAN
+    sr = out["slope_ratio"]
+    out["span_actual_pp"] = round(span_pp, 4)
+    out["steps_required"] = need
+    out["steps_pass"] = bool(int(out["pred_monotone_steps"]) >= need)
+    out["slope_pass"] = bool(sr is not None
+                             and SLOPE_BAND[0] <= float(sr) <= SLOPE_BAND[1])
+    out["steps_only_pass"] = bool(int(out["pred_monotone_steps"]) >= RESP_MIN_STEPS)
+    out["pass"] = bool(out["steps_pass"] and out["slope_pass"])
     return out
 
 
@@ -1374,6 +1405,8 @@ def score_arm(te: pd.DataFrame, p: np.ndarray, driver: np.ndarray) -> dict:
         "responsiveness": resp,
         "resp_pass": resp["pass"],
         "resp_steps": int(resp["pred_monotone_steps"]),
+        "resp_slope_ratio": resp["slope_ratio"],
+        "resp_slope_pass": resp["slope_pass"],
     }
 
 
@@ -1664,7 +1697,8 @@ __all__ = [
     "ALPHA_GRID", "ARMS", "ARM_ORDER", "CL_FEATURES", "DIRECT_CLASSES",
     "DIRICHLET_ARMS", "EVENT_CLASSES", "FOLDS", "GT0_TOL", "LGBM_FEATURES",
     "LGBM_PARAM_GRID", "NO_DISPERSION", "N_ALT", "POSITION_LEVELS",
-    "PRIOR_KINDS", "RESP_MIN_STEPS", "ROLES", "SD_RATIO_BAND", "SELECTION_FOLD",
+    "PRIOR_KINDS", "RESP_MIN_STEPS", "ROLES", "SD_RATIO_BAND", "SELECTION_FOLD", "SLOPE_BAND", "SMALL_SPAN_PP",
+    "RESP_MIN_STEPS_SMALL_SPAN",
     "SHRINK_GRID", "TOPSHARE_TOL_PP", "TREE_ARM", "WF_SPLIT_DATE", "AllocCells",
     "CondLogitArm", "LgbmChoiceArm", "Profile", "ProfileSet", "UsageState",
     "alloc_cells", "assign_roles", "event_stream_keys", "bootstrap_se", "build_player_asof",

@@ -481,6 +481,63 @@ def test_d_the_tree_objective_is_the_grouped_softmax_likelihood():
     assert (hess > 0).all()
 
 
+def test_d_the_responsiveness_gate_rejects_a_flat_arm(toy):
+    """Decision 8 (`ARCHITECTURE_DECISIONS.md`): the responsiveness gate needs a
+    slope ratio in [0.8, 1.2] as well as monotone steps.
+
+    A flat arm -- every choice set predicted uniform -- is monotone in zero steps
+    and has a slope ratio of 0, so it fails both halves. An arm that is perfectly
+    monotone but holds only a tenth of the realised spread passes the steps half
+    and must still FAIL: that is the fg_make failure (shooter slope 0.0086) the
+    amendment exists to prevent."""
+    ev, _, asof = toy
+    d = U.build_usage_design(ev, asof, "FGA_rim")
+    drv = U.shrunk_rate(d, "FGA_rim", "position", 50.0)
+    real = U.u1_probs(d, "FGA_rim", "position", 50.0)
+
+    flat = np.full_like(real, 1.0 / U.N_ALT)
+    rf = U.share_responsiveness(d, flat, drv)
+    assert not rf["slope_pass"] and not rf["pass"]
+
+    # 10% of the real spread around the uniform: monotone everywhere, nearly flat
+    damped = U.normalise(1.0 / U.N_ALT + 0.1 * (real - 1.0 / U.N_ALT))
+    rd = U.share_responsiveness(d, damped, drv)
+    rr = U.share_responsiveness(d, real, drv)
+    print("")
+    print(f"(d) slope ratios -- flat {rf['slope_ratio']}, damped {rd['slope_ratio']}, "
+          f"real {rr['slope_ratio']}; steps {rf['pred_monotone_steps']}/"
+          f"{rd['pred_monotone_steps']}/{rr['pred_monotone_steps']}")
+    assert rd["steps_pass"], "the damped arm is still monotone -- that is the point"
+    assert not rd["slope_pass"], "a near-flat arm must fail the slope half"
+    assert not rd["pass"]
+    assert rr["slope_pass"] and rr["steps_pass"] and rr["pass"]
+    # the superseded steps-only reading stays on record and would have passed it
+    assert rd["steps_only_pass"]
+
+
+def test_d_the_small_span_clause_relaxes_the_step_count():
+    """The other half of Decision 8: when the driver's REALISED quintile span is
+    under 2 pp the steps are noise, so 4 of 4 relaxes to 3 of 4. Asserted on the
+    constants and on the branch, because no driver in this model is anywhere near
+    that span (the smallest realised span is 11.95 pp) and the clause would
+    otherwise never be exercised."""
+    assert U.RESP_MIN_STEPS_SMALL_SPAN < U.RESP_MIN_STEPS
+    n = 4000
+    rng = np.random.default_rng(5)
+    drv = rng.random((n, U.N_ALT))
+    # a target whose quintile span is tiny: the chosen slot is almost independent
+    # of the driver
+    y = rng.integers(0, U.N_ALT, n)
+    te = pd.DataFrame({"y": y.astype("int8")})
+    p = U.normalise(1.0 / U.N_ALT + 0.0005 * (drv - drv.mean()))
+    r = U.share_responsiveness(te, p, drv)
+    print("")
+    print(f"(d) tiny-span driver: realised span {r['span_actual_pp']} pp, "
+          f"steps required {r['steps_required']}")
+    assert r["span_actual_pp"] < U.SMALL_SPAN_PP
+    assert r["steps_required"] == U.RESP_MIN_STEPS_SMALL_SPAN
+
+
 # ===========================================================================
 # (e) The game-level checks and the decision rule
 # ===========================================================================

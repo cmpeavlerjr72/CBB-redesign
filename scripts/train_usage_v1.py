@@ -367,6 +367,42 @@ def run_fold(cls: str, tr: pd.DataFrame, te: pd.DataFrame, fold: str,
     return out
 
 
+def reapply_responsiveness_gate(results: list[dict], log) -> int:
+    """Re-apply the Decision-8 responsiveness gate to a finished results file.
+
+    Decision 8 (`ARCHITECTURE_DECISIONS.md`, 2026-09-10) amends the gate in every
+    bake-off -- slope ratio inside `usage.SLOPE_BAND` as well as monotone steps,
+    with 4-of-4 relaxing to 3-of-4 below a 2 pp realised span. Every quantity it
+    needs (`slope_ratio`, `span_actual`, `pred_monotone_steps`) is already stored
+    per arm, so the amendment is re-applied MECHANICALLY with no retraining, and
+    the number of verdicts it changes is returned so "nothing changed" is a
+    measured statement rather than an assertion."""
+    flips = 0
+    for r in results:
+        for arm, a in r["arms"].items():
+            resp = a["responsiveness"]
+            span_pp = abs(float(resp["span_actual"])) * 100
+            need = (U.RESP_MIN_STEPS if span_pp >= U.SMALL_SPAN_PP
+                    else U.RESP_MIN_STEPS_SMALL_SPAN)
+            sr = resp.get("slope_ratio")
+            slope_ok = sr is not None and U.SLOPE_BAND[0] <= float(sr) <= U.SLOPE_BAND[1]
+            steps_ok = int(resp["pred_monotone_steps"]) >= need
+            amended = bool(slope_ok and steps_ok)
+            resp.update({"span_actual_pp": round(span_pp, 4), "steps_required": need,
+                         "slope_pass": slope_ok, "steps_pass": steps_ok,
+                         "steps_only_pass": int(resp["pred_monotone_steps"]) >= U.RESP_MIN_STEPS,
+                         "pass": amended})
+            if bool(a.get("resp_pass")) != amended:
+                flips += 1
+                log(f"    GATE FLIP [{r['fold']}] {r['event_class']} {arm}: "
+                    f"resp_pass {a.get('resp_pass')} -> {amended} "
+                    f"(slope {sr}, steps {resp['pred_monotone_steps']}/{need})")
+            a["resp_pass"] = amended
+            a["resp_slope_ratio"] = sr
+            a["resp_slope_pass"] = slope_ok
+    return flips
+
+
 # ---------------------------------------------------------------------------
 # The pre-registered decision rule
 # ---------------------------------------------------------------------------
@@ -601,10 +637,15 @@ def main() -> int:
     if args.redecide:
         results = json.loads((out_dir / "results_v1.json").read_text())
         meta = json.loads((out_dir / f"build_report_{args.version}.json").read_text())
+        flips = reapply_responsiveness_gate(results, log)
         for r in results:
+            was = r.get("decision", {}).get("winner")
             r["decision"] = decide(r)
+            now = r["decision"]["winner"]
             log(f"  [{r['fold']}] {r['event_class']}: "
-                f"{r['decision']['winner'] or 'NO WINNER'} -- {r['decision']['reason']}")
+                f"{now or 'NO WINNER'}{'' if was in (None, now) else f' (was {was})'}"
+                f" -- {r['decision']['reason']}")
+        log(f"responsiveness verdicts changed by the Decision-8 gate: {flips}")
         write_results(out_dir, report, meta, results, args)
         log(f"re-decided {len(results)} folds and rewrote {report}")
         return 0

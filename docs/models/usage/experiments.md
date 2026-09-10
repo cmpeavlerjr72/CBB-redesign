@@ -577,3 +577,141 @@ choices: the shrinkage prior and strength of R8, and the tree parameters
   change ledger. Every arm under-concentrates the top of the usage distribution by
   0.5-2.9 pp on top-3; the fix is a model that can represent matchup-specific
   concentration, not an exponent on the share vector.
+
+---
+
+## 7. Decision 8 re-applied: the amended responsiveness gate (2026-09-10, no retraining)
+
+Decision 8 in `ARCHITECTURE_DECISIONS.md` amends the responsiveness gate in every
+bake-off and explicitly supersedes the steps-only wording of this model's own
+pre-registration (section 1, "responsiveness by player as-of rate quintile
+(monotone 4/4)"). The amended gate is:
+
+(a) predicted-vs-actual **slope ratio across the driver's quintiles inside
+[0.8, 1.2]**, AND
+(b) monotone in at least 3 of 4 quintile steps, with the 4-of-4 requirement
+dropped when the driver's **realised** quintile span is below 2 pp.
+
+Every quantity the amendment needs was already computed and stored per arm
+(`slope_ratio`, `span_actual`, `pred_monotone_steps` in the `responsiveness`
+block of `results_v1.json`), so it is re-applied **mechanically, with no
+retraining**, by `scripts/train_usage_v1.py --redecide`
+(`reapply_responsiveness_gate`).
+
+**Driver inventory.** This model has exactly ONE responsiveness driver, and it is
+the one the pre-registration names: the player's own shrunk as-of rate for the
+class being allocated. There is no team driver (the choice is normalised within
+one team's lineup, so a team-level term cancels) and no defence driver (the
+allocator carries no opponent feature at all -- `model.md` section 9 item 6 and
+`features.md` section 5 record that omission). So "applies to every driver" is
+satisfied by the single column below; nothing is unreported.
+
+### 7.1 Slope ratio per class and per arm
+
+Span columns are the REALISED quintile span of the credited-share driver, in
+percentage points; `slope` is predicted span / realised span.
+
+**F1 (train 2024, test 2025) -- the selection fold**
+
+| class | arm | slope | predicted span (pp) | realised span (pp) | steps | slope in [0.8, 1.2] |
+|---|---|---:|---:|---:|---:|---|
+| FGA_rim | proportional | 1.0048 | 21.439 | 21.337 | 4/4 | PASS |
+| FGA_rim | dirichlet | 1.0048 | 21.439 | 21.337 | 4/4 | PASS |
+| FGA_rim | hier_dirichlet | 1.0002 | 21.341 | 21.337 | 4/4 | PASS |
+| FGA_rim | cond_logit | 1.0233 | 21.835 | 21.337 | 4/4 | PASS |
+| FGA_rim | **lgbm** | 1.0223 | 21.813 | 21.337 | 4/4 | PASS |
+| FGA_jump2 | proportional | 0.9977 | 23.004 | 23.057 | 4/4 | PASS |
+| FGA_jump2 | dirichlet | 0.9977 | 23.004 | 23.057 | 4/4 | PASS |
+| FGA_jump2 | hier_dirichlet | 0.9960 | 22.964 | 23.057 | 4/4 | PASS |
+| FGA_jump2 | cond_logit | 0.9856 | 22.725 | 23.057 | 4/4 | PASS |
+| FGA_jump2 | **lgbm** | 0.9826 | 22.657 | 23.057 | 4/4 | PASS |
+| FGA_3 | proportional | 1.0109 | 26.799 | 26.510 | 4/4 | PASS |
+| FGA_3 | dirichlet | 1.0109 | 26.799 | 26.510 | 4/4 | PASS |
+| FGA_3 | hier_dirichlet | 1.0109 | 26.799 | 26.510 | 4/4 | PASS |
+| FGA_3 | cond_logit | 0.9980 | 26.458 | 26.510 | 4/4 | PASS |
+| FGA_3 | **lgbm** | 0.9948 | 26.373 | 26.510 | 4/4 | PASS |
+| TOV | proportional | 1.0731 | 12.824 | 11.950 | 4/4 | PASS |
+| TOV | dirichlet | 1.0731 | 12.824 | 11.950 | 4/4 | PASS |
+| TOV | hier_dirichlet | 1.0723 | 12.814 | 11.950 | 4/4 | PASS |
+| TOV | cond_logit | 0.9878 | 11.804 | 11.950 | 4/4 | PASS |
+| TOV | **lgbm** | 0.9866 | 11.790 | 11.950 | 4/4 | PASS |
+| FT_trip | proportional | 0.9011 | 17.318 | 19.219 | 4/4 | PASS |
+| FT_trip | dirichlet | 0.9011 | 17.318 | 19.219 | 4/4 | PASS |
+| FT_trip | hier_dirichlet | 0.8955 | 17.210 | 19.219 | 4/4 | PASS (closest to the floor) |
+| FT_trip | cond_logit | 0.9945 | 19.114 | 19.219 | 4/4 | PASS |
+| FT_trip | **lgbm** | 0.9898 | 19.022 | 19.219 | 4/4 | PASS |
+
+**WF2025 (within-season walk-forward) -- the robustness fold**
+
+| class | arm | slope | predicted span (pp) | realised span (pp) | steps | slope in [0.8, 1.2] |
+|---|---|---:|---:|---:|---:|---|
+| FGA_rim | proportional | 0.9853 | 22.537 | 22.872 | 4/4 | PASS |
+| FGA_rim | dirichlet | 0.9853 | 22.537 | 22.872 | 4/4 | PASS |
+| FGA_rim | hier_dirichlet | 0.9819 | 22.458 | 22.872 | 4/4 | PASS |
+| FGA_rim | cond_logit | 0.9588 | 21.930 | 22.872 | 4/4 | PASS |
+| FGA_rim | **lgbm** | 1.0567 | 24.169 | 22.872 | 4/4 | PASS |
+| FGA_jump2 | proportional | 0.9125 | 22.862 | 25.054 | 4/4 | PASS |
+| FGA_jump2 | dirichlet | 0.9125 | 22.862 | 25.054 | 4/4 | PASS |
+| FGA_jump2 | hier_dirichlet | 0.9058 | 22.694 | 25.054 | 4/4 | PASS |
+| FGA_jump2 | **cond_logit** | 0.9829 | 24.626 | 25.054 | 4/4 | PASS |
+| FGA_jump2 | lgbm | 1.0187 | 25.522 | 25.054 | 4/4 | PASS |
+| FGA_3 | **proportional** | 0.9923 | 27.560 | 27.774 | 4/4 | PASS |
+| FGA_3 | dirichlet | 0.9923 | 27.560 | 27.774 | 4/4 | PASS |
+| FGA_3 | hier_dirichlet | 0.9923 | 27.560 | 27.774 | 4/4 | PASS |
+| FGA_3 | cond_logit | 0.9627 | 26.737 | 27.774 | 4/4 | PASS |
+| FGA_3 | lgbm | 0.9998 | 27.768 | 27.774 | 4/4 | PASS |
+| TOV | **proportional** | 1.0232 | 14.005 | 13.687 | 4/4 | PASS |
+| TOV | dirichlet | 1.0232 | 14.005 | 13.687 | 4/4 | PASS |
+| TOV | hier_dirichlet | 1.0227 | 13.997 | 13.687 | 4/4 | PASS |
+| TOV | cond_logit | 0.9026 | 12.354 | 13.687 | 4/4 | PASS |
+| TOV | lgbm | 1.0209 | 13.973 | 13.687 | 4/4 | PASS |
+| FT_trip | proportional | 0.9146 | 19.189 | 20.980 | 4/4 | PASS |
+| FT_trip | dirichlet | 0.9146 | 19.189 | 20.980 | 4/4 | PASS |
+| FT_trip | hier_dirichlet | 0.9091 | 19.073 | 20.980 | 4/4 | PASS |
+| FT_trip | cond_logit | 1.0220 | 21.441 | 20.980 | 4/4 | PASS |
+| FT_trip | **lgbm** | 0.9697 | 20.344 | 20.980 | 4/4 | PASS |
+
+(Bold marks the arm adopted for that class-fold in section 6 / section 4.)
+
+### 7.2 Effect on this model: none
+
+- **All 50 arm-fold cells pass the amended gate.** Slope ratios span
+  0.8955 to 1.0731 -- the whole range sits inside [0.8, 1.2], with the narrowest
+  margin being `FT_trip` `hier_dirichlet` at 0.8955 (0.0955 clear of the floor)
+  and `TOV` `proportional` at 1.0731 (0.1269 clear of the ceiling).
+- **`reapply_responsiveness_gate` reports 0 verdict flips.** `resp_pass` is
+  unchanged for every one of the 50 cells, so no arm's eligibility moves and no
+  adopted winner's status changes on either fold. Re-running
+  `--redecide` after the amendment left `report_v1.md` and
+  `usage_params_v1.json` **byte-identical**.
+- **The small-span escape clause never engages.** The smallest realised quintile
+  span anywhere in the bake-off is 11.95 pp (`TOV` on F1), against the 2 pp
+  threshold, so the stricter 4-of-4 step requirement applies everywhere -- and is
+  met by every arm on every class on both folds. For contrast, the fg_make
+  failure the amendment was written for had a 1.37 pp defence-driver span.
+- **Nothing in this model resembled the failure the amendment targets.** The
+  flattest arm here holds 89.6% of the realised spread; the fg_make team baseline
+  held 0.86%. The reason is structural: every arm in this bake-off is anchored on
+  the player's own as-of rate (U1 is that rate normalised over the five, U4
+  carries `log_share` with a fitted coefficient of 0.91-1.05, and U5 is offset by
+  `log q` so it nests U1 at zero trees), so none of them can sit at the league
+  mean even if the fit adds nothing.
+- Consequently `docs/models/change_ledger.md` is **not** amended: no status,
+  winner or eligibility in section 6 changes. Decision 8's own entry already
+  records "usage 4/4 with slopes near 1"; the table above is the measurement
+  behind that claim.
+
+### 7.3 The amendment is enforced in code, not only re-applied once
+
+`usage.SLOPE_BAND`, `usage.RESP_MIN_STEPS_SMALL_SPAN` and `usage.SMALL_SPAN_PP`
+now carry the amended gate, and `usage.share_responsiveness` returns
+`slope_pass`, `steps_pass`, `steps_required`, `span_actual_pp` and the superseded
+`steps_only_pass` alongside its verdict, so a future re-run of this bake-off
+cannot silently revert to the steps-only wording and both readings stay on
+record. Two tests pin it:
+`tests/test_usage.py::test_d_the_responsiveness_gate_rejects_a_flat_arm` builds a
+damped arm holding a tenth of the realised spread -- monotone in all four steps,
+so it PASSES the superseded gate -- and requires the amended gate to fail it,
+which is the fg_make failure reproduced in miniature; and
+`::test_d_the_small_span_clause_relaxes_the_step_count` exercises the sub-2 pp
+branch, which no real driver in this model reaches.
