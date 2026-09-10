@@ -365,3 +365,194 @@ except its R3 column, are unaffected. Artifact:
 `data/processed/models/rotation/rotation_fit_round2_corrected_hazards.json`.
 
 ---
+
+## 6. Round 3 pre-registration (PM-directed, worker-authored 2026-09-10)
+
+Written and committed BEFORE any round-3 arm was run. Evidence it is built on:
+`docs/tests/rotation_close_game_audit_2026-09-10.md` (also written before this
+section, from the round-2 fits only).
+
+### 6.1 What round 3 is, and why
+
+Round 2 adopted nothing. The PM's direction for round 3, not to be reopened:
+**R5 with a close-game keep-starters override, fitted from data exactly as the
+donor depth and the block override were, and carried as a model component --
+never as a post-hoc adjustment of engine output** (`CLAUDE.md`, "no hand tuning
+on engine output").
+
+The mechanism the direction names is the one the audit isolates. R5's existing
+override is one-sided: it can only **block** a player onto the bench. The donor
+sequence therefore sets a ceiling on the starters' share in every state and the
+block can only push that share down, so an arm that is short of starters late in
+a close game has no mechanism that could repair it. The keep override is the
+missing half of the same object.
+
+Two audit results qualify the round-2 record and are carried into this
+pre-registration rather than discovered afterwards:
+
+1. **The corrected R5 fails all three margin bands, not two.** Section 4's R5
+   column was produced with section 5's inert foul terms. Re-run with the
+   corrected matrix and its refitted knobs, R5's final-8:00 cells are 0.6948
+   (-5.4 pp), 0.6572 (-6.7 pp) and **0.5868 (+6.5 pp)** against 0.7491 / 0.7240 /
+   0.5223. The round-2 blowout PASS was an artifact of the defect. Round 3's
+   baseline is an arm missing three cells, and the blowout miss is concentrated
+   in the final 2:00 at |margin| > 15 (0.5482 vs 0.3405, +20.8 pp).
+2. **The round-2 "starter time is spent too early" hypothesis (`model.md` section
+   10) is refuted.** R5's close-band starter share is 5.3 pp LOW in the first half
+   and 5.4 pp low in the final eight minutes; it is not a redistribution of a
+   correct total. A within-game time-profile constraint would not have fixed it.
+
+### 6.2 Folds -- a stated deviation from the standing fold rule
+
+`CLAUDE.md` fixes fold 1 = train through 2022-23 / test 2023-24 and fold 2 =
+train through 2023-24 / test 2024-25, with fold 2 selecting. **Those folds are
+not constructible for this model.** CBBD carries no on-floor data at all before
+2023-24 -- 0.0000 of possessions in both 2022 and 2023 (audit section 1, L13) --
+so fold 1 has no training season and fold 2 is the only fold that exists. Round
+3 therefore runs the model's established F1, **train 2024, test 2025**, which
+*is* the standing fold 2, and reports the robustness fold rounds 1-2 used
+(within-2025 walk-forward) only if an arm is otherwise adoptable. 2026 stays
+sealed; `seal.assert_not_sealed` guards the trainer.
+
+### 6.3 Arms
+
+All four are graded by one blind grading path (`train_rotation_v1.build_row` /
+`verdict` / `rotation.aggregate_stats`), the same code that graded rounds 1 and 2.
+
+| arm | what it is | simplicity |
+|---|---|---:|
+| `R2_hier_dirichlet` | the incumbent reference, unchanged | 1 |
+| `R5_hybrid` | round 2's donor + block hybrid with the **corrected** hazard matrix. This column closes section 5's OPEN item and is the baseline the keep arms must beat | 2 |
+| `R8_keep_cell` | R5 + the **simpler threshold form** of the keep override | 3 |
+| `R7_keep_logistic` | R5 + the **logistic form** of the keep override | 4 |
+
+**R7 `keep_logistic`.** A logistic on-floor propensity `w_on` is fitted on the
+training season over one row per (team-game, possession, candidate), label = "on
+the floor at this possession", features (`rotation_v3.KEEP_FEATURES`): `fouls`,
+`fouls x is_starter`, `foul_out`, `is_starter`, `|margin|`,
+`|margin| x is_starter`, `late`, `late x is_starter`, `is_close x late`,
+`is_close x late x is_starter`, `|margin| x late`, `target_share` (the team
+prior), `target_share x is_close x late`, `target_share x late`, `period2`,
+`sec_left_frac`. At simulation time the keep score is the propensity
+**deviation** from a neutral state (early, tied, no fouls),
+
+    z_i    = (x_i - x_i^neutral) . w_on
+    p_i    = sigmoid(scale_k * z_i + logit(q0))
+    keep_i = tol2_i < p_i,    tol2_i ~ U(0,1) drawn ONCE per player per game
+
+so the override is inert in an ordinary state exactly as the block is, and the
+per-game tolerance draw makes a keep persistent and self-clearing rather than a
+per-possession coin flip. `is_starter`, `target_share`, `period2` and
+`sec_left_frac` are the neutral carriers and cancel out of the deviation
+(`KEEP_STATE_COLS`), the same convention `OVERRIDE_STATE_COLS` uses for the
+block. Reading the training game's own foul events while fitting is legitimate
+and is never done at simulation time, where fouls are simulated from the as-of
+rate -- the rule established by section 5's fix.
+
+**R8 `keep_cell`.** The simpler threshold form: no logistic, no player features
+beyond the starter flag, one knob.
+
+    p_i    = theta * s*[time_bucket, margin_bucket]   if i is a predicted starter
+           = 0                                        otherwise
+    keep_i = tol2_i < p_i
+
+`s*` is the training season's own starters'-share-of-on-floor-slots table by
+(time bucket x margin bucket) -- a pure data table, the same object
+`TiltTables.state` is built from, and the reason R2 gets the close bands right.
+It is league-average by construction; the pre-registered slope check (6.6) is
+what will expose that if it matters.
+
+**Shared displacement rule.** A kept player who is not in the donor-mapped five
+replaces the worst as-of-ranked member of that five who is neither kept nor
+blocked. No override may put a fouled-out or unavailable player on the floor and
+no override may act on more than five players at once.
+
+### 6.4 Fitting
+
+Base fit = `rotation_fit_round2_corrected_hazards.json` (training season 2024
+only), so R5's column is exactly section 5's corrected arm. Round 3 fits only
+what it adds:
+
+- `w_on` (R7) on 300 training games, `LogisticRegression(C=1.0, lbfgs)`;
+- `s*` (R8) on the whole training season;
+- the knobs, by **coordinate descent, two passes**, on 120 training team-games:
+  keep knob(s) with the block held at its round-2 corrected value, then the
+  block pair `(scale, p0)` at that keep, then both again. Objective: the sum of
+  squared errors of the four state-dependence cells against the **training
+  season's own** cells, the identical objective round 2's `fit_override_scale`
+  used. Grids: keep scale {0, 0.5, 1, 2, 4, 8} x q0 {0.02, 0.05, 0.15, 0.35};
+  theta {0.0, 0.1, ..., 1.0}; block scale {0.5, 1, 2, 4} x p0 {0.005, 0.02,
+  0.06}. **Every grid point evaluated is reported**, as in section 4.5. There is
+  no hand-set threshold anywhere in either arm.
+
+### 6.5 Gates -- unchanged from round 2, none softened
+
+Test universe: the **same** 1,600-game subset of 2025 the graded round-2 run
+used (numpy RandomState seed 2025), 5 seeds per arm, so round-2 and round-3
+columns are directly comparable.
+
+- **G8 cells** (report, not veto): minutes mean +/- 2.0; minutes SD ratio pooled
+  and within-player 0.9-1.1; top-5 and top-8 share of team minutes +/- 2 pp;
+  players with > 0 minutes +/- 1.0.
+- **State-dependence cells** (the veto): starters' share of on-floor slots in the
+  final 8:00 at |margin| <= 5 / 6-15 / > 15, and starters' share while carrying
+  >= 4 fouls, each +/- 3 pp. **An arm missing ANY of these four is ineligible
+  regardless of G8.** The "at exactly 4 fouls" diagnostic row is reported
+  alongside, because section 5 showed the >= 4 cell can pass for the wrong
+  reason.
+- **Lineup concentration**: top-1 / top-3 / top-5 five-man lineup share, distinct
+  lineups per team-game, K-S D of the top-1 lineup share distribution, K-S D of
+  per-player minutes, substitution rate at a possession boundary.
+- **Per-player minutes**: mean, pooled SD, within-player SD and the K-S of the
+  per-player minutes distribution, all through `pooled_and_within_sd` -- the
+  round-1/2 code path, so per-player minutes error is reported in the same
+  currency as the two earlier rounds rather than as a new statistic.
+- Any cell with n < 300 player-games or possessions is labelled UNDERPOWERED.
+
+### 6.6 Slope check (standing rule: matchup-specific, not league-average)
+
+Team-games are bucketed into quintiles of the **pregame** team prior (the as-of
+predicted share of team minutes going to the predicted starting five) and the
+close-and-late cell (final 8:00, |margin| <= 5) is reported per quintile for
+ACTUAL and every arm, with the fitted slope against the prior and Q5 - Q1.
+Measured on the round-2 fits, actual is +0.692 (Q5 - Q1 +14.5 pp), R2 +0.632
+(+13.3 pp), R5 +0.763 (+16.2 pp). An arm whose quintile profile is flat, or
+whose slope sign disagrees with actual, is reported as not matchup-specific
+whatever its pooled cells say.
+
+### 6.7 Noise floor
+
+Two, both reported:
+
+- **A, seed-varied sim runs**: 20 seeds x 150 games per arm, the SD of every
+  gate cell. (Round 2 used 50 x 150; 20 is a compute concession with four other
+  workers on the machine and is stated as such. It widens the uncertainty on the
+  noise estimate, it does not move any gate.)
+- **B, spec-identical refit under a second seed**: the whole of 6.4 re-run with
+  a different training-game sample (fit seed 101 vs 11), a different logistic
+  `random_state`, and a different sim seed inside the knob grid (23 vs 7), then
+  graded on the same 150-game universe as the first fit. A round-3 arm counts as
+  beating the baseline only if its improvement on a state cell exceeds the
+  refit-to-refit spread on that cell.
+
+### 6.8 Decision rule
+
+Winner = the eligible arm (all four state cells inside +/- 3 pp) with the most
+cells inside tolerance across G8 + state; ties broken by lineup-concentration
+K-S D, then by simplicity in the order R2 < R5 < R8 < R7. **Ties go to the
+simpler model**, so R8 beats R7 on equal cells. An arm whose improvement over
+R5 does not clear noise floor B on the cell it was built to fix is not adopted
+on that cell. If no arm is eligible, **adopt nothing**, report which cell fails
+and by how much, and name the diagnosis. No gate is relaxed to produce a winner.
+
+### 6.9 Engine expressibility (a condition on adoption, checked and reported)
+
+`RotationSampler.next_lineup` is the engine contract and
+`engine/rotation_adapter.py` vectorises it. Whatever round 3 adopts must be
+expressible in that decision-rule form; the two stated RNG divergences of
+`docs/models/engine/model.md` section 4.5 (counter-based streams, one foul
+uniform per roster slot) apply unchanged and any extra tolerance draw a keep
+override needs becomes a third such stream. The adapter change required by each
+candidate is reported with the results whether or not an arm is adopted.
+
+---
