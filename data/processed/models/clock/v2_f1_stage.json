@@ -1,0 +1,179 @@
+{
+  "seed": 20260910,
+  "tree_params": {
+    "num_leaves": 63,
+    "min_child_samples": 500
+  },
+  "tree_param_search_f1": [
+    {
+      "num_leaves": 31,
+      "min_child_samples": 1500,
+      "f1_crps": 4.768497,
+      "fit_seconds": 90.6
+    },
+    {
+      "num_leaves": 63,
+      "min_child_samples": 500,
+      "f1_crps": 4.766108,
+      "fit_seconds": 227.2
+    },
+    {
+      "num_leaves": 127,
+      "min_child_samples": 200,
+      "f1_crps": 4.768026,
+      "fit_seconds": 322.2
+    }
+  ],
+  "end_of_half_floor": {
+    "share_se": 0.003169,
+    "duration_se": 0.09712,
+    "share": 0.006338,
+    "duration": 0.19424,
+    "k": 2.0,
+    "sim_seed_sd_share": [
+      0.001336,
+      0.00244
+    ],
+    "sim_seed_sd_duration": [
+      0.06324,
+      0.01688
+    ],
+    "actual_block_bootstrap_se_share": 0.003169,
+    "actual_block_bootstrap_se_duration": 0.09712,
+    "seeds": [
+      20260910,
+      20260911,
+      20260912,
+      20260913,
+      20260914
+    ]
+  },
+  "threshold_chosen": 45,
+  "threshold_search_f1": [
+    {
+      "T": 30,
+      "f1_mean_delta": 2.0,
+      "f1_sd_delta": -0.583,
+      "f1_eoh_share_gap": 0.11862,
+      "f1_eoh_duration_gap": -5.6313,
+      "score": 50.4845
+    },
+    {
+      "T": 45,
+      "f1_mean_delta": 2.023,
+      "f1_sd_delta": -0.58,
+      "f1_eoh_share_gap": 0.11118,
+      "f1_eoh_duration_gap": -5.412,
+      "score": 48.2006
+    },
+    {
+      "T": 60,
+      "f1_mean_delta": 2.074,
+      "f1_sd_delta": -0.572,
+      "f1_eoh_share_gap": 0.10929,
+      "f1_eoh_duration_gap": -5.5536,
+      "score": 48.6717
+    },
+    {
+      "T": 90,
+      "f1_mean_delta": 2.082,
+      "f1_sd_delta": -0.592,
+      "f1_eoh_share_gap": 0.11078,
+      "f1_eoh_duration_gap": -5.4932,
+      "score": 48.6305
+    }
+  ],
+  "f1_rows": [
+    {
+      "fold": "F1",
+      "arm": "empirical",
+      "feature_set": "R2_dummy",
+      "crps": 4.827945,
+      "logscore_defined": 3.490232,
+      "logscore_undef_pct": 0.1624,
+      "fit_seconds": 4.4,
+      "n_cells": 27,
+      "n_powered": 27,
+      "n_underpowered": 0,
+      "pit_leak_failures": 5,
+      "pit_worst_D_powered": 0.12604,
+      "pit_worst_cell": "other | 0-34"
+    },
+    {
+      "fold": "F1",
+      "arm": "lognormal",
+      "feature_set": "R2_dummy",
+      "crps": 5.027609,
+      "logscore_defined": 3.682835,
+      "logscore_undef_pct": 0.0,
+      "fit_seconds": 53.4,
+      "n_cells": 27,
+      "n_powered": 27,
+      "n_underpowered": 0,
+      "pit_leak_failures": 27,
+      "pit_worst_D_powered": 0.22681,
+      "pit_worst_cell": "other | 120-299"
+    },
+    {
+      "fold": "F1",
+      "arm": "gamma",
+      "feature_set": "R2_dummy",
+      "crps": 4.865656,
+      "logscore_defined": 3.570253,
+      "logscore_undef_pct": 0.0,
+      "fit_seconds": 106.2,
+      "n_cells": 27,
+      "n_powered": 27,
+      "n_underpowered": 0,
+      "pit_leak_failures": 18,
+      "pit_worst_D_powered": 0.29266,
+      "pit_worst_cell": "other | 120-299"
+    },
+    {
+      "fold": "F1",
+      "arm": "hazard",
+      "feature_set": "R2_dummy",
+      "crps": 4.904772,
+      "logscore_defined": 3.548925,
+      "logscore_undef_pct": 0.0,
+      "fit_seconds": 117.9,
+      "n_cells": 27,
+      "n_powered": 27,
+      "n_underpowered": 0,
+      "pit_leak_failures": 22,
+      "pit_worst_D_powered": 0.39458,
+      "pit_worst_cell": "other | 120-299"
+    },
+    {
+      "fold": "F1",
+      "arm": "lgbm_quantile",
+      "feature_set": "R2_tree",
+      "crps": 4.766108,
+      "logscore_defined": 3.283828,
+      "logscore_undef_pct": 7.454,
+      "fit_seconds": 274.8,
+      "n_cells": 27,
+      "n_powered": 27,
+      "n_underpowered": 0,
+      "pit_leak_failures": 6,
+      "pit_worst_D_powered": 0.21869,
+      "pit_worst_cell": "other | 35-119"
+    },
+    {
+      "fold": "F1",
+      "arm": "two_regime",
+      "feature_set": "R2_two_regime(T=45)",
+      "crps": 4.776876,
+      "logscore_defined": 3.290138,
+      "logscore_undef_pct": 7.2366,
+      "fit_seconds": null,
+      "n_cells": 27,
+      "n_powered": 27,
+      "n_underpowered": 0,
+      "pit_leak_failures": 6,
+      "pit_worst_D_powered": 0.16575,
+      "pit_worst_cell": "other | 35-119"
+    }
+  ],
+  "written_at": "2026-09-10T19:38:46.101706+00:00"
+}

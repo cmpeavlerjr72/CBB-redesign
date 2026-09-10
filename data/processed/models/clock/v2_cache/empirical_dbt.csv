@@ -1,0 +1,8 @@
+arm,terminal_event,n,actual_mean,actual_sd,model_mean,model_sd,mean_gap
+empirical,FGA_3,194212,18.912,9.241,17.656,9.683,-1.256
+empirical,FGA_jump2,128524,20.917,9.098,17.996,9.667,-2.92
+empirical,FGA_rim,183713,16.971,9.671,17.396,9.689,0.425
+empirical,FT_trip_bonus,40909,12.091,9.783,15.546,10.365,3.455
+empirical,FT_trip_shooting,50819,15.373,9.928,17.585,9.763,2.212
+empirical,TOV,125325,16.0,9.681,17.745,9.748,1.745
+empirical,unknown,6005,6.482,10.716,19.202,9.963,12.72

@@ -1,0 +1,44 @@
+{
+  "actual_mean": 68.1332,
+  "actual_sd": 5.0882,
+  "n_games": 5319,
+  "arms": {
+    "empirical": {
+      "sim_mean": 69.2569,
+      "sim_sd": 4.331,
+      "sd_delta": -0.7571,
+      "feature_implied_count_sd": 3.1158,
+      "corr_sim_actual": 0.3901
+    },
+    "lognormal": {
+      "sim_mean": 66.1197,
+      "sim_sd": 5.2678,
+      "sd_delta": 0.1796,
+      "feature_implied_count_sd": 3.0665,
+      "corr_sim_actual": 0.3583
+    },
+    "gamma": {
+      "sim_mean": 68.8534,
+      "sim_sd": 4.8086,
+      "sd_delta": -0.2796,
+      "feature_implied_count_sd": 3.3383,
+      "corr_sim_actual": 0.4257
+    },
+    "hazard": {
+      "sim_mean": 69.9428,
+      "sim_sd": 4.7296,
+      "sd_delta": -0.3586,
+      "feature_implied_count_sd": 3.1839,
+      "corr_sim_actual": 0.4109
+    },
+    "lgbm_quantile": {
+      "sim_mean": 70.3232,
+      "sim_sd": 4.4816,
+      "sd_delta": -0.6066,
+      "feature_implied_count_sd": 3.5875,
+      "corr_sim_actual": 0.5189
+    }
+  },
+  "iid_renewal_count_sd_reference": 3.2645,
+  "note": "iid_renewal_count_sd_reference is sqrt(N) * sd(D) / mean(D) / 2 for N = 2400/mean(D) draws per game, i.e. the per-team count SD produced by identically-distributed possessions with no game-to-game pace variation at all."
+}

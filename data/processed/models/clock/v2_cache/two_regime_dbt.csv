@@ -1,0 +1,8 @@
+arm,terminal_event,n,actual_mean,actual_sd,model_mean,model_sd,mean_gap
+two_regime,FGA_3,194212,18.912,9.241,17.399,8.647,-1.513
+two_regime,FGA_jump2,128524,20.917,9.098,17.841,8.627,-3.076
+two_regime,FGA_rim,183713,16.971,9.671,17.092,8.656,0.121
+two_regime,FT_trip_bonus,40909,12.091,9.783,14.813,9.392,2.722
+two_regime,FT_trip_shooting,50819,15.373,9.928,17.314,8.729,1.941
+two_regime,TOV,125325,16.0,9.681,17.548,8.746,1.547
+two_regime,unknown,6005,6.482,10.716,18.941,8.858,12.458

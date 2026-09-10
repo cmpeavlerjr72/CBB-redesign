@@ -1,0 +1,8 @@
+arm,terminal_event,n,actual_mean,actual_sd,model_mean,model_sd,mean_gap
+lgbm_quantile,FGA_3,194212,18.912,9.241,17.468,8.648,-1.444
+lgbm_quantile,FGA_jump2,128524,20.917,9.098,17.92,8.623,-2.997
+lgbm_quantile,FGA_rim,183713,16.971,9.671,17.168,8.653,0.197
+lgbm_quantile,FT_trip_bonus,40909,12.091,9.783,14.731,9.368,2.639
+lgbm_quantile,FT_trip_shooting,50819,15.373,9.928,17.399,8.73,2.026
+lgbm_quantile,TOV,125325,16.0,9.681,17.628,8.736,1.627
+lgbm_quantile,unknown,6005,6.482,10.716,18.982,8.855,12.5

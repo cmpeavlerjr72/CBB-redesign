@@ -1,0 +1,40 @@
+{
+  "seasons": [
+    2022,
+    2023,
+    2024,
+    2025
+  ],
+  "raw_rows": 3029695,
+  "raw_games": 21969,
+  "rows_in_universe": 3029695,
+  "games_in_universe": 21969,
+  "games_cbbd_complete": 18902,
+  "games_dropped_cbbd_incomplete": 3067,
+  "rows_cbbd_complete": 2607355,
+  "rows_over_duration_cap": 163,
+  "rows_over_duration_cap_pct": 0.00625,
+  "over_cap_by_terminal": {
+    "FGA_3": 42,
+    "FGA_rim": 29,
+    "TOV": 29,
+    "FT_trip_shooting": 23,
+    "FGA_jump2": 22,
+    "end_period": 13,
+    "unknown": 3,
+    "FT_trip_bonus": 2
+  },
+  "censored_rows": 5600,
+  "censored_pct": 0.2148,
+  "rows_unknown_start_reason": 0,
+  "rows_missing_ratings": 0,
+  "rows_missing_tempo": 14442,
+  "final_rows": 2607192,
+  "final_games": 18902,
+  "rows_by_season": {
+    "2022": 574973,
+    "2023": 603112,
+    "2024": 697903,
+    "2025": 731204
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "floor": 0.006764,
+  "n_arms": 20,
+  "n_eligible": 0,
+  "n_pass_g1": 0,
+  "n_pit_clean": 0,
+  "winner": null,
+  "verdict": "NO ARM ADOPTED",
+  "reason": "no (arm, feature set) combination passed the pre-registered emergent G1 and PIT gates on F2",
+  "best_crps_overall": 4.808153,
+  "best_crps_arm": "lgbm_quantile",
+  "best_crps_feature_set": "D_plus_season",
+  "created_at": "2026-09-10T16:56:06.407714+00:00",
+  "finished_at": "2026-09-10T17:42:38.378754+00:00",
+  "seed": 20260910,
+  "quick": false,
+  "selection_fold": "F2"
+}

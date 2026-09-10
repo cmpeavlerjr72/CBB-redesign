@@ -1,0 +1,8 @@
+arm,terminal_event,n,actual_mean,actual_sd,model_mean,model_sd,mean_gap
+lognormal,FGA_3,194212,18.912,9.241,18.429,13.859,-0.483
+lognormal,FGA_jump2,128524,20.917,9.098,18.832,13.928,-2.084
+lognormal,FGA_rim,183713,16.971,9.671,18.115,13.857,1.144
+lognormal,FT_trip_bonus,40909,12.091,9.783,15.815,14.745,3.723
+lognormal,FT_trip_shooting,50819,15.373,9.928,18.335,13.882,2.962
+lognormal,TOV,125325,16.0,9.681,18.561,14.019,2.561
+lognormal,unknown,6005,6.482,10.716,20.042,14.53,13.56

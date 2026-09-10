@@ -1,0 +1,123 @@
+{
+  "zero_variance_dropped": {
+    "A_state": [
+      "chance_number_at_start"
+    ],
+    "B_plus_teams": [
+      "chance_number_at_start"
+    ],
+    "C_plus_score": [
+      "chance_number_at_start"
+    ],
+    "D_plus_season": [
+      "chance_number_at_start"
+    ]
+  },
+  "build": {
+    "seasons": [
+      2022,
+      2023,
+      2024,
+      2025
+    ],
+    "raw_rows": 3029695,
+    "raw_games": 21969,
+    "rows_in_universe": 3029695,
+    "games_in_universe": 21969,
+    "games_cbbd_complete": 18902,
+    "games_dropped_cbbd_incomplete": 3067,
+    "rows_cbbd_complete": 2607355,
+    "rows_over_duration_cap": 163,
+    "rows_over_duration_cap_pct": 0.00625,
+    "over_cap_by_terminal": {
+      "FGA_3": 42,
+      "FGA_rim": 29,
+      "TOV": 29,
+      "FT_trip_shooting": 23,
+      "FGA_jump2": 22,
+      "end_period": 13,
+      "unknown": 3,
+      "FT_trip_bonus": 2
+    },
+    "censored_rows": 5600,
+    "censored_pct": 0.2148,
+    "rows_unknown_start_reason": 0,
+    "rows_missing_ratings": 0,
+    "rows_missing_tempo": 14442,
+    "final_rows": 2607192,
+    "final_games": 18902,
+    "rows_by_season": {
+      "2022": 574973,
+      "2023": 603112,
+      "2024": 697903,
+      "2025": 731204
+    }
+  },
+  "noise_floor": {
+    "tree_seed_refit": {
+      "A_state": {
+        "crps_seed_base": 4.917949,
+        "crps_seed_alt": 4.917892,
+        "abs_delta": 5.7e-05
+      },
+      "B_plus_teams": {
+        "crps_seed_base": 4.877854,
+        "crps_seed_alt": 4.878113,
+        "abs_delta": 0.000259
+      },
+      "C_plus_score": {
+        "crps_seed_base": 4.810246,
+        "crps_seed_alt": 4.810541,
+        "abs_delta": 0.000295
+      },
+      "D_plus_season": {
+        "crps_seed_base": 4.808153,
+        "crps_seed_alt": 4.808422,
+        "abs_delta": 0.000269
+      }
+    },
+    "block_bootstrap_se": {
+      "empirical/A_state": 0.00638,
+      "empirical/B_plus_teams": 0.006509,
+      "empirical/C_plus_score": 0.006565,
+      "empirical/D_plus_season": 0.006601,
+      "lognormal/A_state": 0.006307,
+      "lognormal/B_plus_teams": 0.00636,
+      "lognormal/C_plus_score": 0.006367,
+      "lognormal/D_plus_season": 0.006433,
+      "gamma/A_state": 0.006483,
+      "gamma/B_plus_teams": 0.00657,
+      "gamma/C_plus_score": 0.006537,
+      "gamma/D_plus_season": 0.006599,
+      "hazard/A_state": 0.006241,
+      "hazard/B_plus_teams": 0.006377,
+      "hazard/C_plus_score": 0.006305,
+      "hazard/D_plus_season": 0.006368,
+      "lgbm_quantile/A_state": 0.006528,
+      "lgbm_quantile/B_plus_teams": 0.006738,
+      "lgbm_quantile/C_plus_score": 0.006729,
+      "lgbm_quantile/D_plus_season": 0.006764
+    },
+    "tree_floor": 0.000295,
+    "max_block_bootstrap_se": 0.006764,
+    "floor_used": 0.006764
+  },
+  "verdict": {
+    "floor": 0.006764,
+    "n_arms": 20,
+    "n_eligible": 0,
+    "n_pass_g1": 0,
+    "n_pit_clean": 0,
+    "winner": null,
+    "verdict": "NO ARM ADOPTED",
+    "reason": "no (arm, feature set) combination passed the pre-registered emergent G1 and PIT gates on F2",
+    "best_crps_overall": 4.808153,
+    "best_crps_arm": "lgbm_quantile",
+    "best_crps_feature_set": "D_plus_season",
+    "created_at": "2026-09-10T16:56:06.407714+00:00",
+    "finished_at": "2026-09-10T17:42:38.378754+00:00",
+    "seed": 20260910,
+    "quick": false,
+    "selection_fold": "F2"
+  }
+}

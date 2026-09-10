@@ -1,0 +1,46 @@
+{
+  "floor": 0.006753,
+  "n_arms": 6,
+  "n_eligible": 0,
+  "n_pass_g1": 0,
+  "n_pit_clean": 0,
+  "n_pass_eoh": 0,
+  "winner": null,
+  "verdict": "NO ARM ADOPTED",
+  "reason": "no arm passed all three pre-registered round-2 gates on F2 (emergent G1, PIT by state cell, end-of-half)",
+  "best_crps_arm": "lgbm_quantile",
+  "best_crps": 4.809089,
+  "created_at": "2026-09-10T19:09:51.547386+00:00",
+  "finished_at": "2026-09-10T20:04:51.539998+00:00",
+  "seed": 20260910,
+  "round": 2,
+  "tree_params": {
+    "num_leaves": 63,
+    "min_child_samples": 500
+  },
+  "threshold_T": 45,
+  "end_of_half_floor": {
+    "share_se": 0.003169,
+    "duration_se": 0.09712,
+    "share": 0.006338,
+    "duration": 0.19424,
+    "k": 2.0,
+    "sim_seed_sd_share": [
+      0.001336,
+      0.00244
+    ],
+    "sim_seed_sd_duration": [
+      0.06324,
+      0.01688
+    ],
+    "actual_block_bootstrap_se_share": 0.003169,
+    "actual_block_bootstrap_se_duration": 0.09712,
+    "seeds": [
+      20260910,
+      20260911,
+      20260912,
+      20260913,
+      20260914
+    ]
+  }
+}

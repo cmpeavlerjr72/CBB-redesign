@@ -1,0 +1,49 @@
+{
+  "tree_seed_refit": {
+    "A_state": {
+      "crps_seed_base": 4.917949,
+      "crps_seed_alt": 4.917892,
+      "abs_delta": 5.7e-05
+    },
+    "B_plus_teams": {
+      "crps_seed_base": 4.877854,
+      "crps_seed_alt": 4.878113,
+      "abs_delta": 0.000259
+    },
+    "C_plus_score": {
+      "crps_seed_base": 4.810246,
+      "crps_seed_alt": 4.810541,
+      "abs_delta": 0.000295
+    },
+    "D_plus_season": {
+      "crps_seed_base": 4.808153,
+      "crps_seed_alt": 4.808422,
+      "abs_delta": 0.000269
+    }
+  },
+  "block_bootstrap_se": {
+    "empirical/A_state": 0.00638,
+    "empirical/B_plus_teams": 0.006509,
+    "empirical/C_plus_score": 0.006565,
+    "empirical/D_plus_season": 0.006601,
+    "lognormal/A_state": 0.006307,
+    "lognormal/B_plus_teams": 0.00636,
+    "lognormal/C_plus_score": 0.006367,
+    "lognormal/D_plus_season": 0.006433,
+    "gamma/A_state": 0.006483,
+    "gamma/B_plus_teams": 0.00657,
+    "gamma/C_plus_score": 0.006537,
+    "gamma/D_plus_season": 0.006599,
+    "hazard/A_state": 0.006241,
+    "hazard/B_plus_teams": 0.006377,
+    "hazard/C_plus_score": 0.006305,
+    "hazard/D_plus_season": 0.006368,
+    "lgbm_quantile/A_state": 0.006528,
+    "lgbm_quantile/B_plus_teams": 0.006738,
+    "lgbm_quantile/C_plus_score": 0.006729,
+    "lgbm_quantile/D_plus_season": 0.006764
+  },
+  "tree_floor": 0.000295,
+  "max_block_bootstrap_se": 0.006764,
+  "floor_used": 0.006764
+}

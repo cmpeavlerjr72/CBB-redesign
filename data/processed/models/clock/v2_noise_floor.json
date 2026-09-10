@@ -1,0 +1,99 @@
+{
+  "tree_seed_refit": {
+    "crps_seed_base": 4.809089,
+    "crps_seed_alt": 4.809116,
+    "abs_delta": 2.7e-05
+  },
+  "block_bootstrap_se": {
+    "empirical": 0.006516,
+    "lognormal": 0.006273,
+    "gamma": 0.006465,
+    "hazard": 0.006343,
+    "lgbm_quantile": 0.006724,
+    "two_regime": 0.006753
+  },
+  "floor_used": 0.006753,
+  "end_of_half_floor": {
+    "share_se": 0.003169,
+    "duration_se": 0.09712,
+    "share": 0.006338,
+    "duration": 0.19424,
+    "k": 2.0,
+    "sim_seed_sd_share": [
+      0.001336,
+      0.00244
+    ],
+    "sim_seed_sd_duration": [
+      0.06324,
+      0.01688
+    ],
+    "actual_block_bootstrap_se_share": 0.003169,
+    "actual_block_bootstrap_se_duration": 0.09712,
+    "seeds": [
+      20260910,
+      20260911,
+      20260912,
+      20260913,
+      20260914
+    ]
+  },
+  "tree_param_search_f1": [
+    {
+      "num_leaves": 31,
+      "min_child_samples": 1500,
+      "f1_crps": 4.768497,
+      "fit_seconds": 90.6
+    },
+    {
+      "num_leaves": 63,
+      "min_child_samples": 500,
+      "f1_crps": 4.766108,
+      "fit_seconds": 227.2
+    },
+    {
+      "num_leaves": 127,
+      "min_child_samples": 200,
+      "f1_crps": 4.768026,
+      "fit_seconds": 322.2
+    }
+  ],
+  "tree_params_chosen": {
+    "num_leaves": 63,
+    "min_child_samples": 500
+  },
+  "threshold_search_f1": [
+    {
+      "T": 30,
+      "f1_mean_delta": 2.0,
+      "f1_sd_delta": -0.583,
+      "f1_eoh_share_gap": 0.11862,
+      "f1_eoh_duration_gap": -5.6313,
+      "score": 50.4845
+    },
+    {
+      "T": 45,
+      "f1_mean_delta": 2.023,
+      "f1_sd_delta": -0.58,
+      "f1_eoh_share_gap": 0.11118,
+      "f1_eoh_duration_gap": -5.412,
+      "score": 48.2006
+    },
+    {
+      "T": 60,
+      "f1_mean_delta": 2.074,
+      "f1_sd_delta": -0.572,
+      "f1_eoh_share_gap": 0.10929,
+      "f1_eoh_duration_gap": -5.5536,
+      "score": 48.6717
+    },
+    {
+      "T": 90,
+      "f1_mean_delta": 2.082,
+      "f1_sd_delta": -0.592,
+      "f1_eoh_share_gap": 0.11078,
+      "f1_eoh_duration_gap": -5.4932,
+      "score": 48.6305
+    }
+  ],
+  "threshold_chosen": 45
+}
