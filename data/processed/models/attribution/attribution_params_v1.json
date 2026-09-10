@@ -1,0 +1,240 @@
+{
+  "possessions_version": "v2",
+  "seed": 20260910,
+  "per_target": {
+    "REB_off": {
+      "kind": "choice",
+      "winner": "cond_logit",
+      "eligible": [
+        "proportional",
+        "cond_logit",
+        "lgbm"
+      ],
+      "n_alt": 5,
+      "prior_kind": "position",
+      "shrink_m": 25.0,
+      "cond_logit_features": [
+        "log_share",
+        "is_G",
+        "is_F",
+        "is_C",
+        "log_share_x_scorediff",
+        "log_share_x_sec",
+        "log_share_x_rim",
+        "log_share_x_three",
+        "log_share_x_ft",
+        "is_C_x_scorediff",
+        "is_C_x_sec",
+        "is_C_x_rim",
+        "is_C_x_three",
+        "is_C_x_ft"
+      ],
+      "cond_logit_l2": 0.001,
+      "cond_logit_coefficients": {
+        "log_share": 1.08896,
+        "is_G": 0.01302,
+        "is_F": -0.03345,
+        "is_C": 0.01192,
+        "log_share_x_scorediff": 0.0153,
+        "log_share_x_sec": 0.02992,
+        "log_share_x_rim": 0.13292,
+        "log_share_x_three": -0.1516,
+        "log_share_x_ft": -0.26221,
+        "is_C_x_scorediff": 0.01455,
+        "is_C_x_sec": -0.01394,
+        "is_C_x_rim": 0.11804,
+        "is_C_x_three": -0.12822,
+        "is_C_x_ft": -0.41392
+      },
+      "lgbm_params": {
+        "num_leaves": 15,
+        "learning_rate": 0.08,
+        "n_estimators": 300,
+        "min_child_samples": 200
+      },
+      "rng_family": "attr_rebound"
+    },
+    "REB_def": {
+      "kind": "choice",
+      "winner": "lgbm",
+      "eligible": [
+        "proportional",
+        "cond_logit",
+        "lgbm"
+      ],
+      "n_alt": 5,
+      "prior_kind": "position",
+      "shrink_m": 50.0,
+      "cond_logit_features": [
+        "log_share",
+        "is_G",
+        "is_F",
+        "is_C",
+        "log_share_x_scorediff",
+        "log_share_x_sec",
+        "log_share_x_rim",
+        "log_share_x_three",
+        "log_share_x_ft",
+        "is_C_x_scorediff",
+        "is_C_x_sec",
+        "is_C_x_rim",
+        "is_C_x_three",
+        "is_C_x_ft"
+      ],
+      "cond_logit_l2": 1.0,
+      "cond_logit_coefficients": {
+        "log_share": 1.13889,
+        "is_G": -0.2941,
+        "is_F": -0.29702,
+        "is_C": -0.26453,
+        "log_share_x_scorediff": 0.00384,
+        "log_share_x_sec": 0.01389,
+        "log_share_x_rim": -0.04848,
+        "log_share_x_three": -0.49661,
+        "log_share_x_ft": 0.7817,
+        "is_C_x_scorediff": 0.0054,
+        "is_C_x_sec": -0.01086,
+        "is_C_x_rim": 0.12396,
+        "is_C_x_three": -0.06439,
+        "is_C_x_ft": -0.05226
+      },
+      "lgbm_params": {
+        "num_leaves": 15,
+        "learning_rate": 0.08,
+        "n_estimators": 300,
+        "min_child_samples": 200
+      },
+      "rng_family": "attr_rebound"
+    },
+    "assist": {
+      "kind": "choice",
+      "winner": null,
+      "eligible": [],
+      "n_alt": 4,
+      "prior_kind": "position",
+      "shrink_m": 10.0,
+      "cond_logit_features": [
+        "log_share",
+        "is_G",
+        "is_F",
+        "is_C",
+        "log_share_x_scorediff",
+        "log_share_x_sec",
+        "log_share_x_rim",
+        "log_share_x_three",
+        "is_C_x_scorediff",
+        "is_C_x_sec",
+        "is_C_x_rim",
+        "is_C_x_three"
+      ],
+      "cond_logit_l2": 0.001,
+      "cond_logit_coefficients": {
+        "log_share": 1.04163,
+        "is_G": 0.02047,
+        "is_F": 0.00504,
+        "is_C": -0.0677,
+        "log_share_x_scorediff": 0.00411,
+        "log_share_x_sec": -0.04023,
+        "log_share_x_rim": 0.06436,
+        "log_share_x_three": 0.10737,
+        "is_C_x_scorediff": -0.00471,
+        "is_C_x_sec": 0.03603,
+        "is_C_x_rim": 0.26319,
+        "is_C_x_three": -0.20221
+      },
+      "lgbm_params": {
+        "num_leaves": 15,
+        "learning_rate": 0.08,
+        "n_estimators": 300,
+        "min_child_samples": 200
+      },
+      "rng_family": "attr_assist"
+    },
+    "steal": {
+      "kind": "choice",
+      "winner": "proportional",
+      "eligible": [
+        "proportional",
+        "cond_logit",
+        "lgbm"
+      ],
+      "n_alt": 5,
+      "prior_kind": "position",
+      "shrink_m": 50.0,
+      "cond_logit_features": [
+        "log_share",
+        "is_G",
+        "is_F",
+        "is_C",
+        "log_share_x_scorediff",
+        "log_share_x_sec",
+        "is_C_x_scorediff",
+        "is_C_x_sec"
+      ],
+      "cond_logit_l2": 10.0,
+      "cond_logit_coefficients": {
+        "log_share": 0.95072,
+        "is_G": -0.08653,
+        "is_F": -0.08605,
+        "is_C": -0.10983,
+        "log_share_x_scorediff": 0.01871,
+        "log_share_x_sec": 0.03284,
+        "is_C_x_scorediff": -0.04216,
+        "is_C_x_sec": 0.01773
+      },
+      "lgbm_params": {
+        "num_leaves": 15,
+        "learning_rate": 0.08,
+        "n_estimators": 300,
+        "min_child_samples": 200
+      },
+      "rng_family": "attr_steal"
+    },
+    "block": {
+      "kind": "choice",
+      "winner": "lgbm",
+      "eligible": [
+        "lgbm"
+      ],
+      "n_alt": 5,
+      "prior_kind": "position",
+      "shrink_m": 10.0,
+      "cond_logit_features": [
+        "log_share",
+        "is_G",
+        "is_F",
+        "is_C",
+        "log_share_x_scorediff",
+        "log_share_x_sec",
+        "log_share_x_rim",
+        "log_share_x_three",
+        "is_C_x_scorediff",
+        "is_C_x_sec",
+        "is_C_x_rim",
+        "is_C_x_three"
+      ],
+      "cond_logit_l2": 10.0,
+      "cond_logit_coefficients": {
+        "log_share": 0.99326,
+        "is_G": -0.07497,
+        "is_F": -0.06965,
+        "is_C": 0.15451,
+        "log_share_x_scorediff": 0.02672,
+        "log_share_x_sec": -0.01258,
+        "log_share_x_rim": 0.15517,
+        "log_share_x_three": -0.48433,
+        "is_C_x_scorediff": 0.00112,
+        "is_C_x_sec": -0.02278,
+        "is_C_x_rim": -0.01539,
+        "is_C_x_three": -0.42806
+      },
+      "lgbm_params": {
+        "num_leaves": 15,
+        "learning_rate": 0.08,
+        "n_estimators": 300,
+        "min_child_samples": 200
+      },
+      "rng_family": "attr_block"
+    }
+  }
+}

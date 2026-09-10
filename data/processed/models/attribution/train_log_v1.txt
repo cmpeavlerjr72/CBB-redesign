@@ -1,0 +1,62 @@
+tables built: {'reb_off': 222775, 'reb_def': 526310, 'made_fga': 546514, 'tov': 250065, 'miss_fga': 689375} asof 206,169 team 21,246 (113.1s)
+  [F1] REB_off: train 83,891 test 92,994 (K=5)
+    shrinkage: prior=position m=25 (train ll 1.426268)
+    cond_logit: l2=0.001 ll 1.431192 dropped ['log_prior_share', 'prior_rate']
+      lgbm {'num_leaves': 15, 'learning_rate': 0.08, 'n_estimators': 300, 'min_child_samples': 200}: inner val ll 1.408099
+      lgbm {'num_leaves': 31, 'learning_rate': 0.06, 'n_estimators': 400, 'min_child_samples': 400}: inner val ll 1.411872
+    lgbm: {'num_leaves': 15, 'learning_rate': 0.08, 'n_estimators': 300, 'min_child_samples': 200} ll 1.430888 seed sd 4.6e-05
+    -> proportional  ll 1.434713 calib 1.773pp resp 4/4 slope 0.9349 sd 1.00793 gt0 +0.164 top3 -1.89pp
+    -> cond_logit    ll 1.431192 calib 0.707pp resp 4/4 slope 0.9943 sd 1.00618 gt0 +0.118 top3 -1.36pp
+    -> lgbm          ll 1.430888 calib 0.568pp resp 4/4 slope 0.9985 sd 1.00643 gt0 +0.115 top3 -1.31pp
+    DECISION: cond_logit -- the tree leads by 0.000304, inside the 0.002128 floor, so the pre-registration's requirement that a tree beat the best passing non-tree arm by more than the floor is not met; among the non-tree arms cond_logit are inside the floor of each other and the tie-break takes the simplest
+  [F1] REB_def: train 228,439 test 242,401 (K=5)
+    shrinkage: prior=position m=50 (train ll 1.565606)
+    cond_logit: l2=1.0 ll 1.560274 dropped ['log_prior_share', 'prior_rate']
+      lgbm {'num_leaves': 15, 'learning_rate': 0.08, 'n_estimators': 300, 'min_child_samples': 200}: inner val ll 1.554690
+      lgbm {'num_leaves': 31, 'learning_rate': 0.06, 'n_estimators': 400, 'min_child_samples': 400}: inner val ll 1.556069
+    lgbm: {'num_leaves': 15, 'learning_rate': 0.08, 'n_estimators': 300, 'min_child_samples': 200} ll 1.559167 seed sd 2e-05
+    -> proportional  ll 1.565561 calib 0.717pp resp 4/4 slope 0.9839 sd 0.9855 gt0 +0.177 top3 -1.89pp
+    -> cond_logit    ll 1.560274 calib 0.426pp resp 4/4 slope 1.0044 sd 0.98561 gt0 +0.172 top3 -1.80pp
+    -> lgbm          ll 1.559167 calib 0.282pp resp 4/4 slope 1.0029 sd 0.98554 gt0 +0.173 top3 -1.77pp
+    DECISION: lgbm -- eligible: lgbm 1.559167, cond_logit 1.560274, proportional 1.565561; floor 0.000799; clear of the next eligible arm by 0.001107 (1.4 floors)
+  [F1] assist: train 127,424 test 140,687 (K=4)
+    shrinkage: prior=position m=10 (train ll 1.293743)
+    cond_logit: l2=0.001 ll 1.294558 dropped ['log_prior_share', 'prior_rate', 'log_share_x_ft', 'is_C_x_ft']
+      lgbm {'num_leaves': 15, 'learning_rate': 0.08, 'n_estimators': 300, 'min_child_samples': 200}: inner val ll 1.278929
+      lgbm {'num_leaves': 31, 'learning_rate': 0.06, 'n_estimators': 400, 'min_child_samples': 400}: inner val ll 1.281654
+    lgbm: {'num_leaves': 15, 'learning_rate': 0.08, 'n_estimators': 300, 'min_child_samples': 200} ll 1.292465 seed sd 3e-06
+    -> proportional  ll 1.295860 calib 2.779pp resp 4/4 slope 0.9552 sd 1.01022 gt0 +0.256 top3 -2.66pp
+    -> cond_logit    ll 1.294558 calib 1.927pp resp 4/4 slope 0.9943 sd 1.0088 gt0 +0.224 top3 -2.32pp
+    -> lgbm          ll 1.292465 calib 0.418pp resp 4/4 slope 1.0031 sd 1.00977 gt0 +0.224 top3 -2.18pp
+    DECISION: NO WINNER -- no arm passes every pre-registered gate
+  [F1] steal: train 63,149 test 71,076 (K=5)
+    shrinkage: prior=position m=50 (train ll 1.585668)
+    cond_logit: l2=10.0 ll 1.586254 dropped ['log_prior_share', 'prior_rate', 'log_share_x_rim', 'log_share_x_three', 'log_share_x_ft', 'is_C_x_rim', 'is_C_x_three', 'is_C_x_ft']
+      lgbm {'num_leaves': 15, 'learning_rate': 0.08, 'n_estimators': 300, 'min_child_samples': 200}: inner val ll 1.588466
+      lgbm {'num_leaves': 31, 'learning_rate': 0.06, 'n_estimators': 400, 'min_child_samples': 400}: inner val ll 1.593817
+    lgbm: {'num_leaves': 15, 'learning_rate': 0.08, 'n_estimators': 300, 'min_child_samples': 200} ll 1.588532 seed sd 9.9e-05
+    -> proportional  ll 1.586249 calib 0.814pp resp 4/4 slope 0.9973 sd 1.01033 gt0 +0.086 top3 -1.10pp
+    -> cond_logit    ll 1.586254 calib 0.998pp resp 4/4 slope 1.0141 sd 1.01033 gt0 +0.084 top3 -1.08pp
+    -> lgbm          ll 1.588532 calib 1.367pp resp 4/4 slope 1.0214 sd 1.01086 gt0 +0.081 top3 -1.04pp
+    DECISION: proportional -- eligible: proportional 1.586249, cond_logit 1.586254, lgbm 1.588532; floor 0.000902; proportional, cond_logit are inside the floor of each other; the pre-registered tie-break takes the simplest
+  [F1] block: train 32,333 test 34,231 (K=5)
+    shrinkage: prior=position m=10 (train ll 1.28991)
+    cond_logit: l2=10.0 ll 1.273338 dropped ['log_prior_share', 'prior_rate', 'log_share_x_ft', 'is_C_x_ft']
+      lgbm {'num_leaves': 15, 'learning_rate': 0.08, 'n_estimators': 300, 'min_child_samples': 200}: inner val ll 1.263947
+      lgbm {'num_leaves': 31, 'learning_rate': 0.06, 'n_estimators': 400, 'min_child_samples': 400}: inner val ll 1.270928
+    lgbm: {'num_leaves': 15, 'learning_rate': 0.08, 'n_estimators': 300, 'min_child_samples': 200} ll 1.273376 seed sd 0.000207
+    -> proportional  ll 1.284843 calib 4.937pp resp 4/4 slope 0.9387 sd 1.04508 gt0 +0.111 top3 -0.92pp
+    -> cond_logit    ll 1.273338 calib 2.422pp resp 4/4 slope 0.9833 sd 1.03633 gt0 +0.090 top3 -0.74pp
+    -> lgbm          ll 1.273376 calib 0.360pp resp 4/4 slope 1.0003 sd 1.03924 gt0 +0.078 top3 -0.67pp
+    DECISION: lgbm -- eligible: lgbm 1.273376; floor 0.004940; the only eligible arm
+  [F1] assisted: train 256,677 test 277,212
+  [FAILED] assisted: ValueError: Input X contains NaN.
+LogisticRegression does not accept missing values encoded as NaN natively. For supervised learning, you might want to consider sklearn.ensemble.HistGradientBoostingClassifier and Regressor which accept missing values encoded as NaNs natively. Alternatively, it is possible to preprocess the data, for instance by using an imputer transformer in a pipeline or drop samples with missing values. See https://scikit-learn.org/stable/modules/impute.html You can find a list of all estimators that handle NaN values at the following page: https://scikit-learn.org/stable/modules/impute.html#estimators-that-handle-nan-values
+  [F1] stolen: train 116,427 test 127,235
+  [FAILED] stolen: ValueError: Input X contains NaN.
+LogisticRegression does not accept missing values encoded as NaN natively. For supervised learning, you might want to consider sklearn.ensemble.HistGradientBoostingClassifier and Regressor which accept missing values encoded as NaNs natively. Alternatively, it is possible to preprocess the data, for instance by using an imputer transformer in a pipeline or drop samples with missing values. See https://scikit-learn.org/stable/modules/impute.html You can find a list of all estimators that handle NaN values at the following page: https://scikit-learn.org/stable/modules/impute.html#estimators-that-handle-nan-values
+  [F1] blocked: train 323,964 test 348,972
+  [FAILED] blocked: ValueError: Input X contains NaN.
+LogisticRegression does not accept missing values encoded as NaN natively. For supervised learning, you might want to consider sklearn.ensemble.HistGradientBoostingClassifier and Regressor which accept missing values encoded as NaNs natively. Alternatively, it is possible to preprocess the data, for instance by using an imputer transformer in a pipeline or drop samples with missing values. See https://scikit-learn.org/stable/modules/impute.html You can find a list of all estimators that handle NaN values at the following page: https://scikit-learn.org/stable/modules/impute.html#estimators-that-handle-nan-values
+
+wrote C:\Users\devuser\CBB-clean-sheet\data\processed\models\attribution\report_v1.md and C:\Users\devuser\CBB-clean-sheet\data\processed\models\attribution/attribution_params_v1.json (2272.3s total)

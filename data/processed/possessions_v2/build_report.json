@@ -1,0 +1,3871 @@
+{
+  "built_at": "2026-09-10T13:19:14",
+  "seasons": {
+    "2022": {
+      "season": 2022,
+      "n_games": 5282,
+      "n_possessions": 728568,
+      "poss_per_game_seg_mean": 68.967,
+      "poss_per_game_seg_sd": 5.912,
+      "poss_per_game_box_mean": 67.45,
+      "poss_per_game_box_sd": 5.735,
+      "diff_mean": 1.5173,
+      "diff_sd": 1.1185,
+      "diff_corr": 0.98201,
+      "diff_mae": 1.5616,
+      "worst_20": [
+        {
+          "game_id": 401365194,
+          "poss_seg": 83.5,
+          "poss_box": 73.4,
+          "diff": 10.1,
+          "matchup": "Ball State Cardinals @ Western Michigan Broncos",
+          "date": "2022-03-04",
+          "n_periods": 2.0
+        },
+        {
+          "game_id": 401411731,
+          "poss_seg": 83.0,
+          "poss_box": 74.52,
+          "diff": 8.48,
+          "matchup": "Ohio Bobcats @ Abilene Christian Wildcats",
+          "date": "2022-03-21",
+          "n_periods": 2.0
+        },
+        {
+          "game_id": 401405832,
+          "poss_seg": 84.5,
+          "poss_box": 76.32,
+          "diff": 8.18,
+          "matchup": "UMass Lowell River Hawks @ UMBC Retrievers",
+          "date": "2022-03-06",
+          "n_periods": 3.0
+        },
+        {
+          "game_id": 401370884,
+          "poss_seg": 78.0,
+          "poss_box": 70.42,
+          "diff": 7.58,
+          "matchup": "Fairleigh Dickinson Knights @ St. Francis (PA) Red Flash",
+          "date": "2021-12-31",
+          "n_periods": 2.0
+        },
+        {
+          "game_id": 401371548,
+          "poss_seg": 77.5,
+          "poss_box": 70.46,
+          "diff": 7.04,
+          "matchup": "Seattle U Redhawks @ Utah Tech Trailblazers",
+          "date": "2022-02-26",
+          "n_periods": 2.0
+        },
+        {
+          "game_id": 401365820,
+          "poss_seg": 68.0,
+          "poss_box": 60.98,
+          "diff": 7.02,
+          "matchup": "Rhode Island Rams @ Fordham Rams",
+          "date": "2022-02-02",
+          "n_periods": 2.0
+        },
+        {
+          "game_id": 401365402,
+          "poss_seg": 84.5,
+          "poss_box": 77.86,
+          "diff": 6.64,
+          "matchup": "Monmouth Hawks @ Rider Broncs",
+          "date": "2022-03-05",
+          "n_periods": 2.0
+        },
+        {
+          "game_id": 401365167,
+          "poss_seg": 67.0,
+          "poss_box": 60.36,
+          "diff": 6.64,
+          "matchup": "Akron Zips @ Western Michigan Broncos",
+          "date": "2022-02-15",
+          "n_periods": 3.0
+        },
+        {
+          "game_id": 401371559,
+          "poss_seg": 92.5,
+          "poss_box": 85.88,
+          "diff": 6.62,
+          "matchup": "Stephen F. Austin Lumberjacks @ UT Rio Grande Valley Vaqueros",
+          "date": "2022-03-05",
+          "n_periods": 2.0
+        },
+        {
+          "game_id": 401402152,
+          "poss_seg": 77.0,
+          "poss_box": 70.4,
+          "diff": 6.6,
+          "matchup": "Stony Brook Seawolves @ Hartford Hawks",
+          "date": "2022-02-20",
+          "n_periods": 2.0
+        },
+        {
+          "game_id": 401371929,
+          "poss_seg": 59.5,
+          "poss_box": 53.02,
+          "diff": 6.48,
+          "matchup": "Hampton Pirates @ South Florida Bulls",
+          "date": "2021-11-24",
+          "n_periods": 2.0
+        },
+        {
+          "game_id": 401376651,
+          "poss_seg": 77.5,
+          "poss_box": 71.16,
+          "diff": 6.34,
+          "matchup": "Iowa State Cyclones @ Memphis Tigers",
+          "date": "2021-11-26",
+          "n_periods": 2.0
+        },
+        {
+          "game_id": 401372374,
+          "poss_seg": 67.0,
+          "poss_box": 60.76,
+          "diff": 6.24,
+          "matchup": "Boise State Broncos @ UC Irvine Anteaters",
+          "date": "2021-11-13",
+          "n_periods": 2.0
+        },
+        {
+          "game_id": 401372641,
+          "poss_seg": 77.5,
+          "poss_box": 71.44,
+          "diff": 6.06,
+          "matchup": "Bucknell Bison @ St. Francis (PA) Red Flash",
+          "date": "2021-12-01",
+          "n_periods": 2.0
+        },
+        {
+          "game_id": 401376582,
+          "poss_seg": 72.5,
+          "poss_box": 66.44,
+          "diff": 6.06,
+          "matchup": "Arkansas-Pine Bluff Golden Lions @ Alabama State Hornets",
+          "date": "2022-02-12",
+          "n_periods": 2.0
+        },
+        {
+          "game_id": 401371483,
+          "poss_seg": 65.5,
+          "poss_box": 59.46,
+          "diff": 6.04,
+          "matchup": "UT Rio Grande Valley Vaqueros @ Utah Valley Wolverines",
+          "date": "2022-01-20",
+          "n_periods": 2.0
+        },
+        {
+          "game_id": 401373698,
+          "poss_seg": 65.0,
+          "poss_box": 59.14,
+          "diff": 5.86,
+          "matchup": "UC Santa Barbara Gauchos @ Hawai'i Rainbow Warriors",
+          "date": "2022-01-29",
+          "n_periods": 2.0
+        },
+        {
+          "game_id": 401370883,
+          "poss_seg": 71.5,
+          "poss_box": 65.7,
+          "diff": 5.8,
+          "matchup": "Wagner Seahawks @ St. Francis (PA) Red Flash",
+          "date": "2021-12-29",
+          "n_periods": 2.0
+        },
+        {
+          "game_id": 401373716,
+          "poss_seg": 77.5,
+          "poss_box": 71.86,
+          "diff": 5.64,
+          "matchup": "Cal State Northridge Matadors @ Cal Poly Mustangs",
+          "date": "2022-02-10",
+          "n_periods": 4.0
+        },
+        {
+          "game_id": 401401508,
+          "poss_seg": 71.0,
+          "poss_box": 65.38,
+          "diff": 5.62,
+          "matchup": "Bethune-Cookman Wildcats @ Florida International Panthers",
+          "date": "2022-01-05",
+          "n_periods": 2.0
+        }
+      ],
+      "n_universe_games": 5406,
+      "n_games_missing_from_cbbd": 124,
+      "score_mismatch_team_rows": 1332,
+      "score_mismatch_games": 1028,
+      "feed_vs_final_mismatch_rows": 1332,
+      "feed_vs_final_mismatch_games": 1028,
+      "feed_vs_final_mean_abs": 0.441,
+      "seg_vs_feed_mismatch_rows": 0,
+      "seg_vs_feed_mismatch_games": 0,
+      "seg_vs_feed_mean_abs": 0.0,
+      "seg_vs_feed_hist": {
+        "0": 10564
+      },
+      "score_rows": 10564,
+      "score_mean_abs_delta": 0.441,
+      "score_delta_hist": {
+        "-5": 170,
+        "-4": 295,
+        "-3": 2,
+        "-2": 828,
+        "-1": 2,
+        "0": 9232,
+        "1": 6,
+        "2": 6,
+        "3": 2,
+        "4": 2,
+        "5": 19
+      },
+      "terminal_shares_pct": {
+        "FGA_3": 25.789,
+        "FGA_rim": 24.85,
+        "TOV": 18.358,
+        "FGA_jump2": 18.157,
+        "FT_trip_shooting": 6.203,
+        "FT_trip_bonus": 5.252,
+        "unknown": 1.177,
+        "end_period": 0.213
+      },
+      "chance_note": {},
+      "duration_by_terminal": {
+        "FGA_3": {
+          "count": 187893.0,
+          "mean": 18.74,
+          "std": 9.43,
+          "min": 0.0,
+          "10%": 7.0,
+          "25%": 12.0,
+          "50%": 18.0,
+          "75%": 25.0,
+          "90%": 31.0,
+          "max": 138.0
+        },
+        "FGA_jump2": {
+          "count": 132284.0,
+          "mean": 20.61,
+          "std": 9.11,
+          "min": 0.0,
+          "10%": 9.0,
+          "25%": 14.0,
+          "50%": 20.0,
+          "75%": 26.0,
+          "90%": 32.0,
+          "max": 201.0
+        },
+        "FGA_rim": {
+          "count": 181052.0,
+          "mean": 17.18,
+          "std": 9.78,
+          "min": 0.0,
+          "10%": 5.0,
+          "25%": 9.0,
+          "50%": 17.0,
+          "75%": 23.0,
+          "90%": 30.0,
+          "max": 121.0
+        },
+        "FT_trip_bonus": {
+          "count": 38268.0,
+          "mean": 11.99,
+          "std": 9.78,
+          "min": 0.0,
+          "10%": 1.0,
+          "25%": 4.0,
+          "50%": 11.0,
+          "75%": 18.0,
+          "90%": 25.0,
+          "max": 113.0
+        },
+        "FT_trip_shooting": {
+          "count": 45192.0,
+          "mean": 15.46,
+          "std": 10.15,
+          "min": 0.0,
+          "10%": 3.0,
+          "25%": 7.0,
+          "50%": 15.0,
+          "75%": 22.0,
+          "90%": 28.0,
+          "max": 265.0
+        },
+        "TOV": {
+          "count": 133752.0,
+          "mean": 15.78,
+          "std": 9.71,
+          "min": 0.0,
+          "10%": 4.0,
+          "25%": 8.0,
+          "50%": 15.0,
+          "75%": 22.0,
+          "90%": 29.0,
+          "max": 121.0
+        },
+        "end_period": {
+          "count": 1554.0,
+          "mean": 13.0,
+          "std": 11.96,
+          "min": 0.0,
+          "10%": 1.0,
+          "25%": 4.0,
+          "50%": 9.0,
+          "75%": 21.0,
+          "90%": 31.0,
+          "max": 73.0
+        },
+        "unknown": {
+          "count": 8573.0,
+          "mean": 10.12,
+          "std": 13.5,
+          "min": 0.0,
+          "10%": 0.0,
+          "25%": 0.0,
+          "50%": 2.0,
+          "75%": 19.0,
+          "90%": 29.0,
+          "max": 86.0
+        }
+      },
+      "mean_chances": 1.1446,
+      "oreb_rate": 0.1253,
+      "ambiguous_ft_trips_pct": 40.889,
+      "transition_share_pct": 15.785,
+      "bonus_share_pct": 29.93,
+      "and_one_per_game": 2.7662,
+      "putback_label_drift": {
+        "n_putback_attempts": 70192,
+        "shares_pct": {
+          "LayUpShot": 47.79,
+          "JumpShot (3)": 26.89,
+          "JumpShot (2)": 19.16,
+          "DunkShot": 4.08,
+          "TipShot": 2.07
+        }
+      },
+      "machine_diag": {
+        "n_games": 5282,
+        "n_mismatch_closes": 3584,
+        "n_tech_trips": 902,
+        "n_admin_orebs": 20934,
+        "n_unknown_team": 0,
+        "n_games_no_plays": 0
+      },
+      "three_point_signal": {
+        "n_jumpshots": 436474,
+        "n_shot_range_null": 0,
+        "n_playtext_null": 0,
+        "n_range_vs_text_disagree": 0,
+        "n_scorevalue3_but_not_three": 0,
+        "n_scorevalue_missing_or_zero": 0
+      },
+      "chances": {
+        "n_chances": 833885,
+        "n_first": 728568,
+        "n_continuation": 105317,
+        "first_shares_pct": {
+          "FGA_3": 28.35,
+          "FGA_rim": 23.792,
+          "FGA_jump2": 19.736,
+          "TOV": 16.645,
+          "FT_trip_shooting": 5.414,
+          "FT_trip_bonus": 4.79,
+          "unknown": 1.214,
+          "end_period": 0.058
+        },
+        "cont_shares_pct": {
+          "FGA_rim": 38.183,
+          "FGA_3": 20.308,
+          "FGA_jump2": 14.788,
+          "TOV": 11.85,
+          "FT_trip_shooting": 6.989,
+          "FT_trip_bonus": 4.682,
+          "unknown": 2.128,
+          "end_period": 1.072
+        }
+      },
+      "feed_completeness": {
+        "n_d1_games": 5485,
+        "n_no_cbbd_rows": 124,
+        "A_event_sum_vs_final_incomplete_pct": 22.08,
+        "B_running_score_vs_final_incomplete_pct": 3.7,
+        "events_disagree_with_running_score_pct": 19.29,
+        "mean_running_minus_events_pts": 0.634,
+        "explained_pts_on_rows_with_no_team": 0,
+        "explained_unknown_rows_flagged_scoring": 0,
+        "explained_fga_scoringplay_but_not_made": 0,
+        "n_technical_ft_points": 701,
+        "pbp_complete_games": 4274,
+        "pbp_complete_pct": 77.92,
+        "pbp_complete_pct_of_not_truncated": 78.69
+      },
+      "rim_override_counts": {
+        "n_jump2": 163013,
+        "n_jump2_located": 133435,
+        "n_overridden": 2808,
+        "n_jump2_unlocated": 29578,
+        "n_three_within_threshold_not_touched": 45
+      },
+      "rim_family_quantiles": {
+        "DunkShot": {
+          "n_rows": 21008,
+          "n_located": 16677,
+          "located_pct": 79.38,
+          "quantiles_ft": {
+            "p10": 0.39,
+            "p25": 1.33,
+            "p50": 2.27,
+            "p75": 3.282,
+            "p90": 4.413,
+            "p95": 5.306,
+            "p99": 7.251
+          }
+        },
+        "LayUpShot": {
+          "n_rows": 189045,
+          "n_located": 156097,
+          "located_pct": 82.57,
+          "quantiles_ft": {
+            "p10": 1.073,
+            "p25": 2.27,
+            "p50": 3.362,
+            "p75": 4.607,
+            "p90": 6.121,
+            "p95": 7.135,
+            "p99": 9.841
+          }
+        },
+        "TipShot": {
+          "n_rows": 1465,
+          "n_located": 96,
+          "located_pct": 6.55,
+          "quantiles_ft": {
+            "p10": 0.39,
+            "p25": 0.655,
+            "p50": 4.331,
+            "p75": 9.703,
+            "p90": 24.656,
+            "p95": 26.754,
+            "p99": 28.885
+          }
+        },
+        "rim_family": {
+          "n_rows": 211518,
+          "n_located": 172870,
+          "located_pct": 81.73,
+          "quantiles_ft": {
+            "p10": 1.073,
+            "p25": 2.038,
+            "p50": 3.249,
+            "p75": 4.599,
+            "p90": 6.051,
+            "p95": 7.041,
+            "p99": 9.803
+          }
+        },
+        "JumpShot(2)": {
+          "n_rows": 162992,
+          "n_located": 133421,
+          "located_pct": 81.86,
+          "quantiles_ft": {
+            "p10": 4.394,
+            "p25": 7.041,
+            "p50": 10.993,
+            "p75": 15.487,
+            "p90": 18.359,
+            "p95": 19.731,
+            "p99": 21.413
+          }
+        },
+        "JumpShot(3)": {
+          "n_rows": 229488,
+          "n_located": 190271,
+          "located_pct": 82.91,
+          "quantiles_ft": {
+            "p10": 23.003,
+            "p25": 23.625,
+            "p50": 24.652,
+            "p75": 25.775,
+            "p90": 26.959,
+            "p95": 27.871,
+            "p99": 30.333
+          }
+        }
+      },
+      "basket_calibration": {
+        "n": 16677,
+        "median_dunk_distance_ft": 2.27
+      }
+    },
+    "2023": {
+      "season": 2023,
+      "n_games": 5541,
+      "n_possessions": 761310,
+      "poss_per_game_seg_mean": 68.698,
+      "poss_per_game_seg_sd": 5.907,
+      "poss_per_game_box_mean": 67.168,
+      "poss_per_game_box_sd": 5.703,
+      "diff_mean": 1.5296,
+      "diff_sd": 1.0764,
+      "diff_corr": 0.98342,
+      "diff_mae": 1.5765,
+      "worst_20": [
+        {
+          "game_id": 401489101,
+          "poss_seg": 80.0,
+          "poss_box": 71.92,
+          "diff": 8.08,
+          "matchup": "Portland State Vikings @ Seattle U Redhawks",
+          "date": "2022-11-13",
+          "n_periods": 2.0
+        },
+        {
+          "game_id": 401488289,
+          "poss_seg": 78.5,
+          "poss_box": 71.74,
+          "diff": 6.76,
+          "matchup": "New Hampshire Wildcats @ NJIT Highlanders",
+          "date": "2023-02-01",
+          "n_periods": 3.0
+        },
+        {
+          "game_id": 401485195,
+          "poss_seg": 80.0,
+          "poss_box": 73.42,
+          "diff": 6.58,
+          "matchup": "Xavier Musketeers @ St. John's Red Storm",
+          "date": "2022-12-28",
+          "n_periods": 2.0
+        },
+        {
+          "game_id": 401494602,
+          "poss_seg": 88.5,
+          "poss_box": 81.96,
+          "diff": 6.54,
+          "matchup": "Prairie View A&M Panthers @ Texas Southern Tigers",
+          "date": "2023-01-28",
+          "n_periods": 4.0
+        },
+        {
+          "game_id": 401494483,
+          "poss_seg": 85.0,
+          "poss_box": 78.48,
+          "diff": 6.52,
+          "matchup": "Texas Southern Tigers @ Arkansas-Pine Bluff Golden Lions",
+          "date": "2023-01-07",
+          "n_periods": 2.0
+        },
+        {
+          "game_id": 401492209,
+          "poss_seg": 68.5,
+          "poss_box": 62.06,
+          "diff": 6.44,
+          "matchup": "Bethune-Cookman Wildcats @ Grambling Tigers",
+          "date": "2023-01-07",
+          "n_periods": 2.0
+        },
+        {
+          "game_id": 401469954,
+          "poss_seg": 76.0,
+          "poss_box": 69.64,
+          "diff": 6.36,
+          "matchup": "UNC Wilmington Seahawks @ Drexel Dragons",
+          "date": "2023-02-16",
+          "n_periods": 4.0
+        },
+        {
+          "game_id": 401492368,
+          "poss_seg": 69.0,
+          "poss_box": 62.74,
+          "diff": 6.26,
+          "matchup": "Princeton Tigers @ Columbia Lions",
+          "date": "2023-01-06",
+          "n_periods": 2.0
+        },
+        {
+          "game_id": 401489576,
+          "poss_seg": 69.0,
+          "poss_box": 62.74,
+          "diff": 6.26,
+          "matchup": "North Dakota Fighting Hawks @ Incarnate Word Cardinals",
+          "date": "2022-11-07",
+          "n_periods": 2.0
+        },
+        {
+          "game_id": 401481076,
+          "poss_seg": 74.5,
+          "poss_box": 68.34,
+          "diff": 6.16,
+          "matchup": "New Mexico State Aggies @ Seattle U Redhawks",
+          "date": "2023-01-12",
+          "n_periods": 2.0
+        },
+        {
+          "game_id": 401490454,
+          "poss_seg": 104.5,
+          "poss_box": 98.44,
+          "diff": 6.06,
+          "matchup": "Morgan State Bears @ Coppin State Eagles",
+          "date": "2023-01-14",
+          "n_periods": 2.0
+        },
+        {
+          "game_id": 401485261,
+          "poss_seg": 63.5,
+          "poss_box": 57.56,
+          "diff": 5.94,
+          "matchup": "Seton Hall Pirates @ Villanova Wildcats",
+          "date": "2023-02-11",
+          "n_periods": 2.0
+        },
+        {
+          "game_id": 401488727,
+          "poss_seg": 75.5,
+          "poss_box": 69.6,
+          "diff": 5.9,
+          "matchup": "Louisiana Ragin' Cajuns @ SMU Mustangs",
+          "date": "2022-11-22",
+          "n_periods": 3.0
+        },
+        {
+          "game_id": 401494406,
+          "poss_seg": 77.0,
+          "poss_box": 71.18,
+          "diff": 5.82,
+          "matchup": "North Alabama Lions @ Alabama A&M Bulldogs",
+          "date": "2022-11-10",
+          "n_periods": 2.0
+        },
+        {
+          "game_id": 401470229,
+          "poss_seg": 66.5,
+          "poss_box": 60.72,
+          "diff": 5.78,
+          "matchup": "Western Illinois Leathernecks @ Denver Pioneers",
+          "date": "2023-02-02",
+          "n_periods": 2.0
+        },
+        {
+          "game_id": 401489507,
+          "poss_seg": 67.5,
+          "poss_box": 61.72,
+          "diff": 5.78,
+          "matchup": "Old Dominion Monarchs @ Drexel Dragons",
+          "date": "2022-11-11",
+          "n_periods": 2.0
+        },
+        {
+          "game_id": 401469929,
+          "poss_seg": 66.5,
+          "poss_box": 60.76,
+          "diff": 5.74,
+          "matchup": "Charleston Cougars @ Delaware Blue Hens",
+          "date": "2023-02-04",
+          "n_periods": 2.0
+        },
+        {
+          "game_id": 401492238,
+          "poss_seg": 72.5,
+          "poss_box": 66.94,
+          "diff": 5.56,
+          "matchup": "Texas Southern Tigers @ Grambling Tigers",
+          "date": "2023-02-11",
+          "n_periods": 2.0
+        },
+        {
+          "game_id": 401486442,
+          "poss_seg": 79.0,
+          "poss_box": 73.52,
+          "diff": 5.48,
+          "matchup": "Tarleton State Texans @ Belmont Bruins",
+          "date": "2022-11-18",
+          "n_periods": 2.0
+        },
+        {
+          "game_id": 401481085,
+          "poss_seg": 69.0,
+          "poss_box": 63.54,
+          "diff": 5.46,
+          "matchup": "Abilene Christian Wildcats @ Tarleton State Texans",
+          "date": "2023-01-14",
+          "n_periods": 2.0
+        }
+      ],
+      "n_universe_games": 5658,
+      "n_games_missing_from_cbbd": 117,
+      "score_mismatch_team_rows": 1332,
+      "score_mismatch_games": 1021,
+      "feed_vs_final_mismatch_rows": 1332,
+      "feed_vs_final_mismatch_games": 1021,
+      "feed_vs_final_mean_abs": 0.3925,
+      "seg_vs_feed_mismatch_rows": 0,
+      "seg_vs_feed_mismatch_games": 0,
+      "seg_vs_feed_mean_abs": 0.0,
+      "seg_vs_feed_hist": {
+        "0.0": 11082
+      },
+      "score_rows": 11082,
+      "score_mean_abs_delta": 0.3925,
+      "score_delta_hist": {
+        "-5": 152,
+        "-4": 311,
+        "-2": 826,
+        "-1": 3,
+        "0": 9750,
+        "1": 5,
+        "2": 23,
+        "3": 5,
+        "4": 2,
+        "5": 5
+      },
+      "terminal_shares_pct": {
+        "FGA_3": 25.389,
+        "FGA_rim": 25.374,
+        "TOV": 18.143,
+        "FGA_jump2": 17.824,
+        "FT_trip_shooting": 6.43,
+        "FT_trip_bonus": 5.49,
+        "unknown": 1.13,
+        "end_period": 0.219
+      },
+      "chance_note": {},
+      "duration_by_terminal": {
+        "FGA_3": {
+          "count": 193291.0,
+          "mean": 18.83,
+          "std": 9.4,
+          "min": 0.0,
+          "10%": 7.0,
+          "25%": 12.0,
+          "50%": 18.0,
+          "75%": 25.0,
+          "90%": 31.0,
+          "max": 130.0
+        },
+        "FGA_jump2": {
+          "count": 135696.0,
+          "mean": 20.72,
+          "std": 9.02,
+          "min": 0.0,
+          "10%": 10.0,
+          "25%": 15.0,
+          "50%": 20.0,
+          "75%": 26.0,
+          "90%": 32.0,
+          "max": 122.0
+        },
+        "FGA_rim": {
+          "count": 193177.0,
+          "mean": 17.3,
+          "std": 9.8,
+          "min": 0.0,
+          "10%": 5.0,
+          "25%": 10.0,
+          "50%": 17.0,
+          "75%": 24.0,
+          "90%": 30.0,
+          "max": 161.0
+        },
+        "FT_trip_bonus": {
+          "count": 41798.0,
+          "mean": 11.97,
+          "std": 9.72,
+          "min": 0.0,
+          "10%": 1.0,
+          "25%": 4.0,
+          "50%": 11.0,
+          "75%": 18.0,
+          "90%": 25.0,
+          "max": 93.0
+        },
+        "FT_trip_shooting": {
+          "count": 48954.0,
+          "mean": 15.48,
+          "std": 11.47,
+          "min": 0.0,
+          "10%": 3.0,
+          "25%": 7.0,
+          "50%": 15.0,
+          "75%": 22.0,
+          "90%": 28.0,
+          "max": 1200.0
+        },
+        "TOV": {
+          "count": 138124.0,
+          "mean": 15.9,
+          "std": 9.7,
+          "min": 0.0,
+          "10%": 4.0,
+          "25%": 9.0,
+          "50%": 15.0,
+          "75%": 22.0,
+          "90%": 29.0,
+          "max": 101.0
+        },
+        "end_period": {
+          "count": 1669.0,
+          "mean": 12.58,
+          "std": 12.21,
+          "min": 0.0,
+          "10%": 1.0,
+          "25%": 3.0,
+          "50%": 9.0,
+          "75%": 20.0,
+          "90%": 30.0,
+          "max": 192.0
+        },
+        "unknown": {
+          "count": 8601.0,
+          "mean": 10.67,
+          "std": 13.63,
+          "min": 0.0,
+          "10%": 0.0,
+          "25%": 1.0,
+          "50%": 2.0,
+          "75%": 20.0,
+          "90%": 29.0,
+          "max": 108.0
+        }
+      },
+      "mean_chances": 1.1458,
+      "oreb_rate": 0.1267,
+      "ambiguous_ft_trips_pct": 41.439,
+      "transition_share_pct": 15.652,
+      "bonus_share_pct": 30.61,
+      "and_one_per_game": 2.7787,
+      "putback_label_drift": {
+        "n_putback_attempts": 73434,
+        "shares_pct": {
+          "LayUpShot": 49.35,
+          "JumpShot (3)": 26.59,
+          "JumpShot (2)": 18.44,
+          "DunkShot": 4.06,
+          "TipShot": 1.56
+        }
+      },
+      "machine_diag": {
+        "n_games": 5541,
+        "n_mismatch_closes": 3807,
+        "n_tech_trips": 1355,
+        "n_admin_orebs": 23035,
+        "n_unknown_team": 0,
+        "n_games_no_plays": 0
+      },
+      "three_point_signal": {
+        "n_jumpshots": 449816,
+        "n_shot_range_null": 0,
+        "n_playtext_null": 25,
+        "n_range_vs_text_disagree": 0,
+        "n_scorevalue3_but_not_three": 2,
+        "n_scorevalue_missing_or_zero": 51
+      },
+      "chances": {
+        "n_chances": 872330,
+        "n_first": 761310,
+        "n_continuation": 111020,
+        "first_shares_pct": {
+          "FGA_3": 27.986,
+          "FGA_rim": 24.327,
+          "FGA_jump2": 19.418,
+          "TOV": 16.422,
+          "FT_trip_shooting": 5.635,
+          "FT_trip_bonus": 4.998,
+          "unknown": 1.158,
+          "end_period": 0.056
+        },
+        "cont_shares_pct": {
+          "FGA_rim": 38.813,
+          "FGA_3": 20.033,
+          "FGA_jump2": 14.237,
+          "TOV": 11.798,
+          "FT_trip_shooting": 6.994,
+          "FT_trip_bonus": 4.956,
+          "unknown": 2.048,
+          "end_period": 1.121
+        }
+      },
+      "feed_completeness": {
+        "n_d1_games": 5749,
+        "n_no_cbbd_rows": 117,
+        "A_event_sum_vs_final_incomplete_pct": 20.63,
+        "B_running_score_vs_final_incomplete_pct": 3.17,
+        "events_disagree_with_running_score_pct": 18.3,
+        "mean_running_minus_events_pts": 0.661,
+        "explained_pts_on_rows_with_no_team": 0,
+        "explained_unknown_rows_flagged_scoring": 0,
+        "explained_fga_scoringplay_but_not_made": 0,
+        "n_technical_ft_points": 1073,
+        "pbp_complete_games": 4535,
+        "pbp_complete_pct": 78.88,
+        "pbp_complete_pct_of_not_truncated": 79.89
+      },
+      "rim_override_counts": {
+        "n_jump2": 167798,
+        "n_jump2_located": 143755,
+        "n_overridden": 3263,
+        "n_jump2_unlocated": 24043,
+        "n_three_within_threshold_not_touched": 50
+      },
+      "rim_family_quantiles": {
+        "DunkShot": {
+          "n_rows": 22391,
+          "n_located": 19065,
+          "located_pct": 85.15,
+          "quantiles_ft": {
+            "p10": 0.39,
+            "p25": 1.33,
+            "p50": 2.27,
+            "p75": 3.282,
+            "p90": 4.413,
+            "p95": 5.306,
+            "p99": 7.437
+          }
+        },
+        "LayUpShot": {
+          "n_rows": 202346,
+          "n_located": 175020,
+          "located_pct": 86.5,
+          "quantiles_ft": {
+            "p10": 1.073,
+            "p25": 2.038,
+            "p50": 3.282,
+            "p75": 4.607,
+            "p90": 6.112,
+            "p95": 7.13,
+            "p99": 9.841
+          }
+        },
+        "TipShot": {
+          "n_rows": 1153,
+          "n_located": 70,
+          "located_pct": 6.07,
+          "quantiles_ft": {
+            "p10": 0.39,
+            "p25": 0.43,
+            "p50": 4.18,
+            "p75": 10.244,
+            "p90": 23.636,
+            "p95": 26.587,
+            "p99": 28.574
+          }
+        },
+        "rim_family": {
+          "n_rows": 225890,
+          "n_located": 194155,
+          "located_pct": 85.95,
+          "quantiles_ft": {
+            "p10": 0.634,
+            "p25": 2.005,
+            "p50": 3.249,
+            "p75": 4.413,
+            "p90": 6.03,
+            "p95": 6.988,
+            "p99": 9.803
+          }
+        },
+        "JumpShot(2)": {
+          "n_rows": 167734,
+          "n_located": 143705,
+          "located_pct": 85.67,
+          "quantiles_ft": {
+            "p10": 4.269,
+            "p25": 7.041,
+            "p50": 10.98,
+            "p75": 15.43,
+            "p90": 18.192,
+            "p95": 19.508,
+            "p99": 21.283
+          }
+        },
+        "JumpShot(3)": {
+          "n_rows": 236847,
+          "n_located": 206203,
+          "located_pct": 87.06,
+          "quantiles_ft": {
+            "p10": 23.007,
+            "p25": 23.643,
+            "p50": 24.652,
+            "p75": 25.775,
+            "p90": 26.963,
+            "p95": 27.938,
+            "p99": 30.392
+          }
+        }
+      },
+      "basket_calibration": {
+        "n": 19065,
+        "median_dunk_distance_ft": 2.27
+      }
+    },
+    "2024": {
+      "season": 2024,
+      "n_games": 5553,
+      "n_possessions": 770983,
+      "poss_per_game_seg_mean": 69.42,
+      "poss_per_game_seg_sd": 5.687,
+      "poss_per_game_box_mean": 68.096,
+      "poss_per_game_box_sd": 5.468,
+      "diff_mean": 1.3248,
+      "diff_sd": 0.9797,
+      "diff_corr": 0.98534,
+      "diff_mae": 1.3891,
+      "worst_20": [
+        {
+          "game_id": 401625567,
+          "poss_seg": 77.0,
+          "poss_box": 70.64,
+          "diff": 6.36,
+          "matchup": "Maryland-Eastern Shore Hawks @ North Carolina Central Eagles",
+          "date": "2024-03-13",
+          "n_periods": 2.0
+        },
+        {
+          "game_id": 401597126,
+          "poss_seg": 79.0,
+          "poss_box": 73.12,
+          "diff": 5.88,
+          "matchup": "Tennessee Volunteers @ Georgia Bulldogs",
+          "date": "2024-01-13",
+          "n_periods": 2.0
+        },
+        {
+          "game_id": 401575751,
+          "poss_seg": 78.5,
+          "poss_box": 72.8,
+          "diff": 5.7,
+          "matchup": "Florida State Seminoles @ Florida Gators",
+          "date": "2023-11-17",
+          "n_periods": 2.0
+        },
+        {
+          "game_id": 401575408,
+          "poss_seg": 73.5,
+          "poss_box": 68.02,
+          "diff": 5.48,
+          "matchup": "Cal State Northridge Matadors @ Pacific Tigers",
+          "date": "2023-11-29",
+          "n_periods": 2.0
+        },
+        {
+          "game_id": 401574609,
+          "poss_seg": 87.0,
+          "poss_box": 81.54,
+          "diff": 5.46,
+          "matchup": "New Hampshire Wildcats @ Sacred Heart Pioneers",
+          "date": "2023-11-30",
+          "n_periods": 2.0
+        },
+        {
+          "game_id": 401574049,
+          "poss_seg": 92.0,
+          "poss_box": 86.58,
+          "diff": 5.42,
+          "matchup": "Stephen F. Austin Lumberjacks @ Abilene Christian Wildcats",
+          "date": "2023-12-02",
+          "n_periods": 3.0
+        },
+        {
+          "game_id": 401603452,
+          "poss_seg": 68.5,
+          "poss_box": 63.26,
+          "diff": 5.24,
+          "matchup": "Iowa State Cyclones @ Baylor Bears",
+          "date": "2024-02-03",
+          "n_periods": 2.0
+        },
+        {
+          "game_id": 401600245,
+          "poss_seg": 79.0,
+          "poss_box": 73.86,
+          "diff": 5.14,
+          "matchup": "UT Rio Grande Valley Vaqueros @ Chicago State Cougars",
+          "date": "2023-12-18",
+          "n_periods": 2.0
+        },
+        {
+          "game_id": 401591568,
+          "poss_seg": 85.0,
+          "poss_box": 79.88,
+          "diff": 5.12,
+          "matchup": "Sam Houston Bearkats @ Troy Trojans",
+          "date": "2023-11-20",
+          "n_periods": 3.0
+        },
+        {
+          "game_id": 401588616,
+          "poss_seg": 86.0,
+          "poss_box": 80.94,
+          "diff": 5.06,
+          "matchup": "Eastern Michigan Eagles @ Bowling Green Falcons",
+          "date": "2024-01-02",
+          "n_periods": 3.0
+        },
+        {
+          "game_id": 401601142,
+          "poss_seg": 77.0,
+          "poss_box": 72.04,
+          "diff": 4.96,
+          "matchup": "Howard Bison @ UC Santa Barbara Gauchos",
+          "date": "2023-12-20",
+          "n_periods": 2.0
+        },
+        {
+          "game_id": 401602137,
+          "poss_seg": 78.0,
+          "poss_box": 73.32,
+          "diff": 4.68,
+          "matchup": "SMU Mustangs @ Tulane Green Wave",
+          "date": "2024-02-15",
+          "n_periods": 2.0
+        },
+        {
+          "game_id": 401574556,
+          "poss_seg": 72.0,
+          "poss_box": 67.36,
+          "diff": 4.64,
+          "matchup": "Virginia Tech Hokies @ Auburn Tigers",
+          "date": "2023-11-29",
+          "n_periods": 2.0
+        },
+        {
+          "game_id": 401594316,
+          "poss_seg": 76.0,
+          "poss_box": 71.4,
+          "diff": 4.6,
+          "matchup": "Iona Gaels @ Niagara Purple Eagles",
+          "date": "2024-02-08",
+          "n_periods": 2.0
+        },
+        {
+          "game_id": 401575445,
+          "poss_seg": 75.0,
+          "poss_box": 70.44,
+          "diff": 4.56,
+          "matchup": "Idaho State Bengals @ Iowa State Cyclones",
+          "date": "2023-11-12",
+          "n_periods": 2.0
+        },
+        {
+          "game_id": 401625514,
+          "poss_seg": 71.0,
+          "poss_box": 66.46,
+          "diff": 4.54,
+          "matchup": "Radford Highlanders @ South Carolina Upstate Spartans",
+          "date": "2024-03-06",
+          "n_periods": 2.0
+        },
+        {
+          "game_id": 401625569,
+          "poss_seg": 74.0,
+          "poss_box": 69.46,
+          "diff": 4.54,
+          "matchup": "Delaware State Hornets @ South Carolina State Bulldogs",
+          "date": "2024-03-14",
+          "n_periods": 2.0
+        },
+        {
+          "game_id": 401594522,
+          "poss_seg": 78.5,
+          "poss_box": 73.96,
+          "diff": 4.54,
+          "matchup": "Loyola Maryland Greyhounds @ Boston University Terriers",
+          "date": "2024-02-25",
+          "n_periods": 3.0
+        },
+        {
+          "game_id": 401591579,
+          "poss_seg": 92.5,
+          "poss_box": 87.96,
+          "diff": 4.54,
+          "matchup": "Florida International Panthers @ Utah Tech Trailblazers",
+          "date": "2023-12-30",
+          "n_periods": 3.0
+        },
+        {
+          "game_id": 401602145,
+          "poss_seg": 64.0,
+          "poss_box": 59.48,
+          "diff": 4.52,
+          "matchup": "Charlotte 49ers @ Memphis Tigers",
+          "date": "2024-02-21",
+          "n_periods": 2.0
+        }
+      ],
+      "n_universe_games": 5640,
+      "n_games_missing_from_cbbd": 87,
+      "score_mismatch_team_rows": 444,
+      "score_mismatch_games": 375,
+      "feed_vs_final_mismatch_rows": 444,
+      "feed_vs_final_mismatch_games": 375,
+      "feed_vs_final_mean_abs": 0.0823,
+      "seg_vs_feed_mismatch_rows": 0,
+      "seg_vs_feed_mismatch_games": 0,
+      "seg_vs_feed_mean_abs": 0.0,
+      "seg_vs_feed_hist": {
+        "0": 11106
+      },
+      "score_rows": 11106,
+      "score_mean_abs_delta": 0.0823,
+      "score_delta_hist": {
+        "-2": 1,
+        "-1": 1,
+        "0": 10662,
+        "1": 24,
+        "2": 394,
+        "3": 1,
+        "4": 21,
+        "5": 2
+      },
+      "terminal_shares_pct": {
+        "FGA_rim": 26.061,
+        "FGA_3": 25.5,
+        "FGA_jump2": 17.907,
+        "TOV": 17.003,
+        "FT_trip_shooting": 6.861,
+        "FT_trip_bonus": 5.575,
+        "unknown": 0.882,
+        "end_period": 0.21
+      },
+      "chance_note": {},
+      "duration_by_terminal": {
+        "FGA_3": {
+          "count": 196603.0,
+          "mean": 18.66,
+          "std": 9.19,
+          "min": 0.0,
+          "10%": 7.0,
+          "25%": 12.0,
+          "50%": 18.0,
+          "75%": 25.0,
+          "90%": 31.0,
+          "max": 142.0
+        },
+        "FGA_jump2": {
+          "count": 138057.0,
+          "mean": 20.48,
+          "std": 8.99,
+          "min": 0.0,
+          "10%": 9.0,
+          "25%": 14.0,
+          "50%": 20.0,
+          "75%": 26.0,
+          "90%": 32.0,
+          "max": 146.0
+        },
+        "FGA_rim": {
+          "count": 200929.0,
+          "mean": 17.09,
+          "std": 9.63,
+          "min": 0.0,
+          "10%": 5.0,
+          "25%": 9.0,
+          "50%": 17.0,
+          "75%": 23.0,
+          "90%": 30.0,
+          "max": 161.0
+        },
+        "FT_trip_bonus": {
+          "count": 42982.0,
+          "mean": 12.06,
+          "std": 9.7,
+          "min": 0.0,
+          "10%": 1.0,
+          "25%": 4.0,
+          "50%": 11.0,
+          "75%": 19.0,
+          "90%": 25.0,
+          "max": 105.0
+        },
+        "FT_trip_shooting": {
+          "count": 52896.0,
+          "mean": 15.22,
+          "std": 9.92,
+          "min": 0.0,
+          "10%": 3.0,
+          "25%": 7.0,
+          "50%": 15.0,
+          "75%": 22.0,
+          "90%": 28.0,
+          "max": 133.0
+        },
+        "TOV": {
+          "count": 131091.0,
+          "mean": 15.83,
+          "std": 9.64,
+          "min": 0.0,
+          "10%": 4.0,
+          "25%": 9.0,
+          "50%": 15.0,
+          "75%": 22.0,
+          "90%": 29.0,
+          "max": 197.0
+        },
+        "end_period": {
+          "count": 1622.0,
+          "mean": 12.77,
+          "std": 11.77,
+          "min": 0.0,
+          "10%": 1.0,
+          "25%": 4.0,
+          "50%": 9.0,
+          "75%": 20.0,
+          "90%": 30.0,
+          "max": 85.0
+        },
+        "unknown": {
+          "count": 6803.0,
+          "mean": 6.07,
+          "std": 10.37,
+          "min": 0.0,
+          "10%": 0.0,
+          "25%": 1.0,
+          "50%": 1.0,
+          "75%": 5.0,
+          "90%": 21.0,
+          "max": 82.0
+        }
+      },
+      "mean_chances": 1.15,
+      "oreb_rate": 0.1301,
+      "ambiguous_ft_trips_pct": 40.547,
+      "transition_share_pct": 15.903,
+      "bonus_share_pct": 30.391,
+      "and_one_per_game": 3.024,
+      "putback_label_drift": {
+        "n_putback_attempts": 76362,
+        "shares_pct": {
+          "LayUpShot": 49.46,
+          "JumpShot (3)": 27.44,
+          "JumpShot (2)": 18.08,
+          "DunkShot": 4.05,
+          "TipShot": 0.96
+        }
+      },
+      "machine_diag": {
+        "n_games": 5553,
+        "n_mismatch_closes": 3402,
+        "n_tech_trips": 954,
+        "n_admin_orebs": 24506,
+        "n_unknown_team": 0,
+        "n_games_no_plays": 0
+      },
+      "three_point_signal": {
+        "n_jumpshots": 461065,
+        "n_shot_range_null": 0,
+        "n_playtext_null": 1737,
+        "n_range_vs_text_disagree": 0,
+        "n_scorevalue3_but_not_three": 22,
+        "n_scorevalue_missing_or_zero": 3606
+      },
+      "chances": {
+        "n_chances": 886610,
+        "n_first": 770983,
+        "n_continuation": 115627,
+        "first_shares_pct": {
+          "FGA_3": 28.058,
+          "FGA_rim": 25.188,
+          "FGA_jump2": 19.46,
+          "TOV": 15.264,
+          "FT_trip_shooting": 6.036,
+          "FT_trip_bonus": 5.031,
+          "unknown": 0.916,
+          "end_period": 0.047
+        },
+        "cont_shares_pct": {
+          "FGA_rim": 38.488,
+          "FGA_3": 20.705,
+          "FGA_jump2": 14.005,
+          "TOV": 11.599,
+          "FT_trip_shooting": 7.196,
+          "FT_trip_bonus": 5.255,
+          "unknown": 1.663,
+          "end_period": 1.088
+        }
+      },
+      "feed_completeness": {
+        "n_d1_games": 5731,
+        "n_no_cbbd_rows": 87,
+        "A_event_sum_vs_final_incomplete_pct": 9.37,
+        "B_running_score_vs_final_incomplete_pct": 3.02,
+        "events_disagree_with_running_score_pct": 7.0,
+        "mean_running_minus_events_pts": -0.171,
+        "explained_pts_on_rows_with_no_team": 0,
+        "explained_unknown_rows_flagged_scoring": 0,
+        "explained_fga_scoringplay_but_not_made": 0,
+        "n_technical_ft_points": 738,
+        "pbp_complete_games": 5189,
+        "pbp_complete_pct": 90.54,
+        "pbp_complete_pct_of_not_truncated": 91.81
+      },
+      "rim_override_counts": {
+        "n_jump2": 170763,
+        "n_jump2_located": 153006,
+        "n_overridden": 3734,
+        "n_jump2_unlocated": 17757,
+        "n_three_within_threshold_not_touched": 43
+      },
+      "rim_family_quantiles": {
+        "DunkShot": {
+          "n_rows": 22628,
+          "n_located": 19965,
+          "located_pct": 88.23,
+          "quantiles_ft": {
+            "p10": 0.39,
+            "p25": 1.33,
+            "p50": 2.27,
+            "p75": 3.362,
+            "p90": 4.413,
+            "p95": 5.306,
+            "p99": 7.251
+          }
+        },
+        "LayUpShot": {
+          "n_rows": 212486,
+          "n_located": 190100,
+          "located_pct": 89.46,
+          "quantiles_ft": {
+            "p10": 1.073,
+            "p25": 2.038,
+            "p50": 3.282,
+            "p75": 4.607,
+            "p90": 6.112,
+            "p95": 7.041,
+            "p99": 9.79
+          }
+        },
+        "TipShot": {
+          "n_rows": 741,
+          "n_located": 53,
+          "located_pct": 7.15,
+          "quantiles_ft": {
+            "p10": 0.39,
+            "p25": 0.39,
+            "p50": 2.56,
+            "p75": 6.051,
+            "p90": 12.799,
+            "p95": 22.721,
+            "p99": 23.953
+          }
+        },
+        "rim_family": {
+          "n_rows": 235855,
+          "n_located": 210118,
+          "located_pct": 89.09,
+          "quantiles_ft": {
+            "p10": 0.743,
+            "p25": 2.005,
+            "p50": 3.249,
+            "p75": 4.517,
+            "p90": 6.03,
+            "p95": 6.988,
+            "p99": 9.699
+          }
+        },
+        "JumpShot(2)": {
+          "n_rows": 170763,
+          "n_located": 153006,
+          "located_pct": 89.6,
+          "quantiles_ft": {
+            "p10": 4.172,
+            "p25": 6.885,
+            "p50": 10.73,
+            "p75": 15.028,
+            "p90": 17.885,
+            "p95": 19.249,
+            "p99": 21.123
+          }
+        },
+        "JumpShot(3)": {
+          "n_rows": 241711,
+          "n_located": 218146,
+          "located_pct": 90.25,
+          "quantiles_ft": {
+            "p10": 23.003,
+            "p25": 23.623,
+            "p50": 24.62,
+            "p75": 25.714,
+            "p90": 26.92,
+            "p95": 27.812,
+            "p99": 30.377
+          }
+        }
+      },
+      "basket_calibration": {
+        "n": 19965,
+        "median_dunk_distance_ft": 2.27
+      }
+    },
+    "2025": {
+      "season": 2025,
+      "n_games": 5593,
+      "n_possessions": 768834,
+      "poss_per_game_seg_mean": 68.744,
+      "poss_per_game_seg_sd": 5.822,
+      "poss_per_game_box_mean": 67.524,
+      "poss_per_game_box_sd": 5.616,
+      "diff_mean": 1.2198,
+      "diff_sd": 1.0001,
+      "diff_corr": 0.98535,
+      "diff_mae": 1.3111,
+      "worst_20": [
+        {
+          "game_id": 401700176,
+          "poss_seg": 79.5,
+          "poss_box": 72.62,
+          "diff": 6.88,
+          "matchup": "Western Kentucky Hilltoppers @ Liberty Flames",
+          "date": "2025-01-02",
+          "n_periods": 2.0
+        },
+        {
+          "game_id": 401719210,
+          "poss_seg": 80.0,
+          "poss_box": 73.78,
+          "diff": 6.22,
+          "matchup": "Alabama Crimson Tide @ Houston Cougars",
+          "date": "2024-11-26",
+          "n_periods": 3.0
+        },
+        {
+          "game_id": 401722161,
+          "poss_seg": 73.0,
+          "poss_box": 67.18,
+          "diff": 5.82,
+          "matchup": "San Diego State Aztecs @ Air Force Falcons",
+          "date": "2025-01-22",
+          "n_periods": 3.0
+        },
+        {
+          "game_id": 401700274,
+          "poss_seg": 77.5,
+          "poss_box": 71.86,
+          "diff": 5.64,
+          "matchup": "Kennesaw State Owls @ Santa Clara Broncos",
+          "date": "2024-12-18",
+          "n_periods": 2.0
+        },
+        {
+          "game_id": 401714514,
+          "poss_seg": 46.5,
+          "poss_box": 40.88,
+          "diff": 5.62,
+          "matchup": "Arkansas State Red Wolves @ Old Dominion Monarchs",
+          "date": "2025-01-02",
+          "n_periods": 2.0
+        },
+        {
+          "game_id": 401721296,
+          "poss_seg": 68.0,
+          "poss_box": 62.62,
+          "diff": 5.38,
+          "matchup": "Mississippi Valley State Delta Devils @ Alcorn State Braves",
+          "date": "2025-02-10",
+          "n_periods": 2.0
+        },
+        {
+          "game_id": 401722276,
+          "poss_seg": 80.0,
+          "poss_box": 74.64,
+          "diff": 5.36,
+          "matchup": "Florida International Panthers @ Rice Owls",
+          "date": "2024-11-05",
+          "n_periods": 2.0
+        },
+        {
+          "game_id": 401725710,
+          "poss_seg": 64.5,
+          "poss_box": 59.32,
+          "diff": 5.18,
+          "matchup": "Iowa State Cyclones @ Kansas Jayhawks",
+          "date": "2025-02-03",
+          "n_periods": 2.0
+        },
+        {
+          "game_id": 401716057,
+          "poss_seg": 85.5,
+          "poss_box": 80.42,
+          "diff": 5.08,
+          "matchup": "Ohio Bobcats @ Middle Tennessee Blue Raiders",
+          "date": "2024-11-21",
+          "n_periods": 3.0
+        },
+        {
+          "game_id": 401721842,
+          "poss_seg": 48.0,
+          "poss_box": 42.94,
+          "diff": 5.06,
+          "matchup": "Boston University Terriers @ Lafayette Leopards",
+          "date": "2025-01-02",
+          "n_periods": 2.0
+        },
+        {
+          "game_id": 401721420,
+          "poss_seg": 71.5,
+          "poss_box": 66.48,
+          "diff": 5.02,
+          "matchup": "Purdue Boilermakers @ Michigan Wolverines",
+          "date": "2025-02-11",
+          "n_periods": 2.0
+        },
+        {
+          "game_id": 401721669,
+          "poss_seg": 76.0,
+          "poss_box": 71.06,
+          "diff": 4.94,
+          "matchup": "Princeton Tigers @ Duquesne Dukes",
+          "date": "2024-11-08",
+          "n_periods": 2.0
+        },
+        {
+          "game_id": 401700196,
+          "poss_seg": 72.0,
+          "poss_box": 67.08,
+          "diff": 4.92,
+          "matchup": "UTEP Miners @ Florida International Panthers",
+          "date": "2025-01-18",
+          "n_periods": 2.0
+        },
+        {
+          "game_id": 401724716,
+          "poss_seg": 74.5,
+          "poss_box": 69.64,
+          "diff": 4.86,
+          "matchup": "Arkansas-Pine Bluff Golden Lions @ Texas Southern Tigers",
+          "date": "2025-02-24",
+          "n_periods": 2.0
+        },
+        {
+          "game_id": 401721292,
+          "poss_seg": 68.0,
+          "poss_box": 63.14,
+          "diff": 4.86,
+          "matchup": "Bethune-Cookman Wildcats @ Alcorn State Braves",
+          "date": "2025-01-27",
+          "n_periods": 2.0
+        },
+        {
+          "game_id": 401725555,
+          "poss_seg": 74.0,
+          "poss_box": 69.2,
+          "diff": 4.8,
+          "matchup": "Tulane Green Wave @ Rice Owls",
+          "date": "2025-01-25",
+          "n_periods": 2.0
+        },
+        {
+          "game_id": 401715596,
+          "poss_seg": 81.0,
+          "poss_box": 76.24,
+          "diff": 4.76,
+          "matchup": "Bryant Bulldogs @ St. John's Red Storm",
+          "date": "2024-12-11",
+          "n_periods": 2.0
+        },
+        {
+          "game_id": 401708390,
+          "poss_seg": 82.0,
+          "poss_box": 77.24,
+          "diff": 4.76,
+          "matchup": "Auburn Tigers @ Alabama Crimson Tide",
+          "date": "2025-02-15",
+          "n_periods": 2.0
+        },
+        {
+          "game_id": 401721335,
+          "poss_seg": 83.0,
+          "poss_box": 78.26,
+          "diff": 4.74,
+          "matchup": "Ohio State Buckeyes @ Minnesota Golden Gophers",
+          "date": "2025-01-06",
+          "n_periods": 4.0
+        },
+        {
+          "game_id": 401714517,
+          "poss_seg": 42.5,
+          "poss_box": 37.8,
+          "diff": 4.7,
+          "matchup": "Texas State Bobcats @ Marshall Thundering Herd",
+          "date": "2025-01-02",
+          "n_periods": 2.0
+        }
+      ],
+      "n_universe_games": 5710,
+      "n_games_missing_from_cbbd": 117,
+      "score_mismatch_team_rows": 183,
+      "score_mismatch_games": 148,
+      "feed_vs_final_mismatch_rows": 183,
+      "feed_vs_final_mismatch_games": 148,
+      "feed_vs_final_mean_abs": 0.1152,
+      "seg_vs_feed_mismatch_rows": 0,
+      "seg_vs_feed_mismatch_games": 0,
+      "seg_vs_feed_mean_abs": 0.0,
+      "seg_vs_feed_hist": {
+        "0.0": 11186
+      },
+      "score_rows": 11186,
+      "score_mean_abs_delta": 0.1152,
+      "score_delta_hist": {
+        "-5.0": 41,
+        "-4.0": 23,
+        "-3.0": 1,
+        "-2.0": 69,
+        "-1.0": 1,
+        "0.0": 11003,
+        "1.0": 21,
+        "2.0": 13,
+        "3.0": 5,
+        "4.0": 1,
+        "5.0": 8
+      },
+      "terminal_shares_pct": {
+        "FGA_3": 26.507,
+        "FGA_rim": 26.394,
+        "TOV": 17.144,
+        "FGA_jump2": 16.306,
+        "FT_trip_shooting": 6.975,
+        "FT_trip_bonus": 5.604,
+        "unknown": 0.833,
+        "end_period": 0.235
+      },
+      "chance_note": {},
+      "duration_by_terminal": {
+        "FGA_3": {
+          "count": 203797.0,
+          "mean": 18.95,
+          "std": 11.21,
+          "min": 0.0,
+          "10%": 7.0,
+          "25%": 12.0,
+          "50%": 18.0,
+          "75%": 25.0,
+          "90%": 31.0,
+          "max": 1200.0
+        },
+        "FGA_jump2": {
+          "count": 125367.0,
+          "mean": 20.96,
+          "std": 9.23,
+          "min": 0.0,
+          "10%": 10.0,
+          "25%": 15.0,
+          "50%": 21.0,
+          "75%": 27.0,
+          "90%": 32.0,
+          "max": 395.0
+        },
+        "FGA_rim": {
+          "count": 202927.0,
+          "mean": 17.19,
+          "std": 11.52,
+          "min": 0.0,
+          "10%": 5.0,
+          "25%": 9.0,
+          "50%": 17.0,
+          "75%": 24.0,
+          "90%": 30.0,
+          "max": 1200.0
+        },
+        "FT_trip_bonus": {
+          "count": 43088.0,
+          "mean": 12.1,
+          "std": 9.8,
+          "min": 0.0,
+          "10%": 1.0,
+          "25%": 4.0,
+          "50%": 11.0,
+          "75%": 19.0,
+          "90%": 25.0,
+          "max": 83.0
+        },
+        "FT_trip_shooting": {
+          "count": 53630.0,
+          "mean": 15.49,
+          "std": 14.1,
+          "min": 0.0,
+          "10%": 3.0,
+          "25%": 7.0,
+          "50%": 15.0,
+          "75%": 22.0,
+          "90%": 28.0,
+          "max": 1196.0
+        },
+        "TOV": {
+          "count": 131810.0,
+          "mean": 16.12,
+          "std": 13.91,
+          "min": 0.0,
+          "10%": 4.0,
+          "25%": 9.0,
+          "50%": 15.0,
+          "75%": 22.0,
+          "90%": 29.0,
+          "max": 1186.0
+        },
+        "end_period": {
+          "count": 1810.0,
+          "mean": 19.79,
+          "std": 93.77,
+          "min": 0.0,
+          "10%": 1.0,
+          "25%": 3.0,
+          "50%": 8.0,
+          "75%": 19.0,
+          "90%": 30.0,
+          "max": 1200.0
+        },
+        "unknown": {
+          "count": 6405.0,
+          "mean": 7.62,
+          "std": 27.58,
+          "min": 0.0,
+          "10%": 0.0,
+          "25%": 1.0,
+          "50%": 2.0,
+          "75%": 8.0,
+          "90%": 23.0,
+          "max": 1170.0
+        }
+      },
+      "mean_chances": 1.1534,
+      "oreb_rate": 0.1324,
+      "ambiguous_ft_trips_pct": 40.131,
+      "transition_share_pct": 15.834,
+      "bonus_share_pct": 30.299,
+      "and_one_per_game": 2.8832,
+      "putback_label_drift": {
+        "n_putback_attempts": 77012,
+        "shares_pct": {
+          "LayUpShot": 31.49,
+          "JumpShot (3)": 29.0,
+          "JumpShot (2)": 26.48,
+          "TipShot": 10.96,
+          "DunkShot": 2.08
+        }
+      },
+      "machine_diag": {
+        "n_games": 5593,
+        "n_mismatch_closes": 3798,
+        "n_tech_trips": 879,
+        "n_admin_orebs": 24550,
+        "n_unknown_team": 0,
+        "n_games_no_plays": 0
+      },
+      "three_point_signal": {
+        "n_jumpshots": 462118,
+        "n_shot_range_null": 0,
+        "n_playtext_null": 981,
+        "n_range_vs_text_disagree": 0,
+        "n_scorevalue3_but_not_three": 18,
+        "n_scorevalue_missing_or_zero": 2301
+      },
+      "chances": {
+        "n_chances": 886756,
+        "n_first": 768834,
+        "n_continuation": 117922,
+        "first_shares_pct": {
+          "FGA_3": 29.274,
+          "FGA_rim": 25.481,
+          "FGA_jump2": 17.707,
+          "TOV": 15.392,
+          "FT_trip_shooting": 6.12,
+          "FT_trip_bonus": 5.084,
+          "unknown": 0.866,
+          "end_period": 0.076
+        },
+        "cont_shares_pct": {
+          "FGA_rim": 38.127,
+          "FGA_3": 22.105,
+          "FGA_jump2": 13.267,
+          "TOV": 11.422,
+          "FT_trip_shooting": 7.331,
+          "FT_trip_bonus": 5.113,
+          "unknown": 1.595,
+          "end_period": 1.04
+        }
+      },
+      "feed_completeness": {
+        "n_d1_games": 5769,
+        "n_no_cbbd_rows": 117,
+        "A_event_sum_vs_final_incomplete_pct": 5.44,
+        "B_running_score_vs_final_incomplete_pct": 3.64,
+        "events_disagree_with_running_score_pct": 3.12,
+        "mean_running_minus_events_pts": -0.076,
+        "explained_pts_on_rows_with_no_team": 0,
+        "explained_unknown_rows_flagged_scoring": 0,
+        "explained_fga_scoringplay_but_not_made": 0,
+        "n_technical_ft_points": 693,
+        "pbp_complete_games": 5450,
+        "pbp_complete_pct": 94.47,
+        "pbp_complete_pct_of_not_truncated": 95.36
+      },
+      "rim_override_counts": {
+        "n_jump2": 163552,
+        "n_jump2_located": 161623,
+        "n_overridden": 10657,
+        "n_jump2_unlocated": 1929,
+        "n_three_within_threshold_not_touched": 65
+      },
+      "rim_family_quantiles": {
+        "DunkShot": {
+          "n_rows": 22006,
+          "n_located": 21691,
+          "located_pct": 98.57,
+          "quantiles_ft": {
+            "p10": 0.634,
+            "p25": 1.421,
+            "p50": 2.27,
+            "p75": 3.362,
+            "p90": 4.564,
+            "p95": 5.429,
+            "p99": 7.405
+          }
+        },
+        "LayUpShot": {
+          "n_rows": 200630,
+          "n_located": 196244,
+          "located_pct": 97.81,
+          "quantiles_ft": {
+            "p10": 1.421,
+            "p25": 2.324,
+            "p50": 3.362,
+            "p75": 4.607,
+            "p90": 6.051,
+            "p95": 6.988,
+            "p99": 9.634
+          }
+        },
+        "TipShot": {
+          "n_rows": 8646,
+          "n_located": 8418,
+          "located_pct": 97.36,
+          "quantiles_ft": {
+            "p10": 0.39,
+            "p25": 0.39,
+            "p50": 0.39,
+            "p75": 0.39,
+            "p90": 0.39,
+            "p95": 0.39,
+            "p99": 4.069
+          }
+        },
+        "rim_family": {
+          "n_rows": 231282,
+          "n_located": 226353,
+          "located_pct": 97.87,
+          "quantiles_ft": {
+            "p10": 1.141,
+            "p25": 2.038,
+            "p50": 3.249,
+            "p75": 4.413,
+            "p90": 5.908,
+            "p95": 6.97,
+            "p99": 9.345
+          }
+        },
+        "JumpShot(2)": {
+          "n_rows": 163552,
+          "n_located": 161623,
+          "located_pct": 98.82,
+          "quantiles_ft": {
+            "p10": 3.362,
+            "p25": 6.353,
+            "p50": 10.104,
+            "p75": 14.49,
+            "p90": 17.453,
+            "p95": 19.004,
+            "p99": 21.07
+          }
+        },
+        "JumpShot(3)": {
+          "n_rows": 253293,
+          "n_located": 251457,
+          "located_pct": 99.28,
+          "quantiles_ft": {
+            "p10": 23.003,
+            "p25": 23.609,
+            "p50": 24.615,
+            "p75": 25.775,
+            "p90": 26.983,
+            "p95": 28.02,
+            "p99": 30.572
+          }
+        }
+      },
+      "basket_calibration": {
+        "n": 21691,
+        "median_dunk_distance_ft": 2.27
+      }
+    },
+    "2026": {
+      "season": 2026,
+      "n_games": 5721,
+      "n_possessions": 791112,
+      "poss_per_game_seg_mean": 69.166,
+      "poss_per_game_seg_sd": 6.026,
+      "poss_per_game_box_mean": 68.152,
+      "poss_per_game_box_sd": 5.817,
+      "diff_mean": 1.0136,
+      "diff_sd": 1.0244,
+      "diff_corr": 0.98566,
+      "diff_mae": 1.1846,
+      "worst_20": [
+        {
+          "game_id": 401817534,
+          "poss_seg": 125.5,
+          "poss_box": 115.86,
+          "diff": 9.64,
+          "matchup": "Wake Forest Demon Deacons @ West Virginia Mountaineers",
+          "date": "2025-12-06",
+          "n_periods": 2.0
+        },
+        {
+          "game_id": 401827524,
+          "poss_seg": 74.0,
+          "poss_box": 66.22,
+          "diff": 7.78,
+          "matchup": "Hampton Pirates @ Howard Bison",
+          "date": "2025-12-13",
+          "n_periods": 2.0
+        },
+        {
+          "game_id": 401851488,
+          "poss_seg": 100.5,
+          "poss_box": 94.26,
+          "diff": 6.24,
+          "matchup": "Drake Bulldogs @ Belmont Bruins",
+          "date": "2026-03-06",
+          "n_periods": 2.0
+        },
+        {
+          "game_id": 401828691,
+          "poss_seg": 86.0,
+          "poss_box": 80.18,
+          "diff": 5.82,
+          "matchup": "Morgan State Bears @ Howard Bison",
+          "date": "2026-01-24",
+          "n_periods": 2.0
+        },
+        {
+          "game_id": 401823776,
+          "poss_seg": 151.0,
+          "poss_box": 145.5,
+          "diff": 5.5,
+          "matchup": "San Diego State Aztecs @ Grand Canyon Lopes",
+          "date": "2026-01-21",
+          "n_periods": 2.0
+        },
+        {
+          "game_id": 401817529,
+          "poss_seg": 90.5,
+          "poss_box": 85.26,
+          "diff": 5.24,
+          "matchup": "Wake Forest Demon Deacons @ Michigan Wolverines",
+          "date": "2025-11-11",
+          "n_periods": 3.0
+        },
+        {
+          "game_id": 401804960,
+          "poss_seg": 79.0,
+          "poss_box": 73.8,
+          "diff": 5.2,
+          "matchup": "Kennesaw State Owls @ UTEP Miners",
+          "date": "2026-03-05",
+          "n_periods": 2.0
+        },
+        {
+          "game_id": 401829459,
+          "poss_seg": 76.5,
+          "poss_box": 71.5,
+          "diff": 5.0,
+          "matchup": "Western Illinois Leathernecks @ North Dakota Fighting Hawks",
+          "date": "2025-12-13",
+          "n_periods": 3.0
+        },
+        {
+          "game_id": 401851733,
+          "poss_seg": 80.0,
+          "poss_box": 75.1,
+          "diff": 4.9,
+          "matchup": "Tarleton State Texans @ Abilene Christian Wildcats",
+          "date": "2026-03-11",
+          "n_periods": 2.0
+        },
+        {
+          "game_id": 401819921,
+          "poss_seg": 76.5,
+          "poss_box": 81.38,
+          "diff": -4.88,
+          "matchup": "West Virginia Mountaineers @ Ohio State Buckeyes",
+          "date": "2025-12-13",
+          "n_periods": 4.0
+        },
+        {
+          "game_id": 401809136,
+          "poss_seg": 78.0,
+          "poss_box": 73.12,
+          "diff": 4.88,
+          "matchup": "UC Davis Aggies @ UC Riverside Highlanders",
+          "date": "2026-02-21",
+          "n_periods": 2.0
+        },
+        {
+          "game_id": 401827126,
+          "poss_seg": 75.5,
+          "poss_box": 70.7,
+          "diff": 4.8,
+          "matchup": "Bethune-Cookman Wildcats @ Florida A&M Rattlers",
+          "date": "2026-03-05",
+          "n_periods": 2.0
+        },
+        {
+          "game_id": 401828159,
+          "poss_seg": 100.0,
+          "poss_box": 95.38,
+          "diff": 4.62,
+          "matchup": "UAB Blazers @ South Florida Bulls",
+          "date": "2026-01-04",
+          "n_periods": 4.0
+        },
+        {
+          "game_id": 401826813,
+          "poss_seg": 82.0,
+          "poss_box": 77.54,
+          "diff": 4.46,
+          "matchup": "South Florida Bulls @ Kennesaw State Owls",
+          "date": "2025-11-16",
+          "n_periods": 2.0
+        },
+        {
+          "game_id": 401817480,
+          "poss_seg": 73.0,
+          "poss_box": 68.6,
+          "diff": 4.4,
+          "matchup": "Saint Joseph's Hawks @ Syracuse Orange",
+          "date": "2025-12-11",
+          "n_periods": 2.0
+        },
+        {
+          "game_id": 401851490,
+          "poss_seg": 91.0,
+          "poss_box": 86.64,
+          "diff": 4.36,
+          "matchup": "Valparaiso Beacons @ Bradley Braves",
+          "date": "2026-03-06",
+          "n_periods": 4.0
+        },
+        {
+          "game_id": 401808220,
+          "poss_seg": 71.0,
+          "poss_box": 66.84,
+          "diff": 4.16,
+          "matchup": "Tennessee Volunteers @ Kentucky Wildcats",
+          "date": "2026-02-07",
+          "n_periods": 2.0
+        },
+        {
+          "game_id": 401827045,
+          "poss_seg": 76.5,
+          "poss_box": 72.34,
+          "diff": 4.16,
+          "matchup": "Prairie View A&M Panthers @ LSU Tigers",
+          "date": "2025-12-22",
+          "n_periods": 2.0
+        },
+        {
+          "game_id": 401823820,
+          "poss_seg": 65.0,
+          "poss_box": 60.86,
+          "diff": 4.14,
+          "matchup": "Boise State Broncos @ Nevada Wolf Pack",
+          "date": "2025-12-20",
+          "n_periods": 2.0
+        },
+        {
+          "game_id": 401808731,
+          "poss_seg": 70.0,
+          "poss_box": 65.86,
+          "diff": 4.14,
+          "matchup": "McNeese Cowboys @ Incarnate Word Cardinals",
+          "date": "2025-12-01",
+          "n_periods": 2.0
+        }
+      ],
+      "n_universe_games": 5762,
+      "n_games_missing_from_cbbd": 41,
+      "score_mismatch_team_rows": 100,
+      "score_mismatch_games": 74,
+      "feed_vs_final_mismatch_rows": 100,
+      "feed_vs_final_mismatch_games": 74,
+      "feed_vs_final_mean_abs": 0.1745,
+      "seg_vs_feed_mismatch_rows": 0,
+      "seg_vs_feed_mismatch_games": 0,
+      "seg_vs_feed_mean_abs": 0.0,
+      "seg_vs_feed_hist": {
+        "0.0": 11442
+      },
+      "score_rows": 11442,
+      "score_mean_abs_delta": 0.1745,
+      "score_delta_hist": {
+        "-5.0": 16,
+        "-4.0": 1,
+        "-3.0": 1,
+        "-2.0": 4,
+        "-1.0": 18,
+        "0.0": 11342,
+        "1.0": 9,
+        "2.0": 23,
+        "3.0": 3,
+        "4.0": 2,
+        "5.0": 23
+      },
+      "terminal_shares_pct": {
+        "FGA_rim": 27.521,
+        "FGA_3": 26.506,
+        "TOV": 16.662,
+        "FGA_jump2": 14.938,
+        "FT_trip_shooting": 7.275,
+        "FT_trip_bonus": 6.033,
+        "unknown": 0.813,
+        "end_period": 0.251
+      },
+      "chance_note": {},
+      "duration_by_terminal": {
+        "FGA_3": {
+          "count": 209694.0,
+          "mean": 19.02,
+          "std": 11.07,
+          "min": 0.0,
+          "10%": 7.0,
+          "25%": 12.0,
+          "50%": 18.0,
+          "75%": 25.0,
+          "90%": 31.0,
+          "max": 1197.0
+        },
+        "FGA_jump2": {
+          "count": 118179.0,
+          "mean": 21.27,
+          "std": 11.63,
+          "min": 0.0,
+          "10%": 10.0,
+          "25%": 15.0,
+          "50%": 21.0,
+          "75%": 27.0,
+          "90%": 32.0,
+          "max": 1199.0
+        },
+        "FGA_rim": {
+          "count": 217724.0,
+          "mean": 17.1,
+          "std": 12.32,
+          "min": 0.0,
+          "10%": 5.0,
+          "25%": 9.0,
+          "50%": 17.0,
+          "75%": 23.0,
+          "90%": 30.0,
+          "max": 1200.0
+        },
+        "FT_trip_bonus": {
+          "count": 47727.0,
+          "mean": 12.13,
+          "std": 10.52,
+          "min": 0.0,
+          "10%": 1.0,
+          "25%": 4.0,
+          "50%": 11.0,
+          "75%": 19.0,
+          "90%": 25.0,
+          "max": 717.0
+        },
+        "FT_trip_shooting": {
+          "count": 57552.0,
+          "mean": 15.51,
+          "std": 16.8,
+          "min": 0.0,
+          "10%": 3.0,
+          "25%": 7.0,
+          "50%": 15.0,
+          "75%": 22.0,
+          "90%": 28.0,
+          "max": 1200.0
+        },
+        "TOV": {
+          "count": 131818.0,
+          "mean": 16.24,
+          "std": 20.49,
+          "min": 0.0,
+          "10%": 4.0,
+          "25%": 9.0,
+          "50%": 15.0,
+          "75%": 22.0,
+          "90%": 29.0,
+          "max": 1199.0
+        },
+        "end_period": {
+          "count": 1985.0,
+          "mean": 29.37,
+          "std": 132.49,
+          "min": 0.0,
+          "10%": 2.0,
+          "25%": 4.0,
+          "50%": 9.0,
+          "75%": 21.0,
+          "90%": 30.0,
+          "max": 1200.0
+        },
+        "unknown": {
+          "count": 6433.0,
+          "mean": 7.31,
+          "std": 33.05,
+          "min": 0.0,
+          "10%": 0.0,
+          "25%": 1.0,
+          "50%": 1.0,
+          "75%": 4.0,
+          "90%": 22.0,
+          "max": 1200.0
+        }
+      },
+      "mean_chances": 1.1534,
+      "oreb_rate": 0.1323,
+      "ambiguous_ft_trips_pct": 41.197,
+      "transition_share_pct": 15.865,
+      "bonus_share_pct": 32.234,
+      "and_one_per_game": 3.0659,
+      "putback_label_drift": {
+        "n_putback_attempts": 76984,
+        "shares_pct": {
+          "LayUpShot": 31.91,
+          "JumpShot (3)": 28.82,
+          "TipShot": 22.23,
+          "JumpShot (2)": 14.89,
+          "DunkShot": 2.15
+        }
+      },
+      "machine_diag": {
+        "n_games": 5721,
+        "n_mismatch_closes": 5115,
+        "n_tech_trips": 1045,
+        "n_admin_orebs": 26641,
+        "n_unknown_team": 0,
+        "n_games_no_plays": 0
+      },
+      "three_point_signal": {
+        "n_jumpshots": 451875,
+        "n_shot_range_null": 0,
+        "n_playtext_null": 102,
+        "n_range_vs_text_disagree": 0,
+        "n_scorevalue3_but_not_three": 110,
+        "n_scorevalue_missing_or_zero": 0
+      },
+      "chances": {
+        "n_chances": 912483,
+        "n_first": 791112,
+        "n_continuation": 121371,
+        "first_shares_pct": {
+          "FGA_3": 29.386,
+          "FGA_rim": 26.496,
+          "FGA_jump2": 16.223,
+          "TOV": 15.031,
+          "FT_trip_shooting": 6.411,
+          "FT_trip_bonus": 5.487,
+          "unknown": 0.838,
+          "end_period": 0.126
+        },
+        "cont_shares_pct": {
+          "FGA_rim": 39.378,
+          "FGA_3": 22.758,
+          "FGA_jump2": 12.14,
+          "TOV": 10.632,
+          "FT_trip_shooting": 7.458,
+          "FT_trip_bonus": 5.43,
+          "unknown": 1.389,
+          "end_period": 0.813
+        }
+      },
+      "feed_completeness": {
+        "n_d1_games": 5767,
+        "n_no_cbbd_rows": 41,
+        "A_event_sum_vs_final_incomplete_pct": 1.8,
+        "B_running_score_vs_final_incomplete_pct": 2.76,
+        "events_disagree_with_running_score_pct": 3.09,
+        "mean_running_minus_events_pts": -0.899,
+        "explained_pts_on_rows_with_no_team": 0,
+        "explained_unknown_rows_flagged_scoring": 0,
+        "explained_fga_scoringplay_but_not_made": 0,
+        "n_technical_ft_points": 790,
+        "pbp_complete_games": 5648,
+        "pbp_complete_pct": 97.94,
+        "pbp_complete_pct_of_not_truncated": 98.0
+      },
+      "rim_override_counts": {
+        "n_jump2": 146069,
+        "n_jump2_located": 137540,
+        "n_overridden": 1354,
+        "n_jump2_unlocated": 8529,
+        "n_three_within_threshold_not_touched": 8
+      },
+      "rim_family_quantiles": {
+        "DunkShot": {
+          "n_rows": 25435,
+          "n_located": 23969,
+          "located_pct": 94.24,
+          "quantiles_ft": {
+            "p10": 0.634,
+            "p25": 1.421,
+            "p50": 2.324,
+            "p75": 3.362,
+            "p90": 4.413,
+            "p95": 5.306,
+            "p99": 7.041
+          }
+        },
+        "LayUpShot": {
+          "n_rows": 214494,
+          "n_located": 202047,
+          "located_pct": 94.2,
+          "quantiles_ft": {
+            "p10": 1.55,
+            "p25": 2.402,
+            "p50": 3.362,
+            "p75": 4.607,
+            "p90": 6.03,
+            "p95": 6.972,
+            "p99": 9.358
+          }
+        },
+        "TipShot": {
+          "n_rows": 17560,
+          "n_located": 16534,
+          "located_pct": 94.16,
+          "quantiles_ft": {
+            "p10": 0.39,
+            "p25": 0.39,
+            "p50": 0.39,
+            "p75": 0.39,
+            "p90": 0.39,
+            "p95": 0.39,
+            "p99": 2.038
+          }
+        },
+        "rim_family": {
+          "n_rows": 257489,
+          "n_located": 242550,
+          "located_pct": 94.2,
+          "quantiles_ft": {
+            "p10": 0.634,
+            "p25": 2.005,
+            "p50": 3.025,
+            "p75": 4.394,
+            "p90": 5.764,
+            "p95": 6.794,
+            "p99": 9.1
+          }
+        },
+        "JumpShot(2)": {
+          "n_rows": 146068,
+          "n_located": 137539,
+          "located_pct": 94.16,
+          "quantiles_ft": {
+            "p10": 5.114,
+            "p25": 7.405,
+            "p50": 10.778,
+            "p75": 14.627,
+            "p90": 17.504,
+            "p95": 19.069,
+            "p99": 21.094
+          }
+        },
+        "JumpShot(3)": {
+          "n_rows": 263732,
+          "n_located": 249012,
+          "located_pct": 94.42,
+          "quantiles_ft": {
+            "p10": 23.003,
+            "p25": 23.6,
+            "p50": 24.603,
+            "p75": 25.71,
+            "p90": 26.963,
+            "p95": 27.946,
+            "p99": 30.536
+          }
+        }
+      },
+      "basket_calibration": {
+        "n": 23969,
+        "median_dunk_distance_ft": 2.324
+      }
+    }
+  },
+  "version": "v2",
+  "rim_override": {
+    "max_ft": 2.27,
+    "basket_xy": [
+      [
+        52.5,
+        250.0
+      ],
+      [
+        887.5,
+        250.0
+      ]
+    ],
+    "rim_play_types": [
+      "DunkShot",
+      "LayUpShot",
+      "TipShot"
+    ]
+  },
+  "rim_override_threshold_ladder": {
+    "rungs": [
+      {
+        "label": "DunkShot p10",
+        "ft": 0.634
+      },
+      {
+        "label": "DunkShot p25",
+        "ft": 1.33
+      },
+      {
+        "label": "rim_family p25",
+        "ft": 2.005
+      },
+      {
+        "label": "DunkShot p50",
+        "ft": 2.27
+      },
+      {
+        "label": "rim_family p50",
+        "ft": 3.249
+      },
+      {
+        "label": "DunkShot p75",
+        "ft": 3.362
+      },
+      {
+        "label": "DunkShot p90",
+        "ft": 4.517
+      },
+      {
+        "label": "DunkShot p95",
+        "ft": 5.306
+      }
+    ],
+    "per_season_quantiles": {
+      "2022": {
+        "DunkShot": {
+          "n_rows": 23505,
+          "n_located": 18391,
+          "located_pct": 78.24,
+          "quantiles_ft": {
+            "p10": 0.39,
+            "p25": 1.33,
+            "p50": 2.27,
+            "p75": 3.282,
+            "p90": 4.413,
+            "p95": 5.306,
+            "p99": 7.251
+          }
+        },
+        "LayUpShot": {
+          "n_rows": 210763,
+          "n_located": 169110,
+          "located_pct": 80.24,
+          "quantiles_ft": {
+            "p10": 1.073,
+            "p25": 2.27,
+            "p50": 3.35,
+            "p75": 4.607,
+            "p90": 6.112,
+            "p95": 7.13,
+            "p99": 9.841
+          }
+        },
+        "TipShot": {
+          "n_rows": 1509,
+          "n_located": 97,
+          "located_pct": 6.43,
+          "quantiles_ft": {
+            "p10": 0.39,
+            "p25": 0.743,
+            "p50": 4.269,
+            "p75": 9.345,
+            "p90": 24.62,
+            "p95": 26.746,
+            "p99": 28.859
+          }
+        },
+        "rim_family": {
+          "n_rows": 235777,
+          "n_located": 187598,
+          "located_pct": 79.57,
+          "quantiles_ft": {
+            "p10": 1.073,
+            "p25": 2.038,
+            "p50": 3.249,
+            "p75": 4.599,
+            "p90": 6.051,
+            "p95": 7.041,
+            "p99": 9.803
+          }
+        },
+        "JumpShot(2)": {
+          "n_rows": 180239,
+          "n_located": 143533,
+          "located_pct": 79.63,
+          "quantiles_ft": {
+            "p10": 4.269,
+            "p25": 7.041,
+            "p50": 11.007,
+            "p75": 15.487,
+            "p90": 18.359,
+            "p95": 19.731,
+            "p99": 21.413
+          }
+        },
+        "JumpShot(3)": {
+          "n_rows": 256235,
+          "n_located": 206705,
+          "located_pct": 80.67,
+          "quantiles_ft": {
+            "p10": 23.003,
+            "p25": 23.624,
+            "p50": 24.632,
+            "p75": 25.77,
+            "p90": 26.92,
+            "p95": 27.825,
+            "p99": 30.216
+          }
+        }
+      },
+      "2023": {
+        "DunkShot": {
+          "n_rows": 24957,
+          "n_located": 20894,
+          "located_pct": 83.72,
+          "quantiles_ft": {
+            "p10": 0.39,
+            "p25": 1.33,
+            "p50": 2.27,
+            "p75": 3.362,
+            "p90": 4.517,
+            "p95": 5.429,
+            "p99": 7.588
+          }
+        },
+        "LayUpShot": {
+          "n_rows": 225418,
+          "n_located": 190515,
+          "located_pct": 84.52,
+          "quantiles_ft": {
+            "p10": 1.073,
+            "p25": 2.038,
+            "p50": 3.282,
+            "p75": 4.607,
+            "p90": 6.112,
+            "p95": 7.135,
+            "p99": 9.841
+          }
+        },
+        "TipShot": {
+          "n_rows": 1186,
+          "n_located": 70,
+          "located_pct": 5.9,
+          "quantiles_ft": {
+            "p10": 0.39,
+            "p25": 0.43,
+            "p50": 4.18,
+            "p75": 10.244,
+            "p90": 23.636,
+            "p95": 26.587,
+            "p99": 28.574
+          }
+        },
+        "rim_family": {
+          "n_rows": 251561,
+          "n_located": 211479,
+          "located_pct": 84.07,
+          "quantiles_ft": {
+            "p10": 0.634,
+            "p25": 2.005,
+            "p50": 3.249,
+            "p75": 4.517,
+            "p90": 6.051,
+            "p95": 7.041,
+            "p99": 9.803
+          }
+        },
+        "JumpShot(2)": {
+          "n_rows": 185081,
+          "n_located": 155191,
+          "located_pct": 83.85,
+          "quantiles_ft": {
+            "p10": 4.269,
+            "p25": 7.041,
+            "p50": 10.98,
+            "p75": 15.43,
+            "p90": 18.192,
+            "p95": 19.508,
+            "p99": 21.283
+          }
+        },
+        "JumpShot(3)": {
+          "n_rows": 264735,
+          "n_located": 224841,
+          "located_pct": 84.93,
+          "quantiles_ft": {
+            "p10": 23.007,
+            "p25": 23.643,
+            "p50": 24.652,
+            "p75": 25.775,
+            "p90": 26.959,
+            "p95": 27.882,
+            "p99": 30.377
+          }
+        }
+      },
+      "2024": {
+        "DunkShot": {
+          "n_rows": 25303,
+          "n_located": 21999,
+          "located_pct": 86.94,
+          "quantiles_ft": {
+            "p10": 0.39,
+            "p25": 1.33,
+            "p50": 2.27,
+            "p75": 3.362,
+            "p90": 4.517,
+            "p95": 5.306,
+            "p99": 7.405
+          }
+        },
+        "LayUpShot": {
+          "n_rows": 236934,
+          "n_located": 206831,
+          "located_pct": 87.29,
+          "quantiles_ft": {
+            "p10": 1.073,
+            "p25": 2.038,
+            "p50": 3.282,
+            "p75": 4.607,
+            "p90": 6.112,
+            "p95": 7.041,
+            "p99": 9.803
+          }
+        },
+        "TipShot": {
+          "n_rows": 761,
+          "n_located": 53,
+          "located_pct": 6.96,
+          "quantiles_ft": {
+            "p10": 0.39,
+            "p25": 0.39,
+            "p50": 2.56,
+            "p75": 6.051,
+            "p90": 12.799,
+            "p95": 22.721,
+            "p99": 23.953
+          }
+        },
+        "rim_family": {
+          "n_rows": 262998,
+          "n_located": 228883,
+          "located_pct": 87.03,
+          "quantiles_ft": {
+            "p10": 0.634,
+            "p25": 2.005,
+            "p50": 3.249,
+            "p75": 4.533,
+            "p90": 6.03,
+            "p95": 6.988,
+            "p99": 9.712
+          }
+        },
+        "JumpShot(2)": {
+          "n_rows": 190310,
+          "n_located": 166388,
+          "located_pct": 87.43,
+          "quantiles_ft": {
+            "p10": 4.172,
+            "p25": 6.805,
+            "p50": 10.73,
+            "p75": 15.032,
+            "p90": 17.894,
+            "p95": 19.268,
+            "p99": 21.153
+          }
+        },
+        "JumpShot(3)": {
+          "n_rows": 270755,
+          "n_located": 238613,
+          "located_pct": 88.13,
+          "quantiles_ft": {
+            "p10": 23.003,
+            "p25": 23.609,
+            "p50": 24.615,
+            "p75": 25.714,
+            "p90": 26.92,
+            "p95": 27.811,
+            "p99": 30.344
+          }
+        }
+      },
+      "2025": {
+        "DunkShot": {
+          "n_rows": 24460,
+          "n_located": 24113,
+          "located_pct": 98.58,
+          "quantiles_ft": {
+            "p10": 0.634,
+            "p25": 1.421,
+            "p50": 2.324,
+            "p75": 3.362,
+            "p90": 4.607,
+            "p95": 5.429,
+            "p99": 7.405
+          }
+        },
+        "LayUpShot": {
+          "n_rows": 220693,
+          "n_located": 215762,
+          "located_pct": 97.77,
+          "quantiles_ft": {
+            "p10": 1.421,
+            "p25": 2.324,
+            "p50": 3.362,
+            "p75": 4.607,
+            "p90": 6.051,
+            "p95": 6.988,
+            "p99": 9.712
+          }
+        },
+        "TipShot": {
+          "n_rows": 9175,
+          "n_located": 8943,
+          "located_pct": 97.47,
+          "quantiles_ft": {
+            "p10": 0.39,
+            "p25": 0.39,
+            "p50": 0.39,
+            "p75": 0.39,
+            "p90": 0.39,
+            "p95": 0.39,
+            "p99": 4.116
+          }
+        },
+        "rim_family": {
+          "n_rows": 254328,
+          "n_located": 248818,
+          "located_pct": 97.83,
+          "quantiles_ft": {
+            "p10": 1.141,
+            "p25": 2.038,
+            "p50": 3.249,
+            "p75": 4.413,
+            "p90": 5.942,
+            "p95": 6.97,
+            "p99": 9.358
+          }
+        },
+        "JumpShot(2)": {
+          "n_rows": 181668,
+          "n_located": 179465,
+          "located_pct": 98.79,
+          "quantiles_ft": {
+            "p10": 3.249,
+            "p25": 6.177,
+            "p50": 10.088,
+            "p75": 14.499,
+            "p90": 17.49,
+            "p95": 19.058,
+            "p99": 21.076
+          }
+        },
+        "JumpShot(3)": {
+          "n_rows": 280450,
+          "n_located": 278323,
+          "located_pct": 99.24,
+          "quantiles_ft": {
+            "p10": 23.003,
+            "p25": 23.609,
+            "p50": 24.615,
+            "p75": 25.775,
+            "p90": 26.983,
+            "p95": 28.014,
+            "p99": 30.572
+          }
+        }
+      },
+      "2026": {
+        "DunkShot": {
+          "n_rows": 28344,
+          "n_located": 24672,
+          "located_pct": 87.04,
+          "quantiles_ft": {
+            "p10": 0.634,
+            "p25": 1.421,
+            "p50": 2.324,
+            "p75": 3.362,
+            "p90": 4.413,
+            "p95": 5.306,
+            "p99": 7.041
+          }
+        },
+        "LayUpShot": {
+          "n_rows": 237254,
+          "n_located": 207731,
+          "located_pct": 87.56,
+          "quantiles_ft": {
+            "p10": 1.55,
+            "p25": 2.402,
+            "p50": 3.362,
+            "p75": 4.607,
+            "p90": 6.03,
+            "p95": 6.972,
+            "p99": 9.358
+          }
+        },
+        "TipShot": {
+          "n_rows": 19461,
+          "n_located": 17020,
+          "located_pct": 87.46,
+          "quantiles_ft": {
+            "p10": 0.39,
+            "p25": 0.39,
+            "p50": 0.39,
+            "p75": 0.39,
+            "p90": 0.39,
+            "p95": 0.39,
+            "p99": 2.067
+          }
+        },
+        "rim_family": {
+          "n_rows": 285059,
+          "n_located": 249423,
+          "located_pct": 87.5,
+          "quantiles_ft": {
+            "p10": 0.634,
+            "p25": 2.005,
+            "p50": 3.025,
+            "p75": 4.394,
+            "p90": 5.764,
+            "p95": 6.794,
+            "p99": 9.073
+          }
+        },
+        "JumpShot(2)": {
+          "n_rows": 160144,
+          "n_located": 141074,
+          "located_pct": 88.09,
+          "quantiles_ft": {
+            "p10": 5.114,
+            "p25": 7.405,
+            "p50": 10.827,
+            "p75": 14.672,
+            "p90": 17.563,
+            "p95": 19.127,
+            "p99": 21.094
+          }
+        },
+        "JumpShot(3)": {
+          "n_rows": 291731,
+          "n_located": 256220,
+          "located_pct": 87.83,
+          "quantiles_ft": {
+            "p10": 23.003,
+            "p25": 23.6,
+            "p50": 24.605,
+            "p75": 25.714,
+            "p90": 26.963,
+            "p95": 27.977,
+            "p99": 30.536
+          }
+        }
+      }
+    },
+    "basket_calibration": {
+      "2022": {
+        "n": 18391,
+        "median_dunk_distance_ft": 2.27
+      },
+      "2023": {
+        "n": 20894,
+        "median_dunk_distance_ft": 2.27
+      },
+      "2024": {
+        "n": 21999,
+        "median_dunk_distance_ft": 2.27
+      },
+      "2025": {
+        "n": 24113,
+        "median_dunk_distance_ft": 2.324
+      },
+      "2026": {
+        "n": 24672,
+        "median_dunk_distance_ft": 2.324
+      }
+    },
+    "pooled_n_dunk": 110069,
+    "pooled_n_rim_family": 1126201,
+    "effect": [
+      {
+        "threshold_ft": 0.0,
+        "season": 2022,
+        "cont_FGA_rim": 37.897,
+        "first_FGA_rim": 23.45,
+        "cont_FGA_jump2": 15.074,
+        "first_FGA_jump2": 20.078,
+        "cont_FGA_3": 20.308,
+        "first_FGA_3": 28.35
+      },
+      {
+        "threshold_ft": 0.0,
+        "season": 2023,
+        "cont_FGA_rim": 38.481,
+        "first_FGA_rim": 23.948,
+        "cont_FGA_jump2": 14.569,
+        "first_FGA_jump2": 19.796,
+        "cont_FGA_3": 20.033,
+        "first_FGA_3": 27.986
+      },
+      {
+        "threshold_ft": 0.0,
+        "season": 2024,
+        "cont_FGA_rim": 38.144,
+        "first_FGA_rim": 24.756,
+        "cont_FGA_jump2": 14.349,
+        "first_FGA_jump2": 19.892,
+        "cont_FGA_3": 20.705,
+        "first_FGA_3": 28.058
+      },
+      {
+        "threshold_ft": 0.0,
+        "season": 2025,
+        "cont_FGA_rim": 31.632,
+        "first_FGA_rim": 25.095,
+        "cont_FGA_jump2": 19.762,
+        "first_FGA_jump2": 18.092,
+        "cont_FGA_3": 22.105,
+        "first_FGA_3": 29.274
+      },
+      {
+        "threshold_ft": 0.0,
+        "season": 2026,
+        "cont_FGA_rim": 39.168,
+        "first_FGA_rim": 26.359,
+        "cont_FGA_jump2": 12.351,
+        "first_FGA_jump2": 16.36,
+        "cont_FGA_3": 22.758,
+        "first_FGA_3": 29.386
+      },
+      {
+        "threshold_ft": 0.634,
+        "season": 2022,
+        "cont_FGA_rim": 37.932,
+        "first_FGA_rim": 23.472,
+        "cont_FGA_jump2": 15.038,
+        "first_FGA_jump2": 20.056,
+        "cont_FGA_3": 20.308,
+        "first_FGA_3": 28.35
+      },
+      {
+        "threshold_ft": 0.634,
+        "season": 2023,
+        "cont_FGA_rim": 38.507,
+        "first_FGA_rim": 23.971,
+        "cont_FGA_jump2": 14.543,
+        "first_FGA_jump2": 19.773,
+        "cont_FGA_3": 20.033,
+        "first_FGA_3": 27.986
+      },
+      {
+        "threshold_ft": 0.634,
+        "season": 2024,
+        "cont_FGA_rim": 38.176,
+        "first_FGA_rim": 24.788,
+        "cont_FGA_jump2": 14.317,
+        "first_FGA_jump2": 19.86,
+        "cont_FGA_3": 20.705,
+        "first_FGA_3": 28.058
+      },
+      {
+        "threshold_ft": 0.634,
+        "season": 2025,
+        "cont_FGA_rim": 37.787,
+        "first_FGA_rim": 25.133,
+        "cont_FGA_jump2": 13.607,
+        "first_FGA_jump2": 18.054,
+        "cont_FGA_3": 22.105,
+        "first_FGA_3": 29.274
+      },
+      {
+        "threshold_ft": 0.634,
+        "season": 2026,
+        "cont_FGA_rim": 39.182,
+        "first_FGA_rim": 26.366,
+        "cont_FGA_jump2": 12.337,
+        "first_FGA_jump2": 16.354,
+        "cont_FGA_3": 22.758,
+        "first_FGA_3": 29.386
+      },
+      {
+        "threshold_ft": 1.33,
+        "season": 2022,
+        "cont_FGA_rim": 38.002,
+        "first_FGA_rim": 23.561,
+        "cont_FGA_jump2": 14.968,
+        "first_FGA_jump2": 19.967,
+        "cont_FGA_3": 20.308,
+        "first_FGA_3": 28.35
+      },
+      {
+        "threshold_ft": 1.33,
+        "season": 2023,
+        "cont_FGA_rim": 38.598,
+        "first_FGA_rim": 24.074,
+        "cont_FGA_jump2": 14.451,
+        "first_FGA_jump2": 19.67,
+        "cont_FGA_3": 20.033,
+        "first_FGA_3": 27.986
+      },
+      {
+        "threshold_ft": 1.33,
+        "season": 2024,
+        "cont_FGA_rim": 38.258,
+        "first_FGA_rim": 24.915,
+        "cont_FGA_jump2": 14.235,
+        "first_FGA_jump2": 19.733,
+        "cont_FGA_3": 20.705,
+        "first_FGA_3": 28.058
+      },
+      {
+        "threshold_ft": 1.33,
+        "season": 2025,
+        "cont_FGA_rim": 37.894,
+        "first_FGA_rim": 25.231,
+        "cont_FGA_jump2": 13.5,
+        "first_FGA_jump2": 17.956,
+        "cont_FGA_3": 22.105,
+        "first_FGA_3": 29.274
+      },
+      {
+        "threshold_ft": 1.33,
+        "season": 2026,
+        "cont_FGA_rim": 39.236,
+        "first_FGA_rim": 26.401,
+        "cont_FGA_jump2": 12.283,
+        "first_FGA_jump2": 16.318,
+        "cont_FGA_3": 22.758,
+        "first_FGA_3": 29.386
+      },
+      {
+        "threshold_ft": 2.005,
+        "season": 2022,
+        "cont_FGA_rim": 38.154,
+        "first_FGA_rim": 23.752,
+        "cont_FGA_jump2": 14.816,
+        "first_FGA_jump2": 19.776,
+        "cont_FGA_3": 20.308,
+        "first_FGA_3": 28.35
+      },
+      {
+        "threshold_ft": 2.005,
+        "season": 2023,
+        "cont_FGA_rim": 38.783,
+        "first_FGA_rim": 24.287,
+        "cont_FGA_jump2": 14.267,
+        "first_FGA_jump2": 19.458,
+        "cont_FGA_3": 20.033,
+        "first_FGA_3": 27.986
+      },
+      {
+        "threshold_ft": 2.005,
+        "season": 2024,
+        "cont_FGA_rim": 38.439,
+        "first_FGA_rim": 25.138,
+        "cont_FGA_jump2": 14.054,
+        "first_FGA_jump2": 19.51,
+        "cont_FGA_3": 20.705,
+        "first_FGA_3": 28.058
+      },
+      {
+        "threshold_ft": 2.005,
+        "season": 2025,
+        "cont_FGA_rim": 38.09,
+        "first_FGA_rim": 25.437,
+        "cont_FGA_jump2": 13.304,
+        "first_FGA_jump2": 17.75,
+        "cont_FGA_3": 22.105,
+        "first_FGA_3": 29.274
+      },
+      {
+        "threshold_ft": 2.005,
+        "season": 2026,
+        "cont_FGA_rim": 39.354,
+        "first_FGA_rim": 26.475,
+        "cont_FGA_jump2": 12.165,
+        "first_FGA_jump2": 16.245,
+        "cont_FGA_3": 22.758,
+        "first_FGA_3": 29.386
+      },
+      {
+        "threshold_ft": 2.27,
+        "season": 2022,
+        "cont_FGA_rim": 38.183,
+        "first_FGA_rim": 23.792,
+        "cont_FGA_jump2": 14.788,
+        "first_FGA_jump2": 19.736,
+        "cont_FGA_3": 20.308,
+        "first_FGA_3": 28.35
+      },
+      {
+        "threshold_ft": 2.27,
+        "season": 2023,
+        "cont_FGA_rim": 38.813,
+        "first_FGA_rim": 24.327,
+        "cont_FGA_jump2": 14.237,
+        "first_FGA_jump2": 19.418,
+        "cont_FGA_3": 20.033,
+        "first_FGA_3": 27.986
+      },
+      {
+        "threshold_ft": 2.27,
+        "season": 2024,
+        "cont_FGA_rim": 38.488,
+        "first_FGA_rim": 25.188,
+        "cont_FGA_jump2": 14.005,
+        "first_FGA_jump2": 19.46,
+        "cont_FGA_3": 20.705,
+        "first_FGA_3": 28.058
+      },
+      {
+        "threshold_ft": 2.27,
+        "season": 2025,
+        "cont_FGA_rim": 38.127,
+        "first_FGA_rim": 25.481,
+        "cont_FGA_jump2": 13.267,
+        "first_FGA_jump2": 17.707,
+        "cont_FGA_3": 22.105,
+        "first_FGA_3": 29.274
+      },
+      {
+        "threshold_ft": 2.27,
+        "season": 2026,
+        "cont_FGA_rim": 39.378,
+        "first_FGA_rim": 26.496,
+        "cont_FGA_jump2": 12.14,
+        "first_FGA_jump2": 16.223,
+        "cont_FGA_3": 22.758,
+        "first_FGA_3": 29.386
+      },
+      {
+        "threshold_ft": 3.249,
+        "season": 2022,
+        "cont_FGA_rim": 38.672,
+        "first_FGA_rim": 24.31,
+        "cont_FGA_jump2": 14.299,
+        "first_FGA_jump2": 19.217,
+        "cont_FGA_3": 20.308,
+        "first_FGA_3": 28.35
+      },
+      {
+        "threshold_ft": 3.249,
+        "season": 2023,
+        "cont_FGA_rim": 39.277,
+        "first_FGA_rim": 24.851,
+        "cont_FGA_jump2": 13.773,
+        "first_FGA_jump2": 18.894,
+        "cont_FGA_3": 20.033,
+        "first_FGA_3": 27.986
+      },
+      {
+        "threshold_ft": 3.249,
+        "season": 2024,
+        "cont_FGA_rim": 39.038,
+        "first_FGA_rim": 25.816,
+        "cont_FGA_jump2": 13.455,
+        "first_FGA_jump2": 18.832,
+        "cont_FGA_3": 20.705,
+        "first_FGA_3": 28.058
+      },
+      {
+        "threshold_ft": 3.249,
+        "season": 2025,
+        "cont_FGA_rim": 38.674,
+        "first_FGA_rim": 26.047,
+        "cont_FGA_jump2": 12.72,
+        "first_FGA_jump2": 17.14,
+        "cont_FGA_3": 22.105,
+        "first_FGA_3": 29.274
+      },
+      {
+        "threshold_ft": 3.249,
+        "season": 2026,
+        "cont_FGA_rim": 39.749,
+        "first_FGA_rim": 26.808,
+        "cont_FGA_jump2": 11.77,
+        "first_FGA_jump2": 15.912,
+        "cont_FGA_3": 22.758,
+        "first_FGA_3": 29.386
+      },
+      {
+        "threshold_ft": 3.362,
+        "season": 2022,
+        "cont_FGA_rim": 38.715,
+        "first_FGA_rim": 24.363,
+        "cont_FGA_jump2": 14.256,
+        "first_FGA_jump2": 19.165,
+        "cont_FGA_3": 20.308,
+        "first_FGA_3": 28.35
+      },
+      {
+        "threshold_ft": 3.362,
+        "season": 2023,
+        "cont_FGA_rim": 39.315,
+        "first_FGA_rim": 24.906,
+        "cont_FGA_jump2": 13.735,
+        "first_FGA_jump2": 18.838,
+        "cont_FGA_3": 20.033,
+        "first_FGA_3": 27.986
+      },
+      {
+        "threshold_ft": 3.362,
+        "season": 2024,
+        "cont_FGA_rim": 39.078,
+        "first_FGA_rim": 25.877,
+        "cont_FGA_jump2": 13.415,
+        "first_FGA_jump2": 18.771,
+        "cont_FGA_3": 20.705,
+        "first_FGA_3": 28.058
+      },
+      {
+        "threshold_ft": 3.362,
+        "season": 2025,
+        "cont_FGA_rim": 38.721,
+        "first_FGA_rim": 26.097,
+        "cont_FGA_jump2": 12.674,
+        "first_FGA_jump2": 17.09,
+        "cont_FGA_3": 22.105,
+        "first_FGA_3": 29.274
+      },
+      {
+        "threshold_ft": 3.362,
+        "season": 2026,
+        "cont_FGA_rim": 39.781,
+        "first_FGA_rim": 26.835,
+        "cont_FGA_jump2": 11.738,
+        "first_FGA_jump2": 15.885,
+        "cont_FGA_3": 22.758,
+        "first_FGA_3": 29.386
+      },
+      {
+        "threshold_ft": 4.517,
+        "season": 2022,
+        "cont_FGA_rim": 39.487,
+        "first_FGA_rim": 25.173,
+        "cont_FGA_jump2": 13.484,
+        "first_FGA_jump2": 18.355,
+        "cont_FGA_3": 20.308,
+        "first_FGA_3": 28.35
+      },
+      {
+        "threshold_ft": 4.517,
+        "season": 2023,
+        "cont_FGA_rim": 40.104,
+        "first_FGA_rim": 25.761,
+        "cont_FGA_jump2": 12.946,
+        "first_FGA_jump2": 17.983,
+        "cont_FGA_3": 20.033,
+        "first_FGA_3": 27.986
+      },
+      {
+        "threshold_ft": 4.517,
+        "season": 2024,
+        "cont_FGA_rim": 39.904,
+        "first_FGA_rim": 26.852,
+        "cont_FGA_jump2": 12.589,
+        "first_FGA_jump2": 17.796,
+        "cont_FGA_3": 20.705,
+        "first_FGA_3": 28.058
+      },
+      {
+        "threshold_ft": 4.517,
+        "season": 2025,
+        "cont_FGA_rim": 39.545,
+        "first_FGA_rim": 27.034,
+        "cont_FGA_jump2": 11.849,
+        "first_FGA_jump2": 16.154,
+        "cont_FGA_3": 22.105,
+        "first_FGA_3": 29.274
+      },
+      {
+        "threshold_ft": 4.517,
+        "season": 2026,
+        "cont_FGA_rim": 40.519,
+        "first_FGA_rim": 27.478,
+        "cont_FGA_jump2": 11.0,
+        "first_FGA_jump2": 15.242,
+        "cont_FGA_3": 22.758,
+        "first_FGA_3": 29.386
+      },
+      {
+        "threshold_ft": 5.306,
+        "season": 2022,
+        "cont_FGA_rim": 40.051,
+        "first_FGA_rim": 25.801,
+        "cont_FGA_jump2": 12.92,
+        "first_FGA_jump2": 17.727,
+        "cont_FGA_3": 20.308,
+        "first_FGA_3": 28.35
+      },
+      {
+        "threshold_ft": 5.306,
+        "season": 2023,
+        "cont_FGA_rim": 40.685,
+        "first_FGA_rim": 26.422,
+        "cont_FGA_jump2": 12.364,
+        "first_FGA_jump2": 17.323,
+        "cont_FGA_3": 20.033,
+        "first_FGA_3": 27.986
+      },
+      {
+        "threshold_ft": 5.306,
+        "season": 2024,
+        "cont_FGA_rim": 40.501,
+        "first_FGA_rim": 27.593,
+        "cont_FGA_jump2": 11.992,
+        "first_FGA_jump2": 17.055,
+        "cont_FGA_3": 20.705,
+        "first_FGA_3": 28.058
+      },
+      {
+        "threshold_ft": 5.306,
+        "season": 2025,
+        "cont_FGA_rim": 40.19,
+        "first_FGA_rim": 27.769,
+        "cont_FGA_jump2": 11.204,
+        "first_FGA_jump2": 15.418,
+        "cont_FGA_3": 22.105,
+        "first_FGA_3": 29.274
+      },
+      {
+        "threshold_ft": 5.306,
+        "season": 2026,
+        "cont_FGA_rim": 41.063,
+        "first_FGA_rim": 28.06,
+        "cont_FGA_jump2": 10.456,
+        "first_FGA_jump2": 14.659,
+        "cont_FGA_3": 22.758,
+        "first_FGA_3": 29.386
+      }
+    ],
+    "selection": {
+      "rungs": [
+        {
+          "threshold_ft": 0.634,
+          "quantile": "DunkShot p10",
+          "cont_2025_rim": 37.787,
+          "cont_2025_jump2": 13.607,
+          "clean_band_rim": [
+            37.932,
+            39.182
+          ],
+          "clean_band_jump2": [
+            12.337,
+            15.038
+          ],
+          "band_distance_pp": 0.145,
+          "band_distance_by_class_pp": {
+            "FGA_rim": 0.145,
+            "FGA_jump2": 0.0
+          },
+          "worst_clean_season_move_pp": 0.036,
+          "moves_pp": {
+            "2022": {
+              "FGA_rim": 0.035,
+              "FGA_jump2": -0.036
+            },
+            "2023": {
+              "FGA_rim": 0.026,
+              "FGA_jump2": -0.026
+            },
+            "2024": {
+              "FGA_rim": 0.032,
+              "FGA_jump2": -0.032
+            },
+            "2025": {
+              "FGA_rim": 6.155,
+              "FGA_jump2": -6.155
+            },
+            "2026": {
+              "FGA_rim": 0.014,
+              "FGA_jump2": -0.014
+            }
+          },
+          "in_band": false,
+          "clean_move_ok": true
+        },
+        {
+          "threshold_ft": 1.33,
+          "quantile": "DunkShot p25",
+          "cont_2025_rim": 37.894,
+          "cont_2025_jump2": 13.5,
+          "clean_band_rim": [
+            38.002,
+            39.236
+          ],
+          "clean_band_jump2": [
+            12.283,
+            14.968
+          ],
+          "band_distance_pp": 0.108,
+          "band_distance_by_class_pp": {
+            "FGA_rim": 0.108,
+            "FGA_jump2": 0.0
+          },
+          "worst_clean_season_move_pp": 0.118,
+          "moves_pp": {
+            "2022": {
+              "FGA_rim": 0.105,
+              "FGA_jump2": -0.106
+            },
+            "2023": {
+              "FGA_rim": 0.117,
+              "FGA_jump2": -0.118
+            },
+            "2024": {
+              "FGA_rim": 0.114,
+              "FGA_jump2": -0.114
+            },
+            "2025": {
+              "FGA_rim": 6.262,
+              "FGA_jump2": -6.262
+            },
+            "2026": {
+              "FGA_rim": 0.068,
+              "FGA_jump2": -0.068
+            }
+          },
+          "in_band": false,
+          "clean_move_ok": true
+        },
+        {
+          "threshold_ft": 2.005,
+          "quantile": "rim_family p25",
+          "cont_2025_rim": 38.09,
+          "cont_2025_jump2": 13.304,
+          "clean_band_rim": [
+            38.154,
+            39.354
+          ],
+          "clean_band_jump2": [
+            12.165,
+            14.816
+          ],
+          "band_distance_pp": 0.064,
+          "band_distance_by_class_pp": {
+            "FGA_rim": 0.064,
+            "FGA_jump2": 0.0
+          },
+          "worst_clean_season_move_pp": 0.302,
+          "moves_pp": {
+            "2022": {
+              "FGA_rim": 0.257,
+              "FGA_jump2": -0.258
+            },
+            "2023": {
+              "FGA_rim": 0.302,
+              "FGA_jump2": -0.302
+            },
+            "2024": {
+              "FGA_rim": 0.295,
+              "FGA_jump2": -0.295
+            },
+            "2025": {
+              "FGA_rim": 6.458,
+              "FGA_jump2": -6.458
+            },
+            "2026": {
+              "FGA_rim": 0.186,
+              "FGA_jump2": -0.186
+            }
+          },
+          "in_band": false,
+          "clean_move_ok": true
+        },
+        {
+          "threshold_ft": 2.27,
+          "quantile": "DunkShot p50",
+          "cont_2025_rim": 38.127,
+          "cont_2025_jump2": 13.267,
+          "clean_band_rim": [
+            38.183,
+            39.378
+          ],
+          "clean_band_jump2": [
+            12.14,
+            14.788
+          ],
+          "band_distance_pp": 0.056,
+          "band_distance_by_class_pp": {
+            "FGA_rim": 0.056,
+            "FGA_jump2": 0.0
+          },
+          "worst_clean_season_move_pp": 0.344,
+          "moves_pp": {
+            "2022": {
+              "FGA_rim": 0.286,
+              "FGA_jump2": -0.286
+            },
+            "2023": {
+              "FGA_rim": 0.332,
+              "FGA_jump2": -0.332
+            },
+            "2024": {
+              "FGA_rim": 0.344,
+              "FGA_jump2": -0.344
+            },
+            "2025": {
+              "FGA_rim": 6.495,
+              "FGA_jump2": -6.495
+            },
+            "2026": {
+              "FGA_rim": 0.21,
+              "FGA_jump2": -0.211
+            }
+          },
+          "in_band": false,
+          "clean_move_ok": true
+        },
+        {
+          "threshold_ft": 3.249,
+          "quantile": "rim_family p50",
+          "cont_2025_rim": 38.674,
+          "cont_2025_jump2": 12.72,
+          "clean_band_rim": [
+            38.672,
+            39.749
+          ],
+          "clean_band_jump2": [
+            11.77,
+            14.299
+          ],
+          "band_distance_pp": 0.0,
+          "band_distance_by_class_pp": {
+            "FGA_rim": 0.0,
+            "FGA_jump2": 0.0
+          },
+          "worst_clean_season_move_pp": 0.894,
+          "moves_pp": {
+            "2022": {
+              "FGA_rim": 0.775,
+              "FGA_jump2": -0.775
+            },
+            "2023": {
+              "FGA_rim": 0.796,
+              "FGA_jump2": -0.796
+            },
+            "2024": {
+              "FGA_rim": 0.894,
+              "FGA_jump2": -0.894
+            },
+            "2025": {
+              "FGA_rim": 7.042,
+              "FGA_jump2": -7.042
+            },
+            "2026": {
+              "FGA_rim": 0.581,
+              "FGA_jump2": -0.581
+            }
+          },
+          "in_band": true,
+          "clean_move_ok": false
+        },
+        {
+          "threshold_ft": 3.362,
+          "quantile": "DunkShot p75",
+          "cont_2025_rim": 38.721,
+          "cont_2025_jump2": 12.674,
+          "clean_band_rim": [
+            38.715,
+            39.781
+          ],
+          "clean_band_jump2": [
+            11.738,
+            14.256
+          ],
+          "band_distance_pp": 0.0,
+          "band_distance_by_class_pp": {
+            "FGA_rim": 0.0,
+            "FGA_jump2": 0.0
+          },
+          "worst_clean_season_move_pp": 0.934,
+          "moves_pp": {
+            "2022": {
+              "FGA_rim": 0.818,
+              "FGA_jump2": -0.818
+            },
+            "2023": {
+              "FGA_rim": 0.834,
+              "FGA_jump2": -0.834
+            },
+            "2024": {
+              "FGA_rim": 0.934,
+              "FGA_jump2": -0.934
+            },
+            "2025": {
+              "FGA_rim": 7.089,
+              "FGA_jump2": -7.088
+            },
+            "2026": {
+              "FGA_rim": 0.613,
+              "FGA_jump2": -0.613
+            }
+          },
+          "in_band": true,
+          "clean_move_ok": false
+        },
+        {
+          "threshold_ft": 4.517,
+          "quantile": "DunkShot p90",
+          "cont_2025_rim": 39.545,
+          "cont_2025_jump2": 11.849,
+          "clean_band_rim": [
+            39.487,
+            40.519
+          ],
+          "clean_band_jump2": [
+            11.0,
+            13.484
+          ],
+          "band_distance_pp": 0.0,
+          "band_distance_by_class_pp": {
+            "FGA_rim": 0.0,
+            "FGA_jump2": 0.0
+          },
+          "worst_clean_season_move_pp": 1.76,
+          "moves_pp": {
+            "2022": {
+              "FGA_rim": 1.59,
+              "FGA_jump2": -1.59
+            },
+            "2023": {
+              "FGA_rim": 1.623,
+              "FGA_jump2": -1.623
+            },
+            "2024": {
+              "FGA_rim": 1.76,
+              "FGA_jump2": -1.76
+            },
+            "2025": {
+              "FGA_rim": 7.913,
+              "FGA_jump2": -7.913
+            },
+            "2026": {
+              "FGA_rim": 1.351,
+              "FGA_jump2": -1.351
+            }
+          },
+          "in_band": true,
+          "clean_move_ok": false
+        },
+        {
+          "threshold_ft": 5.306,
+          "quantile": "DunkShot p95",
+          "cont_2025_rim": 40.19,
+          "cont_2025_jump2": 11.204,
+          "clean_band_rim": [
+            40.051,
+            41.063
+          ],
+          "clean_band_jump2": [
+            10.456,
+            12.92
+          ],
+          "band_distance_pp": 0.0,
+          "band_distance_by_class_pp": {
+            "FGA_rim": 0.0,
+            "FGA_jump2": 0.0
+          },
+          "worst_clean_season_move_pp": 2.357,
+          "moves_pp": {
+            "2022": {
+              "FGA_rim": 2.154,
+              "FGA_jump2": -2.154
+            },
+            "2023": {
+              "FGA_rim": 2.204,
+              "FGA_jump2": -2.205
+            },
+            "2024": {
+              "FGA_rim": 2.357,
+              "FGA_jump2": -2.357
+            },
+            "2025": {
+              "FGA_rim": 8.558,
+              "FGA_jump2": -8.558
+            },
+            "2026": {
+              "FGA_rim": 1.895,
+              "FGA_jump2": -1.895
+            }
+          },
+          "in_band": true,
+          "clean_move_ok": false
+        }
+      ],
+      "chosen": {
+        "threshold_ft": 2.27,
+        "quantile": "DunkShot p50",
+        "cont_2025_rim": 38.127,
+        "cont_2025_jump2": 13.267,
+        "clean_band_rim": [
+          38.183,
+          39.378
+        ],
+        "clean_band_jump2": [
+          12.14,
+          14.788
+        ],
+        "band_distance_pp": 0.056,
+        "band_distance_by_class_pp": {
+          "FGA_rim": 0.056,
+          "FGA_jump2": 0.0
+        },
+        "worst_clean_season_move_pp": 0.344,
+        "moves_pp": {
+          "2022": {
+            "FGA_rim": 0.286,
+            "FGA_jump2": -0.286
+          },
+          "2023": {
+            "FGA_rim": 0.332,
+            "FGA_jump2": -0.332
+          },
+          "2024": {
+            "FGA_rim": 0.344,
+            "FGA_jump2": -0.344
+          },
+          "2025": {
+            "FGA_rim": 6.495,
+            "FGA_jump2": -6.495
+          },
+          "2026": {
+            "FGA_rim": 0.21,
+            "FGA_jump2": -0.211
+          }
+        },
+        "in_band": false,
+        "clean_move_ok": true
+      },
+      "rule": "hard gate: every clean season (2022-2024, 2026) moves < 0.5 pp on cont FGA_rim and FGA_jump2. Among survivors, minimise how far 2025 still sits outside the clean-season band; ties to the smaller threshold.",
+      "adopted_constant": 2.27
+    }
+  }
+}
