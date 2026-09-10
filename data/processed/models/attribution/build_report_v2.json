@@ -1,0 +1,161 @@
+{
+  "possessions_version": "v2",
+  "rim_override_max_ft": 2.27,
+  "coverage": {
+    "2024": {
+      "REB_off": {
+        "n_population": 107768,
+        "n_fired": 107768,
+        "binary_rate_pct": 100.0,
+        "five_resolved_pct": 95.7724,
+        "credit_id_present_pct": 82.2517,
+        "modelled_pct": 77.8441
+      },
+      "REB_def": {
+        "n_population": 259639,
+        "n_fired": 259639,
+        "binary_rate_pct": 100.0,
+        "five_resolved_pct": 96.0079,
+        "credit_id_present_pct": 92.7819,
+        "modelled_pct": 87.9833
+      },
+      "assist": {
+        "n_population": 267004,
+        "n_fired": 135041,
+        "binary_rate_pct": 50.5764,
+        "five_resolved_pct": 96.1501,
+        "credit_id_present_pct": 99.8519,
+        "modelled_pct": 94.3595
+      },
+      "steal": {
+        "n_population": 121637,
+        "n_fired": 66812,
+        "binary_rate_pct": 54.9274,
+        "five_resolved_pct": 95.637,
+        "credit_id_present_pct": 100.0,
+        "modelled_pct": 94.5175
+      },
+      "block": {
+        "n_population": 337450,
+        "n_fired": 34062,
+        "binary_rate_pct": 10.0939,
+        "five_resolved_pct": 95.837,
+        "credit_id_present_pct": 100.0,
+        "modelled_pct": 94.924
+      },
+      "assisted": {
+        "n_population": 267004,
+        "binary_rate_pct": 50.5764,
+        "five_resolved_pct": 96.1323,
+        "credit_id_present_pct": 99.9251,
+        "modelled_pct": 96.1323
+      },
+      "stolen": {
+        "n_population": 121637,
+        "binary_rate_pct": 54.9274,
+        "five_resolved_pct": 95.7168,
+        "credit_id_present_pct": 100.0,
+        "modelled_pct": 95.7168
+      },
+      "blocked": {
+        "n_population": 337450,
+        "binary_rate_pct": 10.0939,
+        "five_resolved_pct": 96.0036,
+        "credit_id_present_pct": 100.0,
+        "modelled_pct": 96.0036
+      }
+    },
+    "2025": {
+      "REB_off": {
+        "n_population": 115007,
+        "n_fired": 115007,
+        "binary_rate_pct": 100.0,
+        "five_resolved_pct": 99.1157,
+        "credit_id_present_pct": 82.5976,
+        "modelled_pct": 80.8594
+      },
+      "REB_def": {
+        "n_population": 266671,
+        "n_fired": 266671,
+        "binary_rate_pct": 100.0,
+        "five_resolved_pct": 99.1581,
+        "credit_id_present_pct": 92.7382,
+        "modelled_pct": 90.8989
+      },
+      "assist": {
+        "n_population": 279510,
+        "n_fired": 143898,
+        "binary_rate_pct": 51.4822,
+        "five_resolved_pct": 99.2043,
+        "credit_id_present_pct": 99.8436,
+        "modelled_pct": 97.7686
+      },
+      "steal": {
+        "n_population": 128428,
+        "n_fired": 72611,
+        "binary_rate_pct": 56.5383,
+        "five_resolved_pct": 99.0428,
+        "credit_id_present_pct": 99.9959,
+        "modelled_pct": 97.886
+      },
+      "block": {
+        "n_population": 351925,
+        "n_fired": 34870,
+        "binary_rate_pct": 9.9084,
+        "five_resolved_pct": 99.1368,
+        "credit_id_present_pct": 99.9971,
+        "modelled_pct": 98.1675
+      },
+      "assisted": {
+        "n_population": 279510,
+        "binary_rate_pct": 51.4822,
+        "five_resolved_pct": 99.1778,
+        "credit_id_present_pct": 99.9195,
+        "modelled_pct": 99.1778
+      },
+      "stolen": {
+        "n_population": 128428,
+        "binary_rate_pct": 56.5383,
+        "five_resolved_pct": 99.0711,
+        "credit_id_present_pct": 99.9977,
+        "modelled_pct": 99.0711
+      },
+      "blocked": {
+        "n_population": 351925,
+        "binary_rate_pct": 9.9084,
+        "five_resolved_pct": 99.1609,
+        "credit_id_present_pct": 99.9997,
+        "modelled_pct": 99.1609
+      }
+    }
+  },
+  "stream": {
+    "2024": {
+      "n_admin_rebounds_dropped": 22699,
+      "n_block_rows": 35215,
+      "n_steal_rows": 66864,
+      "rim_override_max_ft": 2.27
+    },
+    "2025": {
+      "n_admin_rebounds_dropped": 23837,
+      "n_block_rows": 36056,
+      "n_steal_rows": 72459,
+      "rim_override_max_ft": 2.27
+    }
+  },
+  "minutes_join_pct": 99.8167,
+  "n_rows": {
+    "reb_off": 222775,
+    "reb_def": 526310,
+    "made_fga": 546514,
+    "tov": 250065,
+    "miss_fga": 689375
+  },
+  "n_player_games": 206169,
+  "n_team_games": 21246,
+  "position_known_pct": 99.9791,
+  "prior_season_pct": {
+    "2024": 0.0,
+    "2025": 68.4848
+  }
+}

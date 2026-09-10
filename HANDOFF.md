@@ -36,6 +36,10 @@ State at shutdown: repo at the last commit on main (run `git log -1`). Five work
 4. Engine v0: in progress under src/cbb_sim/engine/ and results/engine_v0/; see docs/models/engine/RESUME.md if written. Provisional adapters flagged in run_meta.json.
 5. Player attribution: in progress; see docs/models/attribution/RESUME.md and the PARTIAL marker in its experiments.md.
 
+TOP PRIORITY ON RESUME (found 16:45 ET by the attribution worker): CBBD `participant_1_id` is the ASSISTER, not the shooter, on ~49% of assisted made FGAs (matches `shot_shooter_id` only 50.9% of the time on those rows; 74.5% overall). `src/cbb_sim/models/usage.py` reads the shooter off `participant_1_id`, so the usage bake-off's shooter labels are contaminated on assisted makes. Fix: usage must key the shooter on `shot_shooter_id` (98.7% coverage), then RERUN the usage bake-off (same pre-registration, note the label fix as a data fix), and re-check fg_make/free_throw shooter keys for the same defect. Also: CBBD blanks the rebounder on 18-25% of offensive-rebound rows (team rebounds); attribution reports it, never imputes.
+
+Engine v0 note: the F2 gate run never returned (block size too large); use the smoke command in docs/models/engine/RESUME.md first. The engine's 120-sim smoke read: possessions +4.65, PPP -6.3%, cancelling in the total; clock model is the first suspect. Verify `winner_FGA_3.joblib` is the LightGBM re-export (the engine worker saw the stale one).
+
 On resume: (a) `git status` and commit anything the workers left uncommitted, excluding files > 50MB and anything under data/raw or results; (b) read the five docs above; (c) launch FRESH workers for clock round 3, rotation round 3, engine v0 completion and attribution completion, each briefed with the relevant experiments.md (do not resume the old agents; their contexts are too large); (d) then the seed-noise study and gates G1-G7 engine vs Control.
 
 Decided today and not to be reopened: Decisions 1-8; learnings L1-L19; winners for rebound, free throw, usage (5 classes), fg_make (3 classes), possession outcome (S1 arms).
