@@ -1,0 +1,84 @@
+{
+  "first": {
+    "ridge_logit": {
+      "arm": "ridge_logit",
+      "population": "first",
+      "fitted_on_fold": "F1",
+      "grid_log_loss": {
+        "90": 1.535765,
+        "180": 1.53568,
+        "365": 1.535677,
+        "730": 1.535674
+      },
+      "half_life_days": 730,
+      "spread": 9.1e-05
+    },
+    "cascade": {
+      "arm": "cascade",
+      "population": "first",
+      "fitted_on_fold": "F1",
+      "grid_log_loss": {
+        "90": 1.535274,
+        "180": 1.535234,
+        "365": 1.535208,
+        "730": 1.535218
+      },
+      "half_life_days": 365,
+      "spread": 6.6e-05
+    },
+    "lgbm": {
+      "arm": "lgbm",
+      "population": "first",
+      "fitted_on_fold": "F1",
+      "grid_log_loss": {
+        "90": 1.524989,
+        "180": 1.523698,
+        "365": 1.522992,
+        "730": 1.52305
+      },
+      "half_life_days": 365,
+      "spread": 0.001997
+    }
+  },
+  "cont": {
+    "ridge_logit": {
+      "arm": "ridge_logit",
+      "population": "cont",
+      "fitted_on_fold": "F1",
+      "grid_log_loss": {
+        "90": 1.500362,
+        "180": 1.500131,
+        "365": 1.500031,
+        "730": 1.500021
+      },
+      "half_life_days": 730,
+      "spread": 0.000341
+    },
+    "cascade": {
+      "arm": "cascade",
+      "population": "cont",
+      "fitted_on_fold": "F1",
+      "grid_log_loss": {
+        "90": 1.499652,
+        "180": 1.499489,
+        "365": 1.499389,
+        "730": 1.49937
+      },
+      "half_life_days": 730,
+      "spread": 0.000282
+    },
+    "lgbm": {
+      "arm": "lgbm",
+      "population": "cont",
+      "fitted_on_fold": "F1",
+      "grid_log_loss": {
+        "90": 1.52461,
+        "180": 1.519731,
+        "365": 1.516946,
+        "730": 1.515096
+      },
+      "half_life_days": 730,
+      "spread": 0.009514
+    }
+  }
+}

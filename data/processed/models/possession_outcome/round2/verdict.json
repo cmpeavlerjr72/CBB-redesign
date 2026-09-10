@@ -1,0 +1,206 @@
+{
+  "first": {
+    "population": "first",
+    "fold": "F2",
+    "n_arms_scored": 9,
+    "n_eligible": 4,
+    "noise_floor": {
+      "tree_seed_sd": NaN,
+      "linear_block_bootstrap_se": 0.000763,
+      "applied": 0.000763,
+      "partial": true,
+      "partial_reason": "only 0 of 5 pre-registered seed-varied refits were run"
+    },
+    "best_by_log_loss_ignoring_gates": {
+      "arm": "lgbm",
+      "scheme": "S1",
+      "feature_set": "C_plus_state",
+      "log_loss": 1.515428,
+      "worst_gated_gap_pp": 0.98,
+      "worst_gated_level_pp": 0.477,
+      "worst_gated_shape_pp": 1.032
+    },
+    "failed_gates": [
+      {
+        "arm": "lgbm",
+        "scheme": "S0",
+        "feature_set": "C_plus_state",
+        "calibration_pass": false,
+        "responsiveness_pass": true,
+        "worst_gated_gap_pp": 2.777,
+        "worst_gated_level_pp": 1.535,
+        "worst_gated_shape_pp": 1.241,
+        "log_loss": 1.516792
+      },
+      {
+        "arm": "lgbm",
+        "scheme": "S2",
+        "feature_set": "C_plus_state",
+        "calibration_pass": false,
+        "responsiveness_pass": true,
+        "worst_gated_gap_pp": 2.75,
+        "worst_gated_level_pp": 1.502,
+        "worst_gated_shape_pp": 1.432,
+        "log_loss": 1.517463
+      },
+      {
+        "arm": "cascade",
+        "scheme": "S1",
+        "feature_set": "C_plus_state",
+        "calibration_pass": false,
+        "responsiveness_pass": true,
+        "worst_gated_gap_pp": 2.094,
+        "worst_gated_level_pp": 0.734,
+        "worst_gated_shape_pp": 2.045,
+        "log_loss": 1.530507
+      },
+      {
+        "arm": "cascade",
+        "scheme": "S2",
+        "feature_set": "C_plus_state",
+        "calibration_pass": false,
+        "responsiveness_pass": true,
+        "worst_gated_gap_pp": 2.051,
+        "worst_gated_level_pp": 1.176,
+        "worst_gated_shape_pp": 2.013,
+        "log_loss": 1.530969
+      },
+      {
+        "arm": "cascade",
+        "scheme": "S0",
+        "feature_set": "C_plus_state",
+        "calibration_pass": false,
+        "responsiveness_pass": true,
+        "worst_gated_gap_pp": 2.184,
+        "worst_gated_level_pp": 1.253,
+        "worst_gated_shape_pp": 2.121,
+        "log_loss": 1.531031
+      }
+    ],
+    "tree_margin_over_best_linear": 0.015756,
+    "scheme_ladder": [
+      {
+        "scheme": "S1",
+        "log_loss": 1.515428,
+        "calibration_pass": true
+      }
+    ],
+    "winner": {
+      "arm": "lgbm",
+      "feature_set": "C_plus_state",
+      "scheme_lowest_loss": "S1",
+      "scheme_selected": "S1",
+      "half_life_days": null,
+      "log_loss": 1.515428,
+      "log_loss_lowest": 1.515428
+    },
+    "reason": "tree arm beats the best linear arm by 0.01576 log loss, more than the noise floor 0.00076"
+  },
+  "cont": {
+    "population": "cont",
+    "fold": "F2",
+    "n_arms_scored": 9,
+    "n_eligible": 3,
+    "noise_floor": {
+      "tree_seed_sd": NaN,
+      "linear_block_bootstrap_se": 0.001982,
+      "applied": 0.001982,
+      "partial": true,
+      "partial_reason": "only 0 of 5 pre-registered seed-varied refits were run"
+    },
+    "best_by_log_loss_ignoring_gates": {
+      "arm": "cascade",
+      "scheme": "S1",
+      "feature_set": "C_plus_state",
+      "log_loss": 1.49976,
+      "worst_gated_gap_pp": 1.859,
+      "worst_gated_level_pp": 0.826,
+      "worst_gated_shape_pp": 1.403
+    },
+    "failed_gates": [
+      {
+        "arm": "cascade",
+        "scheme": "S2",
+        "feature_set": "C_plus_state",
+        "calibration_pass": false,
+        "responsiveness_pass": true,
+        "worst_gated_gap_pp": 2.076,
+        "worst_gated_level_pp": 1.228,
+        "worst_gated_shape_pp": 1.554,
+        "log_loss": 1.499929
+      },
+      {
+        "arm": "cascade",
+        "scheme": "S0",
+        "feature_set": "C_plus_state",
+        "calibration_pass": false,
+        "responsiveness_pass": true,
+        "worst_gated_gap_pp": 2.205,
+        "worst_gated_level_pp": 1.35,
+        "worst_gated_shape_pp": 1.553,
+        "log_loss": 1.500031
+      },
+      {
+        "arm": "ridge_logit",
+        "scheme": "S0",
+        "feature_set": "C_plus_state",
+        "calibration_pass": false,
+        "responsiveness_pass": true,
+        "worst_gated_gap_pp": 2.309,
+        "worst_gated_level_pp": 1.345,
+        "worst_gated_shape_pp": 1.633,
+        "log_loss": 1.50079
+      },
+      {
+        "arm": "lgbm",
+        "scheme": "S1",
+        "feature_set": "C_plus_state",
+        "calibration_pass": false,
+        "responsiveness_pass": true,
+        "worst_gated_gap_pp": 5.392,
+        "worst_gated_level_pp": 0.386,
+        "worst_gated_shape_pp": 5.391,
+        "log_loss": 1.505548
+      },
+      {
+        "arm": "lgbm",
+        "scheme": "S0",
+        "feature_set": "C_plus_state",
+        "calibration_pass": false,
+        "responsiveness_pass": true,
+        "worst_gated_gap_pp": 6.524,
+        "worst_gated_level_pp": 1.382,
+        "worst_gated_shape_pp": 6.341,
+        "log_loss": 1.508279
+      },
+      {
+        "arm": "lgbm",
+        "scheme": "S2",
+        "feature_set": "C_plus_state",
+        "calibration_pass": false,
+        "responsiveness_pass": true,
+        "worst_gated_gap_pp": 6.698,
+        "worst_gated_level_pp": 1.315,
+        "worst_gated_shape_pp": 6.253,
+        "log_loss": 1.509869
+      }
+    ],
+    "scheme_ladder": [
+      {
+        "scheme": "S1",
+        "log_loss": 1.49976,
+        "calibration_pass": true
+      }
+    ],
+    "winner": {
+      "arm": "cascade",
+      "feature_set": "C_plus_state",
+      "scheme_lowest_loss": "S1",
+      "scheme_selected": "S1",
+      "half_life_days": null,
+      "log_loss": 1.49976,
+      "log_loss_lowest": 1.49976
+    },
+    "reason": "no tree arm passed the gates"
+  }
+}

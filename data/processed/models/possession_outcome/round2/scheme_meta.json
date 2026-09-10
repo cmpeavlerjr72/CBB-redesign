@@ -1,0 +1,750 @@
+{
+  "first|F1|baseline|S0": {
+    "scheme": "S0",
+    "n_fits": 1
+  },
+  "first|F1|ridge_logit|S0": {
+    "scheme": "S0",
+    "n_fits": 1
+  },
+  "first|F1|ridge_logit|S1": {
+    "scheme": "S1",
+    "n_fits": 6,
+    "segments": [
+      {
+        "refit_date": "2023-11-01",
+        "n_train": 1197609,
+        "n_train_from_test_season": 0,
+        "n_scored": 139943,
+        "max_train_date": "2023-04-03"
+      },
+      {
+        "refit_date": "2023-12-01",
+        "n_train": 1337552,
+        "n_train_from_test_season": 139943,
+        "n_scored": 126481,
+        "max_train_date": "2023-11-30"
+      },
+      {
+        "refit_date": "2024-01-01",
+        "n_train": 1464033,
+        "n_train_from_test_season": 266424,
+        "n_scored": 164248,
+        "max_train_date": "2023-12-31"
+      },
+      {
+        "refit_date": "2024-02-01",
+        "n_train": 1628281,
+        "n_train_from_test_season": 430672,
+        "n_scored": 172317,
+        "max_train_date": "2024-01-31"
+      },
+      {
+        "refit_date": "2024-03-01",
+        "n_train": 1800598,
+        "n_train_from_test_season": 602989,
+        "n_scored": 107127,
+        "max_train_date": "2024-02-29"
+      },
+      {
+        "refit_date": "2024-04-01",
+        "n_train": 1907725,
+        "n_train_from_test_season": 710116,
+        "n_scored": 809,
+        "max_train_date": "2024-03-31"
+      }
+    ],
+    "earliest_train_date": "2021-11-09"
+  },
+  "first|F1|ridge_logit|S2": {
+    "scheme": "S2",
+    "n_fits": 1,
+    "half_life_days": 730.0,
+    "reference_date": "2023-11-06",
+    "effective_sample_size": 1162713.3,
+    "effective_sample_fraction": 0.9709
+  },
+  "first|F1|cascade|S0": {
+    "scheme": "S0",
+    "n_fits": 1
+  },
+  "first|F1|cascade|S1": {
+    "scheme": "S1",
+    "n_fits": 6,
+    "segments": [
+      {
+        "refit_date": "2023-11-01",
+        "n_train": 1197609,
+        "n_train_from_test_season": 0,
+        "n_scored": 139943,
+        "max_train_date": "2023-04-03"
+      },
+      {
+        "refit_date": "2023-12-01",
+        "n_train": 1337552,
+        "n_train_from_test_season": 139943,
+        "n_scored": 126481,
+        "max_train_date": "2023-11-30"
+      },
+      {
+        "refit_date": "2024-01-01",
+        "n_train": 1464033,
+        "n_train_from_test_season": 266424,
+        "n_scored": 164248,
+        "max_train_date": "2023-12-31"
+      },
+      {
+        "refit_date": "2024-02-01",
+        "n_train": 1628281,
+        "n_train_from_test_season": 430672,
+        "n_scored": 172317,
+        "max_train_date": "2024-01-31"
+      },
+      {
+        "refit_date": "2024-03-01",
+        "n_train": 1800598,
+        "n_train_from_test_season": 602989,
+        "n_scored": 107127,
+        "max_train_date": "2024-02-29"
+      },
+      {
+        "refit_date": "2024-04-01",
+        "n_train": 1907725,
+        "n_train_from_test_season": 710116,
+        "n_scored": 809,
+        "max_train_date": "2024-03-31"
+      }
+    ],
+    "earliest_train_date": "2021-11-09"
+  },
+  "first|F1|cascade|S2": {
+    "scheme": "S2",
+    "n_fits": 1,
+    "half_life_days": 365.0,
+    "reference_date": "2023-11-06",
+    "effective_sample_size": 1075966.0,
+    "effective_sample_fraction": 0.8984
+  },
+  "first|F1|lgbm|S0": {
+    "scheme": "S0",
+    "n_fits": 1
+  },
+  "first|F1|lgbm|S1": {
+    "scheme": "S1",
+    "n_fits": 6,
+    "segments": [
+      {
+        "refit_date": "2023-11-01",
+        "n_train": 1197609,
+        "n_train_from_test_season": 0,
+        "n_scored": 139943,
+        "max_train_date": "2023-04-03"
+      },
+      {
+        "refit_date": "2023-12-01",
+        "n_train": 1337552,
+        "n_train_from_test_season": 139943,
+        "n_scored": 126481,
+        "max_train_date": "2023-11-30"
+      },
+      {
+        "refit_date": "2024-01-01",
+        "n_train": 1464033,
+        "n_train_from_test_season": 266424,
+        "n_scored": 164248,
+        "max_train_date": "2023-12-31"
+      },
+      {
+        "refit_date": "2024-02-01",
+        "n_train": 1628281,
+        "n_train_from_test_season": 430672,
+        "n_scored": 172317,
+        "max_train_date": "2024-01-31"
+      },
+      {
+        "refit_date": "2024-03-01",
+        "n_train": 1800598,
+        "n_train_from_test_season": 602989,
+        "n_scored": 107127,
+        "max_train_date": "2024-02-29"
+      },
+      {
+        "refit_date": "2024-04-01",
+        "n_train": 1907725,
+        "n_train_from_test_season": 710116,
+        "n_scored": 809,
+        "max_train_date": "2024-03-31"
+      }
+    ],
+    "earliest_train_date": "2021-11-09"
+  },
+  "first|F1|lgbm|S2": {
+    "scheme": "S2",
+    "n_fits": 1,
+    "half_life_days": 365.0,
+    "reference_date": "2023-11-06",
+    "effective_sample_size": 1075966.0,
+    "effective_sample_fraction": 0.8984
+  },
+  "first|F2|baseline|S0": {
+    "scheme": "S0",
+    "n_fits": 1
+  },
+  "first|F2|ridge_logit|S0": {
+    "scheme": "S0",
+    "n_fits": 1
+  },
+  "first|F2|ridge_logit|S1": {
+    "scheme": "S1",
+    "n_fits": 6,
+    "segments": [
+      {
+        "refit_date": "2024-11-01",
+        "n_train": 1908534,
+        "n_train_from_test_season": 0,
+        "n_scored": 160439,
+        "max_train_date": "2024-04-08"
+      },
+      {
+        "refit_date": "2024-12-01",
+        "n_train": 2068973,
+        "n_train_from_test_season": 160439,
+        "n_scored": 122978,
+        "max_train_date": "2024-11-30"
+      },
+      {
+        "refit_date": "2025-01-01",
+        "n_train": 2191951,
+        "n_train_from_test_season": 283417,
+        "n_scored": 186926,
+        "max_train_date": "2024-12-31"
+      },
+      {
+        "refit_date": "2025-02-01",
+        "n_train": 2378877,
+        "n_train_from_test_season": 470343,
+        "n_scored": 166372,
+        "max_train_date": "2025-01-31"
+      },
+      {
+        "refit_date": "2025-03-01",
+        "n_train": 2545249,
+        "n_train_from_test_season": 636715,
+        "n_scored": 102959,
+        "max_train_date": "2025-02-28"
+      },
+      {
+        "refit_date": "2025-04-01",
+        "n_train": 2648208,
+        "n_train_from_test_season": 739674,
+        "n_scored": 2351,
+        "max_train_date": "2025-03-31"
+      }
+    ],
+    "earliest_train_date": "2021-11-09"
+  },
+  "first|F2|ridge_logit|S2": {
+    "scheme": "S2",
+    "n_fits": 1,
+    "half_life_days": 730.0,
+    "reference_date": "2024-11-04",
+    "effective_sample_size": 1770924.1,
+    "effective_sample_fraction": 0.9279
+  },
+  "first|F2|cascade|S0": {
+    "scheme": "S0",
+    "n_fits": 1
+  },
+  "first|F2|cascade|S1": {
+    "scheme": "S1",
+    "n_fits": 6,
+    "segments": [
+      {
+        "refit_date": "2024-11-01",
+        "n_train": 1908534,
+        "n_train_from_test_season": 0,
+        "n_scored": 160439,
+        "max_train_date": "2024-04-08"
+      },
+      {
+        "refit_date": "2024-12-01",
+        "n_train": 2068973,
+        "n_train_from_test_season": 160439,
+        "n_scored": 122978,
+        "max_train_date": "2024-11-30"
+      },
+      {
+        "refit_date": "2025-01-01",
+        "n_train": 2191951,
+        "n_train_from_test_season": 283417,
+        "n_scored": 186926,
+        "max_train_date": "2024-12-31"
+      },
+      {
+        "refit_date": "2025-02-01",
+        "n_train": 2378877,
+        "n_train_from_test_season": 470343,
+        "n_scored": 166372,
+        "max_train_date": "2025-01-31"
+      },
+      {
+        "refit_date": "2025-03-01",
+        "n_train": 2545249,
+        "n_train_from_test_season": 636715,
+        "n_scored": 102959,
+        "max_train_date": "2025-02-28"
+      },
+      {
+        "refit_date": "2025-04-01",
+        "n_train": 2648208,
+        "n_train_from_test_season": 739674,
+        "n_scored": 2351,
+        "max_train_date": "2025-03-31"
+      }
+    ],
+    "earliest_train_date": "2021-11-09"
+  },
+  "first|F2|cascade|S2": {
+    "scheme": "S2",
+    "n_fits": 1,
+    "half_life_days": 365.0,
+    "reference_date": "2024-11-04",
+    "effective_sample_size": 1492768.6,
+    "effective_sample_fraction": 0.7822
+  },
+  "first|F2|lgbm|S0": {
+    "scheme": "S0",
+    "n_fits": 1
+  },
+  "first|F2|lgbm|S1": {
+    "scheme": "S1",
+    "n_fits": 6,
+    "segments": [
+      {
+        "refit_date": "2024-11-01",
+        "n_train": 1908534,
+        "n_train_from_test_season": 0,
+        "n_scored": 160439,
+        "max_train_date": "2024-04-08"
+      },
+      {
+        "refit_date": "2024-12-01",
+        "n_train": 2068973,
+        "n_train_from_test_season": 160439,
+        "n_scored": 122978,
+        "max_train_date": "2024-11-30"
+      },
+      {
+        "refit_date": "2025-01-01",
+        "n_train": 2191951,
+        "n_train_from_test_season": 283417,
+        "n_scored": 186926,
+        "max_train_date": "2024-12-31"
+      },
+      {
+        "refit_date": "2025-02-01",
+        "n_train": 2378877,
+        "n_train_from_test_season": 470343,
+        "n_scored": 166372,
+        "max_train_date": "2025-01-31"
+      },
+      {
+        "refit_date": "2025-03-01",
+        "n_train": 2545249,
+        "n_train_from_test_season": 636715,
+        "n_scored": 102959,
+        "max_train_date": "2025-02-28"
+      },
+      {
+        "refit_date": "2025-04-01",
+        "n_train": 2648208,
+        "n_train_from_test_season": 739674,
+        "n_scored": 2351,
+        "max_train_date": "2025-03-31"
+      }
+    ],
+    "earliest_train_date": "2021-11-09"
+  },
+  "first|F2|lgbm|S2": {
+    "scheme": "S2",
+    "n_fits": 1,
+    "half_life_days": 365.0,
+    "reference_date": "2024-11-04",
+    "effective_sample_size": 1492768.6,
+    "effective_sample_fraction": 0.7822
+  },
+  "cont|F1|baseline|S0": {
+    "scheme": "S0",
+    "n_fits": 1
+  },
+  "cont|F1|ridge_logit|S0": {
+    "scheme": "S0",
+    "n_fits": 1
+  },
+  "cont|F1|ridge_logit|S1": {
+    "scheme": "S1",
+    "n_fits": 6,
+    "segments": [
+      {
+        "refit_date": "2023-11-01",
+        "n_train": 171434,
+        "n_train_from_test_season": 0,
+        "n_scored": 21056,
+        "max_train_date": "2023-04-03"
+      },
+      {
+        "refit_date": "2023-12-01",
+        "n_train": 192490,
+        "n_train_from_test_season": 21056,
+        "n_scored": 19191,
+        "max_train_date": "2023-11-30"
+      },
+      {
+        "refit_date": "2024-01-01",
+        "n_train": 211681,
+        "n_train_from_test_season": 40247,
+        "n_scored": 23776,
+        "max_train_date": "2023-12-31"
+      },
+      {
+        "refit_date": "2024-02-01",
+        "n_train": 235457,
+        "n_train_from_test_season": 64023,
+        "n_scored": 24935,
+        "max_train_date": "2024-01-31"
+      },
+      {
+        "refit_date": "2024-03-01",
+        "n_train": 260392,
+        "n_train_from_test_season": 88958,
+        "n_scored": 15664,
+        "max_train_date": "2024-02-29"
+      },
+      {
+        "refit_date": "2024-04-01",
+        "n_train": 276056,
+        "n_train_from_test_season": 104622,
+        "n_scored": 107,
+        "max_train_date": "2024-03-31"
+      }
+    ],
+    "earliest_train_date": "2021-11-09"
+  },
+  "cont|F1|ridge_logit|S2": {
+    "scheme": "S2",
+    "n_fits": 1,
+    "half_life_days": 730.0,
+    "reference_date": "2023-11-06",
+    "effective_sample_size": 166432.8,
+    "effective_sample_fraction": 0.9708
+  },
+  "cont|F1|cascade|S0": {
+    "scheme": "S0",
+    "n_fits": 1
+  },
+  "cont|F1|cascade|S1": {
+    "scheme": "S1",
+    "n_fits": 6,
+    "segments": [
+      {
+        "refit_date": "2023-11-01",
+        "n_train": 171434,
+        "n_train_from_test_season": 0,
+        "n_scored": 21056,
+        "max_train_date": "2023-04-03"
+      },
+      {
+        "refit_date": "2023-12-01",
+        "n_train": 192490,
+        "n_train_from_test_season": 21056,
+        "n_scored": 19191,
+        "max_train_date": "2023-11-30"
+      },
+      {
+        "refit_date": "2024-01-01",
+        "n_train": 211681,
+        "n_train_from_test_season": 40247,
+        "n_scored": 23776,
+        "max_train_date": "2023-12-31"
+      },
+      {
+        "refit_date": "2024-02-01",
+        "n_train": 235457,
+        "n_train_from_test_season": 64023,
+        "n_scored": 24935,
+        "max_train_date": "2024-01-31"
+      },
+      {
+        "refit_date": "2024-03-01",
+        "n_train": 260392,
+        "n_train_from_test_season": 88958,
+        "n_scored": 15664,
+        "max_train_date": "2024-02-29"
+      },
+      {
+        "refit_date": "2024-04-01",
+        "n_train": 276056,
+        "n_train_from_test_season": 104622,
+        "n_scored": 107,
+        "max_train_date": "2024-03-31"
+      }
+    ],
+    "earliest_train_date": "2021-11-09"
+  },
+  "cont|F1|cascade|S2": {
+    "scheme": "S2",
+    "n_fits": 1,
+    "half_life_days": 730.0,
+    "reference_date": "2023-11-06",
+    "effective_sample_size": 166432.8,
+    "effective_sample_fraction": 0.9708
+  },
+  "cont|F1|lgbm|S0": {
+    "scheme": "S0",
+    "n_fits": 1
+  },
+  "cont|F1|lgbm|S1": {
+    "scheme": "S1",
+    "n_fits": 6,
+    "segments": [
+      {
+        "refit_date": "2023-11-01",
+        "n_train": 171434,
+        "n_train_from_test_season": 0,
+        "n_scored": 21056,
+        "max_train_date": "2023-04-03"
+      },
+      {
+        "refit_date": "2023-12-01",
+        "n_train": 192490,
+        "n_train_from_test_season": 21056,
+        "n_scored": 19191,
+        "max_train_date": "2023-11-30"
+      },
+      {
+        "refit_date": "2024-01-01",
+        "n_train": 211681,
+        "n_train_from_test_season": 40247,
+        "n_scored": 23776,
+        "max_train_date": "2023-12-31"
+      },
+      {
+        "refit_date": "2024-02-01",
+        "n_train": 235457,
+        "n_train_from_test_season": 64023,
+        "n_scored": 24935,
+        "max_train_date": "2024-01-31"
+      },
+      {
+        "refit_date": "2024-03-01",
+        "n_train": 260392,
+        "n_train_from_test_season": 88958,
+        "n_scored": 15664,
+        "max_train_date": "2024-02-29"
+      },
+      {
+        "refit_date": "2024-04-01",
+        "n_train": 276056,
+        "n_train_from_test_season": 104622,
+        "n_scored": 107,
+        "max_train_date": "2024-03-31"
+      }
+    ],
+    "earliest_train_date": "2021-11-09"
+  },
+  "cont|F1|lgbm|S2": {
+    "scheme": "S2",
+    "n_fits": 1,
+    "half_life_days": 730.0,
+    "reference_date": "2023-11-06",
+    "effective_sample_size": 166432.8,
+    "effective_sample_fraction": 0.9708
+  },
+  "cont|F2|baseline|S0": {
+    "scheme": "S0",
+    "n_fits": 1
+  },
+  "cont|F2|ridge_logit|S0": {
+    "scheme": "S0",
+    "n_fits": 1
+  },
+  "cont|F2|ridge_logit|S1": {
+    "scheme": "S1",
+    "n_fits": 6,
+    "segments": [
+      {
+        "refit_date": "2024-11-01",
+        "n_train": 276163,
+        "n_train_from_test_season": 0,
+        "n_scored": 24610,
+        "max_train_date": "2024-04-08"
+      },
+      {
+        "refit_date": "2024-12-01",
+        "n_train": 300773,
+        "n_train_from_test_season": 24610,
+        "n_scored": 18493,
+        "max_train_date": "2024-11-30"
+      },
+      {
+        "refit_date": "2025-01-01",
+        "n_train": 319266,
+        "n_train_from_test_season": 43103,
+        "n_scored": 28767,
+        "max_train_date": "2024-12-31"
+      },
+      {
+        "refit_date": "2025-02-01",
+        "n_train": 348033,
+        "n_train_from_test_season": 71870,
+        "n_scored": 24368,
+        "max_train_date": "2025-01-31"
+      },
+      {
+        "refit_date": "2025-03-01",
+        "n_train": 372401,
+        "n_train_from_test_season": 96238,
+        "n_scored": 15339,
+        "max_train_date": "2025-02-28"
+      },
+      {
+        "refit_date": "2025-04-01",
+        "n_train": 387740,
+        "n_train_from_test_season": 111577,
+        "n_scored": 329,
+        "max_train_date": "2025-03-31"
+      }
+    ],
+    "earliest_train_date": "2021-11-09"
+  },
+  "cont|F2|ridge_logit|S2": {
+    "scheme": "S2",
+    "n_fits": 1,
+    "half_life_days": 730.0,
+    "reference_date": "2024-11-04",
+    "effective_sample_size": 256341.2,
+    "effective_sample_fraction": 0.9282
+  },
+  "cont|F2|cascade|S0": {
+    "scheme": "S0",
+    "n_fits": 1
+  },
+  "cont|F2|cascade|S1": {
+    "scheme": "S1",
+    "n_fits": 6,
+    "segments": [
+      {
+        "refit_date": "2024-11-01",
+        "n_train": 276163,
+        "n_train_from_test_season": 0,
+        "n_scored": 24610,
+        "max_train_date": "2024-04-08"
+      },
+      {
+        "refit_date": "2024-12-01",
+        "n_train": 300773,
+        "n_train_from_test_season": 24610,
+        "n_scored": 18493,
+        "max_train_date": "2024-11-30"
+      },
+      {
+        "refit_date": "2025-01-01",
+        "n_train": 319266,
+        "n_train_from_test_season": 43103,
+        "n_scored": 28767,
+        "max_train_date": "2024-12-31"
+      },
+      {
+        "refit_date": "2025-02-01",
+        "n_train": 348033,
+        "n_train_from_test_season": 71870,
+        "n_scored": 24368,
+        "max_train_date": "2025-01-31"
+      },
+      {
+        "refit_date": "2025-03-01",
+        "n_train": 372401,
+        "n_train_from_test_season": 96238,
+        "n_scored": 15339,
+        "max_train_date": "2025-02-28"
+      },
+      {
+        "refit_date": "2025-04-01",
+        "n_train": 387740,
+        "n_train_from_test_season": 111577,
+        "n_scored": 329,
+        "max_train_date": "2025-03-31"
+      }
+    ],
+    "earliest_train_date": "2021-11-09"
+  },
+  "cont|F2|cascade|S2": {
+    "scheme": "S2",
+    "n_fits": 1,
+    "half_life_days": 730.0,
+    "reference_date": "2024-11-04",
+    "effective_sample_size": 256341.2,
+    "effective_sample_fraction": 0.9282
+  },
+  "cont|F2|lgbm|S0": {
+    "scheme": "S0",
+    "n_fits": 1
+  },
+  "cont|F2|lgbm|S1": {
+    "scheme": "S1",
+    "n_fits": 6,
+    "segments": [
+      {
+        "refit_date": "2024-11-01",
+        "n_train": 276163,
+        "n_train_from_test_season": 0,
+        "n_scored": 24610,
+        "max_train_date": "2024-04-08"
+      },
+      {
+        "refit_date": "2024-12-01",
+        "n_train": 300773,
+        "n_train_from_test_season": 24610,
+        "n_scored": 18493,
+        "max_train_date": "2024-11-30"
+      },
+      {
+        "refit_date": "2025-01-01",
+        "n_train": 319266,
+        "n_train_from_test_season": 43103,
+        "n_scored": 28767,
+        "max_train_date": "2024-12-31"
+      },
+      {
+        "refit_date": "2025-02-01",
+        "n_train": 348033,
+        "n_train_from_test_season": 71870,
+        "n_scored": 24368,
+        "max_train_date": "2025-01-31"
+      },
+      {
+        "refit_date": "2025-03-01",
+        "n_train": 372401,
+        "n_train_from_test_season": 96238,
+        "n_scored": 15339,
+        "max_train_date": "2025-02-28"
+      },
+      {
+        "refit_date": "2025-04-01",
+        "n_train": 387740,
+        "n_train_from_test_season": 111577,
+        "n_scored": 329,
+        "max_train_date": "2025-03-31"
+      }
+    ],
+    "earliest_train_date": "2021-11-09"
+  },
+  "cont|F2|lgbm|S2": {
+    "scheme": "S2",
+    "n_fits": 1,
+    "half_life_days": 730.0,
+    "reference_date": "2024-11-04",
+    "effective_sample_size": 256341.2,
+    "effective_sample_fraction": 0.9282
+  }
+}

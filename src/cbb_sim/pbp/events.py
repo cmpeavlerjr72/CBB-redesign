@@ -103,6 +103,68 @@ recorded, not patched. `three_point_signal_disagreement()` recomputes the
 number from the raw frame so the claim is auditable rather than typed in.
 
 --------------------------------------------------------------------------
+THE RIM-LOCATION OVERRIDE (added 2026-09-10)
+--------------------------------------------------------------------------
+ESPN's 2025-season feed mistags a large batch of true tip-in / putback
+attempts `JumpShot` instead of `TipShot`/`LayUpShot`. Evidence, in full:
+`docs/tests/shot_classification_diag_2026-09-10.md`. The short version:
+
+  * The continuation-chance ("after an offensive rebound") rim share is
+    37.9 / 38.5 / 38.1% in 2022-2024, collapses to 31.6% in 2025, and returns
+    to 39.2% in 2026 -- a one-season round trip that is not a basketball
+    change.
+  * `shot_range` cannot catch it. It is generated in lockstep with `playType`
+    at the source: it is `'rim'` on 100.000% of Dunk/LayUp/Tip rows and never
+    `'rim'` on a `JumpShot` row, in any of the five seasons.
+  * `playText` cannot catch it either: the mistagged rows carry the generic
+    "made/missed Jumper." text, and only 42 of 462,118 `JumpShot` rows in 2025
+    contain the substring "tip" (FEWER than the neighbouring seasons).
+  * hoopR's independently-built parse of the same broadcast feed carries the
+    IDENTICAL wrong tag on 99.6% of the identical plays, so this is an
+    upstream vendor defect, not a CBBD parsing bug and not a bug here.
+  * `shot_location_x` / `shot_location_y` -- a separate ESPN sub-system (the
+    shot chart) -- DID get these plays right: they sit on the same canned
+    at-the-rim placeholder pixel that legitimate `TipShot` rows use.
+
+So the one signal the vendor got right is geometry, and the override uses it:
+a row the feed calls a two-point `JumpShot` whose recorded release point is
+within `RIM_OVERRIDE_MAX_FT` of a basket is an `FGA_rim`.
+
+SCOPE, deliberately narrow. The override is applied ONLY to rows already
+resolved to `FGA_jump2`. It can therefore only ever move a two-point jumper
+to a rim attempt: it never touches `DunkShot`/`LayUpShot`/`TipShot` rows, and
+it never touches three-point rows, so the 2-vs-3 split (and hence every
+points total and the 3PA/2PA reconciliation against hoopR's box score) is
+bit-identical before and after. Three-point rows are excluded by construction
+rather than by argument, even though `JumpShot(3)` release distance is a
+stable ~24.6 ft in every season with no near-rim rows to clip.
+
+THE THRESHOLD IS DERIVED, NOT TYPED. `rim_family_distance_quantiles()`
+recomputes, from any plays frame, the release-distance distribution of the
+rows the feed ITSELF labels a rim attempt (`DunkShot`, `LayUpShot`,
+`TipShot`). `RIM_OVERRIDE_MAX_FT` is a stated quantile of that distribution
+-- the value, the quantile it is, and the measured per-season effect of every
+candidate on the continuation-chance rim/jump2 shares are recorded in
+`docs/tests/possessions_build_v2_2026-09-10.md` section 3.1. The selection
+rule was fixed in advance: the threshold must return 2025 to the
+2022-2024/2026 band AND move every clean season by less than 0.5 pp, or the
+override is over-reaching and is not adopted.
+
+COORDINATE SYSTEM. CBBD passes ESPN's shot-chart coordinates through
+unchanged: a 0-940 x 0-500 full-court grid in tenths of a foot. The two
+baskets sit at raw `(52.5, 250)` and `(887.5, 250)`; that calibration is
+empirical, not assumed -- it is the pair of points that puts the median
+`DunkShot` release at 2.27-2.32 ft from the hoop in every one of the five
+seasons, which is what a dunk is. `shot_distance_ft` returns the distance to
+the NEARER basket, so it needs no knowledge of which direction a team is
+attacking.
+
+COVERAGE. `shot_location_y` is populated on 78-88% of shooting rows in
+2022-2024 and 97-99% in 2025-2026. A row with no location cannot be
+overridden and keeps its feed label; that is a miss, not a false positive,
+and it is the conservative direction.
+
+--------------------------------------------------------------------------
 STEAL PAIRING
 --------------------------------------------------------------------------
 `Lost Ball Turnover` is CBBD's single turnover bucket (bad pass, travel,
@@ -225,6 +287,39 @@ INERT_CLASSES: frozenset[str] = frozenset({"timeout", "sub", "block", "jumpball"
 SHOT_CLASSES: frozenset[str] = frozenset({"FGA_rim", "FGA_jump2", "FGA_3"})
 FT_CLASSES: frozenset[str] = frozenset({"FT_made", "FT_missed"})
 
+# ---------------------------------------------------------------------------
+# Rim-location override (module docstring, "THE RIM-LOCATION OVERRIDE")
+# ---------------------------------------------------------------------------
+#: The two baskets in ESPN's raw shot-chart coordinates (a 0-940 x 0-500
+#: full-court grid in tenths of a foot). Empirical, not assumed: this is the
+#: pair of points that puts the median `DunkShot` release at 2.27-2.32 ft in
+#: every one of the five seasons. `basket_calibration()` recomputes the check.
+BASKET_XY: tuple[tuple[float, float], ...] = ((52.5, 250.0), (887.5, 250.0))
+
+#: playTypes the feed itself calls a rim attempt. The override's threshold is a
+#: quantile of THEIR release-distance distribution, so the cutoff is derived
+#: from the feed's own notion of "at the rim" rather than chosen by eye.
+RIM_PLAY_TYPES: tuple[str, ...] = ("DunkShot", "LayUpShot", "TipShot")
+
+#: DERIVED, not typed: **the 50th percentile of `DunkShot` release distance**,
+#: pooled over 110,069 located `DunkShot` rows in seasons 2022-2026. It is
+#: 2.27 ft in 2022/2023/2024 and 2.32 ft in 2025/2026, so the pooled median is
+#: 2.27 and no season is doing the choosing.
+#:
+#: Chosen from a ladder of eight stated quantiles of that distribution by a
+#: rule fixed before the rungs were measured -- every clean season (2022-2024,
+#: 2026) must move by less than 0.5 pp on the continuation-chance `FGA_rim` and
+#: `FGA_jump2` shares, and among the rungs that clear that gate the one that
+#: leaves 2025 closest to the clean-season band wins. Measured effect at 2.27
+#: ft: 2025's continuation rim share moves 31.63 -> 38.13 (the clean band is
+#: 38.18-39.38, so it lands 0.06 pp outside it against the 6.27 pp gap it
+#: started with) and the worst any clean season moves is 0.34 pp. The whole
+#: ladder is in `docs/tests/possessions_build_v2_2026-09-10.md` section 3.1
+#: and is regenerated by `scripts/build_possessions.py --threshold-ladder`.
+#:
+#: A value <= 0 disables the override entirely and reproduces v1.
+RIM_OVERRIDE_MAX_FT: float = 2.27
+
 
 class UnknownPlayTypeError(ValueError):
     """Raised when a CBBD `playType` is not in `PLAY_TYPE_TO_EVENT`.
@@ -280,12 +375,35 @@ def _is_three(shot_range: pd.Series, play_text: pd.Series, score_value: pd.Serie
     return out.astype(bool)
 
 
-def classify_frame(plays: pd.DataFrame) -> pd.Series:
+def shot_distance_ft(plays: pd.DataFrame) -> np.ndarray:
+    """Release distance in FEET from the nearer basket, per row.
+
+    `NaN` where the shot-chart coordinates are absent (the row was never
+    located) or where the frame does not carry the columns at all. Using the
+    nearer of the two baskets means no knowledge of which direction a team is
+    attacking is needed, which is the one thing the coordinate feed does not
+    say."""
+    if "shot_location_x" not in plays.columns or "shot_location_y" not in plays.columns:
+        return np.full(len(plays), np.nan)
+    x = pd.to_numeric(plays["shot_location_x"], errors="coerce").to_numpy(dtype="float64")
+    y = pd.to_numeric(plays["shot_location_y"], errors="coerce").to_numpy(dtype="float64")
+    d = np.full(len(plays), np.inf)
+    for bx, by in BASKET_XY:
+        d = np.minimum(d, np.sqrt((x - bx) ** 2 + (y - by) ** 2))
+    return d / 10.0  # the grid is in tenths of a foot
+
+
+def classify_frame(plays: pd.DataFrame, rim_override_max_ft: float | None = None) -> pd.Series:
     """Canonical event class for every row of a CBBD plays frame.
 
     Requires columns: playType, shot_range, playText, scoreValue, shot_made,
-    scoringPlay, shootingPlay. Raises `UnknownPlayTypeError` on an unmapped
-    `playType`."""
+    scoringPlay, shootingPlay. Uses shot_location_x / shot_location_y when
+    present (they are in `PLAY_COLUMNS`, so the production path always has
+    them). Raises `UnknownPlayTypeError` on an unmapped `playType`.
+
+    `rim_override_max_ft` defaults to the module constant
+    `RIM_OVERRIDE_MAX_FT`; pass an explicit number to sweep it, or a value
+    <= 0 to reproduce the pre-override behaviour exactly."""
     fam = plays["playType"].map(map_play_type)
 
     rng = plays["shot_range"].astype("string").str.lower()
@@ -322,7 +440,94 @@ def classify_frame(plays: pd.DataFrame) -> pd.Series:
     ev[ft & made] = "FT_made"
     ev[ft & ~made] = "FT_missed"
 
+    # RIM-LOCATION OVERRIDE. See the module docstring section of that name for
+    # the evidence, the scope and how the threshold is derived. It is applied
+    # LAST, and keyed on the resolved class rather than on the `JumpShot`
+    # play-type mask, so that its stated scope -- "a row already resolved to
+    # FGA_jump2" -- is literally what the code does, including for the handful
+    # of `Not Available` / `Shot` rows that reach FGA_jump2 through the
+    # SHOT_ANY branch above. It can therefore only ever move a two-point
+    # jumper toward FGA_rim: no rim-tagged row, no three-point row and no free
+    # throw can change class here, so every points total and the whole 2-vs-3
+    # split are bit-identical before and after.
+    max_ft = RIM_OVERRIDE_MAX_FT if rim_override_max_ft is None else float(rim_override_max_ft)
+    if max_ft > 0:
+        dist_ft = shot_distance_ft(plays)
+        near_rim = ((ev == "FGA_jump2").to_numpy()
+                    & np.isfinite(dist_ft) & (dist_ft <= max_ft))
+        ev[near_rim] = "FGA_rim"
+
     return ev.astype("string")
+
+
+RIM_QUANTILES: tuple[float, ...] = (0.10, 0.25, 0.50, 0.75, 0.90, 0.95, 0.99)
+
+
+def rim_family_distance_quantiles(
+    plays: pd.DataFrame, quantiles: tuple[float, ...] = RIM_QUANTILES
+) -> dict[str, dict]:
+    """THE FUNCTION THE OVERRIDE'S THRESHOLD IS DERIVED FROM.
+
+    Release-distance quantiles, in feet from the nearer basket, of the rows the
+    feed ITSELF labels a rim attempt (`DunkShot`, `LayUpShot`, `TipShot`), plus
+    the same quantiles for two-point and three-point `JumpShot` rows as the
+    contrast. Every candidate cutoff quoted anywhere in the documentation is a
+    number out of this table, recomputed from the parquet rather than typed.
+
+    Also reports location coverage per type, because a threshold derived from a
+    6%-covered `TipShot` distribution (2022-2024) would be derived from almost
+    nothing -- which is exactly why `DunkShot`, covered on 78-99% of rows in
+    every season, is the type the adopted quantile is taken from."""
+    out: dict[str, dict] = {}
+    d_all = shot_distance_ft(plays)
+    pt = plays["playType"].astype("string").fillna("").to_numpy(dtype=object)
+    rng = plays["shot_range"].astype("string").str.lower().fillna("").to_numpy(dtype=object)
+    groups: list[tuple[str, np.ndarray]] = [(t, pt == t) for t in RIM_PLAY_TYPES]
+    groups.append(("rim_family", np.isin(pt, list(RIM_PLAY_TYPES))))
+    groups.append(("JumpShot(2)", (pt == "JumpShot") & (rng != "three_pointer")))
+    groups.append(("JumpShot(3)", (pt == "JumpShot") & (rng == "three_pointer")))
+    for name, m in groups:
+        d = d_all[m & np.isfinite(d_all)]
+        out[name] = {
+            "n_rows": int(m.sum()),
+            "n_located": int(len(d)),
+            "located_pct": round(100.0 * len(d) / max(int(m.sum()), 1), 2),
+            "quantiles_ft": {f"p{int(q * 100)}": (round(float(np.quantile(d, q)), 3) if len(d) else None)
+                             for q in quantiles},
+        }
+    return out
+
+
+def basket_calibration(plays: pd.DataFrame) -> dict[str, float]:
+    """Audit helper: the median `DunkShot` release distance implied by
+    `BASKET_XY`. A dunk is taken at the rim, so this number must sit around
+    2-2.5 ft; if a future pull changes the coordinate convention it will not,
+    and the calibration claim in the module docstring fails visibly instead of
+    silently mis-scaling every distance."""
+    d = shot_distance_ft(plays)
+    m = (plays["playType"].astype("string").fillna("").to_numpy(dtype=object) == "DunkShot") & np.isfinite(d)
+    return {"n": int(m.sum()),
+            "median_dunk_distance_ft": round(float(np.median(d[m])), 3) if m.sum() else float("nan")}
+
+
+def rim_override_counts(plays: pd.DataFrame,
+                        rim_override_max_ft: float | None = None) -> dict[str, int]:
+    """How many rows the override actually moves, and how many it could not
+    reach. Reported per season rather than asserted."""
+    max_ft = RIM_OVERRIDE_MAX_FT if rim_override_max_ft is None else float(rim_override_max_ft)
+    base = classify_frame(plays, rim_override_max_ft=0.0).to_numpy()
+    d = shot_distance_ft(plays)
+    j2 = base == "FGA_jump2"
+    j3 = base == "FGA_3"
+    return {
+        "n_jump2": int(j2.sum()),
+        "n_jump2_located": int((j2 & np.isfinite(d)).sum()),
+        "n_overridden": int((j2 & np.isfinite(d) & (d <= max_ft)).sum()),
+        "n_jump2_unlocated": int((j2 & ~np.isfinite(d)).sum()),
+        # reported so the "three-point rows are never touched" claim is a
+        # measurement rather than a promise
+        "n_three_within_threshold_not_touched": int((j3 & np.isfinite(d) & (d <= max_ft)).sum()),
+    }
 
 
 def three_point_signal_disagreement(plays: pd.DataFrame) -> dict[str, int]:
@@ -355,6 +560,8 @@ PLAY_COLUMNS: tuple[str, ...] = (
     "homeScore", "awayScore", "period", "secondsRemaining",
     "scoringPlay", "shootingPlay", "scoreValue", "shot_made", "shot_range", "playText",
     "shot_shooter_id",
+    # the rim-location override reads these two (module docstring)
+    "shot_location_x", "shot_location_y",
     "home_on_1", "home_on_2", "home_on_3", "home_on_4", "home_on_5",
     "away_on_1", "away_on_2", "away_on_3", "away_on_4", "away_on_5",
 )

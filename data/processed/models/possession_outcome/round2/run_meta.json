@@ -1,0 +1,18 @@
+{
+  "run_at": "2026-09-10 16:19",
+  "seasons": [
+    2022,
+    2023,
+    2024,
+    2025
+  ],
+  "possessions_version": "v2",
+  "style_source": "first_chance",
+  "require_pbp_complete": true,
+  "feature_set": "C_plus_state",
+  "n_rows": 3038628,
+  "n_first": 2650559,
+  "n_cont": 388069,
+  "round1_n_rows": 3433227,
+  "runtime_min": 1.7485310276349386
+}

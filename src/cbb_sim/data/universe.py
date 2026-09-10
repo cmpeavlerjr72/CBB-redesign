@@ -40,7 +40,45 @@ Key design decisions
 - **pbp_truncated.** True when the pbp feed's own last-recorded running score
   never reaches the schedule's final score for a completed game (a partial /
   truncated feed, not a full game_id-level gap) -- identical definition to
-  the hoopR audit's Section 4 "truncated/partial pbp feed" check.
+  the hoopR audit's Section 4 "truncated/partial pbp feed" check. This is a
+  **hoopR-side** flag.
+
+- **pbp_complete (added 2026-09-10).** The **CBBD-side** counterpart, and a
+  strictly stronger statement than `~pbp_truncated`. True when the CBBD event
+  stream's own SCORING EVENTS account for the schedule's final score exactly,
+  for BOTH teams:
+
+      pbp_complete = the game has CBBD pbp rows
+                     AND sum(points of classified scoring events by team T)
+                         == final score of T, for both T, with zero slack
+
+  Points are taken from `cbb_sim.pbp.events.classify_frame`: 3 for a made
+  `FGA_3`, 2 for a made `FGA_rim`/`FGA_jump2`, 1 for every `FT_made`
+  **including technical free throws** (they belong to no possession, so the
+  possession table carries them in `tech_points_off`/`tech_points_def`, but
+  they are scoring and they count here). Sides are resolved with the same
+  `_fix_flipped_sides` repair the possession layer uses, so a game with an
+  inverted `isHomeTeam` flag is not counted incomplete for that reason.
+
+  WHY THIS DEFINITION AND NOT THE RUNNING-SCORE ONE. Two different
+  completeness numbers were in circulation for 2022 -- 19.5%
+  (`docs/tests/possessions_build_2026-09-10.md` section 2, event-derived) and
+  3.6% (`docs/tests/shot_classification_diag_2026-09-10.md` section 8, from
+  the feed's own last running `homeScore`/`awayScore`). They are reconciled
+  in `docs/tests/possessions_build_v2_2026-09-10.md` section 2: technical
+  free throws are NOT the cause (they are already counted on both sides of
+  that comparison, and removing them changes nothing), and neither are
+  unteamed rows, unclassifiable `Not Available` rows, or made-flag nulls --
+  all four of those are measured at exactly zero. The cause is that CBBD's
+  2022-2023 stream is missing scoring **rows** while its running-score
+  **column**, carried forward on every later row, still reaches the final
+  score. So the running-score check cannot see a missing basket and the
+  event-sum check can. A model that trains on events needs the event-level
+  guarantee, which is why `pbp_complete` uses the strict one.
+
+  It is added ALONGSIDE `pbp_truncated`, never replacing it: the two come
+  from independently sourced feeds and the rows where they disagree are
+  themselves informative about which single feed failed for a given game.
 
 - **tipoff_utc.** hoopR's `game_date_time` is tz-aware (`America/New_York`
   already applied on ingest); converted to UTC here. `game_date` (a plain
@@ -234,6 +272,103 @@ def compute_pbp_flags(schedules: pd.DataFrame, hoopr_dir: Path) -> pd.DataFrame:
 
 
 # --------------------------------------------------------------------------
+# CBBD feed completeness: pbp_complete
+# --------------------------------------------------------------------------
+def compute_pbp_complete(
+    schedules: pd.DataFrame,
+    cbbd_game_id: pd.Series,
+    cbbd_pbp_dir: Path | str = Path("data/raw/cbbd/pbp"),
+) -> pd.DataFrame:
+    """Per game: `pbp_complete`, plus the two per-team point deltas it is built
+    from, so the flag is auditable instead of opaque.
+
+    Definition and the reconciliation it settles: module docstring,
+    "pbp_complete". Returns a frame indexed like `schedules` with columns
+    `pbp_complete`, `cbbd_pbp_rows`, `cbbd_pts_delta_home`,
+    `cbbd_pts_delta_away` (event points MINUS the final score, so 0 is
+    complete, negative is a short feed and positive is a feed that scores more
+    than the box).
+
+    LAYERING NOTE. This L0 builder imports the L3 event classifier on purpose.
+    The flag has to be computed with the SAME `classify_frame` and the SAME
+    side repair the possession layer uses, or it would certify a feed as
+    complete under one definition of "a scoring event" and be consumed under
+    another.
+    """
+    from cbb_sim.pbp.events import classify_frame, load_plays
+    from cbb_sim.pbp.possessions import _fix_flipped_sides
+
+    n = len(schedules)
+    out = pd.DataFrame({
+        "pbp_complete": np.zeros(n, dtype=bool),
+        "cbbd_pbp_rows": np.zeros(n, dtype="int64"),
+        "cbbd_pts_delta_home": pd.Series([pd.NA] * n, dtype="Int64"),
+        "cbbd_pts_delta_away": pd.Series([pd.NA] * n, dtype="Int64"),
+    }, index=schedules.index)
+
+    gid = _to_int64(pd.Series(cbbd_game_id).reset_index(drop=True))
+    for season in sorted(int(s) for s in schedules["season"].unique()):
+        path = Path(cbbd_pbp_dir) / f"plays_{season}.parquet"
+        sub = (schedules["season"] == season).to_numpy()
+        if not path.exists():
+            continue
+        wanted = set(gid[sub].dropna().astype("int64").tolist())
+        if not wanted:
+            continue
+        plays = load_plays(season, pbp_dir=Path(cbbd_pbp_dir), game_ids=wanted)
+        if not len(plays):
+            continue
+        cls = classify_frame(plays).to_numpy()
+
+        made = plays["shot_made"]
+        if made.dtype == object:
+            made = made.map({True: True, False: False})
+        made = (made.astype("boolean")
+                .fillna(plays["scoringPlay"].astype("boolean"))
+                .fillna(False).to_numpy(dtype=bool))
+        pv = np.where(cls == "FGA_3", 3,
+                      np.where(np.isin(cls, ["FGA_rim", "FGA_jump2"]), 2,
+                               np.where(cls == "FT_made", 1, 0)))
+        pv = np.where(np.isin(cls, ["FGA_3", "FGA_rim", "FGA_jump2"]) & ~made, 0, pv)
+
+        is_home = plays["isHomeTeam"]
+        if is_home.dtype == object:
+            is_home = is_home.map({True: True, False: False})
+        is_home = is_home.astype("boolean")
+        has_team = (pd.to_numeric(plays["teamId"], errors="coerce").notna()
+                    & is_home.notna()).to_numpy()
+        side = np.where(is_home.fillna(False).to_numpy(), 0, 1)
+        side = _fix_flipped_sides(plays, side, has_team)
+
+        pts = pd.DataFrame({
+            "cbbd_game_id": plays["gameId"].to_numpy(),
+            "home_pts": np.where(has_team & (side == 0), pv, 0),
+            "away_pts": np.where(has_team & (side == 1), pv, 0),
+            "rows": 1,
+        }).groupby("cbbd_game_id", as_index=True).sum()
+
+        idx = schedules.index[sub]
+        # float64 with NaN for the games that have no CBBD id at all; the
+        # lookup below is done on the integer ids only, so a NaN id can never
+        # accidentally match a row of `pts`.
+        g = gid[sub].astype("float64").to_numpy(dtype="float64", na_value=np.nan)
+        key = pd.Series(np.where(np.isfinite(g), g, -1).astype("int64"))
+        hp = key.map(pts["home_pts"]).to_numpy(dtype="float64")
+        ap = key.map(pts["away_pts"]).to_numpy(dtype="float64")
+        rows = key.map(pts["rows"]).fillna(0).to_numpy(dtype="int64")
+        fh = pd.to_numeric(schedules.loc[idx, "home_score"], errors="coerce").to_numpy(dtype="float64")
+        fa = pd.to_numeric(schedules.loc[idx, "away_score"], errors="coerce").to_numpy(dtype="float64")
+        dh, da = hp - fh, ap - fa
+        ok = (rows > 0) & (dh == 0) & (da == 0)
+        out.loc[idx, "pbp_complete"] = ok
+        out.loc[idx, "cbbd_pbp_rows"] = rows
+        out.loc[idx, "cbbd_pts_delta_home"] = pd.array(dh, dtype="float64").astype("Int64")
+        out.loc[idx, "cbbd_pts_delta_away"] = pd.array(da, dtype="float64").astype("Int64")
+        del plays, cls
+    return out
+
+
+# --------------------------------------------------------------------------
 # player_box flag
 # --------------------------------------------------------------------------
 def compute_has_player_box(schedules: pd.DataFrame, hoopr_dir: Path) -> pd.Series:
@@ -316,6 +451,7 @@ def build_universe(
     seasons: list[int] | None = None,
     hoopr_dir: Path | str = DEFAULT_HOOPR_DIR,
     cbbd_dir: Path | str = DEFAULT_CBBD_DIR,
+    with_pbp_complete: bool = True,
 ) -> tuple[pd.DataFrame, dict]:
     """Build the games_universe table plus a report dict of per-season flag
     counts and D-I-exclusion diagnostics (used by build_game_universe.py to
@@ -335,6 +471,15 @@ def build_universe(
 
     cbbd_game_id = cbbd_join["cbbd_game_id"]
     has_cbbd_line = compute_has_cbbd_line(cbbd_game_id, seasons, cbbd_dir)
+    if with_pbp_complete:
+        completeness = compute_pbp_complete(sch, cbbd_game_id, Path(cbbd_dir) / "pbp")
+    else:
+        completeness = pd.DataFrame({
+            "pbp_complete": np.zeros(len(sch), dtype=bool),
+            "cbbd_pbp_rows": np.zeros(len(sch), dtype="int64"),
+            "cbbd_pts_delta_home": pd.Series([pd.NA] * len(sch), dtype="Int64"),
+            "cbbd_pts_delta_away": pd.Series([pd.NA] * len(sch), dtype="Int64"),
+        }, index=sch.index)
 
     tipoff_utc = pd.to_datetime(sch["game_date_time"], utc=True, errors="coerce")
 
@@ -359,6 +504,11 @@ def build_universe(
         "has_player_box": has_player_box.to_numpy(),
         "has_cbbd_line": has_cbbd_line.to_numpy(),
         "sealed": (sch["season"] == SEALED_SEASON).to_numpy(),
+        # CBBD-side feed completeness (module docstring, "pbp_complete")
+        "pbp_complete": completeness["pbp_complete"].to_numpy(),
+        "cbbd_pbp_rows": completeness["cbbd_pbp_rows"].to_numpy(),
+        "cbbd_pts_delta_home": completeness["cbbd_pts_delta_home"].to_numpy(),
+        "cbbd_pts_delta_away": completeness["cbbd_pts_delta_away"].to_numpy(),
     })
 
     # ---- report ----
@@ -366,7 +516,8 @@ def build_universe(
     non_d1_games = int((~is_d1_game).sum())
     join_quality = compute_join_quality(sch, cbbd_dir)
 
-    flag_cols = ["is_d1_game", "has_pbp", "pbp_truncated", "has_player_box", "has_cbbd_line"]
+    flag_cols = ["is_d1_game", "has_pbp", "pbp_truncated", "has_player_box", "has_cbbd_line",
+                 "pbp_complete"]
     per_season = out.groupby("season")[flag_cols + ["game_id"]].agg(
         n_games=("game_id", "count"),
         is_d1_game=("is_d1_game", "sum"),
@@ -374,7 +525,23 @@ def build_universe(
         pbp_truncated=("pbp_truncated", "sum"),
         has_player_box=("has_player_box", "sum"),
         has_cbbd_line=("has_cbbd_line", "sum"),
+        pbp_complete=("pbp_complete", "sum"),
     )
+
+    # pbp_complete share among the games any L3 fold can actually use
+    d1 = out[out["is_d1_game"]]
+    complete_share = d1.groupby("season").agg(
+        n_d1=("game_id", "count"),
+        n_complete=("pbp_complete", "sum"),
+    )
+    complete_share["pct_complete"] = (
+        100.0 * complete_share["n_complete"] / complete_share["n_d1"]).round(2)
+    d1nt = d1[~d1["pbp_truncated"]]
+    complete_share["n_d1_not_truncated"] = d1nt.groupby("season")["game_id"].count()
+    complete_share["n_d1_not_truncated_complete"] = d1nt.groupby("season")["pbp_complete"].sum()
+    complete_share["pct_complete_of_not_truncated"] = (
+        100.0 * complete_share["n_d1_not_truncated_complete"]
+        / complete_share["n_d1_not_truncated"]).round(2)
 
     report = {
         "total_games": total_games,
@@ -383,5 +550,6 @@ def build_universe(
         "per_season_counts": per_season,
         "join_quality": join_quality,
         "n_periods_missing": int(n_periods.isna().sum()),
+        "pbp_complete_by_season": complete_share,
     }
     return out, report

@@ -70,9 +70,10 @@ import numpy as np
 import pandas as pd
 
 from cbb_sim.data.seal import assert_not_sealed
+from cbb_sim.pbp.possessions import DEFAULT_POSSESSION_VERSION, possessions_dir
 from cbb_sim.ratings import own_ratings as orat
 
-DEFAULT_POSS_DIR = Path("data/processed/possessions")
+DEFAULT_POSS_DIR = possessions_dir(DEFAULT_POSSESSION_VERSION)
 DEFAULT_UNIVERSE = Path("data/processed/games_universe.parquet")
 
 #: The six modelled classes, in a FIXED order. Every probability matrix in
@@ -107,14 +108,88 @@ RATE_DEFS: dict[str, tuple[str, str]] = {
 RATE_SCALE: dict[str, float] = {"3pa": 100.0, "rim": 100.0, "tov": 100.0, "ftr": 100.0}
 
 
+#: Where a style rate's numerator and denominator come from.
+#:
+#: `all_chances` -- the original (round-1) source: the POSSESSION table, whose
+#:   `fga_rim`/`fga_jump2`/`fga_3` columns are sums across EVERY chance of the
+#:   possession, continuation chances included.
+#: `first_chance` -- first chances only, read off the chance table's own
+#:   per-chance attempt counts (present from possessions v2).
+#:
+#: WHY THE SOURCE MATTERS, and why `first_chance` is the default from round 2
+#: on. `off_rim_c` under `all_chances` is `sum(fga_rim)/sum(fga)` over a mix
+#: that includes continuation chances. Season 2025's continuation chances carry
+#: an upstream ESPN mislabel (`docs/tests/shot_classification_diag_2026-09-10.md`),
+#: so a team's own as-of `off_rim_c` history was mechanically understated in
+#: 2025 -- and that understated PREDICTOR was fed to the model for the `first`
+#: population, whose TARGETS the defect cannot touch. That is a genuine
+#: contamination channel from a label defect into a feature, and it is closed
+#: by construction here rather than repaired: a first-chance-only rate cannot
+#: read a continuation chance at all, mislabelled or not.
+STYLE_SOURCES: tuple[str, ...] = ("first_chance", "all_chances")
+
+#: The DEFAULT is still `all_chances`, and it moves to `first_chance` in the
+#: same PM switch that moves `DEFAULT_POSSESSION_VERSION` to `v2`. The two
+#: defaults have to move together: `first_chance` needs the per-chance attempt
+#: counts that only v2 writes, and a caller that names neither is a caller
+#: asking for the round-1 behaviour, which must keep reproducing round 1's
+#: recorded numbers exactly (`scripts/train_possession_outcome_v1.py` is such a
+#: caller, and `scripts/README.md` forbids editing a trainer that has already
+#: produced an evaluated artifact). The round-2 trainer names both explicitly.
+DEFAULT_STYLE_SOURCE = "all_chances"
+
+
 def team_game_box(poss: pd.DataFrame) -> pd.DataFrame:
-    """One row per (game, offence team): the accumulated box line this model's
-    rates are built from. Both sides of every game appear."""
+    """One row per (game, offence team) from the POSSESSION table: the
+    accumulated box line the round-1 rates were built from, summed across every
+    chance of each possession. Both sides of every game appear.
+
+    Kept so `scripts/train_possession_outcome_v1.py` still reproduces its own
+    recorded numbers exactly; `team_game_box_first_chance` is the round-2
+    default. See `STYLE_SOURCES`."""
     p = poss.copy()
     p["fga"] = p["fga_rim"] + p["fga_jump2"] + p["fga_3"]
     p["tov"] = (p["terminal_event"] == "TOV").astype("int32")
     g = p.groupby(["season", "game_id", "offense_team_id", "defense_team_id"], as_index=False).agg(
         poss=("poss_index", "count"),
+        fga=("fga", "sum"), fga_3=("fga_3", "sum"), fga_rim=("fga_rim", "sum"),
+        fga_jump2=("fga_jump2", "sum"), fta=("fta", "sum"), tov=("tov", "sum"),
+        points=("points", "sum"),
+    )
+    return g.rename(columns={"offense_team_id": "team_id", "defense_team_id": "opp_id"})
+
+
+FIRST_CHANCE_BOX_COLUMNS: tuple[str, ...] = ("fga_rim", "fga_jump2", "fga_3")
+
+
+def team_game_box_first_chance(chances: pd.DataFrame) -> pd.DataFrame:
+    """The same box line, built from FIRST chances only.
+
+    `poss` stays the possession count -- every possession has exactly one first
+    chance, so counting first chances counts possessions -- which keeps the
+    per-possession rates (`3pa`, `tov`) on the same scale as `team_game_box`.
+    The per-attempt rates (`rim`, `ftr`) become first-chance shares, which is a
+    DIFFERENT quantity from the round-1 one and is meant to be: it is the
+    quantity that describes what a team does on the chance being predicted.
+
+    EVERY first chance enters, including those whose terminal event is
+    `end_period` or `unknown`. Those rows are dropped from the model's TARGET
+    (they are the clock model's job and a data gap respectively) but they are
+    real possessions and dropping them from the DENOMINATOR would inflate every
+    per-possession rate by about 1%."""
+    missing = [c for c in FIRST_CHANCE_BOX_COLUMNS if c not in chances.columns]
+    if missing:
+        raise KeyError(
+            f"the chances table is missing {missing}, so a first-chance-only style rate cannot be "
+            "built from it. Per-chance attempt counts are written from possessions v2 onward: "
+            "rebuild with `scripts/build_possessions.py --version v2`, or pass "
+            "style_source='all_chances' to reproduce the round-1 features deliberately."
+        )
+    c = chances[chances["chance_number"] == 1].copy()
+    c["fga"] = c["fga_rim"] + c["fga_jump2"] + c["fga_3"]
+    c["tov"] = (c["terminal_event"] == "TOV").astype("int32")
+    g = c.groupby(["season", "game_id", "offense_team_id", "defense_team_id"], as_index=False).agg(
+        poss=("chance_number", "count"),
         fga=("fga", "sum"), fga_3=("fga_3", "sum"), fga_rim=("fga_rim", "sum"),
         fga_jump2=("fga_jump2", "sum"), fta=("fta", "sum"), tov=("tov", "sum"),
         points=("points", "sum"),
@@ -134,9 +209,16 @@ def _expanding_asof(df: pd.DataFrame, keys: list[str], cols: list[str]) -> pd.Da
     return pd.DataFrame(out, index=df.index)
 
 
-def build_team_form(poss_by_season: dict[int, pd.DataFrame], universe: pd.DataFrame) -> pd.DataFrame:
+def build_team_form(frames_by_season: dict[int, pd.DataFrame], universe: pd.DataFrame,
+                    style_source: str) -> pd.DataFrame:
     """As-of, league-centred offence and defence-allowed form for every
     (game, team). One row per team-game; both sides of every game.
+
+    `style_source` is REQUIRED and has no default on purpose: the two sources
+    produce different features from different tables (`STYLE_SOURCES`), and a
+    caller that does not say which it wants is a caller that has not decided.
+    `frames_by_season` must be possession frames for `all_chances` and chance
+    frames for `first_chance`.
 
     Returns columns
         season, game_id, team_id, opp_id, game_date,
@@ -144,7 +226,10 @@ def build_team_form(poss_by_season: dict[int, pd.DataFrame], universe: pd.DataFr
         n_prior_off
     where `_c` is the team's own as-of rate MINUS the league's as-of rate on
     the same date (see LEAK SAFETY in the module docstring)."""
-    boxes = pd.concat([team_game_box(p) for p in poss_by_season.values()], ignore_index=True)
+    if style_source not in STYLE_SOURCES:
+        raise KeyError(f"unknown style_source {style_source!r}; known: {STYLE_SOURCES}")
+    box_fn = team_game_box_first_chance if style_source == "first_chance" else team_game_box
+    boxes = pd.concat([box_fn(p) for p in frames_by_season.values()], ignore_index=True)
     dates = universe[["game_id", "game_date"]].copy()
     dates["game_date"] = pd.to_datetime(dates["game_date"])
     boxes = boxes.merge(dates, on="game_id", how="left")
@@ -245,41 +330,80 @@ def feature_set(name: str, population: str) -> list[str]:
 FEATURE_SETS: tuple[str, ...] = ("A_team", "B_plus_season", "C_plus_state", "D_plus_interactions")
 
 
-def load_chances(seasons: list[int], poss_dir: Path | str = DEFAULT_POSS_DIR) -> pd.DataFrame:
+def load_chances(seasons: list[int], poss_dir: Path | str | None = None,
+                 version: str | None = None) -> pd.DataFrame:
+    """Load the chance tables for `seasons`.
+
+    The table is VERSIONED: `version` selects from
+    `cbb_sim.pbp.possessions.POSSESSION_VERSIONS` and defaults to
+    `DEFAULT_POSSESSION_VERSION`; an explicit `poss_dir` overrides it."""
+    d = possessions_dir(version, poss_dir)
     frames = []
     for s in seasons:
-        p = Path(poss_dir) / f"chances_{int(s)}.parquet"
+        p = d / f"chances_{int(s)}.parquet"
         if not p.exists():
-            raise FileNotFoundError(f"missing chances table: {p} (run scripts/build_possessions.py)")
+            raise FileNotFoundError(
+                f"missing chances table: {p} (run scripts/build_possessions.py "
+                f"--version {version or DEFAULT_POSSESSION_VERSION})")
         frames.append(pd.read_parquet(p))
     return pd.concat(frames, ignore_index=True)
 
 
 def build_design(
     seasons: list[int],
-    poss_dir: Path | str = DEFAULT_POSS_DIR,
+    poss_dir: Path | str | None = None,
     universe_path: Path | str = DEFAULT_UNIVERSE,
     ratings_dir: Path | str = "data/processed/ratings",
+    version: str | None = None,
+    style_source: str = DEFAULT_STYLE_SOURCE,
+    require_pbp_complete: bool = False,
 ) -> pd.DataFrame:
     """One row per modelled chance with every candidate feature attached.
 
     Rows dropped: `end_period` chances (the clock model's job, per the
-    pre-registration) and `unknown` chances (a data gap, never imputed)."""
+    pre-registration) and `unknown` chances (a data gap, never imputed).
+
+    `version` / `poss_dir` select which possessions build to read
+    (`possessions_dir`). `style_source` selects where the as-of team style
+    rates come from (`STYLE_SOURCES`). `require_pbp_complete` additionally
+    restricts the universe to games whose CBBD event stream accounts for the
+    final score exactly (`cbb_sim.data.universe`, module docstring), which is
+    what round 2 of the bake-off runs on.
+
+    The returned frame carries these three choices in `df.attrs` so a design
+    cached to parquet can still be interrogated about what it is."""
     seasons = [int(s) for s in seasons]
+    d = possessions_dir(version, poss_dir)
     universe = pd.read_parquet(universe_path)
     universe = universe[universe["is_d1_game"] & ~universe["pbp_truncated"]].copy()
+    if require_pbp_complete:
+        if "pbp_complete" not in universe.columns:
+            raise KeyError(
+                "games_universe.parquet has no `pbp_complete` column; rebuild it with "
+                "scripts/build_game_universe.py (cbb_sim.data.universe.compute_pbp_complete)")
+        universe = universe[universe["pbp_complete"]].copy()
     universe["game_date"] = pd.to_datetime(universe["game_date"])
 
-    poss_by_season = {}
-    for s in seasons:
-        p = Path(poss_dir) / f"possessions_{s}.parquet"
-        poss_by_season[s] = pd.read_parquet(
-            p, columns=["season", "game_id", "offense_team_id", "defense_team_id", "poss_index",
-                        "terminal_event", "fga_rim", "fga_jump2", "fga_3", "fta", "points"])
-    form = build_team_form(poss_by_season, universe)
+    ch_all = load_chances(seasons, poss_dir=d)
+    if style_source == "first_chance":
+        frames = {s: ch_all[ch_all["season"] == s] for s in seasons}
+    else:
+        frames = {}
+        for s in seasons:
+            p = d / f"possessions_{s}.parquet"
+            frames[s] = pd.read_parquet(
+                p, columns=["season", "game_id", "offense_team_id", "defense_team_id", "poss_index",
+                            "terminal_event", "fga_rim", "fga_jump2", "fga_3", "fta", "points"])
+    # The style rates are built over the SAME universe the design is built over,
+    # so restricting to pbp_complete restricts the features too: a rate built
+    # partly from games whose event stream is short of the box score would be a
+    # rate of a different quantity.
+    keep_games = set(universe["game_id"].tolist())
+    ch_all = ch_all[ch_all["game_id"].isin(keep_games)]
+    frames = {s: f[f["game_id"].isin(keep_games)] for s, f in frames.items()}
+    form = build_team_form(frames, universe, style_source=style_source)
 
-    ch = load_chances(seasons, poss_dir=poss_dir)
-    ch = ch[ch["terminal_event"].isin(CLASSES)].copy()
+    ch = ch_all[ch_all["terminal_event"].isin(CLASSES)].copy()
 
     ch = ch.merge(
         universe[["game_id", "game_date", "neutral_site", "home_team_id"]],
@@ -341,6 +465,9 @@ def build_design(
 
     ch["y"] = ch["terminal_event"].map(CLASS_INDEX).astype("int8")
     ch["population"] = np.where(ch["chance_number"].to_numpy() > 1, "cont", "first")
+    ch.attrs["possessions_version"] = version or DEFAULT_POSSESSION_VERSION
+    ch.attrs["style_source"] = style_source
+    ch.attrs["require_pbp_complete"] = bool(require_pbp_complete)
     return ch
 
 
@@ -417,16 +544,22 @@ class RidgeLogitArm:
         self.max_iter = max_iter
         self.seed = seed
 
-    def fit(self, X: np.ndarray, y: np.ndarray) -> RidgeLogitArm:
+    def fit(self, X: np.ndarray, y: np.ndarray,
+            sample_weight: np.ndarray | None = None) -> RidgeLogitArm:
         from sklearn.linear_model import LogisticRegression
 
+        # The standardisation is UNWEIGHTED on purpose even when the fit is
+        # weighted: it is a fixed rescaling of the feature space that the sim
+        # has to reproduce, not part of the estimator, and making it depend on
+        # the recency weights would make two schemes' persisted artifacts
+        # incomparable for no gain.
         self.mu_ = X.mean(axis=0)
         self.sd_ = X.std(axis=0)
         self.sd_[self.sd_ < 1e-8] = 1.0
         Z = (X - self.mu_) / self.sd_
         self.clf_ = LogisticRegression(
             C=self.C, max_iter=self.max_iter, solver="lbfgs", random_state=self.seed,
-        ).fit(Z, y)
+        ).fit(Z, y, sample_weight=sample_weight)
         return self
 
     def predict_proba(self, X: np.ndarray) -> np.ndarray:
@@ -471,7 +604,8 @@ class CascadeArm:
             "rim": (is_fg & (y != i["FGA_3"]), y == i["FGA_rim"]),
         }
 
-    def fit(self, X: np.ndarray, y: np.ndarray) -> CascadeArm:
+    def fit(self, X: np.ndarray, y: np.ndarray,
+            sample_weight: np.ndarray | None = None) -> CascadeArm:
         from sklearn.linear_model import LogisticRegression
 
         self.mu_ = X.mean(axis=0)
@@ -484,13 +618,17 @@ class CascadeArm:
         for step in self.STEPS:
             mask, target = tg[step]
             zz, tt = Z[mask], target[mask]
-            self.rates_[step] = float(tt.mean()) if len(tt) else 0.5
+            w = None if sample_weight is None else sample_weight[mask]
+            # The fallback rate a step uses when its slice is single-class is
+            # the WEIGHTED rate, so that S2 does not silently fall back to an
+            # unweighted base rate on a rare split.
+            self.rates_[step] = (float(np.average(tt, weights=w)) if len(tt) else 0.5)
             if len(np.unique(tt)) < 2:
                 self.models_[step] = None
                 continue
             self.models_[step] = LogisticRegression(
                 C=self.C, max_iter=self.max_iter, solver="lbfgs", random_state=self.seed,
-            ).fit(zz, tt)
+            ).fit(zz, tt, sample_weight=w)
         return self
 
     def _p(self, step: str, Z: np.ndarray) -> np.ndarray:
@@ -537,11 +675,12 @@ class LgbmArm:
     def __init__(self, seed: int = 0):
         self.seed = seed
 
-    def fit(self, X: np.ndarray, y: np.ndarray) -> LgbmArm:
+    def fit(self, X: np.ndarray, y: np.ndarray,
+            sample_weight: np.ndarray | None = None) -> LgbmArm:
         import lightgbm as lgb
 
         self.clf_ = lgb.LGBMClassifier(random_state=self.seed, **self.PARAMS)
-        self.clf_.fit(X, y)
+        self.clf_.fit(X, y, sample_weight=sample_weight)
         return self
 
     def predict_proba(self, X: np.ndarray) -> np.ndarray:
@@ -561,17 +700,21 @@ def _align_classes(p: np.ndarray, classes: np.ndarray) -> np.ndarray:
 ARMS: tuple[str, ...] = ("baseline", "ridge_logit", "cascade", "lgbm")
 
 
-def fit_arm(arm: str, tr: pd.DataFrame, features: list[str], seed: int = 0):
+def fit_arm(arm: str, tr: pd.DataFrame, features: list[str], seed: int = 0,
+            sample_weight: np.ndarray | None = None):
     y = tr["y"].to_numpy()
     if arm == "baseline":
+        if sample_weight is not None:
+            raise ValueError("the matchup-naive baseline takes no sample weights: it is the floor, "
+                             "and a weighted floor would be a different floor per scheme")
         return BaselineArm().fit(y, tr["season"].to_numpy())
     X = _matrix(tr, features)
     if arm == "ridge_logit":
-        return RidgeLogitArm(seed=seed).fit(X, y)
+        return RidgeLogitArm(seed=seed).fit(X, y, sample_weight=sample_weight)
     if arm == "cascade":
-        return CascadeArm(seed=seed).fit(X, y)
+        return CascadeArm(seed=seed).fit(X, y, sample_weight=sample_weight)
     if arm == "lgbm":
-        return LgbmArm(seed=seed).fit(X, y)
+        return LgbmArm(seed=seed).fit(X, y, sample_weight=sample_weight)
     raise KeyError(f"unknown arm {arm!r}")
 
 
@@ -579,6 +722,151 @@ def predict_arm(arm: str, model, te: pd.DataFrame, features: list[str]) -> np.nd
     if arm == "baseline":
         return model.predict_proba(len(te))
     return model.predict_proba(_matrix(te, features))
+
+
+# ===========================================================================
+# 3b. Training schemes (round 2)
+# ===========================================================================
+# Pre-registration: `experiments.md`, "Round 2 pre-registration (PM-authored,
+# 2026-09-10)". Round 1 showed every arm ordering chances well and getting the
+# LEVEL of the class rates wrong on the test season -- L11 one layer down. A
+# static fit with a linear season index has nothing to extrapolate from when
+# the training seasons are flat and the test season steps (the first-chance
+# two-point-jumper share is 20.1 / 19.8 / 19.9% across 2022-2024 and 18.1% in
+# 2025). The scheme dimension asks whether the fit should follow the season
+# instead of trying to predict it.
+#
+#   S0  static. One fit on the training seasons, exactly as round 1.
+#   S1  in-season walk-forward. Refit at each month boundary of the test
+#       season on all prior seasons PLUS the test season to date, strictly
+#       before the refit date. Each test game is scored by the most recent
+#       refit at or before its own date, so no game is ever in its own fit and
+#       every test chance is still scored -- which keeps S1's log loss
+#       comparable with S0's on the identical test set.
+#   S2  exponential recency weighting on game date, half-life fitted on F1
+#       ONLY and then applied unchanged to F2. Fitting the half-life on the
+#       selection fold would be selecting on the answer.
+SCHEMES: tuple[str, ...] = ("S0", "S1", "S2")
+
+#: The pre-registered half-life grid, in days.
+S2_HALF_LIFE_GRID_DAYS: tuple[int, ...] = (90, 180, 365, 730)
+
+
+def recency_weights(train_dates: pd.Series, reference_date: pd.Timestamp,
+                    half_life_days: float) -> np.ndarray:
+    """`0.5 ** (age / half_life)`, where age is days from the row's game date
+    to `reference_date`.
+
+    `reference_date` is the FIRST GAME DATE OF THE TEST SEASON -- a date fixed
+    before any test game is played, so the weights are knowable at prediction
+    time. Ages are clipped at zero so a training row that somehow post-dates
+    the reference cannot be up-weighted above 1."""
+    age = (pd.Timestamp(reference_date) - pd.to_datetime(train_dates)).dt.days.to_numpy()
+    age = np.clip(age.astype("float64"), 0.0, None)
+    return np.exp2(-age / float(half_life_days))
+
+
+def month_boundaries(dates: pd.Series) -> list[pd.Timestamp]:
+    """The first day of every calendar month that contains at least one game,
+    in order. These are the S1 refit dates."""
+    d = pd.to_datetime(pd.Series(dates)).dropna()
+    if not len(d):
+        return []
+    months = sorted({(int(x.year), int(x.month)) for x in d})
+    return [pd.Timestamp(year=y, month=m, day=1) for y, m in months]
+
+
+def fit_predict_scheme(arm: str, scheme: str, tr: pd.DataFrame, te: pd.DataFrame,
+                       features: list[str], seed: int = 0,
+                       half_life_days: float | None = None) -> tuple[np.ndarray, dict]:
+    """Fit `arm` under `scheme` and return `(probabilities aligned to te, meta)`.
+
+    The returned meta records what the scheme actually did -- refit dates and
+    their train/test sizes for S1, the half-life and the effective sample size
+    for S2 -- so a scheme's cost and its behaviour are reportable rather than
+    implied."""
+    if scheme == "S0":
+        model = fit_arm(arm, tr, features, seed=seed)
+        return predict_arm(arm, model, te, features), {"scheme": "S0", "n_fits": 1}
+
+    if scheme == "S2":
+        if half_life_days is None:
+            raise ValueError("S2 needs a half-life; fit it on F1 with `fit_half_life`")
+        ref = pd.to_datetime(te["game_date"]).min()
+        w = recency_weights(tr["game_date"], ref, half_life_days)
+        model = fit_arm(arm, tr, features, seed=seed, sample_weight=w)
+        ess = float(w.sum() ** 2 / np.maximum((w ** 2).sum(), 1e-12))
+        return predict_arm(arm, model, te, features), {
+            "scheme": "S2", "n_fits": 1, "half_life_days": float(half_life_days),
+            "reference_date": str(ref.date()),
+            "effective_sample_size": round(ess, 1),
+            "effective_sample_fraction": round(ess / max(len(tr), 1), 4),
+        }
+
+    if scheme != "S1":
+        raise KeyError(f"unknown training scheme {scheme!r}; known: {SCHEMES}")
+
+    te_dates = pd.to_datetime(te["game_date"])
+    tr_dates = pd.to_datetime(tr["game_date"])
+    # The monthly refit concatenates the training slice with the part of the
+    # test season that precedes the refit date. Only the columns the fit reads
+    # are carried into that copy: on a 2M-row design the full-width copy is
+    # several hundred MB per refit, and the noise floor does thirty of them.
+    # Subsetting columns cannot change a fitted model -- `fit_arm` reads exactly
+    # `features` and `y` -- it only stops paying for the rest.
+    fit_cols = [*features, "y", "season"]
+    cuts = month_boundaries(te_dates)
+    p = np.zeros((len(te), len(CLASSES)), dtype="float64")
+    segments = []
+    for k, cut in enumerate(cuts):
+        nxt = cuts[k + 1] if k + 1 < len(cuts) else None
+        seg = (te_dates >= cut) if nxt is None else ((te_dates >= cut) & (te_dates < nxt))
+        seg = seg.to_numpy()
+        if not seg.any():
+            continue
+        # strictly before the refit date: prior seasons in full, plus the test
+        # season to date. `tr` already holds the prior seasons only, so the
+        # test-season-to-date part comes from `te` itself -- and it is exactly
+        # the part no scored game belongs to.
+        before = (te_dates < cut).to_numpy()
+        prior_test = te.loc[before, fit_cols]
+        fit_rows = (tr if not len(prior_test)
+                    else pd.concat([tr[fit_cols], prior_test], ignore_index=True))
+        model = fit_arm(arm, fit_rows, features, seed=seed)
+        p[seg] = predict_arm(arm, model, te.loc[seg], features)
+        # the last training date is taken from the DATE SERIES, not from
+        # fit_rows, because fit_rows deliberately does not carry game_date
+        max_train = (tr_dates.max() if not before.any()
+                     else max(tr_dates.max(), te_dates[before].max()))
+        segments.append({
+            "refit_date": str(cut.date()), "n_train": int(len(fit_rows)),
+            "n_train_from_test_season": int(len(prior_test)), "n_scored": int(seg.sum()),
+            "max_train_date": str(pd.Timestamp(max_train).date()),
+        })
+    if (p.sum(axis=1) == 0).any():
+        raise AssertionError("S1 left test rows unscored; the month partition is not a cover")
+    return p, {"scheme": "S1", "n_fits": len(segments), "segments": segments,
+               "earliest_train_date": str(tr_dates.min().date()) if len(tr_dates) else None}
+
+
+def fit_half_life(arm: str, features: list[str], design: pd.DataFrame, population: str,
+                  fold: str = "F1", grid: tuple[int, ...] = S2_HALF_LIFE_GRID_DAYS,
+                  seed: int = 0) -> dict:
+    """Choose the S2 half-life on `fold` (F1 by pre-registration) by log loss.
+
+    The chosen value is then applied to F2 unchanged. Every grid point's loss
+    is returned, not just the argmin, so the choice is auditable and so a flat
+    grid is visible as a flat grid rather than as a decision."""
+    tr, te = fold_slices(design, fold, population)
+    y = te["y"].to_numpy()
+    losses = {}
+    for h in grid:
+        p, _ = fit_predict_scheme(arm, "S2", tr, te, features, seed=seed, half_life_days=h)
+        losses[int(h)] = round(log_loss(y, p), 6)
+    best = min(losses, key=lambda k: losses[k])
+    return {"arm": arm, "population": population, "fitted_on_fold": fold,
+            "grid_log_loss": losses, "half_life_days": int(best),
+            "spread": round(max(losses.values()) - min(losses.values()), 6)}
 
 
 # ===========================================================================

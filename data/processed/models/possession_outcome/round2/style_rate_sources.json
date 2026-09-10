@@ -1,0 +1,205 @@
+{
+  "version": "v2",
+  "rows": [
+    {
+      "season": 2022,
+      "rate": "3pa",
+      "n_team_games": 10564,
+      "corr_first_chance_vs_box": 0.9589,
+      "corr_all_chances_vs_box": 0.9948,
+      "mean_first_chance": 28.605,
+      "mean_all_chances": 31.584,
+      "mean_box": 31.975
+    },
+    {
+      "season": 2022,
+      "rate": "tov",
+      "n_team_games": 10564,
+      "corr_first_chance_vs_box": 0.9481,
+      "corr_all_chances_vs_box": 0.9936,
+      "mean_first_chance": 16.597,
+      "mean_all_chances": 18.319,
+      "mean_box": 18.502
+    },
+    {
+      "season": 2022,
+      "rate": "ftr",
+      "n_team_games": 10564,
+      "corr_first_chance_vs_box": 0.948,
+      "corr_all_chances_vs_box": 0.9949,
+      "mean_first_chance": 30.317,
+      "mean_all_chances": 30.862,
+      "mean_box": 30.933
+    },
+    {
+      "season": 2022,
+      "rate": "rim",
+      "n_team_games": 10564,
+      "corr_first_chance_vs_box": null,
+      "corr_all_chances_vs_box": null,
+      "mean_first_chance": 33.035,
+      "mean_all_chances": 35.408,
+      "mean_box": null
+    },
+    {
+      "season": 2023,
+      "rate": "3pa",
+      "n_team_games": 11078,
+      "corr_first_chance_vs_box": 0.9595,
+      "corr_all_chances_vs_box": 0.9946,
+      "mean_first_chance": 28.261,
+      "mean_all_chances": 31.232,
+      "mean_box": 31.604
+    },
+    {
+      "season": 2023,
+      "rate": "tov",
+      "n_team_games": 11078,
+      "corr_first_chance_vs_box": 0.9496,
+      "corr_all_chances_vs_box": 0.9951,
+      "mean_first_chance": 16.372,
+      "mean_all_chances": 18.1,
+      "mean_box": 18.301
+    },
+    {
+      "season": 2023,
+      "rate": "ftr",
+      "n_team_games": 11078,
+      "corr_first_chance_vs_box": 0.9474,
+      "corr_all_chances_vs_box": 0.9944,
+      "mean_first_chance": 31.56,
+      "mean_all_chances": 32.042,
+      "mean_box": 32.22
+    },
+    {
+      "season": 2023,
+      "rate": "rim",
+      "n_team_games": 11078,
+      "corr_first_chance_vs_box": null,
+      "corr_all_chances_vs_box": null,
+      "mean_first_chance": 33.841,
+      "mean_all_chances": 36.257,
+      "mean_box": null
+    },
+    {
+      "season": 2024,
+      "rate": "3pa",
+      "n_team_games": 11102,
+      "corr_first_chance_vs_box": 0.9613,
+      "corr_all_chances_vs_box": 0.997,
+      "mean_first_chance": 28.315,
+      "mean_all_chances": 31.471,
+      "mean_box": 31.918
+    },
+    {
+      "season": 2024,
+      "rate": "tov",
+      "n_team_games": 11102,
+      "corr_first_chance_vs_box": 0.9487,
+      "corr_all_chances_vs_box": 0.9964,
+      "mean_first_chance": 15.217,
+      "mean_all_chances": 16.967,
+      "mean_box": 17.186
+    },
+    {
+      "season": 2024,
+      "rate": "ftr",
+      "n_team_games": 11102,
+      "corr_first_chance_vs_box": 0.9485,
+      "corr_all_chances_vs_box": 0.9962,
+      "mean_first_chance": 32.654,
+      "mean_all_chances": 33.179,
+      "mean_box": 33.526
+    },
+    {
+      "season": 2024,
+      "rate": "rim",
+      "n_team_games": 11102,
+      "corr_first_chance_vs_box": null,
+      "corr_all_chances_vs_box": null,
+      "mean_first_chance": 34.578,
+      "mean_all_chances": 36.867,
+      "mean_box": null
+    },
+    {
+      "season": 2025,
+      "rate": "3pa",
+      "n_team_games": 11179,
+      "corr_first_chance_vs_box": 0.9551,
+      "corr_all_chances_vs_box": 0.9967,
+      "mean_first_chance": 29.585,
+      "mean_all_chances": 33.042,
+      "mean_box": 33.473
+    },
+    {
+      "season": 2025,
+      "rate": "tov",
+      "n_team_games": 11179,
+      "corr_first_chance_vs_box": 0.9482,
+      "corr_all_chances_vs_box": 0.997,
+      "mean_first_chance": 15.357,
+      "mean_all_chances": 17.119,
+      "mean_box": 17.336
+    },
+    {
+      "season": 2025,
+      "rate": "ftr",
+      "n_team_games": 11179,
+      "corr_first_chance_vs_box": 0.9477,
+      "corr_all_chances_vs_box": 0.9959,
+      "mean_first_chance": 32.976,
+      "mean_all_chances": 33.425,
+      "mean_box": 33.709
+    },
+    {
+      "season": 2025,
+      "rate": "rim",
+      "n_team_games": 11179,
+      "corr_first_chance_vs_box": null,
+      "corr_all_chances_vs_box": null,
+      "mean_first_chance": 35.071,
+      "mean_all_chances": 37.254,
+      "mean_box": null
+    },
+    {
+      "season": 2026,
+      "rate": "3pa",
+      "n_team_games": 11433,
+      "corr_first_chance_vs_box": 0.9575,
+      "corr_all_chances_vs_box": 0.9958,
+      "mean_first_chance": 29.864,
+      "mean_all_chances": 33.438,
+      "mean_box": 33.884
+    },
+    {
+      "season": 2026,
+      "rate": "tov",
+      "n_team_games": 11433,
+      "corr_first_chance_vs_box": 0.9496,
+      "corr_all_chances_vs_box": 0.9961,
+      "mean_first_chance": 14.994,
+      "mean_all_chances": 16.633,
+      "mean_box": 16.845
+    },
+    {
+      "season": 2026,
+      "rate": "ftr",
+      "n_team_games": 11433,
+      "corr_first_chance_vs_box": 0.9481,
+      "corr_all_chances_vs_box": 0.9957,
+      "mean_first_chance": 35.126,
+      "mean_all_chances": 35.419,
+      "mean_box": 35.766
+    },
+    {
+      "season": 2026,
+      "rate": "rim",
+      "n_team_games": 11433,
+      "corr_first_chance_vs_box": null,
+      "corr_all_chances_vs_box": null,
+      "mean_first_chance": 36.595,
+      "mean_all_chances": 38.758,
+      "mean_box": null
+    }
+  ]
+}

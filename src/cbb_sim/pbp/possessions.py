@@ -3,9 +3,21 @@ possessions.py -- CBBD play-by-play -> one row per possession (and one row per
 chance), the event layer every L3 sub-model trains on.
 
 Entry point: `scripts/build_possessions.py`. Output:
-`data/processed/possessions/possessions_{season}.parquet` (one row per
-possession) and `data/processed/possessions/chances_{season}.parquet` (one row
-per chance; a possession with an offensive rebound has more than one).
+`data/processed/possessions{_v2}/possessions_{season}.parquet` (one row per
+possession) and `.../chances_{season}.parquet` (one row per chance; a
+possession with an offensive rebound has more than one).
+
+VERSIONS. `v1` (`data/processed/possessions`) is the original build. `v2`
+(`data/processed/possessions_v2`) is the same segmentation rule over a
+corrected event layer: the rim-location override in `cbb_sim.pbp.events`
+repairs ESPN's 2025 putback mistag, and the chance rows carry their own
+`fga_rim`/`fga_jump2`/`fga_3` counts so a style rate can be built from FIRST
+chances alone. The segmentation state machine itself is unchanged, and by
+construction has to be: the override only ever turns an `FGA_jump2` into an
+`FGA_rim`, and `_handle_fga` treats those two classes identically (same
+points, same rebound handling), so v2's possession and chance BOUNDARIES are
+bit-identical to v1's and only labels move. `possessions_dir()` resolves the
+version; the default stays `v1` until it is switched in one place.
 
 ===========================================================================
 THE SEGMENTATION RULE
@@ -206,7 +218,39 @@ import pandas as pd
 from cbb_sim.pbp.events import INERT_CLASSES, classify_frame, load_plays
 
 DEFAULT_UNIVERSE = Path("data/processed/games_universe.parquet")
-DEFAULT_OUT_DIR = Path("data/processed/possessions")
+
+#: VERSIONED OUTPUT (2026-09-10). `v1` is the original build. `v2` adds the
+#: rim-location override (`cbb_sim.pbp.events`, module docstring) and the
+#: per-chance attempt counts the first-chance-only style rates need. The two
+#: directories coexist deliberately: other workers hold long-running reads on
+#: `v1` while `v2` is being built and validated, and the default stays `v1`
+#: until the PM switches it in one place -- here.
+POSSESSION_VERSIONS: dict[str, Path] = {
+    "v1": Path("data/processed/possessions"),
+    "v2": Path("data/processed/possessions_v2"),
+}
+DEFAULT_POSSESSION_VERSION = "v1"
+DEFAULT_OUT_DIR = POSSESSION_VERSIONS[DEFAULT_POSSESSION_VERSION]
+
+
+def possessions_dir(version: str | None = None, poss_dir: Path | str | None = None) -> Path:
+    """Resolve a possessions directory from a version label.
+
+    An explicit `poss_dir` always wins (so a caller can point at a scratch
+    build); otherwise `version` selects from `POSSESSION_VERSIONS`, defaulting
+    to `DEFAULT_POSSESSION_VERSION`. An unknown label raises rather than
+    falling back, for the same reason `map_play_type` raises: a silent default
+    would read the wrong table and never say so."""
+    if poss_dir is not None:
+        return Path(poss_dir)
+    v = DEFAULT_POSSESSION_VERSION if version is None else str(version)
+    try:
+        return POSSESSION_VERSIONS[v]
+    except KeyError as exc:
+        raise KeyError(
+            f"unknown possessions version {v!r}; known versions: "
+            f"{sorted(POSSESSION_VERSIONS)}"
+        ) from exc
 
 #: Terminal-event vocabulary of a possession / chance.
 TERMINAL_EVENTS: tuple[str, ...] = (
@@ -871,6 +915,19 @@ def _emit(machine: _GameMachine, poss_rows: list, chance_rows: list) -> None:
                 "duration_s": max(0, c.start_clock - c.end_clock),
                 "start_score_diff": p.start_score_diff,
                 "points": c.points,
+                # Per-CHANCE attempt counts. The possession row sums these
+                # across every chance, first and continuation alike, which is
+                # what let a continuation-chance labelling defect leak into a
+                # FIRST-chance model's own predictors through `off_rim_c`
+                # (docs/tests/shot_classification_diag_2026-09-10.md section 6).
+                # Carrying them per chance is what makes a first-chance-only
+                # style rate computable at all.
+                "fga_rim": c.fga_rim,
+                "fgm_rim": c.fgm_rim,
+                "fga_jump2": c.fga_jump2,
+                "fgm_jump2": c.fgm_jump2,
+                "fga_3": c.fga_3,
+                "fgm_3": c.fgm_3,
                 "fta": c.fta,
                 "ftm": c.ftm,
                 "and_one": c.and_one,

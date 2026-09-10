@@ -1,0 +1,50 @@
+{
+  "first": {
+    "population": "first",
+    "fold": "F2",
+    "tree": {
+      "arm": "lgbm",
+      "feature_set": "C_plus_state",
+      "scheme": "S1",
+      "n_seeds": 0,
+      "seed_losses": [],
+      "mean": null,
+      "sd": null,
+      "complete": false,
+      "partial_reason": "only 0 of 5 pre-registered seed-varied refits were run"
+    },
+    "partial": true,
+    "linear": {
+      "arm": "cascade",
+      "feature_set": "C_plus_state",
+      "scheme": "S1",
+      "log_loss": 1.530507,
+      "block_bootstrap_se": 0.000763,
+      "n_replicates": 200
+    }
+  },
+  "cont": {
+    "population": "cont",
+    "fold": "F2",
+    "tree": {
+      "arm": "lgbm",
+      "feature_set": "C_plus_state",
+      "scheme": "S1",
+      "n_seeds": 0,
+      "seed_losses": [],
+      "mean": null,
+      "sd": null,
+      "complete": false,
+      "partial_reason": "only 0 of 5 pre-registered seed-varied refits were run"
+    },
+    "partial": true,
+    "linear": {
+      "arm": "cascade",
+      "feature_set": "C_plus_state",
+      "scheme": "S1",
+      "log_loss": 1.49976,
+      "block_bootstrap_se": 0.001982,
+      "n_replicates": 200
+    }
+  }
+}

@@ -238,3 +238,52 @@ Section 3.5 reports the block ladder on the lowest-loss arm of each population. 
 **REJECTED on both linear arms.** The explicit offence-rate x defence-allowed products move F2 log loss by at most 3e-06 against a noise floor of 0.000723 -- a factor of 240 below it. The linear arms already carry both sides of each matchup as main effects, and on 2.2M training rows the product terms add nothing that the main effects and the ridge penalty do not already represent. Recorded as rejected in `features.md` section 3.
 
 `scripts/train_possession_outcome_v1.py::rejected_state_features` has since been changed to fall back to the best LINEAR arm for any block the chosen arm cannot measure, so a future run reports this row automatically instead of omitting it. This addendum is appended rather than folded into section 3.5 because `experiments.md` is append-only.
+
+
+---
+
+## 4. Round 2 pre-registration (PM-authored, 2026-09-10)
+
+Round 2 changes only three things relative to round 1: (i) the event layer has the location-based rim override and first-chance-only feature sources (data fixes, documented above); (ii) the universe is restricted to pbp_complete games; (iii) a TRAINING-SCHEME dimension is added because L4/L11 show real year-over-year shot-mix drift that a static fit with a season index cannot extrapolate. Arms: model class in {ridge_logit, cascade, lgbm} x feature set C_plus_state (the round-1 best for every class; A/B/D are not rerun) x training scheme in {S0 static (as round 1), S1 in-season walk-forward: refit at each month boundary of the test season using all prior seasons plus the test season to date (strictly before the refit date), S2 exponential recency weighting on game date with the half-life fitted on F1 only (grid 90, 180, 365, 730 days)}. Populations: first and cont, separately. Folds, metrics, calibration gate (<= 2.0 pp worst decile gap on classes with share >= 5%), responsiveness gate, noise floor and decision rules are unchanged from round 1. S1 is evaluated only on the test season's games strictly after each refit date (no game contributes to its own fit). If S1 or S2 wins, the same scheme is the default for every later sub-model unless its own bake-off says otherwise.
+
+### 4.1 Execution notes (worker, written before the run, after the text above and changing none of it)
+
+These record how the pre-registered words were turned into code, so the run is reproducible and so
+any place the code could have been read two ways is settled in writing rather than after the fact.
+
+* **Trainer:** `scripts/train_possession_outcome_v2.py`. Artifacts:
+  `data/processed/models/possession_outcome/round2/`. Round 1's artifacts are not touched.
+* **"metrics ... unchanged from round 1"** is enforced by the call graph, not by prose: the round-2
+  trainer imports `score()` from `scripts/train_possession_outcome_v1.py` and calls it, so every arm
+  in both rounds goes through one scoring function. The decision rule is transcribed as `decide_v2`
+  with exactly one addition the round-1 rule could not have had -- a tie-break over the training
+  schemes, ordered S0 < S2 < S1 by number of fitted objects and by operational cost.
+* **The event layer (i).** Rim override: `cbb_sim.pbp.events`, threshold 2.27 ft = the pooled 50th
+  percentile of `DunkShot` release distance, selected from a ladder of eight stated quantiles by a
+  rule fixed before the rungs were measured
+  (`docs/tests/possessions_build_v2_2026-09-10.md` section 3.1). First-chance-only style rates:
+  `cbb_sim.models.possession_outcome.STYLE_SOURCES`, `style_source="first_chance"`. Tables:
+  `data/processed/possessions_v2/`.
+* **The universe (ii).** `pbp_complete` is defined in `cbb_sim.data.universe` and reconciles the two
+  completeness numbers that were in circulation
+  (`docs/tests/possessions_build_v2_2026-09-10.md` section 2.1). It is applied by
+  `build_design(require_pbp_complete=True)` to the design AND to the games the as-of style rates are
+  accumulated over -- a rate built partly from games whose event stream is short of the box score
+  would be a rate of a different quantity.
+* **S1's partition (iii).** The refit dates are the first day of every calendar month containing a
+  test-season game. Each refit uses games STRICTLY BEFORE its own date (all prior seasons, plus the
+  test season to date); each test game is scored by the most recent refit at or before its own game
+  date. So no game is ever in its own fit -- the pre-registration's requirement -- and every test
+  chance is still scored, which is what keeps S1's log loss comparable with S0's on an identical
+  test set. The first month's games are therefore scored by a fit on prior seasons only, which is
+  S0's fit; that is the honest reading of "walk-forward from the start of the season" and it is
+  reported rather than hidden.
+* **S2's reference date** is the first game date of the TEST season -- a date fixed before any test
+  game is played -- and weights are `0.5 ** (age_days / half_life)` with age clipped at zero. The
+  half-life is fitted on F1 per (population, model class) and applied to F2 unchanged; every grid
+  point's F1 loss is reported, not just the argmin.
+* **The matchup-naive baseline** is run under S0 only. It is not one of the three pre-registered
+  model classes, it is excluded from selection exactly as in round 1, and it is carried because a
+  grid with no floor cannot say how much of the log loss is matchup information at all.
+
+<!-- ROUND 2 RESULTS APPENDED BELOW BY scripts/train_possession_outcome_v2.py -->

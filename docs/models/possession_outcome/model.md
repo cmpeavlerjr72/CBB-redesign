@@ -26,20 +26,32 @@ mix has to be drawn per possession as one categorical outcome. That is what this
 ## 2. Target variable
 
 `terminal_event` of a chance, from
-`data/processed/possessions/chances_{season}.parquet`, built by `scripts/build_possessions.py` and
-validated in `docs/tests/possessions_build_2026-09-10.md`.
+`data/processed/possessions_v2/chances_{season}.parquet`, built by
+`scripts/build_possessions.py --version v2` and validated in
+`docs/tests/possessions_build_v2_2026-09-10.md`. (Round 1 used
+`data/processed/possessions/`, which is now frozen as `v1`; the two differ only in event LABELS --
+possession and chance boundaries are bit-identical, and the identical possession and chance counts
+per season prove it.)
 
-Population filter: D-I, non-truncated, seasons 2022-2025 (2026 sealed). Chances whose terminal event
-is `end_period` (0.08% of first chances, the clock model's job per the pre-registration) or
-`unknown` (0.87%, the mismatch-guard data gap) are dropped, never imputed.
+Population filter: D-I, non-truncated, **`pbp_complete`**, seasons 2022-2025 (2026 sealed). Chances
+whose terminal event is `end_period` (the clock model's job per the pre-registration) or `unknown`
+(the mismatch-guard data gap) are dropped, never imputed.
+
+`pbp_complete` is new in round 2 and it is a real restriction, not tidiness: 78.7 / 79.9 / 91.8 /
+95.4% of D-I non-truncated games in 2022-2025 qualify, and the design loses 11.5% of round 1's rows
+(3,433,227 -> 3,038,628), almost all of them in 2022 and 2023. A game whose CBBD event stream does
+not account for the final score is a game whose possession table is missing possessions, and the L3
+target is a distribution over what happened in them. Definition, and the reconciliation of the two
+completeness numbers that were previously in circulation:
+`docs/tests/possessions_build_v2_2026-09-10.md` section 2.1.
 
 First chances and continuation chances after an offensive rebound are **separate populations**,
 fitted and scored separately, because they are a different distribution rather than a rescaled one.
-Measured on 2025: rim 25.1% vs 31.6%, threes 29.3% vs 22.1%, turnovers 15.4% vs 11.4%.
+Measured on 2025 in v2: rim 25.5% vs 38.1%, threes 29.3% vs 22.1%, turnovers 15.4% vs 11.4%.
 
-Class balance and its five-season drift are in `docs/tests/possessions_build_2026-09-10.md` section
-3. The drift is the story of this bake-off: the three-point share rises and the turnover share falls
-across the training window, and 2025 continues both.
+Class balance and its five-season drift are in `docs/tests/possessions_build_v2_2026-09-10.md`
+section 3. The drift is the story of this bake-off: the three-point share rises and the turnover
+share falls across the training window, and 2025 continues both.
 
 ## 3. Methodology at a glance
 
@@ -199,19 +211,25 @@ inside the possession loop.
 
 ## 8. Artifacts
 
+Round 1's artifacts are left exactly where they were; round 2 writes to a `round2/` subdirectory so
+that neither run can overwrite the other's record.
+
 | Path | What it is |
 |---|---|
-| `data/processed/possessions/possessions_{season}.parquet` | one row per possession, 2022-2026 |
-| `data/processed/possessions/chances_{season}.parquet` | one row per chance -- the training table |
-| `data/processed/possessions/build_report.json` | the possession-layer validation battery |
-| `data/processed/models/possession_outcome/design.parquet` | the cached chance-level design matrix |
-| `data/processed/models/possession_outcome/grid_results.csv` | every (population, fold, arm, feature set) row |
-| `data/processed/models/possession_outcome/metrics_detail.json` | per-cell calibration, responsiveness, by-state tables |
-| `data/processed/models/possession_outcome/noise_floor.json` | seed-varied refits and the block bootstrap |
-| `data/processed/models/possession_outcome/verdict.json` | the decision rule applied, and what failed which gate |
-| `data/processed/models/possession_outcome/rejected_blocks.json` | which feature blocks cleared the floor |
-| `data/processed/models/possession_outcome/reference_not_adopted_{pop}.pkl` | the lowest-loss arm, `adopted=False` |
-| `data/processed/models/possession_outcome/run_meta.json` | run timestamp, row counts, runtime |
+| `data/processed/possessions/{possessions,chances}_{season}.parquet` | **v1, FROZEN.** Round 1's event layer |
+| `data/processed/possessions_v2/{possessions,chances}_{season}.parquet` | **v2**: the rim-location override plus per-chance attempt counts. Chance rows additionally carry `fga_rim` / `fgm_rim` / `fga_jump2` / `fgm_jump2` / `fga_3` / `fgm_3` |
+| `data/processed/possessions_v2/build_report.json` | the v2 validation battery, including the whole rim-override threshold ladder |
+| `data/processed/models/possession_outcome/*` | round-1 artifacts, untouched |
+| `data/processed/models/possession_outcome/round2/design.parquet` | the cached round-2 chance-level design matrix |
+| `data/processed/models/possession_outcome/round2/grid_results.csv` | every (population, fold, arm, scheme) row |
+| `data/processed/models/possession_outcome/round2/half_lives.json` | S2's F1-fitted half-life per (population, model class), with every grid point's loss |
+| `data/processed/models/possession_outcome/round2/scheme_meta.json` | what each scheme actually did -- S1's refit schedule and per-refit train sizes, S2's effective sample size |
+| `data/processed/models/possession_outcome/round2/scheme_ladder.json` | scheme-vs-S0 F2 log-loss gain for every model class |
+| `data/processed/models/possession_outcome/round2/noise_floor.json` | seed-varied refits (reproducing the scheme in full) and the block bootstrap |
+| `data/processed/models/possession_outcome/round2/verdict.json` | the decision rule applied, and what failed which gate |
+| `data/processed/models/possession_outcome/round2/metrics_detail.json` | per-cell calibration, responsiveness, by-state tables |
+| `data/processed/models/possession_outcome/round2/style_rate_sources.json` | first-chance vs all-chances vs hoopR `team_box` agreement, per style rate |
+| `data/processed/models/possession_outcome/round2/run_meta.json` | run timestamp, row counts, runtime, and the three provenance choices (version, style source, completeness filter) |
 
 ## 9. Known gaps and followups
 
