@@ -19,7 +19,12 @@ Done later on day 1:
 - Head-coach table 2022-2027 (Wikipedia API, 99.5%). Variance decomposition: player identity 10-52% of player rates; team-beyond-coach real at team level (L15).
 - L3 possession-outcome bake-off: NO winner. Every arm fails calibration on 2025 via a +1.8 pp FGA_jump2 level shift; 2025 putbacks labelled differently at source. Diagnostic running.
 
-In progress: shot-classification diagnostic (artifact vs real shift), L5 clock-consumption bake-off, L4 rotation bake-off.
+- Shot-classification diagnostic: 2025 putback artifact is upstream ESPN (L16); fixed by a data-derived rim override (2.27 ft) in the v2 event layer; pbp_complete flag added (79-98% by season).
+- Rebound bake-off: winner LightGBM team-level (L17). Free-throw bake-off: winner shooter-keyed LightGBM; no bonus-rule era boundary (L18).
+- Clock round 1: no arm adopted (end-of-period bend smoothed). Rotation round 1: no arm eligible (state dependence). Round-2 pre-registrations issued for both.
+- Eval harness (engine-agnostic gates G1-G9, market and props graders) reproduces Control to 4 decimals. Preseason 2027 pull, roster continuity, fault-tolerant daily chain (dry run OK).
+
+In progress: L3 possession-outcome round 2 (event fix + S0/S1/S2 training schemes), clock round 2, rotation round 2, field-goal make bake-off, shot-allocation (usage) bake-off.
 
 ## Production stack right now
 
@@ -27,8 +32,8 @@ Nothing shipped. No live runs.
 
 ## Next in queue
 
-1. Resolve the 2025 jump2 shift: if ARTIFACT, fix events.py mapping, rebuild possessions, rerun L3 grid; if REAL, pre-register L3 round 2 with in-season adaptive refit and recency-weighted arms.
-2. Pre-register possession_make (shot make/miss by class, FT%) with player terms keyed per L15.
-3. Clock and rotation results -> engine v0 assembly (possession loop) -> gates G1-G7 vs Control.
-4. `pbp_complete` flag in the universe from the CBBD feed-completeness check.
-5. Seed-noise study to replace provisional tolerances.
+1. Collect the five running bake-offs; if the L3 training scheme (S1/S2) wins, it becomes the default for every sub-model.
+2. Engine v0 assembly: GameState (with bonus_era from free_throw), possession loop wiring clock -> event -> allocation -> make/FT/rebound -> rotation; lookup-table export of tree winners; results contract output.
+3. Gates G1-G7 vs Control on 2025 (F2); paired-seed confirms for each tree winner (G2/G4).
+4. Seed-noise study to replace provisional tolerances.
+5. Player attribution for rebounds/assists/steals/blocks (props layer) after usage lands.
