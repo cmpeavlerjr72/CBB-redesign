@@ -8,7 +8,8 @@ Training order and status (per `docs/FRAMEWORK_PLAN.md` §2.1 cascade order):
 |---|---|---|---|
 | L0 | Control engine (yardstick, not a candidate) | [`control_engine/`](control_engine/model.md) | BUILT AND GATED 2026-09-10 |
 | L2 | Pace (possessions per game) | [`pace/`](pace/model.md) | BAKE-OFF COMPLETE 2026-09-10 -- winner `multiplicative`/`A_tempo`, target T_pbp |
-| L3 | Possession outcome (terminal-event mix of a chance) | [`possession_outcome/`](possession_outcome/model.md) | BAKE-OFF RUN 2026-09-10 -- see model.md for the verdict |
+| L3 | Possession event layer (pbp -> possessions and chances) | [`docs/tests/possessions_build_v2_2026-09-10.md`](../tests/possessions_build_v2_2026-09-10.md) | v2 SHIPPED 2026-09-10 -- rim-location override, per-chance attempt counts, `pbp_complete`. v1 (`data/processed/possessions/`) is frozen; `DEFAULT_POSSESSION_VERSION` is still `v1` until the PM switches it |
+| L3 | Possession outcome (terminal-event mix of a chance) | [`possession_outcome/`](possession_outcome/model.md) | ROUND 2 DECIDED 2026-09-10 -- `lgbm`/`C_plus_state`/`S1` on `first`, `cascade`/`C_plus_state`/`S1` on `cont`. Round 1 adopted nothing |
 | L3 | Rebound (who gets the ball after a miss) | [`rebound/`](rebound/model.md) | BAKE-OFF RUN 2026-09-10 -- see model.md for the verdict |
 | L3 | Free throw (trip structure + make probability) | [`free_throw/`](free_throw/model.md) | BAKE-OFF RUN 2026-09-10 -- see model.md for the verdict |
 | L3 | Field-goal make (made vs missed, three SEPARATE models by shot class) | [`fg_make/`](fg_make/model.md) | BAKE-OFF COMPLETE 2026-09-10 -- winner `lgbm`/`C_plus_state` in ALL THREE classes (F2 log loss 0.641605 / 0.642003 / 0.561085; rim and jumper clear the best passing non-tree arm by 33.7 and 32.4 noise floors). `FGA_3` was re-decided from the team-level baseline to `lgbm` under `ARCHITECTURE_DECISIONS.md` Decision 8 (decision step only, nothing retrained; experiments.md section 12). Defence is TEAM-LEVEL, not lineup-level. One clause of Decision 8 still needs its scope written down -- model.md section 4.3 |
@@ -37,3 +38,13 @@ Shared prerequisites built alongside a model rather than under it:
 3. Build the training script under `scripts/train_{model}.py`.
 4. Save artifacts under `data/processed/models/{model}/`.
 5. Fill in all three doc files. Don't mark the model "done" until `experiments.md` shows the grid that justifies the decision.
+
+---
+
+## Standing result: the default TRAINING SCHEME is S1 (in-season walk-forward)
+
+Decided by the L3 possession-outcome round-2 bake-off, 2026-09-10, on both chance populations, under a pre-registration that said the winning scheme becomes the default for every later sub-model unless that sub-model's own bake-off says otherwise (`possession_outcome/experiments.md` section 4).
+
+**S1** means: refit at each month boundary of the test season on all prior seasons plus the test season to date, strictly before the refit date, and score each game with the most recent refit at or before its own date. Reference implementation and its leak test: `cbb_sim.models.possession_outcome.fit_predict_scheme` and `tests/test_possession_outcome.py::test_s1_never_lets_a_game_into_its_own_fit`.
+
+Two consequences a later model must not rediscover the hard way. First, the win is a CALIBRATION win, not a log-loss win -- on L3 it moved the tree arm's worst decile gap from 2.78 pp to 0.98 pp for a log-loss gain of +0.00136, so a model graded on log loss alone would have called S1 noise. Second, the deployed artifact is a SCHEDULE: it has to be refit monthly in the live season, and a stale artifact silently degrades toward the static fit that failed the gate.
