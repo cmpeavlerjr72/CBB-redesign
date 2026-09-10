@@ -22,3 +22,5 @@ Watch items: FTA/FGA trend 0.305 -> 0.352; November pace +3 poss; hoopR event vo
 Refuted this session: nothing yet.
 
 Evidence trail: `docs/tests/data_audit_hoopr_2026-09-10.md`, `docs/tests/data_audit_cbbd_2026-09-10.md`, `docs/tests/gate_reference_2026-09-10.md`, `docs/tests/leak_test_kenpom_2026-09-10.md`.
+
+Watch item (2026-09-10): CBBD /teams/roster season=2027 returns 0 players for every team; roster continuity is an upper bound until rosters populate. Recheck weekly; fallback is hoopR rosters_2027 or ESPN team roster endpoint (light use).

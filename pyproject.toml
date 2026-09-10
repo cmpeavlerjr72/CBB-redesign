@@ -12,6 +12,7 @@ dependencies = [
     "pyyaml>=6.0",
     "pyarrow>=17.0",
     "huggingface-hub>=0.34",
+    "lxml>=5.0",
 ]
 
 [project.optional-dependencies]
