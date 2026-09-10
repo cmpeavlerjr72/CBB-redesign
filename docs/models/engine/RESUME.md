@@ -87,12 +87,13 @@ because neither trainer persists a model -- see model.md section 4).
            --seeds 200 --workers 16 --games-per-block 250 --seeds-per-block 25 \
            --tag F2_2025_s200
 
-   Projected wall clock from the measured single-core numbers: the clock arm is
-   ~85% of model cost at 4,900 rows/s/core, so 5,710 x 200 x ~145 possessions
-   (1.66e8) needs ~3.4e4 core-seconds for the clock plus ~20% for everything
-   else, i.e. roughly **35-60 minutes on 16-20 free cores** -- inside the 2-hour
-   target, but the machine was shared with other workers throughout this session
-   and the realised rate was lower. Re-measure before quoting it.
+   **Expect this to take longer than the 2-hour target.** The MEASURED
+   end-to-end rate at a 6,000-simulation batch on a contended machine is **862
+   possessions/s/core**; 5,710 x 200 x ~145 = 1.66e8 possessions is then 1.93e5
+   core-seconds = **2.7 hours on 20 cores**. The per-model benchmarks (clock
+   4,900 rows/s/core and ~85% of model cost) would project ~3,500 poss/s/core on
+   a free core, i.e. ~40 minutes, but no core was free during the build session
+   so that number is unverified. Re-measure on a quiet box before quoting either.
 
 2. **A seed-count study.** CLAUDE.md requires the minimum seed count be fixed by
    study before any ROI or gate number is read. Not done. Every gate number in
@@ -102,11 +103,15 @@ because neither trainer persists a model -- see model.md section 4).
 3. **The noise-floor / paired-seed run** (`--seed-offset 1000`) that the
    bake-off rule requires before any adoption. Not done.
 
-4. **The lookup-table export.** The engine runs batched predicts, not binned
-   lookup tables. `ENGINE_CLOCK=reference_empirical` is wired and the empirical
-   arm IS a lookup table (a (n_cells, 91) pmf over 7 binned dims), but the
-   quantile arm's own binned export, and its binning error, are **not measured**.
-   Do not assume the error is small.
+4. **The lookup-table export -- now REQUIRED, not optional.** The measured 862
+   poss/s/core misses the throughput target by ~35%, so the deliverable's escape
+   clause applies. The engine runs batched predicts, not binned lookup tables.
+   `ENGINE_CLOCK=reference_empirical` is wired and the empirical arm IS a lookup
+   table (a (n_cells, 91) pmf over 7 binned dims of sizes 6 x 5 x 2 x 3 x 3 x 5 x
+   2), which is the cheapest path; the quantile arm's own binned export, and the
+   binning error the deliverable asks be reported, are **not measured**. Do not
+   assume the error is small. The clock arm is ~85% of model cost, so binning it
+   alone captures nearly all of the available speedup.
 
 5. **`grade_market_props.py`** has not been run. `players.parquet` exists but the
    prop scorecard was out of time.

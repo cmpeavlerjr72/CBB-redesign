@@ -273,11 +273,18 @@ machine (50,000 rows, `OMP_NUM_THREADS=1`):
 
 **The clock arm is ~85% of the model cost of the engine.** It is nine LightGBM
 quantile regressions of 300 trees each, called once per possession; everything
-else together is under a sixth of it. The measured and projected numbers are in
+else together is under a sixth of it.
+
+End-to-end, the MEASURED rate at a 6,000-simulation batch on a contended machine
+is **862 possessions/s/core** (862,621 possessions in 1,000.9 s), which projects
+to **2.7 hours for 5,710 x 200 on 20 cores and therefore MISSES the 2-hour
+target**. The per-model benchmarks above would project ~3,500 poss/s/core on a
+free core; no point in the build session had free cores, so the dedicated-core
+rate is unmeasured and the 5.7x gap between the two is unexplained. Full working:
 `docs/tests/engine_v0_F2_2026-09-10.md` section 2.
 
-If the batched approach misses the 5,700 x 200 in 2 hours target, the stated next
-step is the lookup export, and the cheapest version of it is already on disk: the
+On that evidence the lookup export is REQUIRED work, not a contingency. The
+cheapest version of it is already on disk: the
 clock bake-off's `reference_not_adopted_empirical.pkl` **is** a lookup table --
 `EmpiricalArm.level_pmfs` is a (n_cells, 91) pmf array over 7 nested binned state
 dimensions of sizes (6, 5, 2, 3, 3, 5, 2) -- and is wired behind
@@ -291,16 +298,18 @@ measured and must not be assumed small.
 
 Ordered by size. None of these is corrected anywhere in the engine.
 
-1. **Possessions per game run high and points per possession run low, almost
-   exactly cancelling in the total.** On the smoke sample the engine produced
-   72.5 possessions/game against an actual 67.9, and 145.7 total points against
-   an actual 145.5 -- i.e. PPP 1.004 against 1.071. **Component: the clock
+1. **Possessions per game run high and points per possession run low, nearly
+   cancelling in the total.** On a 6,000-simulation sample (300 games x 20 seeds)
+   the engine produced 71.89 possessions/game against an actual 67.875 and 143.74
+   total points against an actual 145.5 -- i.e. PPP 1.000 against 1.071 -- while
+   every per-possession rate the L3 sub-models own landed within half a point
+   (3PA share -0.005, FTA/FGA 0.000, OREB% -0.001). **Component: the clock
    model.** Its own bake-off adopted nothing precisely because no arm passed the
    emergent G1 gate; the engine inherits that, and Decision 7's acknowledged risk
    ("G1 now depends on the clock-consumption model being right by state") is
    realised. This is also the textbook multi-level-evidence case from CLAUDE.md:
    a passing total hides two offsetting errors underneath.
-2. **Overtime rate is low** (1.7% on the smoke sample against 5.6% actual). Ties
+2. **Overtime rate is low** (1.3% on that sample against 5.58% actual). Ties
    at the end of regulation are rarer than they should be, which is a
    *dispersion* symptom at the end of the second half, not an overtime-rule
    symptom. Component: the clock model's late-period duration distribution plus
