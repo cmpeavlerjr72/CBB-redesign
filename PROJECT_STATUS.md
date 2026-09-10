@@ -12,7 +12,14 @@ Week 1 of 8 (`docs/FRAMEWORK_PLAN.md` section 7). Done on day 1:
 - Foundations: game universe (31,103 games, D-I flag, truncation flag, sealed flag), team crosswalk (367 teams, 100% ESPN/CBBD/KenPom), per-season gate reference tables, KenPom point-in-time snapshots (centred), leak-test harness (KenPom as-of join passes; CBBD season ratings fail as expected).
 - Docs: framework plan, decisions 1-6, guardrails with G1-G10, learnings L1-L8, control_engine pre-registration.
 
-In progress: Control engine (F1/F2, three anchor arms, gates G1/G5/G6/G9/G10 vs ESPN BET closes).
+Done later on day 1:
+- Control engine built and gated (docs/tests/control_engine_F2_2026-09-10.md): trails close by 0.36 margin / 0.54 total MAE, no ATS edge; own ratings tie KenPom; dispersion fails for structural reasons (L10). This is the bar.
+- L2 pace bake-off: all 32 arms fail PIT; multiplicative formula adopted as a prior only; pace is emergent (Decision 7, L14).
+- CBBD pbp 2022-2026 pulled (13.4M rows; onFloor from 2024 only, L13). Canonical possession/chance tables built (src/cbb_sim/pbp). Raw data and Control results mirrored to HF.
+- Head-coach table 2022-2027 (Wikipedia API, 99.5%). Variance decomposition: player identity 10-52% of player rates; team-beyond-coach real at team level (L15).
+- L3 possession-outcome bake-off: NO winner. Every arm fails calibration on 2025 via a +1.8 pp FGA_jump2 level shift; 2025 putbacks labelled differently at source. Diagnostic running.
+
+In progress: shot-classification diagnostic (artifact vs real shift), L5 clock-consumption bake-off, L4 rotation bake-off.
 
 ## Production stack right now
 
@@ -20,8 +27,8 @@ Nothing shipped. No live runs.
 
 ## Next in queue
 
-1. Control engine results -> record in experiments.md; anchor decision per pre-registered rule.
-2. L2 pace bake-off spec (families and feature sets), L1 anchor bake-off formalised from the Control results.
-3. Variance decomposition (coach / team / player) on four factors, tempo, usage; needs coach table (not yet sourced) and CBBD pbp.
-4. CBBD pbp audit -> event dictionary -> L3 possession-outcome model spec.
-5. HF push of data/raw once the pbp pull completes.
+1. Resolve the 2025 jump2 shift: if ARTIFACT, fix events.py mapping, rebuild possessions, rerun L3 grid; if REAL, pre-register L3 round 2 with in-season adaptive refit and recency-weighted arms.
+2. Pre-register possession_make (shot make/miss by class, FT%) with player terms keyed per L15.
+3. Clock and rotation results -> engine v0 assembly (possession loop) -> gates G1-G7 vs Control.
+4. `pbp_complete` flag in the universe from the CBBD feed-completeness check.
+5. Seed-noise study to replace provisional tolerances.

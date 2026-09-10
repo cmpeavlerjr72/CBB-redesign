@@ -9,7 +9,11 @@ What happened (numbered):
 4. Repo initialised, venv, HF dataset `mvpeav/cbb-sim-data` (nothing pushed yet).
 5. Built L0: universe, crosswalk, gate references, KenPom snapshots, leak harness. Pre-registered Control engine.
 
-Still running / resume-safe: CBBD pbp bulk pull (`scripts/pull_cbbd_pbp.py`, resumable per date); Control engine build (Opus worker; outputs under results/control and docs/tests/control_engine_F2_2026-09-10.md).
+6. Control engine, pace bake-off, pbp pull, possessions layer, coaches, variance decomposition, L3 bake-off all landed (see PROJECT_STATUS.md). Commits through 5a1ef86.
+
+Still running / resume-safe: shot-classification diagnostic -> docs/tests/shot_classification_diag_2026-09-10.md; clock bake-off -> docs/models/clock/; rotation bake-off -> docs/models/rotation/ (+ player crosswalk src/cbb_sim/data/player_ids.py). Each writes its own docs and artifacts; PM commits after review.
+
+Refuted this session: game-level pace as a sampler (L14); independent count draws (L10); CBBD season ratings as pregame features (L7); CFB's "team-beyond-coach = 0" for CBB (L15).
 
 Standing rules recap: PM/worker split; bake-off before any choice; no hand tuning on output; bottom-up; matchup-specific; multi-level evidence; profitability frame with accuracy-first phase; sealed 2026; created_at < tipoff; leak test every external feature. Full text in `CLAUDE.md`.
 
