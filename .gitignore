@@ -44,3 +44,8 @@ dist/
 .idea/
 .DS_Store
 Thumbs.db
+
+# rebuildable large intermediates (never in git; rebuild from data/raw)
+data/processed/possessions/
+data/processed/models/**/design.parquet
+data/processed/models/**/*_design.parquet
