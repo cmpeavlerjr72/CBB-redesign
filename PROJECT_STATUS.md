@@ -1,50 +1,27 @@
-# Project Status
+# PROJECT_STATUS.md
 
-As of 2026-09-10.
+Last updated: 2026-09-10 (day 1). Season tips Nov 1-3, 2026.
 
-## What exists
+Reading order: `CLAUDE.md` -> `docs/FRAMEWORK_PLAN.md` -> `ARCHITECTURE_DECISIONS.md` -> `docs/SIM_GUARDRAILS.md` -> `docs/LEARNINGS.md` -> `docs/models/README.md` -> `HANDOFF.md`. Postmortem of last year: `docs/postmortem/01-06`.
 
-This is the repo skeleton for the CBB clean-sheet rebuild — a possession-level
-Monte Carlo simulation for NCAA men's basketball, built from scratch after the
-2025-26 CBB-Monte engine's postmortem (see `docs/postmortem/`). Nothing beyond
-scaffolding has been built yet: no data pull, no model, no engine.
+## Where we are
 
-As of this commit:
+Week 1 of 8 (`docs/FRAMEWORK_PLAN.md` section 7). Done on day 1:
+- Postmortem of CBB-Monte (no residual signal vs close; root causes: uncentred KenPom on a drifting scale, no home court, independent team draws, unfitted dispersion, stale models, no player layer).
+- Data on disk: hoopR pbp/player_box/team_box/schedules/shots/rosters/player_core 2022-2026 (+2027 schedule); CBBD lines 2013-2026, games 2013-2026, season ratings (end-of-season, banned as features), lineup samples; CBBD pbp with on-floor players 2022-2026 (bulk pull in progress).
+- Foundations: game universe (31,103 games, D-I flag, truncation flag, sealed flag), team crosswalk (367 teams, 100% ESPN/CBBD/KenPom), per-season gate reference tables, KenPom point-in-time snapshots (centred), leak-test harness (KenPom as-of join passes; CBBD season ratings fail as expected).
+- Docs: framework plan, decisions 1-6, guardrails with G1-G10, learnings L1-L8, control_engine pre-registration.
 
-- Git repo initialized, remote `origin` set to
-  `https://github.com/cmpeavlerjr72/CBB-redesign.git`.
-- Python 3.12 venv at `.venv/`, package `cbb_sim` installed editable
-  (`src/cbb_sim/{sim,analysis,clients}`), `pyproject.toml` modeled on
-  `cfb-props-sim`.
-- `scripts/` — flat, prefix-named (see `scripts/README.md` for the
-  convention) with `hf_sync_data.py` ported from `cfb-props-sim` for the
-  `data/raw` / `results` <-> HuggingFace mirror.
-- Private HF dataset `mvpeav/cbb-sim-data` created for bulk-data sync.
-- `docs/models/` doc-standard scaffolding (`DOCUMENTATION_STANDARD.md`
-  copied verbatim from `cfb-props-sim`, empty `README.md` index, empty
-  `change_ledger.md`).
-- `docs/plans/TEMPLATE_fixplan.md` — the pre-registered fix-design template,
-  ported from `cfb-props-sim` with all football-specific content stripped.
-- `tests/` — one trivial smoke test, passing.
-- `docs/FRAMEWORK_PLAN.md` and `docs/postmortem/` were authored by the PM
-  before this skeleton pass and are untouched by it.
+In progress: Control engine (F1/F2, three anchor arms, gates G1/G5/G6/G9/G10 vs ESPN BET closes).
 
-## Reading order
+## Production stack right now
 
-1. **`CLAUDE.md`** (to be written by the PM) — standing rules, reading order,
-   git practice.
-2. **`docs/FRAMEWORK_PLAN.md`** — target architecture, bake-off protocol,
-   validation gates, data plan, timeline, and the repo-skeleton spec this
-   setup pass implements (§6).
-3. **`docs/postmortem/`** — why the 2025-26 engine lost (01-06), the evidence
-   base for every standing rule in the framework plan.
-4. **`docs/models/`** — per-model documentation as sub-models get built
-   (`DOCUMENTATION_STANDARD.md` defines the required shape; `README.md` is
-   the index; `change_ledger.md` tracks every investigated change).
+Nothing shipped. No live runs.
 
-## Not yet done
+## Next in queue
 
-Everything in `docs/FRAMEWORK_PLAN.md` §7 timeline: hoopR ingest, ID
-crosswalk, reference tables, leak-test harness, control engine, and every
-sub-model in the cascade. See `HANDOFF.md` for the next session's starting
-point.
+1. Control engine results -> record in experiments.md; anchor decision per pre-registered rule.
+2. L2 pace bake-off spec (families and feature sets), L1 anchor bake-off formalised from the Control results.
+3. Variance decomposition (coach / team / player) on four factors, tempo, usage; needs coach table (not yet sourced) and CBBD pbp.
+4. CBBD pbp audit -> event dictionary -> L3 possession-outcome model spec.
+5. HF push of data/raw once the pbp pull completes.
