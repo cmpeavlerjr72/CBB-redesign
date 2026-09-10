@@ -5,12 +5,19 @@ provenance: [`features.md`](features.md). Code:
 `src/cbb_sim/models/attribution.py`. Trainer:
 `scripts/train_attribution_v1.py`. Tests: `tests/test_attribution.py`.
 
-> **Status: BUILT; BAKE-OFF PARTIALLY RUN 2026-09-10.** The module, the trainer,
-> the tests and the docs are complete and the F1 run was launched, but the
-> session's hard stop cut the run short. Whatever finished is appended to
-> `experiments.md` under a PARTIAL marker with the exact list of targets that did
-> and did not complete; `RESUME.md` carries the one command that finishes it.
-> **No winner is adopted for any target yet.**
+> **Status: BAKE-OFF COMPLETE 2026-09-10.** Both folds (F1 selection, within-2025
+> robustness) ran to completion on all eight targets with the full
+> pre-registered grid (3 LightGBM rungs, 3 F1 seed refits, 40 game-level draws,
+> 200 bootstrap reps); no runtime lever was needed (wall time 682.4 s). A
+> `build_team_asof` construction bug (found while resuming; every team's league
+> as-of rate for the three binaries was silently zero/NaN) was fixed first --
+> `docs/tests/attribution_team_asof_lg_defect_2026-09-10.md`. Winners: 6 of 8
+> targets adopt an arm on F1 (`REB_off`->cond_logit, `REB_def`->lgbm,
+> `steal`->proportional, `block`->lgbm, `assisted`->aware_ridge,
+> `blocked`->aware_ridge); `assist` and `stolen` adopt NO WINNER on F1
+> (`assist` recovers a winner, `lgbm`, on the within-2025 fold; `stolen` fails
+> calibration on every arm on both folds).
+> Full per-target table, both folds: `experiments.md` section 3.
 
 ---
 
@@ -119,16 +126,44 @@ the pre-registration's decision rule and never enters `decide`.
 
 ## 4. Winner
 
-**None adopted yet.** See the status banner above and the PARTIAL section of
-`experiments.md`. The decision rule is implemented and runs automatically per
-target; it is the run, not the rule, that is incomplete.
+Per target, on **F1** (train 2024, test 2025 -- the selection fold):
+
+| target | F1 winner | F1 log loss | WF2025 (within-2025 robustness) winner |
+|---|---|---:|---|
+| `REB_off` (choice, K=5) | `cond_logit` | 1.431192 | `cond_logit` |
+| `REB_def` (choice, K=5) | `lgbm` | 1.559167 | `cond_logit` |
+| `assist` (choice, K=4) | NO WINNER | (lgbm best, 1.292465) | `lgbm` |
+| `steal` (choice, K=5) | `proportional` | 1.586249 | `proportional` |
+| `block` (choice, K=5) | `lgbm` | 1.273376 | NO WINNER (17,234-row test, flagged underpowered) |
+| `assisted` (binary) | `aware_ridge` | 0.558057 | NO WINNER (calibration, 141k-row test -- not underpowered) |
+| `stolen` (binary) | NO WINNER | (lgbm best, 0.642243) | NO WINNER |
+| `blocked` (binary) | `aware_ridge` | 0.264337 | `aware_ridge` |
+
+Full per-arm tables (Brier, top-1/top-3, calibration, transfer subsets,
+LightGBM importances, conditional-logit coefficients), the responsiveness
+slope check and the noise-floor SD for every decision: `experiments.md`
+section 3. `stolen` is the one target that fails calibration on every arm on
+both folds -- reported as a clean "not usably modellable with the
+pre-registered feature set" result, not patched.
 
 ## 5. Robustness
 
-The pre-registered robustness fold (within-2025 walk-forward) and the composed
-diagnostic were both deliberately skipped in the partial F1 launch
-(`--skip-wf --skip-composed`) so that the selection fold would produce numbers
-before the stop. Both are one flag away; `RESUME.md` has the command.
+The pre-registered within-2025 walk-forward fold ran to completion on all
+eight targets (`experiments.md` section 3.3). Five of eight targets carry the
+same winner (or NO WINNER) as F1, or a winner inside the other's noise floor;
+`assist` and `block` flip direction between folds (`assist` gains a winner on
+WF2025, `block` loses one, and the WF2025 loss is flagged as likely
+underpowered at a 17,234-row test set rather than presented as a reversal).
+
+The composed diagnostic (binary-then-choice, the quantity a player prop
+actually needs) is a **reported-only** check per the pre-registration and was
+never a gate -- but it did not run in either the interrupted launch or this
+completed run, because `scripts/train_attribution_v1.py` never actually calls
+`attribution.composed_check` from its per-target loop; `--skip-composed`
+exists as a flag but `args.skip_composed` is never read. This is a
+pre-existing gap in the trainer, found while completing the bake-off, not a
+choice made by this run. It does not affect any adopted winner. See
+`experiments.md` section 3.2.
 
 ## 6. Decisions log
 
@@ -249,9 +284,16 @@ who = AT.draw_block(def_five, state, p_block)                  # -> id or None
 
 ## 9. Known gaps / followups
 
-1. **The bake-off is not finished.** The F1 run was cut by the session's hard
-   stop; the robustness fold and the composed diagnostic were skipped outright.
-   `RESUME.md` has the command and the expected runtime. Nothing is adopted.
+1. **The bake-off is finished (2026-09-10 evening).** Both folds ran on all
+   eight targets at the full pre-registered grid; see section 4 for the
+   winners and `experiments.md` section 3 for the full evidence. The one
+   remaining procedural gap: the composed per-player diagnostic is
+   implemented (`attribution.composed_check`) but is never called from
+   `scripts/train_attribution_v1.py`'s per-target loop, regardless of
+   `--skip-composed` -- a trainer wiring gap, not a decision-rule gap, and it
+   does not affect any adopted winner (item 9 below already noted the check as
+   reported-only). Wiring it in is the next thing to do if the composed
+   numbers are wanted.
 2. **P3 is the runtime bottleneck.** A Python grouped-softmax objective is called
    once per boosting iteration over K·n rows, and `REB_def` and `miss_fga` are the
    two largest populations in the project. Options, in order of preference: cut

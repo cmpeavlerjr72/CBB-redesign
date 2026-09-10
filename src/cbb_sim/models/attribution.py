@@ -943,13 +943,26 @@ def build_team_asof(pops_by_season: dict[int, dict[str, pd.DataFrame]]
 
     Built from the SAME population tables the targets are, so a team's
     denominator is exactly the set of events the binary is graded on, and every
-    column is an expanding sum over that team's strictly earlier games."""
-    rows = []
+    column is an expanding sum over that team's strictly earlier games.
+
+    Each season's six (pop x side) groups are merged COLUMN-WISE first (their
+    names are unique within one season -- `made`/`ast`/`opp_made`/... -- so an
+    outer merge on the game key is correct); seasons are then stacked ROW-WISE.
+    Merging every season's groups together in one flat sequential merge (the
+    original code) re-uses the same 12 column names for 2024 and 2025 alike, so
+    pandas silently suffixes every one of them `_x`/`_y`, the bare names never
+    exist, the `if c not in tg.columns` fallback below manufactures an all-zero
+    column for literally every count, and the league-rate `_safe_div(0, 0)`
+    that follows is NaN on every row for all three binaries -- confirmed by
+    reproducing the merge standalone and finding only `_x`/`_y`-suffixed
+    columns in `tg`, never the bare ones."""
     spec = (("made_fga", "made", "ast", "opp_made", "ast_allowed"),
             ("tov", "tov", "tov_stolen", "opp_tov", "steals"),
             ("miss_fga", "miss", "miss_blocked", "opp_miss", "blocks"))
+    season_frames = []
     for season in sorted(pops_by_season):
         pops = pops_by_season[season]
+        rows = []
         for pop, off_den, off_num, def_den, def_num in spec:
             p = pops[pop]
             base = pd.DataFrame({
@@ -962,9 +975,11 @@ def build_team_asof(pops_by_season: dict[int, dict[str, pd.DataFrame]]
                 g = g.groupby(["season", "team_id", "game_id", "game_date"],
                               as_index=False).agg(d=("b", "size"), n=("b", "sum"))
                 rows.append(g.rename(columns={"d": den, "n": num}))
-    tg = rows[0]
-    for r in rows[1:]:
-        tg = tg.merge(r, on=["season", "team_id", "game_id", "game_date"], how="outer")
+        tgs = rows[0]
+        for r in rows[1:]:
+            tgs = tgs.merge(r, on=["season", "team_id", "game_id", "game_date"], how="outer")
+        season_frames.append(tgs)
+    tg = pd.concat(season_frames, ignore_index=True)
     for c in TEAM_COUNT_COLS:
         if c not in tg.columns:
             tg[c] = 0.0

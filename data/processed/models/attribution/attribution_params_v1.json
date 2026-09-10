@@ -235,6 +235,198 @@
         "min_child_samples": 200
       },
       "rng_family": "attr_block"
+    },
+    "assisted": {
+      "kind": "binary",
+      "winner": "aware_ridge",
+      "eligible": [
+        "aware_ridge",
+        "lgbm"
+      ],
+      "m_team": 100.0,
+      "m_own": 10.0,
+      "own_prior": "position",
+      "features": {
+        "team_ridge": [
+          "off_rate_c",
+          "def_rate_c",
+          "score_diff",
+          "sec_remaining",
+          "cand_is_home",
+          "neutral_site"
+        ],
+        "aware_ridge": [
+          "off_rate_c",
+          "def_rate_c",
+          "score_diff",
+          "sec_remaining",
+          "cand_is_home",
+          "neutral_site",
+          "own_share_c",
+          "sc_rim",
+          "sc_three"
+        ],
+        "lgbm": [
+          "off_rate_c",
+          "def_rate_c",
+          "score_diff",
+          "sec_remaining",
+          "cand_is_home",
+          "neutral_site",
+          "own_share_c",
+          "sc_rim",
+          "sc_three"
+        ]
+      },
+      "ridge_coefficients": {
+        "team_ridge": {
+          "off_rate_c": 0.15469,
+          "def_rate_c": 0.12292,
+          "score_diff": 0.10725,
+          "sec_remaining": 0.0762,
+          "cand_is_home": 0.06264,
+          "neutral_site": 0.01134
+        },
+        "aware_ridge": {
+          "off_rate_c": -0.03876,
+          "def_rate_c": 0.11335,
+          "score_diff": 0.0792,
+          "sec_remaining": 0.06648,
+          "cand_is_home": 0.08365,
+          "neutral_site": 0.02066,
+          "own_share_c": 0.62116,
+          "sc_rim": 0.32176,
+          "sc_three": 1.18933
+        }
+      },
+      "rng_family": "attr_assist"
+    },
+    "stolen": {
+      "kind": "binary",
+      "winner": null,
+      "eligible": [],
+      "m_team": 200.0,
+      "m_own": 25.0,
+      "own_prior": "position",
+      "features": {
+        "team_ridge": [
+          "off_rate_c",
+          "def_rate_c",
+          "score_diff",
+          "sec_remaining",
+          "cand_is_home",
+          "neutral_site"
+        ],
+        "aware_ridge": [
+          "off_rate_c",
+          "def_rate_c",
+          "score_diff",
+          "sec_remaining",
+          "cand_is_home",
+          "neutral_site",
+          "own_share_c",
+          "sc_rim",
+          "sc_three"
+        ],
+        "lgbm": [
+          "off_rate_c",
+          "def_rate_c",
+          "score_diff",
+          "sec_remaining",
+          "cand_is_home",
+          "neutral_site",
+          "own_share_c",
+          "sc_rim",
+          "sc_three"
+        ]
+      },
+      "ridge_coefficients": {
+        "team_ridge": {
+          "off_rate_c": 0.05897,
+          "def_rate_c": 0.10226,
+          "score_diff": 0.06311,
+          "sec_remaining": -0.05284,
+          "cand_is_home": -0.02237,
+          "neutral_site": 0.00792
+        },
+        "aware_ridge": {
+          "off_rate_c": 0.02391,
+          "def_rate_c": 0.1001,
+          "score_diff": 0.06136,
+          "sec_remaining": -0.04786,
+          "cand_is_home": -0.02296,
+          "neutral_site": 0.00799,
+          "own_share_c": 0.12885,
+          "sc_rim": 0.0,
+          "sc_three": 0.0
+        }
+      },
+      "rng_family": "attr_steal"
+    },
+    "blocked": {
+      "kind": "binary",
+      "winner": "aware_ridge",
+      "eligible": [
+        "team_ridge",
+        "aware_ridge"
+      ],
+      "m_team": 200.0,
+      "m_own": 50.0,
+      "own_prior": "position",
+      "features": {
+        "team_ridge": [
+          "off_rate_c",
+          "def_rate_c",
+          "score_diff",
+          "sec_remaining",
+          "cand_is_home",
+          "neutral_site"
+        ],
+        "aware_ridge": [
+          "off_rate_c",
+          "def_rate_c",
+          "score_diff",
+          "sec_remaining",
+          "cand_is_home",
+          "neutral_site",
+          "own_share_c",
+          "sc_rim",
+          "sc_three"
+        ],
+        "lgbm": [
+          "off_rate_c",
+          "def_rate_c",
+          "score_diff",
+          "sec_remaining",
+          "cand_is_home",
+          "neutral_site",
+          "own_share_c",
+          "sc_rim",
+          "sc_three"
+        ]
+      },
+      "ridge_coefficients": {
+        "team_ridge": {
+          "off_rate_c": 0.07523,
+          "def_rate_c": 0.19492,
+          "score_diff": 0.00936,
+          "sec_remaining": -0.0215,
+          "cand_is_home": 0.07023,
+          "neutral_site": -0.00398
+        },
+        "aware_ridge": {
+          "off_rate_c": 0.03019,
+          "def_rate_c": 0.1879,
+          "score_diff": 0.02034,
+          "sec_remaining": -0.0162,
+          "cand_is_home": 0.07537,
+          "neutral_site": 0.00047,
+          "own_share_c": 0.05784,
+          "sc_rim": 0.60312,
+          "sc_three": -0.86803
+        }
+      },
+      "rng_family": "attr_block"
     }
   }
 }
