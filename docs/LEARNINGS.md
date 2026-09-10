@@ -124,3 +124,15 @@ For the sim: CFB's rule ("team identity beyond the coach is zero, key tendencies
 In 2024-25 only, "JumpShot" attempts following an offensive rebound sit a median 0.55 ft from the basket (9 ft in every other season), snapped to the same canned coordinate as TipShot rows; 50% within 1 ft vs < 1% elsewhere. hoopR's independent pbp carries the identical label, so the defect is upstream at ESPN. Box-score reconciliation of 3PA/2PA/FTA/OREB/TOV shows no 2025-specific degradation, so the defect is confined to the rim/jumper split. Evidence: `docs/tests/shot_classification_diag_2026-09-10.md`.
 
 For the sim: rim vs jumper is classified with a location override whose threshold is derived from the release-distance distribution of dunks/layups (round 2 of L3). Team style features for first chances are built from first-chance events or box scores only, so continuation labels cannot contaminate them. This is a data fix at the source of the error, the opposite of an output patch.
+
+## L17. Rebounding is a team-level sub-model; dead balls are a fixed share (2026-09-10)
+
+F2 winner: LightGBM with miss type and game state (log loss 0.6456, worst decile gap 1.96 pp, responsive 4/4). Adding the on-floor five's individual rebound rates gains 0.88-1.11 noise floors on the 2024->2025 fold, a straddle, not a win; fitted individual-rate shrinkage 50 pseudo-opportunities. Dead-ball rebounds (< 1% of misses) as a fixed per-miss-type share cost 0.49 floors vs a third class. OREB% drifted 28.0% -> 29.6% across 2022-2025 and every arm carries that level miss (L11, third sub-model). Evidence: `docs/models/rebound/experiments.md`.
+
+For the sim: rebounds are drawn at team level given miss type and state; per-player as-of rates are used for attribution in the player layer only. Dead balls are a deterministic share. Season-level drift is handled by the training scheme chosen in L3 round 2, not by a term added here.
+
+## L18. Free-throw make probability is a shooter-identity model; no bonus-rule era boundary in the data (2026-09-10)
+
+F2 winner: LightGBM on shooter as-of features (log loss 0.5753, gap 1.27 pp) beating empirical-Bayes shrinkage by 3.6 floors; the team-level arm fails by 6.8 pp, almost all shape (it cannot separate a 90% shooter from a 55% one). Fitted shrinkage prior = position group, m = 30 pseudo-attempts, on both folds; the position prior beats the prior-season prior on transfers (L15). Bonus thresholds re-derived per season land at the 7th and 10th team foul in every season 2022-2026; the pre-registered 2024-25 rule change is not in the data. FT attempts per game 34.8 -> 40.8 with the one-and-one share flat at ~28%. Rule violations 2.4-2.7% of trips (ESPN never logging the FGA). Evidence: `docs/models/free_throw/experiments.md`.
+
+For the sim: trip structure is deterministic by rule from GameState's foul counts (thresholds read from `bonus_era.json`, one pair for all seasons); make probability per attempt keyed on the shooter's CBBD id with the ESPN id attached where it resolves.

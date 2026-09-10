@@ -1,0 +1,33 @@
+{
+ "built_at": "2026-09-10 14:13",
+ "by_season": {
+  "2022": {
+   "bonus_prior_fouls": 6,
+   "double_bonus_prior_fouls": 9,
+   "derived_from": "one-attempt-trip miss share by prior foul count"
+  },
+  "2023": {
+   "bonus_prior_fouls": 6,
+   "double_bonus_prior_fouls": 9,
+   "derived_from": "one-attempt-trip miss share by prior foul count"
+  },
+  "2024": {
+   "bonus_prior_fouls": 6,
+   "double_bonus_prior_fouls": 9,
+   "derived_from": "one-attempt-trip miss share by prior foul count"
+  },
+  "2025": {
+   "bonus_prior_fouls": 6,
+   "double_bonus_prior_fouls": 9,
+   "derived_from": "one-attempt-trip miss share by prior foul count"
+  },
+  "2026": {
+   "bonus_prior_fouls": 6,
+   "double_bonus_prior_fouls": 9,
+   "derived_from": "one-attempt-trip miss share by prior foul count"
+  }
+ },
+ "n_distinct_threshold_pairs": 1,
+ "era_boundary_detected": false,
+ "note": "THE ENGINE READS THIS INTO GameState (CLAUDE.md: rule-era flags live in GameState, not baked into sub-models). No fitted object in cbb_sim.models.free_throw carries a season-specific rule constant."
+}
