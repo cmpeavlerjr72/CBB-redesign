@@ -79,3 +79,17 @@ Every major design decision, the reasoning, and the alternatives considered. For
 **Alternative considered:** Mixture or skewed families for the game-level count. Rejected: it models the symptom of a clock process the engine already simulates.
 
 **Risk acknowledged:** G1 now depends on the clock-consumption model being right by state; L5 carries a by-month and by-terminal-event duration gate.
+
+---
+
+## Decision 8: Responsiveness gate must test slope, not only step monotonicity (2026-09-10)
+
+**Decision:** The responsiveness gate in every bake-off is: (a) slope ratio of predicted-vs-actual across driver quintiles within [0.8, 1.2], AND (b) monotone in at least 3 of 4 quintile steps, with the 4-of-4 requirement dropped when the driver's realised quintile span is below 2 pp (the steps are then noise). Applies to every driver (shooter, team, defence). This supersedes the steps-only wording used in the fg_make, usage, rebound, free_throw and possession_outcome pre-registrations.
+
+**Why:** In the fg_make FGA_3 bake-off the steps-only gate selected the team-level baseline, whose shooter slope ratio is 0.0086 (0.31 pp predicted span against 35.9 pp realised), over LightGBM (slope 0.988, 92 noise floors better on log loss) because the tree dipped at one interior step on a defence driver with a 1.37 pp total span. A gate that admits a flat model violates the standing matchup-specific rule ("must slope with actuals, not sit flat at the mean"); the gate was mis-specified, not the model.
+
+**How the amendment is applied honestly:** It is generic and prospective. For already-decided models it is re-applied mechanically and the effect recorded in each experiments.md: every previously adopted winner already had slope ratios inside [0.8, 1.2] (rebound 0.96/1.10; free throw 0.977; usage 4/4 with slopes near 1; possession outcome 0.97-1.02), so no earlier winner changes. FGA_3 changes from team_baseline to LightGBM under the corrected gate, and both readings stay on record.
+
+**Alternative considered:** Leaving the steps-only rule and shipping the flat FGA_3 model. Rejected: it fails the standing rule and the G4 oracle-tercile check showed the too-narrow-spread signature sourced in exactly that decision.
+
+**Risk acknowledged:** Amending a gate after seeing a result is the kind of act the bake-off rule exists to prevent. The mitigation is that the amendment is stated as a general rule, applied to all prior decisions with the effect reported, and this entry exists.

@@ -1,0 +1,238 @@
+{
+ "fold": "F1 (train 2022+2023, test 2024)",
+ "by_class": {
+  "FGA_rim": {
+   "rows": [
+    {
+     "rung": 0,
+     "override": "(base)",
+     "num_leaves": 63,
+     "min_child_samples": 400,
+     "n_estimators": 400,
+     "learning_rate": 0.06,
+     "reg_lambda": 1.0,
+     "F1_log_loss": 0.646132,
+     "fit_s": 7.3
+    },
+    {
+     "rung": 1,
+     "override": "{\"num_leaves\": 31, \"min_child_samples\": 200}",
+     "num_leaves": 31,
+     "min_child_samples": 200,
+     "n_estimators": 400,
+     "learning_rate": 0.06,
+     "reg_lambda": 1.0,
+     "F1_log_loss": 0.645369,
+     "fit_s": 3.3
+    },
+    {
+     "rung": 2,
+     "override": "{\"num_leaves\": 127, \"min_child_samples\": 800}",
+     "num_leaves": 127,
+     "min_child_samples": 800,
+     "n_estimators": 400,
+     "learning_rate": 0.06,
+     "reg_lambda": 1.0,
+     "F1_log_loss": 0.648375,
+     "fit_s": 8.1
+    },
+    {
+     "rung": 3,
+     "override": "{\"n_estimators\": 800, \"learning_rate\": 0.03}",
+     "num_leaves": 63,
+     "min_child_samples": 400,
+     "n_estimators": 800,
+     "learning_rate": 0.03,
+     "reg_lambda": 1.0,
+     "F1_log_loss": 0.645448,
+     "fit_s": 9.6
+    },
+    {
+     "rung": 4,
+     "override": "{\"num_leaves\": 15, \"min_child_samples\": 100, \"n_estimators\": 800, \"learning_rate\": 0.03}",
+     "num_leaves": 15,
+     "min_child_samples": 100,
+     "n_estimators": 800,
+     "learning_rate": 0.03,
+     "reg_lambda": 1.0,
+     "F1_log_loss": 0.646236,
+     "fit_s": 6.6
+    },
+    {
+     "rung": 5,
+     "override": "{\"reg_lambda\": 20.0, \"num_leaves\": 63, \"min_child_samples\": 800}",
+     "num_leaves": 63,
+     "min_child_samples": 800,
+     "n_estimators": 400,
+     "learning_rate": 0.06,
+     "reg_lambda": 20.0,
+     "F1_log_loss": 0.646244,
+     "fit_s": 7.1
+    }
+   ],
+   "winner_rung": 1,
+   "winner_override": "{\"num_leaves\": 31, \"min_child_samples\": 200}",
+   "winner_F1_log_loss": 0.645369
+  },
+  "FGA_jump2": {
+   "rows": [
+    {
+     "rung": 0,
+     "override": "(base)",
+     "num_leaves": 63,
+     "min_child_samples": 400,
+     "n_estimators": 400,
+     "learning_rate": 0.06,
+     "reg_lambda": 1.0,
+     "F1_log_loss": 0.644331,
+     "fit_s": 4.2
+    },
+    {
+     "rung": 1,
+     "override": "{\"num_leaves\": 31, \"min_child_samples\": 200}",
+     "num_leaves": 31,
+     "min_child_samples": 200,
+     "n_estimators": 400,
+     "learning_rate": 0.06,
+     "reg_lambda": 1.0,
+     "F1_log_loss": 0.643098,
+     "fit_s": 4.7
+    },
+    {
+     "rung": 2,
+     "override": "{\"num_leaves\": 127, \"min_child_samples\": 800}",
+     "num_leaves": 127,
+     "min_child_samples": 800,
+     "n_estimators": 400,
+     "learning_rate": 0.06,
+     "reg_lambda": 1.0,
+     "F1_log_loss": 0.64716,
+     "fit_s": 17.3
+    },
+    {
+     "rung": 3,
+     "override": "{\"n_estimators\": 800, \"learning_rate\": 0.03}",
+     "num_leaves": 63,
+     "min_child_samples": 400,
+     "n_estimators": 800,
+     "learning_rate": 0.03,
+     "reg_lambda": 1.0,
+     "F1_log_loss": 0.643807,
+     "fit_s": 25.0
+    },
+    {
+     "rung": 4,
+     "override": "{\"num_leaves\": 15, \"min_child_samples\": 100, \"n_estimators\": 800, \"learning_rate\": 0.03}",
+     "num_leaves": 15,
+     "min_child_samples": 100,
+     "n_estimators": 800,
+     "learning_rate": 0.03,
+     "reg_lambda": 1.0,
+     "F1_log_loss": 0.643133,
+     "fit_s": 5.1
+    },
+    {
+     "rung": 5,
+     "override": "{\"reg_lambda\": 20.0, \"num_leaves\": 63, \"min_child_samples\": 800}",
+     "num_leaves": 63,
+     "min_child_samples": 800,
+     "n_estimators": 400,
+     "learning_rate": 0.06,
+     "reg_lambda": 20.0,
+     "F1_log_loss": 0.644814,
+     "fit_s": 5.4
+    }
+   ],
+   "winner_rung": 1,
+   "winner_override": "{\"num_leaves\": 31, \"min_child_samples\": 200}",
+   "winner_F1_log_loss": 0.643098
+  },
+  "FGA_3": {
+   "rows": [
+    {
+     "rung": 0,
+     "override": "(base)",
+     "num_leaves": 63,
+     "min_child_samples": 400,
+     "n_estimators": 400,
+     "learning_rate": 0.06,
+     "reg_lambda": 1.0,
+     "F1_log_loss": 0.563037,
+     "fit_s": 5.9
+    },
+    {
+     "rung": 1,
+     "override": "{\"num_leaves\": 31, \"min_child_samples\": 200}",
+     "num_leaves": 31,
+     "min_child_samples": 200,
+     "n_estimators": 400,
+     "learning_rate": 0.06,
+     "reg_lambda": 1.0,
+     "F1_log_loss": 0.5624,
+     "fit_s": 5.0
+    },
+    {
+     "rung": 2,
+     "override": "{\"num_leaves\": 127, \"min_child_samples\": 800}",
+     "num_leaves": 127,
+     "min_child_samples": 800,
+     "n_estimators": 400,
+     "learning_rate": 0.06,
+     "reg_lambda": 1.0,
+     "F1_log_loss": 0.564971,
+     "fit_s": 21.3
+    },
+    {
+     "rung": 3,
+     "override": "{\"n_estimators\": 800, \"learning_rate\": 0.03}",
+     "num_leaves": 63,
+     "min_child_samples": 400,
+     "n_estimators": 800,
+     "learning_rate": 0.03,
+     "reg_lambda": 1.0,
+     "F1_log_loss": 0.562812,
+     "fit_s": 25.2
+    },
+    {
+     "rung": 4,
+     "override": "{\"num_leaves\": 15, \"min_child_samples\": 100, \"n_estimators\": 800, \"learning_rate\": 0.03}",
+     "num_leaves": 15,
+     "min_child_samples": 100,
+     "n_estimators": 800,
+     "learning_rate": 0.03,
+     "reg_lambda": 1.0,
+     "F1_log_loss": 0.563151,
+     "fit_s": 10.3
+    },
+    {
+     "rung": 5,
+     "override": "{\"reg_lambda\": 20.0, \"num_leaves\": 63, \"min_child_samples\": 800}",
+     "num_leaves": 63,
+     "min_child_samples": 800,
+     "n_estimators": 400,
+     "learning_rate": 0.06,
+     "reg_lambda": 20.0,
+     "F1_log_loss": 0.563496,
+     "fit_s": 11.9
+    }
+   ],
+   "winner_rung": 1,
+   "winner_override": "{\"num_leaves\": 31, \"min_child_samples\": 200}",
+   "winner_F1_log_loss": 0.5624
+  }
+ },
+ "frozen_params": {
+  "FGA_rim": {
+   "num_leaves": 31,
+   "min_child_samples": 200
+  },
+  "FGA_jump2": {
+   "num_leaves": 31,
+   "min_child_samples": 200
+  },
+  "FGA_3": {
+   "num_leaves": 31,
+   "min_child_samples": 200
+  }
+ }
+}
