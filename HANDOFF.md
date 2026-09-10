@@ -11,7 +11,9 @@ What happened (numbered):
 
 6. Control engine, pace bake-off, pbp pull, possessions layer, coaches, variance decomposition, L3 bake-off all landed (see PROJECT_STATUS.md). Commits through 5a1ef86.
 
-Still running / resume-safe: shot-classification diagnostic -> docs/tests/shot_classification_diag_2026-09-10.md; clock bake-off -> docs/models/clock/; rotation bake-off -> docs/models/rotation/ (+ player crosswalk src/cbb_sim/data/player_ids.py). Each writes its own docs and artifacts; PM commits after review.
+7. Later on day 1: rebound, free throw, usage, fg_make bake-offs decided (all LightGBM winners; Decision 8 amended the responsiveness gate to test slope). Eval harness, preseason 2027, daily chain landed. Commits through 43cc21e.
+
+Still running / resume-safe (2026-09-10 evening): clock round 2, rotation round 2, possession-outcome round 2 (S1 walk-forward refit winning), engine v0 assembly (src/cbb_sim/engine/, results/engine_v0/), player attribution bake-off (docs/models/attribution/). Earlier: shot-classification diagnostic -> docs/tests/shot_classification_diag_2026-09-10.md; clock bake-off -> docs/models/clock/; rotation bake-off -> docs/models/rotation/ (+ player crosswalk src/cbb_sim/data/player_ids.py). Each writes its own docs and artifacts; PM commits after review.
 
 Refuted this session: game-level pace as a sampler (L14); independent count draws (L10); CBBD season ratings as pregame features (L7); CFB's "team-beyond-coach = 0" for CBB (L15).
 
