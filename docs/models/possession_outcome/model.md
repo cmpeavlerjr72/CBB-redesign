@@ -1,9 +1,17 @@
 # L3 POSSESSION-OUTCOME
 
-Status: **BAKE-OFF RUN 2026-09-10 -- NO ARM ADOPTED.** Every arm failed the pre-registered
-per-class calibration gate on the fold-2 test season. The failure is a level error, not a shape
-error, and it is L11 reappearing one layer down. Nothing is shipped and no post-hoc correction is
-applied. Numbers: `experiments.md` section 3. Features: `features.md`.
+Status: **ROUND 2 RUN 2026-09-10 -- WINNER ON BOTH POPULATIONS.**
+`lgbm` + `C_plus_state` + training scheme **`S1`** on the `first`
+population (F2 log loss 1.51543, worst gated decile gap
+0.98 pp against a 2.0 pp gate), and
+`cascade` + `C_plus_state` + **`S1`** on `cont`
+(1.49976, 1.86 pp).
+
+Round 1 adopted nothing: 0 of 11 arms cleared the calibration gate. Round 2 changed three things --
+two data fixes in the event layer, a completeness restriction on the universe, and a training-scheme
+dimension -- and the gate now passes. Nothing was tuned on the output; the numbers moved because the
+inputs were repaired and because the fit is allowed to follow the season. Numbers: `experiments.md`
+sections 4-5. Features: `features.md`. Round 1's own record is untouched in section 3.
 
 ## 1. Purpose
 
@@ -55,8 +63,11 @@ share falls across the training window, and 2025 continues both.
 
 ## 3. Methodology at a glance
 
-- **Data window.** Seasons 2022-2025. 3,433,227 modelled chances (2,996,517 first, 436,710
-  continuation).
+- **Data window.** Seasons 2022-2025, `pbp_complete` games only. 3,038,628 modelled chances
+  (2,650,559 first, 388,069 continuation), from possessions
+  `v2` with `first_chance` style rates. Round 1 had 3,433,227 over
+  the same seasons; the completeness restriction costs
+  11.5% of the rows.
 - **Split.** Temporal walk-forward, no random split. F1 trains {2022, 2023} and tests 2024; F2
   trains {2022, 2023, 2024} and tests 2025 and is the selection fold. `assert_not_sealed` fires on
   every train and test slice, so the sealed 2026 season cannot enter a fold even by accident.
@@ -67,6 +78,15 @@ share falls across the training window, and 2025 continues both.
 - **Model families tested.** Multinomial ridge logit; a nested binary GLM cascade (TOV? -> free-throw
   trip? -> bonus vs shooting? -> three? -> rim?); LightGBM multiclass; and a matchup-naive baseline
   (the previous season's league-average shares) as the floor.
+- **Training schemes tested (round 2's new dimension).** S0 static, exactly as round 1. S1 in-season
+  walk-forward: refit at the start of each month of the test season on all prior seasons plus the
+  test season to date, strictly before the refit date, with each test game scored by the most recent
+  refit at or before its own date -- so no game is in its own fit and the test set is identical to
+  S0's. S2 exponential recency weighting on game date, half-life fitted on F1 only over
+  {90, 180, 365, 730} days and applied to F2 unchanged.
+- **Feature set.** `C_plus_state` for every arm -- round 1's best for every model class. A, B and D
+  are not rerun; round 1 already answered that question and rerunning it would spend the fold on a
+  settled comparison.
 - **Gates, applied before any log loss is compared.** Per-class decile calibration (max absolute gap
   <= 2 pp on classes with >= 5% share) and responsiveness (the predicted class share must slope with
   the offence's own as-of rate quintile for 3PA, rim and TOV).
@@ -77,80 +97,32 @@ share falls across the training window, and 2025 continues both.
 
 ## 4. Winner
 
-**There is none.** On F2 every arm's worst per-class decile miscalibration exceeds the 2 pp gate, so
-the pre-registered rule eliminates all of them before log loss is consulted, and the standing rule
-("no hand tuning on engine output") forbids closing the gap with a correction. The exact table is
-`experiments.md` section 3.4.
+**`first` (the primary population): `lgbm` + `C_plus_state` + training scheme `S1`.** F2 log loss 1.51543; worst gated decile gap 0.98 pp against the 2.0 pp gate; responsiveness passes. Tree arm beats the best linear arm by 0.01576 log loss, more than the noise floor 0.00076.
 
-What the numbers say, in relative terms:
+**`cont`: `cascade` + `C_plus_state` + `S1`.** F2 log loss 1.49976; worst gated decile gap 1.86 pp; responsiveness passes. No tree arm passed the gates.
 
-- **The gates are doing their job in the right direction.** Every model arm passes responsiveness
-  with slopes essentially equal to reality (predicted-vs-actual span ratios of 0.97, 1.02 and 0.97
-  for 3PA, rim and TOV, monotone in all four quintile steps). The matchup-naive baseline fails
-  responsiveness, exactly as a flat league-average model should. So the arms are matchup-specific,
-  which is the harder property to get.
-- **The failure is level, not shape, and it is one class.** Only `FGA_jump2` breaches the gate. On
-  the lowest-loss arm its worst decile gap is 2.95 pp, of which 1.80 pp is a flat level shift present
-  in every decile and 1.15 pp is residual shape -- and 1.15 pp alone would pass. `FGA_3` is the
-  mirror image (-1.15 pp level). Every other class is inside 1.1 pp. The arms order chances
-  correctly and put the two-point-jumper rate about a fifth of a shot per game too high.
-- **It is a 2025-specific miss, not a general one.** On F1 (test 2024) every ridge and cascade arm
-  passes the same calibration gate (worst gap 1.07-1.89 pp). It is the 2024 -> 2025 shot-mix step
-  that the model cannot see. LightGBM fails the gate on BOTH folds, so its calibration problem is
-  its own rather than the season's.
-- **The pre-registered season term helps a little and fixes nothing.** Adding `season_idx` and
-  `days_since_start` clears the noise floor by about 1.6x, so the block is recorded KEPT -- but it
-  moves the worst gated calibration gap only from 2.60 pp to 2.13 pp, still above the 2.00 pp gate.
-  A linear season index has almost nothing to extrapolate from: the two-point-jumper share in the
-  three training seasons is 20.1 / 19.8 / 19.9%, essentially flat, and 2025 steps down to 18.1%. The
-  trend the model needs to see is not in the training window.
-- **Game state is the one block that matters.** Going from `B_plus_season` to `C_plus_state` cuts F2
-  log loss by roughly 0.088, two orders of magnitude more than any other block, in every model class.
-  Period, clock, score difference, bonus state and the transition proxy are not decoration.
-- **The tree arm's edge over the best linear arm is real and, by the noise floor, large:** about
-  0.0147 in F2 log loss against a floor of 0.00072, twenty times over. If the calibration gate were
-  passed by everything, LightGBM on `C_plus_state` would win outright rather than on a tie-break. It
-  also has the worst calibration of any arm on `first`, which is why it does not.
-- **The noise floor is small because the test set is large.** Five seed-varied LightGBM refits
-  differ by an SD of 0.00007; a 200-replicate game-block bootstrap of the best linear arm gives an
-  SE of 0.00072. The larger of the two is applied, which is the conservative choice. At 761,593 test
-  chances almost any real difference clears it, so the floor is separating a different fit from a
-  different model rather than hiding differences.
-- **The explicit interaction block is rejected.** On both linear arms the offence x defence product
-  terms move F2 log loss by at most 3e-06, 240 times below the floor (`experiments.md`
-  section 3.9).
+What actually changed, in the order the changes bite:
+
+1. **The `cont` population was never a modelling problem, and now it is not a problem at all.** Round 1's continuation arms failed calibration by 7.3-12.4 pp. That was the 2025 putback mislabel being graded as if it were basketball. With the rim-location override the same arms sit at 1.70-6.70 pp. A 6.5 pp data defect was doing all of that work.
+2. **On `first`, the data fixes alone moved the linear arms inside the gate.** `ridge_logit` under the SAME static scheme round 1 ran goes from 2.06 pp (FAIL) to 1.94 pp (PASS) on the same fold, with no scheme change involved. That is the `off_rim_c` contamination channel and the `pbp_complete` restriction, not the training scheme.
+3. **The training scheme is what carries the TREE arm across.** `lgbm` + `C_plus_state` is the lowest-loss arm in both rounds and failed the gate in both static fits (2.78 pp under S0 here, 2.95 pp in round 1). Under S1 its worst gap collapses to 0.98 pp. The log-loss gain from S1 is small (+0.00136); the CALIBRATION gain is the whole result. That is exactly the level-vs-shape decomposition round 1 reported as its finding: a static fit gets the class LEVELS of a new season wrong, and letting the fit see the season to date fixes the level rather than the ordering.
+4. **S2 is not the answer, and its half-life says why.** Exponential recency weighting is inside the noise on both linear arms and makes `lgbm` slightly WORSE on `first` (+0.00067 vs S0). The fitted half-lives are long -- first/ridge_logit 730d, first/cascade 365d, first/lgbm 365d, cont/ridge_logit 730d, cont/cascade 730d, cont/lgbm 730d -- i.e. F1 asked for almost no down-weighting. Down-weighting old seasons is not the same operation as seeing the current one, and only the second helps.
+
+Noise floor and margins:
+
+* `first`: floor **0.000763** (tree seed SD nan over 5 refits that each replay the whole monthly schedule; linear game-block bootstrap SE 0.000763). The winning tree arm beats the best gate-passing linear arm by **+0.01576**, 21x the floor, so the tree arm wins on the pre-registered rule rather than on a tie-break.
+* `cont`: floor **0.001982**. No tree arm passed the gates at all -- every `lgbm` continuation cell is still 5.4-8.8 pp miscalibrated -- so the rule hands `cont` to the best gate-passing linear arm.
+
+**The same scheme wins both populations**, which matters beyond this model: the round-2 pre-registration says that if S1 or S2 wins, that scheme becomes the default for every later sub-model unless its own bake-off says otherwise. S1 does, on both.
 
 ## 5. Robustness check
 
-By-state calibration of the lowest-loss arm (transition vs half-court, bonus vs no bonus, late clock
-vs not) is in `experiments.md` section 3.8. Two segments are worth flagging:
+By-state calibration of the winning `first` arm (transition vs half-court, bonus vs no bonus, late clock vs not) and its per-class decile table are in `experiments.md` section 5.7; the `cont` equivalents are in 5.8. Four things are worth flagging rather than leaving in the table:
 
-- **Transition.** The rim share is under-predicted in transition by about 1.5 pp. The
-  `is_transition` feature is a duration proxy (`duration_s <= 8` after a defensive rebound or
-  turnover), not an observed flag, and it is measured on the chance that is being predicted -- it
-  describes how the possession turned out, not what was known at its start. That is a design problem
-  in the feature, not evidence about the model, and it is called out as a followup rather than
-  patched.
-- **Bonus.** Log loss is materially worse inside the bonus than outside it. That is expected: two of
-  the six classes only exist there, so the conditional distribution is genuinely harder, and roughly
-  40% of free-throw trips carry `ft_trip_ambiguous` because the feed cannot separate a two-shot
-  shooting foul from a bonus trip (`docs/tests/possessions_build_2026-09-10.md` section 5). The
-  label noise floors what any model can achieve on those two classes.
-
-The `cont` population is reported separately in `experiments.md` section 3.2. Every arm fails its
-calibration gate there by 6-12 pp -- three to six times worse than on `first` -- and the cause is
-not the model. Building the possession layer surfaced a one-season labelling defect in the feed:
-the rim share of putbacks (the attempt immediately after an offensive rebound) is 53.9 / 55.0 /
-54.5% in 2022-2024, collapses to **44.5% in 2025**, and recovers to 56.3% in 2026. ESPN moved
-`LayUpShot` putbacks into `TipShot` (still a rim attempt) and, in 2025 only, into `JumpShot`
-labelled a two-point jumper. Full evidence: `docs/tests/possessions_build_2026-09-10.md`
-section 3.1.
-
-**2025 is the fold-2 test season, so the `cont` model is trained on clean data and graded against
-relabelled data.** Its numbers are blocked on a data defect and must not be read as a comparison of
-model classes. The `first` verdict is unaffected: first-chance shares move smoothly and
-monotonically across the same boundary and keep moving the same way into 2026, which is the genuine
-league-wide drift toward threes rather than this defect in disguise.
+- **Per class, on `first`, nothing is now near the gate.** The worst gated class is `FGA_jump2` at 0.98 pp. In round 1 `FGA_jump2` alone was 2.95 pp, of which 1.80 pp was a flat level shift; the level component is what the scheme change removed.
+- **Transition.** Round 1 under-predicted the rim share in transition by about 1.5 pp; it is now 0.82 pp. This is NOT a clean win, because `is_transition` is still a duration proxy measured on the chance being predicted (section 9), so the segment describes how the possession turned out rather than what was known at its start. The number improved; the defect did not go away.
+- **Bonus.** Log loss is still materially worse inside the bonus (1.6106) than outside it (1.4743), and that is expected: two of the six classes only exist there, and roughly 40% of free-throw trips carry `ft_trip_ambiguous` because the feed cannot separate a two-shot shooting foul from a bonus trip. That label noise floors what any model can achieve on those two classes and it is unchanged by anything in round 2.
+- **The `cont` population is now a real comparison rather than a graded data defect.** Its arms sit at 1.70-6.70 pp where round 1's sat at 7.3-12.4. What remains is the honest residual: `lgbm` is badly miscalibrated on continuation chances under every scheme (5.4-8.8 pp) while the linear arms are not, on 388k rows against 2.65M -- a tree with fixed hyperparameters on a tenth of the data.
 
 ## 6. Decisions log
 
@@ -170,25 +142,48 @@ league-wide drift toward threes rather than this defect in disguise.
   otherwise give a noisy denominator disproportionate weight.
 - **A team with no prior games gets exactly 0.0 on every centred rate**, which IS the league mean.
   No prior is fabricated and no team is dropped.
-- **Nothing is adopted, and no level correction is applied.** The obvious "fix" -- shifting the class
-  probabilities to match the test season's observed shares -- is precisely the post-hoc calibration
-  curve `CLAUDE.md` bans, and it would be fitted on the answer. The correct next step is a model
-  change (recency weighting, a season-level random effect, or a preseason refit), pre-registered
-  before it is run.
+- **The round-1 level miss was fixed by changing the FIT, never the OUTPUT.** The obvious "fix" --
+  shifting the class probabilities to match the test season's observed shares -- is precisely the
+  post-hoc calibration curve `CLAUDE.md` bans, and it would be fitted on the answer. What round 2
+  did instead is let the estimator see the test season as it happens (S1) and repair the labels and
+  the universe it trains on. No probability produced by this model is adjusted after it is produced.
+- **The winning scheme refits monthly, and that is an operational commitment, not just a number.**
+  S1 is the least simple of the three schemes and it won anyway, on both populations, by more than
+  the noise floor on `first` and by being the only gate-passing configuration of the best arm. The
+  cost is that the deployed model is a schedule: it has to be refit at each month boundary of the
+  live season, and a stale artifact silently reverts to something close to S0. The persisted pickle
+  is the LAST refit only and its payload says so.
+- **S2 was run and lost, and the reason is recorded rather than inferred.** Its half-life was fitted
+  on F1 only -- fitting it on F2 would have been selecting on the answer -- and F1 chose long
+  half-lives (365-730 days) on every arm, i.e. almost no down-weighting. Down-weighting old seasons
+  is a different operation from seeing the current one, and only the second addresses a level miss
+  in a season the training window has never seen.
+- **The feature set was not re-searched.** Round 1 settled `C_plus_state` for every model class, and
+  round 2 reuses it rather than reopening a settled comparison on the same fold. Re-running A/B/D
+  against a changed event layer would have been a second bite at the selection fold.
 
 ## 7. Consumption from the sim
 
-No artifact is adopted, so nothing should be wired into the engine from this run. The lowest-loss
-arm is persisted as `reference_not_adopted_{population}.pkl` with `adopted=False` in its payload,
-purely so the next iteration has something to diff against. When an arm does pass the gates, the
-call shape is:
+Round 2 adopts an arm on both populations, so `winner_first.pkl` and `winner_cont.pkl` under
+`data/processed/models/possession_outcome/round2/` carry `adopted=True`. Two things about them are
+not optional to read:
+
+- **The winning scheme is S1, and a pickle cannot be a schedule.** What is persisted is the LAST
+  monthly refit -- the one a deployment carries forward -- plus the full refit schedule in the same
+  payload (`s1_refit_schedule`, `s1_last_refit_date`). Wiring the pickle in and never refitting is
+  NOT the model that was selected; it degrades toward S0, which failed the calibration gate.
+- **The payload records its own provenance** (`possessions_version`, `style_source`,
+  `require_pbp_complete`). An artifact built on possessions v1, or on all-chances style rates, is a
+  different model from the one graded here.
+
+The call shape:
 
 ```python
 import pickle
 import numpy as np
 from cbb_sim.models import possession_outcome as PO
 
-with open("data/processed/models/possession_outcome/winner_first.pkl", "rb") as fh:
+with open("data/processed/models/possession_outcome/round2/winner_first.pkl", "rb") as fh:
     art = pickle.load(fh)
 
 # art["features"] is the exact feature order; art["classes"] is the class order.
@@ -233,31 +228,12 @@ that neither run can overwrite the other's record.
 
 ## 9. Known gaps and followups
 
-1. **The season-drift level miss is the blocking defect.** Candidate fixes, to be pre-registered and
-   baked off before any is run: recency-weighted training (exponential decay on game date), a
-   season-level random effect fitted on the training seasons and carried forward, a preseason refit
-   on the most recent season only, or a target reparametrised as a deviation from the offence's own
-   as-of shares (which absorbs the league level by construction). The last of these is the most
-   promising and the most invasive.
-2. **`is_transition` is contemporaneous with the outcome it predicts.** It is derived from the
-   chance's own duration, so it is not available at the chance's start. It must be replaced by a
-   pre-chance definition (the previous possession's terminal event plus the seconds elapsed since
-   the change of possession) before this model is used inside the engine, and the leak test must be
-   extended to cover it.
-3. **`ft_trip_ambiguous` is label noise on two classes**, ~40% of free-throw trips. It bounds the
-   achievable calibration on `FT_trip_shooting` and `FT_trip_bonus` and should be quantified as a
-   noise floor for those classes specifically.
-4. **The 2025 putback mislabelling blocks the `cont` model** (section 5). The fix is a
-   pre-registered choice between collapsing `FGA_rim` and `FGA_jump2` into one two-point class for
-   continuation chances, excluding 2025 from the `cont` folds and re-folding, or re-deriving the
-   rim/jumper boundary from a signal stable across the break. It is not a relabelling rule invented
-   after seeing the numbers.
-5. **No lineup features.** Deliberately out of scope here (they exist only from 2023-24, L13) and
-   the subject of L4.
-6. **Defence-allowed rates are unadjusted for opponent quality.** The own ridge ratings in the same
-   bundle carry the schedule adjustment, so the two are not redundant, but a properly adjusted style
-   rate is a cleaner feature.
-7. **CBBD feed incompleteness in 2022-2023.** 19% of games in those seasons are missing scoring
-   plays from the CBBD stream (`docs/tests/possessions_build_2026-09-10.md` section 2). Those games
-   are in the training window. A CBBD-side truncation flag, and a re-run excluding them, is a
-   followup that could move the training distribution slightly.
+1. **`is_transition` is still contemporaneous with the outcome it predicts.** It is derived from the chance's own duration, so it is not available at the chance's start. It must be replaced by a pre-chance definition (the previous possession's terminal event plus the seconds elapsed since the change of possession) before this model is used inside the engine, and the leak test must be extended to cover it. Round 2 did not touch it, and the by-state transition number in section 5 must be read with that in mind. This is the largest outstanding defect in the feature set.
+2. **S1's operational cost is real.** The winner refits at each month boundary. That has to be in the pipeline, not in a person's memory, and a monitoring check should assert that the deployed artifact's `s1_last_refit_date` is the current month.
+3. **`ft_trip_ambiguous` is label noise on two classes**, ~40% of free-throw trips. It bounds the achievable calibration on `FT_trip_shooting` and `FT_trip_bonus` and should be quantified as a per-class noise floor; nothing in round 2 addressed it.
+4. **The override cannot reach unlocated rows.** 12-22% of two-point jumper rows in 2022-2024 carry no shot-chart coordinates and keep the feed's label. That is a miss rather than a false positive -- the conservative direction -- but it means the repair is not complete in the early seasons. `docs/tests/possessions_build_v2_2026-09-10.md` section 3.1 reports the counts.
+5. **`pbp_complete` costs 21% of 2022 and 2023.** The restriction is right for a model that trains on events, but it shrinks the two oldest training seasons the most, which is the opposite of what a drift-sensitive model wants. Whether those games can be repaired rather than dropped (a second feed, hoopR's own event stream) is a followup.
+6. **`lgbm` is unusable on `cont`** under every scheme (5.4-8.8 pp miscalibration) while the linear arms pass. Fixed hyperparameters on 388k rows is the likely cause; a `cont`-specific capacity setting would be a new pre-registration, not a tweak.
+7. **No lineup features.** Deliberately out of scope here (they exist only from 2023-24, L13) and the subject of L4.
+8. **Defence-allowed rates are unadjusted for opponent quality.** The own ridge ratings in the same bundle carry the schedule adjustment, so the two are not redundant, but a properly adjusted style rate is a cleaner feature.
+9. **An offline winner still has to survive a paired-seed sim run** before it ships (`CLAUDE.md`): nothing here has been through the engine yet.
