@@ -1,6 +1,9 @@
 # control_engine
 
-Status: BUILDING (spec pre-registered 2026-09-10, before any code).
+Status: BUILT AND GATED (spec pre-registered 2026-09-10 before any code; built, run and graded
+2026-09-10). Results, fitted parameters and the two decisions this yardstick was asked to make
+are in `experiments.md`; the gate report is `docs/tests/control_engine_F2_2026-09-10.md`; the
+feature inventory is `features.md`. Status history: `docs/models/change_ledger.md`.
 
 ## 1. Purpose
 

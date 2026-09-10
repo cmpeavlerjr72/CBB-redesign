@@ -1,0 +1,185 @@
+{
+  "created_at": "2026-09-10T13:56:05.967197+00:00",
+  "fold": "F2",
+  "anchor": "B_kp",
+  "train_seasons": [
+    2022,
+    2023,
+    2024
+  ],
+  "test_seasons": [
+    2025
+  ],
+  "n_games_train": 16651,
+  "n_team_games_train": 33302,
+  "team_features": [
+    "own_kp_adj_o_c",
+    "own_kp_adj_d_c",
+    "own_kp_adj_t_rel",
+    "opp_kp_adj_o_c",
+    "opp_kp_adj_d_c",
+    "opp_kp_adj_t_rel",
+    "site_home",
+    "site_away",
+    "days_since_start"
+  ],
+  "pace_features": [
+    "pace_kp_t_sum",
+    "pace_kp_o_sum",
+    "pace_kp_d_sum",
+    "neutral",
+    "days_since_start"
+  ],
+  "negbin_rule": "NegBin iff Poisson training deviance/df > 1.2",
+  "pace": {
+    "family": "gaussian",
+    "fitted_resid_sd": 4.661778831658696,
+    "r2": 0.2876485599041766,
+    "coef": {
+      "intercept": -37.682488959667374,
+      "pace_kp_t_sum": 53.49118532501789,
+      "pace_kp_o_sum": 0.02196969135255811,
+      "pace_kp_d_sum": 0.02485839944258639,
+      "neutral": -0.10109207411633786,
+      "days_since_start": -0.017549282710902295
+    }
+  },
+  "rates": {
+    "tpa": {
+      "family": "negbin",
+      "poisson_deviance_df": 1.5931213552704502,
+      "fitted_negbin_alpha": 0.026601904919289154,
+      "mean_per_100": 31.718785460993374,
+      "coef": {
+        "intercept": 3.9824812946880606,
+        "own_kp_adj_o_c": 0.008407516835078777,
+        "own_kp_adj_d_c": 0.004770231912956113,
+        "own_kp_adj_t_rel": -0.48278409462194166,
+        "opp_kp_adj_o_c": 0.0021042379199017695,
+        "opp_kp_adj_d_c": 0.0041783950196347605,
+        "opp_kp_adj_t_rel": -0.05802054410369029,
+        "site_home": 0.02271642100594097,
+        "site_away": 0.019091695621413423,
+        "days_since_start": -6.764434481227962e-05
+      }
+    },
+    "fg2a": {
+      "family": "negbin",
+      "poisson_deviance_df": 1.261238568824692,
+      "fitted_negbin_alpha": 0.006825575765262737,
+      "mean_per_100": 53.01382968933509,
+      "coef": {
+        "intercept": 3.8774738940592064,
+        "own_kp_adj_o_c": -0.0021867542379198383,
+        "own_kp_adj_d_c": -0.0038110258574213084,
+        "own_kp_adj_t_rel": 0.12239010727870334,
+        "opp_kp_adj_o_c": 0.0019551738011903226,
+        "opp_kp_adj_d_c": 0.0021460192579402593,
+        "opp_kp_adj_t_rel": -0.039895982834376016,
+        "site_home": -0.011792555336957824,
+        "site_away": -0.00016408401956636816,
+        "days_since_start": 0.00023109695104963165
+      }
+    },
+    "fta": {
+      "family": "negbin",
+      "poisson_deviance_df": 2.570631290751656,
+      "fitted_negbin_alpha": 0.08237124871107325,
+      "mean_per_100": 26.73393573304022,
+      "coef": {
+        "intercept": 2.312672910936088,
+        "own_kp_adj_o_c": 0.0020685641902763335,
+        "own_kp_adj_d_c": -0.0057010014601060685,
+        "own_kp_adj_t_rel": 0.5996486514014868,
+        "opp_kp_adj_o_c": -0.010547190447376904,
+        "opp_kp_adj_d_c": -0.000640178675351653,
+        "opp_kp_adj_t_rel": 0.37711238808825265,
+        "site_home": 0.025406291924118807,
+        "site_away": -0.08516070706299102,
+        "days_since_start": 0.00025130959302904207
+      }
+    },
+    "tov": {
+      "family": "poisson",
+      "poisson_deviance_df": 1.0610479963739659,
+      "fitted_negbin_alpha": null,
+      "mean_per_100": 18.038154073848844,
+      "coef": {
+        "intercept": 2.4196948050406686,
+        "own_kp_adj_o_c": -0.00973591346057655,
+        "own_kp_adj_d_c": -0.0003049949328926034,
+        "own_kp_adj_t_rel": 0.17354373007830096,
+        "opp_kp_adj_o_c": -0.005296411202076576,
+        "opp_kp_adj_d_c": -0.01128031810751175,
+        "opp_kp_adj_t_rel": 0.3700528376087631,
+        "site_home": -0.037378989190059116,
+        "site_away": 0.015024401746267773,
+        "days_since_start": -0.0009598608817364944
+      }
+    }
+  },
+  "pcts": {
+    "tp_pct": {
+      "family": "betabinomial",
+      "fitted_betabinom_rho": 3.2168259730439405e-07,
+      "pooled_rate": 0.3381553620690853,
+      "mean_trials": 21.606660260645008,
+      "binomial_pearson_dispersion": 1.0004444165426163,
+      "coef": {
+        "intercept": -0.8492534198042603,
+        "own_kp_adj_o_c": 0.008783673078367126,
+        "own_kp_adj_d_c": -0.00021453845813690776,
+        "own_kp_adj_t_rel": -0.07809400662919279,
+        "opp_kp_adj_o_c": -0.002915690217140381,
+        "opp_kp_adj_d_c": 0.007315703075735352,
+        "opp_kp_adj_t_rel": 0.18816233101522992,
+        "site_home": 0.06314086232777562,
+        "site_away": 0.021192962949402355,
+        "days_since_start": 0.0004140741099886712
+      }
+    },
+    "fg2_pct": {
+      "family": "betabinomial",
+      "fitted_betabinom_rho": 0.0024230566316481308,
+      "pooled_rate": 0.5004149253383845,
+      "mean_trials": 36.11272596240466,
+      "binomial_pearson_dispersion": 1.0855841840860923,
+      "coef": {
+        "intercept": -0.4180876120836897,
+        "own_kp_adj_o_c": 0.014361006025712079,
+        "own_kp_adj_d_c": -0.003254833294879656,
+        "own_kp_adj_t_rel": 0.2590896259377085,
+        "opp_kp_adj_o_c": -0.003637078306466323,
+        "opp_kp_adj_d_c": 0.014441882890851047,
+        "opp_kp_adj_t_rel": 0.12378839189298838,
+        "site_home": 0.0655534276352983,
+        "site_away": -0.007287980813291119,
+        "days_since_start": 0.00015352489162390867
+      }
+    },
+    "ft_pct": {
+      "family": "betabinomial",
+      "fitted_betabinom_rho": 0.00969193042203709,
+      "pooled_rate": 0.7177206193947528,
+      "mean_trials": 18.212649028499353,
+      "binomial_pearson_dispersion": 1.1826266053604482,
+      "coef": {
+        "intercept": 1.142898329359915,
+        "own_kp_adj_o_c": 0.012544408231343262,
+        "own_kp_adj_d_c": 0.0065162482183796526,
+        "own_kp_adj_t_rel": -0.10799522958618427,
+        "opp_kp_adj_o_c": 0.00020082301348090656,
+        "opp_kp_adj_d_c": 0.0024457089204663403,
+        "opp_kp_adj_t_rel": -0.17939158936841132,
+        "site_home": 0.029716328792907948,
+        "site_away": -0.017605982043935816,
+        "days_since_start": 0.0010499503172976803
+      }
+    }
+  },
+  "artifacts": {
+    "pace": "data\\processed\\models\\control_engine\\pace_F2_B_kp.pkl",
+    "rates": "data\\processed\\models\\control_engine\\rates_F2_B_kp.pkl",
+    "pcts": "data\\processed\\models\\control_engine\\pcts_F2_B_kp.pkl"
+  }
+}

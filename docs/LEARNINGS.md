@@ -51,3 +51,27 @@ For the sim: the season endpoints are banned as pregame features. The per-game E
 CBBD lines: modelled providers only through 2021-22; ESPN BET from 2022-23; open/close split populated only in 2025-26 (93-94% of games). hoopR pbp's embedded spread is frozen at 2.5 from 2023-24 on and is not a line. Evidence: `docs/tests/data_audit_cbbd_2026-09-10.md`, hoopR audit section 8.
 
 For the sim: real-book market grading is possible on 2022-23, 2023-24, 2024-25 (close only) and 2025-26 (open and close, sealed). CLV checks are 2025-26 only.
+
+## L9. Our own as-of ridge ratings tie centred KenPom within seed noise (2026-09-10)
+
+Control engine, fold 2 (2024-25, 5,700 games, 200 seeds): margin MAE own 9.146, KenPom 9.075, both 9.059; seed noise floor 0.05-0.08. Paired SEs put KenPom ~0.07 points ahead (t = 2.4), real but tiny. Leak test on own ratings: change-form corr 0.05 / -0.06 / 0.00. Evidence: `docs/tests/control_engine_F2_2026-09-10.md`, `docs/models/control_engine/experiments.md`.
+
+For the sim: the compliant, self-contained anchor is good enough to be the default; KenPom stays as a bake-off arm for the possession engine. A market-independent rating built from box scores alone is not the bottleneck.
+
+## L10. Independent attempt-count draws are last year's independence bug one level down (2026-09-10)
+
+The four per-100-possession counts are individually calibrated (model SD vs actual within 5-10%), but their residuals correlate -0.56 (3PA/2PA), -0.36 (2PA/TOV), -0.29 (3PA/FTA) because they compete for the same possessions. Drawing them independently gives team-points SD 13.9 vs actual 9.2, margin SD ratio 1.68, home/away score correlation 0.08 vs 0.23, and PIT K-S p = 2e-79. Same evidence file.
+
+For the sim: the Control's point estimates are usable, its intervals are not. Shot mix must be drawn per possession as one categorical outcome (turnover / 3PA / 2PA / foul), never as independent counts. This is why L3 is a possession-outcome model and not four count models.
+
+## L11. Centred features carry no season level; totals drift 3-4 points a season (2026-09-10)
+
+Fold-2 train mean total 141.8 vs test 145.5. With every feature centred on its snapshot mean, the engine inherited 77% of the drift as a -2.8 point total bias (the close was -0.6 on the same games). The Control's spec deliberately had no season term, so this is a measured cost, not a surprise (L4).
+
+For the sim: outcome models need a season-level term or a recency-weighted refit each preseason, chosen by bake-off; never a post-hoc offset.
+
+## L12. The yardstick: Control trails the close by 0.36 (margin) and 0.54 (total) MAE with no ATS edge (2026-09-10)
+
+2024-25 vs ESPN BET closes: margin MAE 9.106 vs 8.746; total 13.218 vs 12.680; ATS 49.5-50.3% in every disagreement bucket; Brier 0.188 vs 0.175 de-vigged; leak screen clean (surprise corr ~0, CLV agreement 0.53).
+
+For the sim: this is the bar. The possession engine must beat it on G9 and G10 before player props are built on it.
