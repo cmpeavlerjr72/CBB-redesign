@@ -14674,5 +14674,1401 @@
    "worst_gap_pp_actual": 1.085,
    "pass_actual": false
   }
+ },
+ "redecision_decision8": {
+  "authority": "ARCHITECTURE_DECISIONS.md Decision 8 (2026-09-10)",
+  "gate": {
+   "slope_band": [
+    0.8,
+    1.2
+   ],
+   "low_span_pp": 2.0,
+   "min_steps": 4,
+   "min_steps_low_span": 3
+  },
+  "retrained": false,
+  "readings": {
+   "strict": {
+    "FGA_rim": {
+     "rows": [
+      {
+       "arm": "team_baseline",
+       "log_loss": 0.675996,
+       "calib_pass": false,
+       "calib_worst_gap_pp": 2.232,
+       "resp_pass": false,
+       "resp_detail": {
+        "reading": "strict",
+        "slope_band": [
+         0.8,
+         1.2
+        ],
+        "low_span_pp": 2.0,
+        "by_driver": {
+         "shooter_make_c->MAKE": {
+          "realised_span_pp": 16.084,
+          "low_span": false,
+          "min_steps_required": 4,
+          "steps": 4,
+          "steps_ok": true,
+          "slope_ratio": 0.1795,
+          "slope_clause_applies": true,
+          "slope_ok": false,
+          "pass": false
+         },
+         "def_allow_c->MAKE": {
+          "realised_span_pp": 4.977,
+          "low_span": false,
+          "min_steps_required": 4,
+          "steps": 4,
+          "steps_ok": true,
+          "slope_ratio": 0.9874,
+          "slope_clause_applies": true,
+          "slope_ok": true,
+          "pass": true
+         }
+        },
+        "pass": false,
+        "failed_drivers": [
+         "shooter_make_c->MAKE"
+        ]
+       },
+       "failed_drivers": [
+        "shooter_make_c->MAKE"
+       ],
+       "pass": false
+      },
+      {
+       "arm": "eb_shrink",
+       "log_loss": 0.670433,
+       "calib_pass": true,
+       "calib_worst_gap_pp": 1.427,
+       "resp_pass": true,
+       "resp_detail": {
+        "reading": "strict",
+        "slope_band": [
+         0.8,
+         1.2
+        ],
+        "low_span_pp": 2.0,
+        "by_driver": {
+         "shooter_make_c->MAKE": {
+          "realised_span_pp": 16.084,
+          "low_span": false,
+          "min_steps_required": 4,
+          "steps": 4,
+          "steps_ok": true,
+          "slope_ratio": 0.999,
+          "slope_clause_applies": true,
+          "slope_ok": true,
+          "pass": true
+         },
+         "def_allow_c->MAKE": {
+          "realised_span_pp": 4.977,
+          "low_span": false,
+          "min_steps_required": 4,
+          "steps": 4,
+          "steps_ok": true,
+          "slope_ratio": 0.9988,
+          "slope_clause_applies": true,
+          "slope_ok": true,
+          "pass": true
+         }
+        },
+        "pass": true,
+        "failed_drivers": []
+       },
+       "failed_drivers": [],
+       "pass": true
+      },
+      {
+       "arm": "ridge",
+       "log_loss": 0.659766,
+       "calib_pass": true,
+       "calib_worst_gap_pp": 1.387,
+       "resp_pass": true,
+       "resp_detail": {
+        "reading": "strict",
+        "slope_band": [
+         0.8,
+         1.2
+        ],
+        "low_span_pp": 2.0,
+        "by_driver": {
+         "shooter_make_c->MAKE": {
+          "realised_span_pp": 16.084,
+          "low_span": false,
+          "min_steps_required": 4,
+          "steps": 4,
+          "steps_ok": true,
+          "slope_ratio": 0.8357,
+          "slope_clause_applies": true,
+          "slope_ok": true,
+          "pass": true
+         },
+         "def_allow_c->MAKE": {
+          "realised_span_pp": 4.977,
+          "low_span": false,
+          "min_steps_required": 4,
+          "steps": 4,
+          "steps_ok": true,
+          "slope_ratio": 0.9177,
+          "slope_clause_applies": true,
+          "slope_ok": true,
+          "pass": true
+         }
+        },
+        "pass": true,
+        "failed_drivers": []
+       },
+       "failed_drivers": [],
+       "pass": true
+      },
+      {
+       "arm": "lgbm",
+       "log_loss": 0.641605,
+       "calib_pass": true,
+       "calib_worst_gap_pp": 1.186,
+       "resp_pass": true,
+       "resp_detail": {
+        "reading": "strict",
+        "slope_band": [
+         0.8,
+         1.2
+        ],
+        "low_span_pp": 2.0,
+        "by_driver": {
+         "shooter_make_c->MAKE": {
+          "realised_span_pp": 16.084,
+          "low_span": false,
+          "min_steps_required": 4,
+          "steps": 4,
+          "steps_ok": true,
+          "slope_ratio": 1.0075,
+          "slope_clause_applies": true,
+          "slope_ok": true,
+          "pass": true
+         },
+         "def_allow_c->MAKE": {
+          "realised_span_pp": 4.977,
+          "low_span": false,
+          "min_steps_required": 4,
+          "steps": 4,
+          "steps_ok": true,
+          "slope_ratio": 0.9992,
+          "slope_clause_applies": true,
+          "slope_ok": true,
+          "pass": true
+         }
+        },
+        "pass": true,
+        "failed_drivers": []
+       },
+       "failed_drivers": [],
+       "pass": true
+      }
+     ],
+     "decision": {
+      "n_arms": 4,
+      "passing_arms": [
+       "eb_shrink",
+       "ridge",
+       "lgbm"
+      ],
+      "floor": 0.000539,
+      "n_passing": 3,
+      "winner": "lgbm",
+      "log_loss": 0.641605,
+      "best_passing_non_tree": "ridge",
+      "tree_gain_over_non_tree": 0.018161,
+      "tree_gain_in_floors": 33.69
+     }
+    },
+    "FGA_jump2": {
+     "rows": [
+      {
+       "arm": "team_baseline",
+       "log_loss": 0.668211,
+       "calib_pass": true,
+       "calib_worst_gap_pp": 1.503,
+       "resp_pass": false,
+       "resp_detail": {
+        "reading": "strict",
+        "slope_band": [
+         0.8,
+         1.2
+        ],
+        "low_span_pp": 2.0,
+        "by_driver": {
+         "shooter_make_c->MAKE": {
+          "realised_span_pp": 8.138,
+          "low_span": false,
+          "min_steps_required": 4,
+          "steps": 4,
+          "steps_ok": true,
+          "slope_ratio": 0.1417,
+          "slope_clause_applies": true,
+          "slope_ok": false,
+          "pass": false
+         },
+         "def_allow_c->MAKE": {
+          "realised_span_pp": 3.329,
+          "low_span": false,
+          "min_steps_required": 4,
+          "steps": 4,
+          "steps_ok": true,
+          "slope_ratio": 1.0283,
+          "slope_clause_applies": true,
+          "slope_ok": true,
+          "pass": true
+         }
+        },
+        "pass": false,
+        "failed_drivers": [
+         "shooter_make_c->MAKE"
+        ]
+       },
+       "failed_drivers": [
+        "shooter_make_c->MAKE"
+       ],
+       "pass": false
+      },
+      {
+       "arm": "eb_shrink",
+       "log_loss": 0.667461,
+       "calib_pass": true,
+       "calib_worst_gap_pp": 1.341,
+       "resp_pass": false,
+       "resp_detail": {
+        "reading": "strict",
+        "slope_band": [
+         0.8,
+         1.2
+        ],
+        "low_span_pp": 2.0,
+        "by_driver": {
+         "shooter_make_c->MAKE": {
+          "realised_span_pp": 8.138,
+          "low_span": false,
+          "min_steps_required": 4,
+          "steps": 4,
+          "steps_ok": true,
+          "slope_ratio": 0.8394,
+          "slope_clause_applies": true,
+          "slope_ok": true,
+          "pass": true
+         },
+         "def_allow_c->MAKE": {
+          "realised_span_pp": 3.329,
+          "low_span": false,
+          "min_steps_required": 4,
+          "steps": 4,
+          "steps_ok": true,
+          "slope_ratio": 1.3876,
+          "slope_clause_applies": true,
+          "slope_ok": false,
+          "pass": false
+         }
+        },
+        "pass": false,
+        "failed_drivers": [
+         "def_allow_c->MAKE"
+        ]
+       },
+       "failed_drivers": [
+        "def_allow_c->MAKE"
+       ],
+       "pass": false
+      },
+      {
+       "arm": "ridge",
+       "log_loss": 0.660729,
+       "calib_pass": true,
+       "calib_worst_gap_pp": 1.648,
+       "resp_pass": true,
+       "resp_detail": {
+        "reading": "strict",
+        "slope_band": [
+         0.8,
+         1.2
+        ],
+        "low_span_pp": 2.0,
+        "by_driver": {
+         "shooter_make_c->MAKE": {
+          "realised_span_pp": 8.138,
+          "low_span": false,
+          "min_steps_required": 4,
+          "steps": 4,
+          "steps_ok": true,
+          "slope_ratio": 0.8235,
+          "slope_clause_applies": true,
+          "slope_ok": true,
+          "pass": true
+         },
+         "def_allow_c->MAKE": {
+          "realised_span_pp": 3.329,
+          "low_span": false,
+          "min_steps_required": 4,
+          "steps": 4,
+          "steps_ok": true,
+          "slope_ratio": 0.9657,
+          "slope_clause_applies": true,
+          "slope_ok": true,
+          "pass": true
+         }
+        },
+        "pass": true,
+        "failed_drivers": []
+       },
+       "failed_drivers": [],
+       "pass": true
+      },
+      {
+       "arm": "lgbm",
+       "log_loss": 0.642003,
+       "calib_pass": true,
+       "calib_worst_gap_pp": 1.58,
+       "resp_pass": true,
+       "resp_detail": {
+        "reading": "strict",
+        "slope_band": [
+         0.8,
+         1.2
+        ],
+        "low_span_pp": 2.0,
+        "by_driver": {
+         "shooter_make_c->MAKE": {
+          "realised_span_pp": 8.138,
+          "low_span": false,
+          "min_steps_required": 4,
+          "steps": 4,
+          "steps_ok": true,
+          "slope_ratio": 0.986,
+          "slope_clause_applies": true,
+          "slope_ok": true,
+          "pass": true
+         },
+         "def_allow_c->MAKE": {
+          "realised_span_pp": 3.329,
+          "low_span": false,
+          "min_steps_required": 4,
+          "steps": 4,
+          "steps_ok": true,
+          "slope_ratio": 0.8281,
+          "slope_clause_applies": true,
+          "slope_ok": true,
+          "pass": true
+         }
+        },
+        "pass": true,
+        "failed_drivers": []
+       },
+       "failed_drivers": [],
+       "pass": true
+      }
+     ],
+     "decision": {
+      "n_arms": 4,
+      "passing_arms": [
+       "ridge",
+       "lgbm"
+      ],
+      "floor": 0.000578,
+      "n_passing": 2,
+      "winner": "lgbm",
+      "log_loss": 0.642003,
+      "best_passing_non_tree": "ridge",
+      "tree_gain_over_non_tree": 0.018726,
+      "tree_gain_in_floors": 32.4
+     }
+    },
+    "FGA_3": {
+     "rows": [
+      {
+       "arm": "team_baseline",
+       "log_loss": 0.639094,
+       "calib_pass": true,
+       "calib_worst_gap_pp": 1.048,
+       "resp_pass": false,
+       "resp_detail": {
+        "reading": "strict",
+        "slope_band": [
+         0.8,
+         1.2
+        ],
+        "low_span_pp": 2.0,
+        "by_driver": {
+         "shooter_make_c->MAKE": {
+          "realised_span_pp": 35.899,
+          "low_span": false,
+          "min_steps_required": 4,
+          "steps": 4,
+          "steps_ok": true,
+          "slope_ratio": 0.0086,
+          "slope_clause_applies": true,
+          "slope_ok": false,
+          "pass": false
+         },
+         "def_allow_c->MAKE": {
+          "realised_span_pp": 1.373,
+          "low_span": true,
+          "min_steps_required": 3,
+          "steps": 4,
+          "steps_ok": true,
+          "slope_ratio": 1.0117,
+          "slope_clause_applies": true,
+          "slope_ok": true,
+          "pass": true
+         }
+        },
+        "pass": false,
+        "failed_drivers": [
+         "shooter_make_c->MAKE"
+        ]
+       },
+       "failed_drivers": [
+        "shooter_make_c->MAKE"
+       ],
+       "pass": false
+      },
+      {
+       "arm": "eb_shrink",
+       "log_loss": 0.599327,
+       "calib_pass": false,
+       "calib_worst_gap_pp": 2.043,
+       "resp_pass": true,
+       "resp_detail": {
+        "reading": "strict",
+        "slope_band": [
+         0.8,
+         1.2
+        ],
+        "low_span_pp": 2.0,
+        "by_driver": {
+         "shooter_make_c->MAKE": {
+          "realised_span_pp": 35.899,
+          "low_span": false,
+          "min_steps_required": 4,
+          "steps": 4,
+          "steps_ok": true,
+          "slope_ratio": 1.0663,
+          "slope_clause_applies": true,
+          "slope_ok": true,
+          "pass": true
+         },
+         "def_allow_c->MAKE": {
+          "realised_span_pp": 1.373,
+          "low_span": true,
+          "min_steps_required": 3,
+          "steps": 4,
+          "steps_ok": true,
+          "slope_ratio": 0.8256,
+          "slope_clause_applies": true,
+          "slope_ok": true,
+          "pass": true
+         }
+        },
+        "pass": true,
+        "failed_drivers": []
+       },
+       "failed_drivers": [],
+       "pass": false
+      },
+      {
+       "arm": "ridge",
+       "log_loss": 0.58837,
+       "calib_pass": false,
+       "calib_worst_gap_pp": 3.177,
+       "resp_pass": false,
+       "resp_detail": {
+        "reading": "strict",
+        "slope_band": [
+         0.8,
+         1.2
+        ],
+        "low_span_pp": 2.0,
+        "by_driver": {
+         "shooter_make_c->MAKE": {
+          "realised_span_pp": 35.899,
+          "low_span": false,
+          "min_steps_required": 4,
+          "steps": 4,
+          "steps_ok": true,
+          "slope_ratio": 0.9704,
+          "slope_clause_applies": true,
+          "slope_ok": true,
+          "pass": true
+         },
+         "def_allow_c->MAKE": {
+          "realised_span_pp": 1.373,
+          "low_span": true,
+          "min_steps_required": 3,
+          "steps": 3,
+          "steps_ok": true,
+          "slope_ratio": 0.7097,
+          "slope_clause_applies": true,
+          "slope_ok": false,
+          "pass": false
+         }
+        },
+        "pass": false,
+        "failed_drivers": [
+         "def_allow_c->MAKE"
+        ]
+       },
+       "failed_drivers": [
+        "def_allow_c->MAKE"
+       ],
+       "pass": false
+      },
+      {
+       "arm": "lgbm",
+       "log_loss": 0.561085,
+       "calib_pass": true,
+       "calib_worst_gap_pp": 1.007,
+       "resp_pass": false,
+       "resp_detail": {
+        "reading": "strict",
+        "slope_band": [
+         0.8,
+         1.2
+        ],
+        "low_span_pp": 2.0,
+        "by_driver": {
+         "shooter_make_c->MAKE": {
+          "realised_span_pp": 35.899,
+          "low_span": false,
+          "min_steps_required": 4,
+          "steps": 4,
+          "steps_ok": true,
+          "slope_ratio": 0.9878,
+          "slope_clause_applies": true,
+          "slope_ok": true,
+          "pass": true
+         },
+         "def_allow_c->MAKE": {
+          "realised_span_pp": 1.373,
+          "low_span": true,
+          "min_steps_required": 3,
+          "steps": 3,
+          "steps_ok": true,
+          "slope_ratio": 0.4736,
+          "slope_clause_applies": true,
+          "slope_ok": false,
+          "pass": false
+         }
+        },
+        "pass": false,
+        "failed_drivers": [
+         "def_allow_c->MAKE"
+        ]
+       },
+       "failed_drivers": [
+        "def_allow_c->MAKE"
+       ],
+       "pass": false
+      }
+     ],
+     "decision": {
+      "n_arms": 4,
+      "passing_arms": [],
+      "floor": 0.000849,
+      "n_passing": 0,
+      "winner": null,
+      "note": "no arm passes both gates under this reading, so nothing is adopted for this class"
+     }
+    }
+   },
+   "low_span_exempt": {
+    "FGA_rim": {
+     "rows": [
+      {
+       "arm": "team_baseline",
+       "log_loss": 0.675996,
+       "calib_pass": false,
+       "calib_worst_gap_pp": 2.232,
+       "resp_pass": false,
+       "resp_detail": {
+        "reading": "low_span_exempt",
+        "slope_band": [
+         0.8,
+         1.2
+        ],
+        "low_span_pp": 2.0,
+        "by_driver": {
+         "shooter_make_c->MAKE": {
+          "realised_span_pp": 16.084,
+          "low_span": false,
+          "min_steps_required": 4,
+          "steps": 4,
+          "steps_ok": true,
+          "slope_ratio": 0.1795,
+          "slope_clause_applies": true,
+          "slope_ok": false,
+          "pass": false
+         },
+         "def_allow_c->MAKE": {
+          "realised_span_pp": 4.977,
+          "low_span": false,
+          "min_steps_required": 4,
+          "steps": 4,
+          "steps_ok": true,
+          "slope_ratio": 0.9874,
+          "slope_clause_applies": true,
+          "slope_ok": true,
+          "pass": true
+         }
+        },
+        "pass": false,
+        "failed_drivers": [
+         "shooter_make_c->MAKE"
+        ]
+       },
+       "failed_drivers": [
+        "shooter_make_c->MAKE"
+       ],
+       "pass": false
+      },
+      {
+       "arm": "eb_shrink",
+       "log_loss": 0.670433,
+       "calib_pass": true,
+       "calib_worst_gap_pp": 1.427,
+       "resp_pass": true,
+       "resp_detail": {
+        "reading": "low_span_exempt",
+        "slope_band": [
+         0.8,
+         1.2
+        ],
+        "low_span_pp": 2.0,
+        "by_driver": {
+         "shooter_make_c->MAKE": {
+          "realised_span_pp": 16.084,
+          "low_span": false,
+          "min_steps_required": 4,
+          "steps": 4,
+          "steps_ok": true,
+          "slope_ratio": 0.999,
+          "slope_clause_applies": true,
+          "slope_ok": true,
+          "pass": true
+         },
+         "def_allow_c->MAKE": {
+          "realised_span_pp": 4.977,
+          "low_span": false,
+          "min_steps_required": 4,
+          "steps": 4,
+          "steps_ok": true,
+          "slope_ratio": 0.9988,
+          "slope_clause_applies": true,
+          "slope_ok": true,
+          "pass": true
+         }
+        },
+        "pass": true,
+        "failed_drivers": []
+       },
+       "failed_drivers": [],
+       "pass": true
+      },
+      {
+       "arm": "ridge",
+       "log_loss": 0.659766,
+       "calib_pass": true,
+       "calib_worst_gap_pp": 1.387,
+       "resp_pass": true,
+       "resp_detail": {
+        "reading": "low_span_exempt",
+        "slope_band": [
+         0.8,
+         1.2
+        ],
+        "low_span_pp": 2.0,
+        "by_driver": {
+         "shooter_make_c->MAKE": {
+          "realised_span_pp": 16.084,
+          "low_span": false,
+          "min_steps_required": 4,
+          "steps": 4,
+          "steps_ok": true,
+          "slope_ratio": 0.8357,
+          "slope_clause_applies": true,
+          "slope_ok": true,
+          "pass": true
+         },
+         "def_allow_c->MAKE": {
+          "realised_span_pp": 4.977,
+          "low_span": false,
+          "min_steps_required": 4,
+          "steps": 4,
+          "steps_ok": true,
+          "slope_ratio": 0.9177,
+          "slope_clause_applies": true,
+          "slope_ok": true,
+          "pass": true
+         }
+        },
+        "pass": true,
+        "failed_drivers": []
+       },
+       "failed_drivers": [],
+       "pass": true
+      },
+      {
+       "arm": "lgbm",
+       "log_loss": 0.641605,
+       "calib_pass": true,
+       "calib_worst_gap_pp": 1.186,
+       "resp_pass": true,
+       "resp_detail": {
+        "reading": "low_span_exempt",
+        "slope_band": [
+         0.8,
+         1.2
+        ],
+        "low_span_pp": 2.0,
+        "by_driver": {
+         "shooter_make_c->MAKE": {
+          "realised_span_pp": 16.084,
+          "low_span": false,
+          "min_steps_required": 4,
+          "steps": 4,
+          "steps_ok": true,
+          "slope_ratio": 1.0075,
+          "slope_clause_applies": true,
+          "slope_ok": true,
+          "pass": true
+         },
+         "def_allow_c->MAKE": {
+          "realised_span_pp": 4.977,
+          "low_span": false,
+          "min_steps_required": 4,
+          "steps": 4,
+          "steps_ok": true,
+          "slope_ratio": 0.9992,
+          "slope_clause_applies": true,
+          "slope_ok": true,
+          "pass": true
+         }
+        },
+        "pass": true,
+        "failed_drivers": []
+       },
+       "failed_drivers": [],
+       "pass": true
+      }
+     ],
+     "decision": {
+      "n_arms": 4,
+      "passing_arms": [
+       "eb_shrink",
+       "ridge",
+       "lgbm"
+      ],
+      "floor": 0.000539,
+      "n_passing": 3,
+      "winner": "lgbm",
+      "log_loss": 0.641605,
+      "best_passing_non_tree": "ridge",
+      "tree_gain_over_non_tree": 0.018161,
+      "tree_gain_in_floors": 33.69
+     }
+    },
+    "FGA_jump2": {
+     "rows": [
+      {
+       "arm": "team_baseline",
+       "log_loss": 0.668211,
+       "calib_pass": true,
+       "calib_worst_gap_pp": 1.503,
+       "resp_pass": false,
+       "resp_detail": {
+        "reading": "low_span_exempt",
+        "slope_band": [
+         0.8,
+         1.2
+        ],
+        "low_span_pp": 2.0,
+        "by_driver": {
+         "shooter_make_c->MAKE": {
+          "realised_span_pp": 8.138,
+          "low_span": false,
+          "min_steps_required": 4,
+          "steps": 4,
+          "steps_ok": true,
+          "slope_ratio": 0.1417,
+          "slope_clause_applies": true,
+          "slope_ok": false,
+          "pass": false
+         },
+         "def_allow_c->MAKE": {
+          "realised_span_pp": 3.329,
+          "low_span": false,
+          "min_steps_required": 4,
+          "steps": 4,
+          "steps_ok": true,
+          "slope_ratio": 1.0283,
+          "slope_clause_applies": true,
+          "slope_ok": true,
+          "pass": true
+         }
+        },
+        "pass": false,
+        "failed_drivers": [
+         "shooter_make_c->MAKE"
+        ]
+       },
+       "failed_drivers": [
+        "shooter_make_c->MAKE"
+       ],
+       "pass": false
+      },
+      {
+       "arm": "eb_shrink",
+       "log_loss": 0.667461,
+       "calib_pass": true,
+       "calib_worst_gap_pp": 1.341,
+       "resp_pass": false,
+       "resp_detail": {
+        "reading": "low_span_exempt",
+        "slope_band": [
+         0.8,
+         1.2
+        ],
+        "low_span_pp": 2.0,
+        "by_driver": {
+         "shooter_make_c->MAKE": {
+          "realised_span_pp": 8.138,
+          "low_span": false,
+          "min_steps_required": 4,
+          "steps": 4,
+          "steps_ok": true,
+          "slope_ratio": 0.8394,
+          "slope_clause_applies": true,
+          "slope_ok": true,
+          "pass": true
+         },
+         "def_allow_c->MAKE": {
+          "realised_span_pp": 3.329,
+          "low_span": false,
+          "min_steps_required": 4,
+          "steps": 4,
+          "steps_ok": true,
+          "slope_ratio": 1.3876,
+          "slope_clause_applies": true,
+          "slope_ok": false,
+          "pass": false
+         }
+        },
+        "pass": false,
+        "failed_drivers": [
+         "def_allow_c->MAKE"
+        ]
+       },
+       "failed_drivers": [
+        "def_allow_c->MAKE"
+       ],
+       "pass": false
+      },
+      {
+       "arm": "ridge",
+       "log_loss": 0.660729,
+       "calib_pass": true,
+       "calib_worst_gap_pp": 1.648,
+       "resp_pass": true,
+       "resp_detail": {
+        "reading": "low_span_exempt",
+        "slope_band": [
+         0.8,
+         1.2
+        ],
+        "low_span_pp": 2.0,
+        "by_driver": {
+         "shooter_make_c->MAKE": {
+          "realised_span_pp": 8.138,
+          "low_span": false,
+          "min_steps_required": 4,
+          "steps": 4,
+          "steps_ok": true,
+          "slope_ratio": 0.8235,
+          "slope_clause_applies": true,
+          "slope_ok": true,
+          "pass": true
+         },
+         "def_allow_c->MAKE": {
+          "realised_span_pp": 3.329,
+          "low_span": false,
+          "min_steps_required": 4,
+          "steps": 4,
+          "steps_ok": true,
+          "slope_ratio": 0.9657,
+          "slope_clause_applies": true,
+          "slope_ok": true,
+          "pass": true
+         }
+        },
+        "pass": true,
+        "failed_drivers": []
+       },
+       "failed_drivers": [],
+       "pass": true
+      },
+      {
+       "arm": "lgbm",
+       "log_loss": 0.642003,
+       "calib_pass": true,
+       "calib_worst_gap_pp": 1.58,
+       "resp_pass": true,
+       "resp_detail": {
+        "reading": "low_span_exempt",
+        "slope_band": [
+         0.8,
+         1.2
+        ],
+        "low_span_pp": 2.0,
+        "by_driver": {
+         "shooter_make_c->MAKE": {
+          "realised_span_pp": 8.138,
+          "low_span": false,
+          "min_steps_required": 4,
+          "steps": 4,
+          "steps_ok": true,
+          "slope_ratio": 0.986,
+          "slope_clause_applies": true,
+          "slope_ok": true,
+          "pass": true
+         },
+         "def_allow_c->MAKE": {
+          "realised_span_pp": 3.329,
+          "low_span": false,
+          "min_steps_required": 4,
+          "steps": 4,
+          "steps_ok": true,
+          "slope_ratio": 0.8281,
+          "slope_clause_applies": true,
+          "slope_ok": true,
+          "pass": true
+         }
+        },
+        "pass": true,
+        "failed_drivers": []
+       },
+       "failed_drivers": [],
+       "pass": true
+      }
+     ],
+     "decision": {
+      "n_arms": 4,
+      "passing_arms": [
+       "ridge",
+       "lgbm"
+      ],
+      "floor": 0.000578,
+      "n_passing": 2,
+      "winner": "lgbm",
+      "log_loss": 0.642003,
+      "best_passing_non_tree": "ridge",
+      "tree_gain_over_non_tree": 0.018726,
+      "tree_gain_in_floors": 32.4
+     }
+    },
+    "FGA_3": {
+     "rows": [
+      {
+       "arm": "team_baseline",
+       "log_loss": 0.639094,
+       "calib_pass": true,
+       "calib_worst_gap_pp": 1.048,
+       "resp_pass": false,
+       "resp_detail": {
+        "reading": "low_span_exempt",
+        "slope_band": [
+         0.8,
+         1.2
+        ],
+        "low_span_pp": 2.0,
+        "by_driver": {
+         "shooter_make_c->MAKE": {
+          "realised_span_pp": 35.899,
+          "low_span": false,
+          "min_steps_required": 4,
+          "steps": 4,
+          "steps_ok": true,
+          "slope_ratio": 0.0086,
+          "slope_clause_applies": true,
+          "slope_ok": false,
+          "pass": false
+         },
+         "def_allow_c->MAKE": {
+          "realised_span_pp": 1.373,
+          "low_span": true,
+          "min_steps_required": 3,
+          "steps": 4,
+          "steps_ok": true,
+          "slope_ratio": 1.0117,
+          "slope_clause_applies": false,
+          "slope_ok": true,
+          "pass": true
+         }
+        },
+        "pass": false,
+        "failed_drivers": [
+         "shooter_make_c->MAKE"
+        ]
+       },
+       "failed_drivers": [
+        "shooter_make_c->MAKE"
+       ],
+       "pass": false
+      },
+      {
+       "arm": "eb_shrink",
+       "log_loss": 0.599327,
+       "calib_pass": false,
+       "calib_worst_gap_pp": 2.043,
+       "resp_pass": true,
+       "resp_detail": {
+        "reading": "low_span_exempt",
+        "slope_band": [
+         0.8,
+         1.2
+        ],
+        "low_span_pp": 2.0,
+        "by_driver": {
+         "shooter_make_c->MAKE": {
+          "realised_span_pp": 35.899,
+          "low_span": false,
+          "min_steps_required": 4,
+          "steps": 4,
+          "steps_ok": true,
+          "slope_ratio": 1.0663,
+          "slope_clause_applies": true,
+          "slope_ok": true,
+          "pass": true
+         },
+         "def_allow_c->MAKE": {
+          "realised_span_pp": 1.373,
+          "low_span": true,
+          "min_steps_required": 3,
+          "steps": 4,
+          "steps_ok": true,
+          "slope_ratio": 0.8256,
+          "slope_clause_applies": false,
+          "slope_ok": true,
+          "pass": true
+         }
+        },
+        "pass": true,
+        "failed_drivers": []
+       },
+       "failed_drivers": [],
+       "pass": false
+      },
+      {
+       "arm": "ridge",
+       "log_loss": 0.58837,
+       "calib_pass": false,
+       "calib_worst_gap_pp": 3.177,
+       "resp_pass": true,
+       "resp_detail": {
+        "reading": "low_span_exempt",
+        "slope_band": [
+         0.8,
+         1.2
+        ],
+        "low_span_pp": 2.0,
+        "by_driver": {
+         "shooter_make_c->MAKE": {
+          "realised_span_pp": 35.899,
+          "low_span": false,
+          "min_steps_required": 4,
+          "steps": 4,
+          "steps_ok": true,
+          "slope_ratio": 0.9704,
+          "slope_clause_applies": true,
+          "slope_ok": true,
+          "pass": true
+         },
+         "def_allow_c->MAKE": {
+          "realised_span_pp": 1.373,
+          "low_span": true,
+          "min_steps_required": 3,
+          "steps": 3,
+          "steps_ok": true,
+          "slope_ratio": 0.7097,
+          "slope_clause_applies": false,
+          "slope_ok": true,
+          "pass": true
+         }
+        },
+        "pass": true,
+        "failed_drivers": []
+       },
+       "failed_drivers": [],
+       "pass": false
+      },
+      {
+       "arm": "lgbm",
+       "log_loss": 0.561085,
+       "calib_pass": true,
+       "calib_worst_gap_pp": 1.007,
+       "resp_pass": true,
+       "resp_detail": {
+        "reading": "low_span_exempt",
+        "slope_band": [
+         0.8,
+         1.2
+        ],
+        "low_span_pp": 2.0,
+        "by_driver": {
+         "shooter_make_c->MAKE": {
+          "realised_span_pp": 35.899,
+          "low_span": false,
+          "min_steps_required": 4,
+          "steps": 4,
+          "steps_ok": true,
+          "slope_ratio": 0.9878,
+          "slope_clause_applies": true,
+          "slope_ok": true,
+          "pass": true
+         },
+         "def_allow_c->MAKE": {
+          "realised_span_pp": 1.373,
+          "low_span": true,
+          "min_steps_required": 3,
+          "steps": 3,
+          "steps_ok": true,
+          "slope_ratio": 0.4736,
+          "slope_clause_applies": false,
+          "slope_ok": true,
+          "pass": true
+         }
+        },
+        "pass": true,
+        "failed_drivers": []
+       },
+       "failed_drivers": [],
+       "pass": true
+      }
+     ],
+     "decision": {
+      "n_arms": 4,
+      "passing_arms": [
+       "lgbm"
+      ],
+      "floor": 0.000849,
+      "n_passing": 1,
+      "winner": "lgbm",
+      "log_loss": 0.561085,
+      "tree_clause": "no non-tree arm passes both gates, so the 'a tree must beat the best PASSING non-tree arm by more than the floor' clause has nothing to bind against; the gap to the best non-tree arm of any gate status (`ridge`, 0.58837) is 0.027285 = 32.1x the floor"
+     }
+    }
+   }
+  },
+  "by_class": {
+   "FGA_rim": {
+    "n_arms": 4,
+    "passing_arms": [
+     "eb_shrink",
+     "ridge",
+     "lgbm"
+    ],
+    "floor": 0.000539,
+    "n_passing": 3,
+    "winner": "lgbm",
+    "log_loss": 0.641605,
+    "best_passing_non_tree": "ridge",
+    "tree_gain_over_non_tree": 0.018161,
+    "tree_gain_in_floors": 33.69
+   },
+   "FGA_jump2": {
+    "n_arms": 4,
+    "passing_arms": [
+     "ridge",
+     "lgbm"
+    ],
+    "floor": 0.000578,
+    "n_passing": 2,
+    "winner": "lgbm",
+    "log_loss": 0.642003,
+    "best_passing_non_tree": "ridge",
+    "tree_gain_over_non_tree": 0.018726,
+    "tree_gain_in_floors": 32.4
+   },
+   "FGA_3": {
+    "n_arms": 4,
+    "passing_arms": [
+     "lgbm"
+    ],
+    "floor": 0.000849,
+    "n_passing": 1,
+    "winner": "lgbm",
+    "log_loss": 0.561085,
+    "tree_clause": "no non-tree arm passes both gates, so the 'a tree must beat the best PASSING non-tree arm by more than the floor' clause has nothing to bind against; the gap to the best non-tree arm of any gate status (`ridge`, 0.58837) is 0.027285 = 32.1x the floor"
+   }
+  },
+  "spans_pp": {
+   "FGA_rim": {
+    "shooter_make_c->MAKE": 16.084,
+    "def_allow_c->MAKE": 4.977
+   },
+   "FGA_jump2": {
+    "shooter_make_c->MAKE": 8.138,
+    "def_allow_c->MAKE": 3.329
+   },
+   "FGA_3": {
+    "shooter_make_c->MAKE": 35.899,
+    "def_allow_c->MAKE": 1.373
+   }
+  },
+  "adopted_reading": "low_span_exempt",
+  "adopted_reading_why": "Decision 8 states the corrected gate changes FGA_3 from team_baseline to LightGBM. That follows only if a sub-2 pp driver is exempt from the SLOPE clause as well as from the step count, because LightGBM's slope on the FGA_3 defence driver is 0.474. Under the strict reading no arm passes FGA_3 and nothing would be adopted for that class. Both are computed above; the wording of clause (a) is what needs tightening, not the models.",
+  "changes_vs_pre_registered_gate": {
+   "FGA_rim": {
+    "was": "lgbm",
+    "now": "lgbm"
+   },
+   "FGA_jump2": {
+    "was": "lgbm",
+    "now": "lgbm"
+   },
+   "FGA_3": {
+    "was": "team_baseline",
+    "now": "lgbm"
+   }
+  },
+  "artifacts": {
+   "FGA_rim": "data\\processed\\models\\fg_make\\winner_FGA_rim.joblib (unchanged: lgbm)",
+   "FGA_jump2": "data\\processed\\models\\fg_make\\winner_FGA_jump2.joblib (unchanged: lgbm)",
+   "FGA_3_superseded": "data\\processed\\models\\fg_make\\reference_superseded_FGA_3.joblib (the team_baseline arm, kept for reference)",
+   "FGA_3": "data\\processed\\models\\fg_make\\winner_FGA_3.joblib (re-exported: team_baseline -> lgbm)"
+  },
+  "efg_gate_trio": {
+   "mix": {
+    "FGA_rim": "lgbm",
+    "FGA_jump2": "lgbm",
+    "FGA_3": "lgbm"
+   },
+   "computable": true,
+   "offense": {
+    "side": "offense",
+    "n_teams": 364,
+    "overall_actual_efg_pct": 50.874,
+    "overall_implied_efg_pct": 50.932,
+    "team_level_mae_pp": 1.614,
+    "team_level_corr": 0.7746,
+    "overall_gap_pp": 0.058,
+    "terciles_asof": [
+     {
+      "tercile": 1,
+      "n_teams": 122,
+      "actual_efg_pct": 48.015,
+      "implied_efg_pct": 48.725,
+      "gap_pp": 0.711
+     },
+     {
+      "tercile": 2,
+      "n_teams": 121,
+      "actual_efg_pct": 50.769,
+      "implied_efg_pct": 50.845,
+      "gap_pp": 0.076
+     },
+     {
+      "tercile": 3,
+      "n_teams": 121,
+      "actual_efg_pct": 53.609,
+      "implied_efg_pct": 53.049,
+      "gap_pp": -0.56
+     }
+    ],
+    "worst_gap_pp_asof": 0.711,
+    "pass_asof": true,
+    "terciles_actual": [
+     {
+      "tercile": 1,
+      "n_teams": 122,
+      "actual_efg_pct": 47.567,
+      "implied_efg_pct": 48.306,
+      "gap_pp": 0.74
+     },
+     {
+      "tercile": 2,
+      "n_teams": 121,
+      "actual_efg_pct": 50.678,
+      "implied_efg_pct": 50.916,
+      "gap_pp": 0.238
+     },
+     {
+      "tercile": 3,
+      "n_teams": 121,
+      "actual_efg_pct": 54.119,
+      "implied_efg_pct": 53.377,
+      "gap_pp": -0.743
+     }
+    ],
+    "worst_gap_pp_actual": 0.743,
+    "pass_actual": true
+   },
+   "defense": {
+    "side": "defense",
+    "n_teams": 364,
+    "overall_actual_efg_pct": 50.874,
+    "overall_implied_efg_pct": 50.932,
+    "team_level_mae_pp": 1.448,
+    "team_level_corr": 0.7606,
+    "overall_gap_pp": 0.058,
+    "terciles_asof": [
+     {
+      "tercile": 1,
+      "n_teams": 122,
+      "actual_efg_pct": 53.346,
+      "implied_efg_pct": 52.689,
+      "gap_pp": -0.657
+     },
+     {
+      "tercile": 2,
+      "n_teams": 121,
+      "actual_efg_pct": 50.996,
+      "implied_efg_pct": 50.842,
+      "gap_pp": -0.154
+     },
+     {
+      "tercile": 3,
+      "n_teams": 121,
+      "actual_efg_pct": 48.497,
+      "implied_efg_pct": 49.411,
+      "gap_pp": 0.914
+     }
+    ],
+    "worst_gap_pp_asof": 0.914,
+    "pass_asof": true,
+    "terciles_actual": [
+     {
+      "tercile": 1,
+      "n_teams": 122,
+      "actual_efg_pct": 48.046,
+      "implied_efg_pct": 49.076,
+      "gap_pp": 1.03
+     },
+     {
+      "tercile": 2,
+      "n_teams": 121,
+      "actual_efg_pct": 50.982,
+      "implied_efg_pct": 50.872,
+      "gap_pp": -0.11
+     },
+     {
+      "tercile": 3,
+      "n_teams": 121,
+      "actual_efg_pct": 53.894,
+      "implied_efg_pct": 53.052,
+      "gap_pp": -0.843
+     }
+    ],
+    "worst_gap_pp_actual": 1.03,
+    "pass_actual": false
+   }
+  }
  }
 }

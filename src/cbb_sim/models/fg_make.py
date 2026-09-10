@@ -1131,9 +1131,13 @@ def fit_by_class(arm: str, train: pd.DataFrame, feature_set_name: str | None = N
 # ===========================================================================
 # 6. Metrics wired to this model's vocabulary
 # ===========================================================================
-#: The two pre-registered responsiveness drivers, and the gate: BOTH must be
-#: monotone in 4 of 4 quintile steps ("the matchup-specific rule applies to
-#: defense too").
+#: The two pre-registered responsiveness drivers. The pre-registered gate was
+#: "BOTH monotone in 4 of 4 quintile steps" ("the matchup-specific rule applies
+#: to defense too"); `ARCHITECTURE_DECISIONS.md` **Decision 8** supersedes it
+#: with the slope-and-steps gate below. `score` reports BOTH verdicts -- the
+#: superseded one under `resp_pass` so the original run's tables stay readable,
+#: and the live one under `resp_pass_decision8`, which is what the trainer
+#: decides on.
 RESPONSIVENESS_SPECS: tuple[tuple[str, str], ...] = (
     ("shooter_make_c", "shooter_att_c"),
     ("def_allow_c", "def_att_prior"),
@@ -1154,6 +1158,75 @@ def _rank(v: np.ndarray) -> np.ndarray:
     order = np.argsort(v, kind="stable")
     out = np.empty(len(v), dtype="float64")
     out[order] = np.arange(len(v), dtype="float64")
+    return out
+
+
+#: **Decision 8** (`ARCHITECTURE_DECISIONS.md`, 2026-09-10) supersedes the
+#: steps-only responsiveness wording of this model's pre-registration: the gate
+#: is (a) slope ratio within [0.8, 1.2] AND (b) monotone in at least 3 of 4
+#: quintile steps, with the 4-of-4 requirement dropped when the driver's
+#: realised quintile span is below 2 pp ("the steps are then noise"), on every
+#: driver.
+#:
+#: THE ONE AMBIGUITY, AND WHY BOTH READINGS ARE COMPUTED. Clause (b) exempts a
+#: low-span driver from the step count because its steps are noise. Clause (a)
+#: does not say whether the SLOPE on such a driver is exempt too. It matters
+#: exactly once: `FGA_3`'s defence driver has a realised span of 1.37 pp and
+#: LightGBM's slope on it is 0.474, so
+#:   * `strict`: the slope band applies to every driver -> no arm passes FGA_3;
+#:   * `low_span_exempt`: a sub-2 pp driver is noise for BOTH clauses -> FGA_3
+#:     goes to LightGBM, which is the outcome Decision 8 itself states.
+#: `decision8_verdict` takes the reading as an argument so neither is hidden,
+#: and `scripts/train_fg_make_v1.py --redecide` reports both.
+SLOPE_BAND: tuple[float, float] = (0.8, 1.2)
+LOW_SPAN_PP: float = 2.0
+MIN_STEPS_DEFAULT: int = 4
+MIN_STEPS_LOW_SPAN: int = 3
+DECISION8_READINGS: tuple[str, ...] = ("strict", "low_span_exempt")
+#: The reading Decision 8's own stated outcome implies, and therefore the one
+#: `score` and the trainer's decision step use. Changing it changes which arms
+#: pass on a sub-2 pp driver and nothing else; both readings are always reported
+#: side by side by `scripts/train_fg_make_v1.py --redecide`.
+DECISION8_ADOPTED_READING = "low_span_exempt"
+
+
+def decision8_verdict(resp: dict[str, dict], reading: str = "low_span_exempt",
+                      slope_band: tuple[float, float] = SLOPE_BAND,
+                      low_span_pp: float = LOW_SPAN_PP) -> dict:
+    """Decision 8's responsiveness gate, per driver, for one arm.
+
+    Returns the verdict and the per-driver working, so a PASS/FAIL can always
+    be traced to the driver and the clause that produced it."""
+    if reading not in DECISION8_READINGS:
+        raise KeyError(f"unknown reading {reading!r}")
+    lo, hi = slope_band
+    out: dict = {"reading": reading, "slope_band": [lo, hi],
+                 "low_span_pp": low_span_pp, "by_driver": {}}
+    ok = True
+    for name, r in resp.items():
+        span_pp = abs(float(r["span_actual"])) * 100.0
+        low_span = span_pp < low_span_pp
+        min_steps = MIN_STEPS_LOW_SPAN if low_span else MIN_STEPS_DEFAULT
+        steps_ok = int(r["pred_monotone_steps"]) >= min_steps
+        slope = r["slope_ratio"]
+        slope_applies = not (low_span and reading == "low_span_exempt")
+        if not slope_applies:
+            slope_ok = True
+        elif slope is None:
+            slope_ok = False          # an undefined slope cannot clear a band
+        else:
+            slope_ok = lo <= float(slope) <= hi
+        d_ok = steps_ok and slope_ok
+        ok &= d_ok
+        out["by_driver"][name] = {
+            "realised_span_pp": round(span_pp, 3), "low_span": bool(low_span),
+            "min_steps_required": min_steps, "steps": int(r["pred_monotone_steps"]),
+            "steps_ok": bool(steps_ok), "slope_ratio": slope,
+            "slope_clause_applies": bool(slope_applies), "slope_ok": bool(slope_ok),
+            "pass": bool(d_ok),
+        }
+    out["pass"] = bool(ok)
+    out["failed_drivers"] = [k for k, v in out["by_driver"].items() if not v["pass"]]
     return out
 
 
@@ -1187,6 +1260,7 @@ def score(te: pd.DataFrame, p: np.ndarray) -> dict:
     calib_ok, calib_worst, calib_who = PM.calibration_verdict(calib)
     resp = responsiveness(te, p)
     resp_ok, resp_worst = PM.responsiveness_verdict(resp, RESPONSIVENESS_MIN_STEPS)
+    d8 = decision8_verdict(resp, reading=DECISION8_ADOPTED_READING)
     return {
         "n": int(len(te)),
         "log_loss": PM.log_loss(y, p),
@@ -1198,8 +1272,11 @@ def score(te: pd.DataFrame, p: np.ndarray) -> dict:
         "calib_worst_gap_pp": calib_worst,
         "calib_worst_class": calib_who,
         "responsiveness": resp,
-        "resp_pass": bool(resp_ok),
+        "resp_pass": bool(resp_ok),              # the SUPERSEDED steps-only gate
         "resp_min_steps": resp_worst,
+        "resp_decision8": d8,                    # the live gate (Decision 8)
+        "resp_pass_decision8": bool(d8["pass"]),
+        "resp_failed_drivers_decision8": d8["failed_drivers"],
         "by_chance": PM.segment_calibration(
             np.where(te["chance_number"].to_numpy() > 1, "continuation", "first"), y, p, CLASSES),
     }
@@ -1288,13 +1365,16 @@ class FittedFgMake:
 
 __all__ = [
     "ARMS", "ARM_FEATURE_SET", "ARM_SIMPLICITY", "BANNED_FEATURES", "CLASSES",
-    "CLASS_INDEX", "CLASS_KEY", "CLASS_KEYS", "COUNT_COLS", "DEFAULT_VERSION",
-    "DEF_SHRINK_GRID", "FEATURE_SETS", "FOLDS", "LGBM_LADDER", "LINEUP_FOLDS",
-    "LINEUP_PRIOR_GRID", "PRIOR_KINDS", "RESPONSIVENESS_MIN_STEPS",
+    "CLASS_INDEX", "CLASS_KEY", "CLASS_KEYS", "COUNT_COLS",
+    "DECISION8_ADOPTED_READING", "DECISION8_READINGS",
+    "DEFAULT_VERSION", "DEF_SHRINK_GRID", "FEATURE_SETS", "FOLDS", "LGBM_LADDER",
+    "LINEUP_FOLDS", "LINEUP_PRIOR_GRID", "LOW_SPAN_PP", "MIN_STEPS_DEFAULT",
+    "MIN_STEPS_LOW_SPAN", "PRIOR_KINDS", "RESPONSIVENESS_MIN_STEPS",
     "RESPONSIVENESS_SPECS", "SELECTION_FOLD", "SHOT_CLASSES", "SHRINK_GRID",
-    "TREE_ARMS", "FittedFgMake", "LgbmArm", "RidgeArm", "attach_lineup_features",
-    "build_design", "build_fg_events", "chance_state", "class_slice",
-    "defender_rates", "design_matrix", "eb_predict", "efg_table", "feature_set",
-    "fit_arm", "fit_by_class", "fit_eb", "fold_slices", "league_asof_by_date",
-    "predict_arm", "responsiveness", "score", "shooter_form", "team_shot_form",
+    "SLOPE_BAND", "TREE_ARMS", "FittedFgMake", "LgbmArm", "RidgeArm",
+    "attach_lineup_features", "build_design", "build_fg_events", "chance_state",
+    "class_slice", "decision8_verdict", "defender_rates", "design_matrix",
+    "eb_predict", "efg_table", "feature_set", "fit_arm", "fit_by_class", "fit_eb",
+    "fold_slices", "league_asof_by_date", "predict_arm", "responsiveness", "score",
+    "shooter_form", "team_shot_form",
 ]

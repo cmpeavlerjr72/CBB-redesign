@@ -439,3 +439,126 @@ bundle by 3.00 pp, while the two arms carrying `chance_number` /
   attempts are past the crossover.
 - **The `minutes-to-date` gap is structural, not an oversight** (section 2.1):
   ESPN-id coverage is 0% in 2022 and 2023 and 100% in 2024 and 2025.
+
+## 12. RE-DECISION under ARCHITECTURE_DECISIONS.md Decision 8 (gate amended 2026-09-10; decision step only, nothing retrained)
+
+Decision 8 supersedes the steps-only responsiveness wording of the pre-registration in section 1. The gate is now: slope ratio within [0.8, 1.2] AND monotone in at least 3 of 4 quintile steps, with the 4-of-4 requirement dropped when the driver's realised quintile span is below 2.0 pp, on every driver. Every log loss, calibration table and responsiveness ladder below is read back out of `data/processed/models/fg_make/run_report.json` exactly as the original run wrote it; only the gate verdict and the decision rule are recomputed.
+
+Realised quintile spans of the two drivers (the quantity the 2 pp clause keys on):
+
+| shot_class | shooter span pp | defence span pp | low-span driver |
+|---|---|---|---|
+| FGA_rim | 16.084 | 4.977 | none |
+| FGA_jump2 | 8.138 | 3.329 | none |
+| FGA_3 | 35.899 | 1.373 | def_allow_c |
+
+**The one ambiguity in clause (a), stated rather than resolved silently.** Clause (b) exempts a sub-2 pp driver from the step count because its steps are noise; clause (a) does not say whether the SLOPE on such a driver is exempt too. It bites exactly once -- `FGA_3`'s defence driver spans 1.37 pp and LightGBM's slope on it is 0.474 -- so both readings are computed:
+
+### 12.1 `strict`: the slope band applies to EVERY driver
+
+**`FGA_rim`** -- winner **lgbm**, F2 log loss 0.641605 (floor 0.000539)
+
+| arm | log_loss | calib | shooter steps/slope | defence steps/slope | resp | gate |
+|---|---|---|---|---|---|---|
+| team_baseline | 0.675996 | FAIL (2.232) | 4/4, 0.1795 | 4/4, 0.9874 | FAIL (shooter_make_c) | FAIL |
+| eb_shrink | 0.670433 | PASS | 4/4, 0.999 | 4/4, 0.9988 | PASS | PASS |
+| ridge | 0.659766 | PASS | 4/4, 0.8357 | 4/4, 0.9177 | PASS | PASS |
+| lgbm | 0.641605 | PASS | 4/4, 1.0075 | 4/4, 0.9992 | PASS | PASS |
+
+The tree arm beats the best passing non-tree arm (`ridge`) by 0.018161 = 33.69x the floor.
+
+**`FGA_jump2`** -- winner **lgbm**, F2 log loss 0.642003 (floor 0.000578)
+
+| arm | log_loss | calib | shooter steps/slope | defence steps/slope | resp | gate |
+|---|---|---|---|---|---|---|
+| team_baseline | 0.668211 | PASS | 4/4, 0.1417 | 4/4, 1.0283 | FAIL (shooter_make_c) | FAIL |
+| eb_shrink | 0.667461 | PASS | 4/4, 0.8394 | 4/4, 1.3876 | FAIL (def_allow_c) | FAIL |
+| ridge | 0.660729 | PASS | 4/4, 0.8235 | 4/4, 0.9657 | PASS | PASS |
+| lgbm | 0.642003 | PASS | 4/4, 0.986 | 4/4, 0.8281 | PASS | PASS |
+
+The tree arm beats the best passing non-tree arm (`ridge`) by 0.018726 = 32.4x the floor.
+
+**`FGA_3`** -- winner **NONE** (floor 0.000849)
+
+| arm | log_loss | calib | shooter steps/slope | defence steps/slope | resp | gate |
+|---|---|---|---|---|---|---|
+| team_baseline | 0.639094 | PASS | 4/4, 0.0086 | 4/4, 1.0117 | FAIL (shooter_make_c) | FAIL |
+| eb_shrink | 0.599327 | FAIL (2.043) | 4/4, 1.0663 | 4/4, 0.8256 | PASS | FAIL |
+| ridge | 0.58837 | FAIL (3.177) | 4/4, 0.9704 | 3/4, 0.7097 | FAIL (def_allow_c) | FAIL |
+| lgbm | 0.561085 | PASS | 4/4, 0.9878 | 3/4, 0.4736 | FAIL (def_allow_c) | FAIL |
+
+no arm passes both gates under this reading, so nothing is adopted for this class
+
+### 12.2 `low_span_exempt`: a sub-2 pp driver is noise for BOTH clauses
+
+**`FGA_rim`** -- winner **lgbm**, F2 log loss 0.641605 (floor 0.000539)
+
+| arm | log_loss | calib | shooter steps/slope | defence steps/slope | resp | gate |
+|---|---|---|---|---|---|---|
+| team_baseline | 0.675996 | FAIL (2.232) | 4/4, 0.1795 | 4/4, 0.9874 | FAIL (shooter_make_c) | FAIL |
+| eb_shrink | 0.670433 | PASS | 4/4, 0.999 | 4/4, 0.9988 | PASS | PASS |
+| ridge | 0.659766 | PASS | 4/4, 0.8357 | 4/4, 0.9177 | PASS | PASS |
+| lgbm | 0.641605 | PASS | 4/4, 1.0075 | 4/4, 0.9992 | PASS | PASS |
+
+The tree arm beats the best passing non-tree arm (`ridge`) by 0.018161 = 33.69x the floor.
+
+**`FGA_jump2`** -- winner **lgbm**, F2 log loss 0.642003 (floor 0.000578)
+
+| arm | log_loss | calib | shooter steps/slope | defence steps/slope | resp | gate |
+|---|---|---|---|---|---|---|
+| team_baseline | 0.668211 | PASS | 4/4, 0.1417 | 4/4, 1.0283 | FAIL (shooter_make_c) | FAIL |
+| eb_shrink | 0.667461 | PASS | 4/4, 0.8394 | 4/4, 1.3876 | FAIL (def_allow_c) | FAIL |
+| ridge | 0.660729 | PASS | 4/4, 0.8235 | 4/4, 0.9657 | PASS | PASS |
+| lgbm | 0.642003 | PASS | 4/4, 0.986 | 4/4, 0.8281 | PASS | PASS |
+
+The tree arm beats the best passing non-tree arm (`ridge`) by 0.018726 = 32.4x the floor.
+
+**`FGA_3`** -- winner **lgbm**, F2 log loss 0.561085 (floor 0.000849)
+
+| arm | log_loss | calib | shooter steps/slope | defence steps/slope | resp | gate |
+|---|---|---|---|---|---|---|
+| team_baseline | 0.639094 | PASS | 4/4, 0.0086 | 4/4, 1.0117 | FAIL (shooter_make_c) | FAIL |
+| eb_shrink | 0.599327 | FAIL (2.043) | 4/4, 1.0663 | 4/4, 0.8256 | PASS | FAIL |
+| ridge | 0.58837 | FAIL (3.177) | 4/4, 0.9704 | 3/4, 0.7097 | PASS | FAIL |
+| lgbm | 0.561085 | PASS | 4/4, 0.9878 | 3/4, 0.4736 | PASS | PASS |
+
+no non-tree arm passes both gates, so the 'a tree must beat the best PASSING non-tree arm by more than the floor' clause has nothing to bind against; the gap to the best non-tree arm of any gate status (`ridge`, 0.58837) is 0.027285 = 32.1x the floor
+
+### 12.3 What is adopted
+
+Adopted reading: **`low_span_exempt`**. Decision 8 states the corrected gate changes FGA_3 from team_baseline to LightGBM. That follows only if a sub-2 pp driver is exempt from the SLOPE clause as well as from the step count, because LightGBM's slope on the FGA_3 defence driver is 0.474. Under the strict reading no arm passes FGA_3 and nothing would be adopted for that class. Both are computed above; the wording of clause (a) is what needs tightening, not the models.
+
+| shot_class | pre-registered gate | Decision 8 gate | changed |
+|---|---|---|---|
+| FGA_rim | lgbm | lgbm | no |
+| FGA_jump2 | lgbm | lgbm | no |
+| FGA_3 | team_baseline | lgbm | yes |
+
+Artifacts re-exported (the only fits in this step; same fold, same frozen parameters, a serialisation of an arm the grid already scored):
+
+- `FGA_rim`: data\processed\models\fg_make\winner_FGA_rim.joblib (unchanged: lgbm)
+- `FGA_jump2`: data\processed\models\fg_make\winner_FGA_jump2.joblib (unchanged: lgbm)
+- `FGA_3_superseded`: data\processed\models\fg_make\reference_superseded_FGA_3.joblib (the team_baseline arm, kept for reference)
+- `FGA_3`: data\processed\models\fg_make\winner_FGA_3.joblib (re-exported: team_baseline -> lgbm)
+
+### 12.4 G4 on the re-decided trio
+
+Same construction as section 10 -- each class's adopted arm refit on F2 train, scored on the same F2 test rows and the same actual shot mix:
+
+| side | n_teams | actual eFG% | implied eFG% | overall gap pp | team MAE pp | team corr | T1 gap pp (asof) | T2 gap pp (asof) | T3 gap pp (asof) | worst gap pp (asof) | G4 (asof) | T1 gap pp (actual) | T2 gap pp (actual) | T3 gap pp (actual) | worst gap pp (actual) | G4 (actual) |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| offense | 364 | 50.874 | 50.932 | 0.058 | 1.614 | 0.7746 | 0.711 | 0.076 | -0.56 | 0.711 | PASS | 0.74 | 0.238 | -0.743 | 0.743 | PASS |
+| defense | 364 | 50.874 | 50.932 | 0.058 | 1.448 | 0.7606 | -0.657 | -0.154 | 0.914 | 0.914 | PASS | 1.03 | -0.11 | -0.843 | 1.03 | FAIL |
+
+### 12.5 The code now gates on Decision 8 (so a future re-run cannot re-decide under the old rule)
+
+`cbb_sim.models.fg_make.score` reports BOTH verdicts -- `resp_pass` (the
+superseded steps-only reading, so the tables in sections 3 and 9 stay readable)
+and `resp_pass_decision8` with its per-driver working -- and
+`scripts/train_fg_make_v1.py` now decides on the latter, with both columns
+(`respons`, `respons_d8`) written to `grid_results.csv`. The reading is
+`fg_make.DECISION8_ADOPTED_READING`; `decision8_verdict(..., reading=...)`
+computes either on demand. Six tests in `tests/test_fg_make.py` pin the gate:
+the flat arm is rejected, the over-steep arm is rejected, the band edges are
+inclusive, the 4-of-4 rule survives on a high-span driver, the two readings
+differ only on a sub-2 pp driver, and an unknown reading raises.

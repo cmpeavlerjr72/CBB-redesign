@@ -98,8 +98,11 @@ def flat_row(s: dict, fold: str, shot_class: str) -> dict:
         "calib": "PASS" if s["calib_pass"] else "FAIL",
         "worst_gap_pp": s["calib_worst_gap_pp"],
         "level_pp": round(level, 3), "shape_pp": round(shape, 3),
-        "respons": "PASS" if s["resp_pass"] else "FAIL",
+        "respons": "PASS" if s["resp_pass"] else "FAIL",   # superseded steps-only gate
         "resp_min_steps": s["resp_min_steps"],
+        "respons_d8": "PASS" if s.get("resp_pass_decision8") else "FAIL",
+        "resp_d8_failed": ",".join(d.split("->")[0]
+                                   for d in s.get("resp_failed_drivers_decision8", [])),
         "fit_s": s["fit_s"],
     }
     for k, v in s["responsiveness"].items():
@@ -306,6 +309,279 @@ def lineup_block(design: pd.DataFrame, events: pd.DataFrame, lgbm_params: dict,
     return out
 
 
+def decide_generic(rows: list[dict], floor: float) -> dict:
+    """The pre-registered DECISION rule applied to an arbitrary pass/fail set.
+
+    Identical logic to `decide`, but taking the gate verdict as data so the
+    amended gate of Decision 8 can be applied to the stored run report without
+    refitting anything."""
+    v: dict = {"n_arms": len(rows), "passing_arms": [r["arm"] for r in rows if r["pass"]],
+               "floor": round(floor, 6)}
+    passing = [r for r in rows if r["pass"]]
+    v["n_passing"] = len(passing)
+    if not passing:
+        v["winner"] = None
+        v["note"] = ("no arm passes both gates under this reading, so nothing is adopted for this "
+                     "class")
+        return v
+    best = min(passing, key=lambda r: (r["log_loss"], FG.ARM_SIMPLICITY[r["arm"]]))
+    v["winner"], v["log_loss"] = best["arm"], best["log_loss"]
+    non_tree = [r for r in passing if r["arm"] not in FG.TREE_ARMS]
+    best_nt = min(non_tree, key=lambda r: r["log_loss"]) if non_tree else None
+    if best["arm"] in FG.TREE_ARMS:
+        if best_nt is None:
+            nt_any = [r for r in rows if r["arm"] not in FG.TREE_ARMS]
+            ref = min(nt_any, key=lambda r: r["log_loss"]) if nt_any else None
+            v["tree_clause"] = (
+                "no non-tree arm passes both gates, so the 'a tree must beat the best PASSING "
+                "non-tree arm by more than the floor' clause has nothing to bind against"
+                + (f"; the gap to the best non-tree arm of any gate status (`{ref['arm']}`, "
+                   f"{ref['log_loss']}) is {round(ref['log_loss'] - best['log_loss'], 6)} = "
+                   f"{round((ref['log_loss'] - best['log_loss']) / floor, 1)}x the floor"
+                   if ref else ""))
+        else:
+            gain = best_nt["log_loss"] - best["log_loss"]
+            v["best_passing_non_tree"] = best_nt["arm"]
+            v["tree_gain_over_non_tree"] = round(gain, 6)
+            v["tree_gain_in_floors"] = round(gain / floor, 2) if floor else None
+            if gain <= floor:
+                v["winner"], v["log_loss"] = best_nt["arm"], best_nt["log_loss"]
+                v["note"] = ("the tree arm's edge is inside the noise floor, so the simplicity "
+                             "tie-break selects the simpler arm")
+    return v
+
+
+def redecide(args) -> int:
+    """`--redecide`: re-apply the responsiveness gate of ARCHITECTURE_DECISIONS.md
+    Decision 8 to the run report that is already on disk.
+
+    NOTHING IS RETRAINED. Every log loss, calibration table and responsiveness
+    ladder is read back out of `run_report.json` exactly as the bake-off wrote
+    it; only the gate verdict and the decision rule are recomputed. The single
+    fit this function performs is the re-EXPORT of a winner artifact (below),
+    which is a serialisation of an arm the grid already scored, on the same fold
+    and the same frozen parameters."""
+    rp = OUT_DIR / "run_report.json"
+    report = json.loads(rp.read_text())
+    ladder = json.loads((OUT_DIR / f"lgbm_ladder_{args.version}.json").read_text())
+    lgbm_params = {c: dict(v) for c, v in ladder["frozen_params"].items()}
+
+    out: dict = {
+        "authority": "ARCHITECTURE_DECISIONS.md Decision 8 (2026-09-10)",
+        "gate": {"slope_band": list(FG.SLOPE_BAND), "low_span_pp": FG.LOW_SPAN_PP,
+                 "min_steps": FG.MIN_STEPS_DEFAULT,
+                 "min_steps_low_span": FG.MIN_STEPS_LOW_SPAN},
+        "retrained": False,
+        "readings": {}, "by_class": {}, "spans_pp": {},
+    }
+    for c in FG.SHOT_CLASSES:
+        s0 = report["detail"][f"F2|{c}|lgbm"]
+        out["spans_pp"][c] = {k: round(abs(float(v["span_actual"])) * 100, 3)
+                              for k, v in s0["responsiveness"].items()}
+
+    for reading in FG.DECISION8_READINGS:
+        per_class: dict = {}
+        for c in FG.SHOT_CLASSES:
+            floor = float(report["noise_floor"][c]["floor"])
+            rows = []
+            for arm in FG.ARMS:
+                s = report["detail"][f"F2|{c}|{arm}"]
+                g = FG.decision8_verdict(s["responsiveness"], reading=reading)
+                rows.append({
+                    "arm": arm, "log_loss": round(float(s["log_loss"]), 6),
+                    "calib_pass": bool(s["calib_pass"]),
+                    "calib_worst_gap_pp": s["calib_worst_gap_pp"],
+                    "resp_pass": bool(g["pass"]), "resp_detail": g,
+                    "failed_drivers": g["failed_drivers"],
+                    "pass": bool(s["calib_pass"] and g["pass"]),
+                })
+            per_class[c] = {"rows": rows, "decision": decide_generic(rows, floor)}
+        out["readings"][reading] = per_class
+
+    # The reading Decision 8's own stated outcome implies (see the module note in
+    # cbb_sim.models.fg_make): a driver whose realised span is under 2 pp is
+    # noise for BOTH clauses. Recorded as such, with the strict reading kept.
+    adopted = "low_span_exempt"
+    out["adopted_reading"] = adopted
+    out["adopted_reading_why"] = (
+        "Decision 8 states the corrected gate changes FGA_3 from team_baseline to LightGBM. That "
+        "follows only if a sub-2 pp driver is exempt from the SLOPE clause as well as from the "
+        "step count, because LightGBM's slope on the FGA_3 defence driver is 0.474. Under the "
+        "strict reading no arm passes FGA_3 and nothing would be adopted for that class. Both are "
+        "computed above; the wording of clause (a) is what needs tightening, not the models.")
+    out["by_class"] = {c: out["readings"][adopted][c]["decision"] for c in FG.SHOT_CLASSES}
+    out["changes_vs_pre_registered_gate"] = {
+        c: {"was": report["decision"][c]["winner"], "now": out["by_class"][c]["winner"]}
+        for c in FG.SHOT_CLASSES}
+
+    # ---- artifacts: re-export under the re-decision ------------------------
+    universe = ES.load_universe(require_pbp_complete=True)
+    events = build_or_load_events(args.version, False, universe)
+    design = FG.build_design(SEASONS, universe=universe, version=args.version, events=events)
+    tr_all, _ = FG.fold_slices(design, "F2")
+    exported: dict = {}
+    for c in FG.SHOT_CLASSES:
+        new_arm = out["by_class"][c]["winner"]
+        old_arm = report["decision"][c]["winner"]
+        if new_arm is None:
+            exported[c] = "NOT WRITTEN: nothing adopted under the adopted reading"
+            continue
+        path = OUT_DIR / f"winner_{c}.joblib"
+        if new_arm != old_arm and path.exists():
+            keep = OUT_DIR / f"reference_superseded_{c}.joblib"
+            keep.write_bytes(path.read_bytes())
+            exported[f"{c}_superseded"] = f"{str(keep)} (the {old_arm} arm, kept for reference)"
+        if new_arm == old_arm:
+            exported[c] = f"{str(path)} (unchanged: {new_arm})"
+            continue
+        tr = FG.class_slice(tr_all, c)
+        model = FG.fit_arm(new_arm, tr, eb_best=report["eb_fits"][f"F2|{c}"]["best"],
+                           params=lgbm_params.get(c))
+        fs = FG.ARM_FEATURE_SET[new_arm] or "eb"
+        fitted = FG.FittedFgMake(
+            arm=new_arm, feature_set=fs, fold="F2",
+            features=FG.feature_set(fs) if fs != "eb" else [],
+            models={c: model}, classes=FG.CLASSES,
+            meta={"shot_class": c, "possessions_version": args.version,
+                  "rim_override_max_ft": report["rim_override_max_ft"],
+                  "log_loss_F2": out["by_class"][c]["log_loss"],
+                  "lgbm_params": lgbm_params.get(c) if new_arm == "lgbm" else None,
+                  "eb_best": report["eb_fits"][f"F2|{c}"]["best"] if new_arm == "eb_shrink" else None,
+                  "gate": "ARCHITECTURE_DECISIONS.md Decision 8",
+                  "supersedes_arm": old_arm})
+        import joblib
+
+        joblib.dump(fitted, path)
+        exported[c] = f"{str(path)} (re-exported: {old_arm} -> {new_arm})"
+    out["artifacts"] = exported
+
+    # ---- G4 on the re-decided trio ----------------------------------------
+    mx = efg_winner_mix(design, report, lgbm_params,
+                        mix={c: out["by_class"][c]["winner"] for c in FG.SHOT_CLASSES})
+    out["efg_gate_trio"] = mx
+
+    report["redecision_decision8"] = out
+    rp.write_text(json.dumps(report, indent=1, default=str))
+    section = render_redecision(out, report)
+    if args.no_append:
+        print(section)
+    else:
+        with DOC.open("a", encoding="utf-8") as fh:
+            fh.write("\n" + section)
+        print(f"appended the Decision 8 re-decision to {DOC}", flush=True)
+    for c in FG.SHOT_CLASSES:
+        for reading in FG.DECISION8_READINGS:
+            d = out["readings"][reading][c]["decision"]
+            print(f"{c:10s} {reading:16s} winner={d['winner']} "
+                  f"({d.get('log_loss')}) passing={d['passing_arms']}", flush=True)
+    print("artifacts:", json.dumps(exported, indent=1))
+    for side in ("offense", "defense"):
+        if side in mx:
+            print(side, {k: v for k, v in mx[side].items() if not k.startswith("terciles")})
+    return 0
+
+
+def render_redecision(out: dict, report: dict) -> str:
+    L: list[str] = []
+    L.append("## 12. RE-DECISION under ARCHITECTURE_DECISIONS.md Decision 8 "
+             "(gate amended 2026-09-10; decision step only, nothing retrained)\n")
+    g = out["gate"]
+    L.append(f"Decision 8 supersedes the steps-only responsiveness wording of the "
+             f"pre-registration in section 1. The gate is now: slope ratio within "
+             f"{g['slope_band']} AND monotone in at least {g['min_steps_low_span']} of 4 quintile "
+             f"steps, with the {g['min_steps']}-of-4 requirement dropped when the driver's "
+             f"realised quintile span is below {g['low_span_pp']} pp, on every driver. Every log "
+             "loss, calibration table and responsiveness ladder below is read back out of "
+             "`data/processed/models/fg_make/run_report.json` exactly as the original run wrote "
+             "it; only the gate verdict and the decision rule are recomputed.\n")
+    L.append("Realised quintile spans of the two drivers (the quantity the 2 pp clause keys on):\n")
+    rows = [{"shot_class": c,
+             "shooter span pp": v.get("shooter_make_c->MAKE"),
+             "defence span pp": v.get("def_allow_c->MAKE"),
+             "low-span driver": ", ".join(
+                 k.split('->')[0] for k, s in v.items() if s < g["low_span_pp"]) or "none"}
+            for c, v in out["spans_pp"].items()]
+    L.append(_table(rows, list(rows[0].keys())))
+    L.append("")
+    L.append("**The one ambiguity in clause (a), stated rather than resolved silently.** Clause "
+             "(b) exempts a sub-2 pp driver from the step count because its steps are noise; "
+             "clause (a) does not say whether the SLOPE on such a driver is exempt too. It bites "
+             "exactly once -- `FGA_3`'s defence driver spans 1.37 pp and LightGBM's slope on it is "
+             "0.474 -- so both readings are computed:\n")
+    for reading in FG.DECISION8_READINGS:
+        label = ("`strict`: the slope band applies to EVERY driver"
+                 if reading == "strict" else
+                 "`low_span_exempt`: a sub-2 pp driver is noise for BOTH clauses")
+        L.append(f"### 12.{1 + FG.DECISION8_READINGS.index(reading)} {label}\n")
+        for c in FG.SHOT_CLASSES:
+            blk = out["readings"][reading][c]
+            rows = []
+            for r in blk["rows"]:
+                det = r["resp_detail"]["by_driver"]
+                rows.append({
+                    "arm": r["arm"], "log_loss": r["log_loss"],
+                    "calib": "PASS" if r["calib_pass"] else f"FAIL ({r['calib_worst_gap_pp']})",
+                    "shooter steps/slope": f"{det['shooter_make_c->MAKE']['steps']}/4, "
+                                           f"{det['shooter_make_c->MAKE']['slope_ratio']}",
+                    "defence steps/slope": f"{det['def_allow_c->MAKE']['steps']}/4, "
+                                           f"{det['def_allow_c->MAKE']['slope_ratio']}",
+                    "resp": "PASS" if r["resp_pass"] else "FAIL (" + ", ".join(
+                        d.split('->')[0] for d in r["failed_drivers"]) + ")",
+                    "gate": "PASS" if r["pass"] else "FAIL",
+                })
+            d = blk["decision"]
+            L.append(f"**`{c}`** -- winner **{d['winner'] or 'NONE'}**"
+                     + (f", F2 log loss {d['log_loss']}" if d["winner"] else "")
+                     + f" (floor {d['floor']})\n")
+            L.append(_table(rows, list(rows[0].keys())))
+            L.append("")
+            if d.get("tree_gain_over_non_tree") is not None:
+                L.append(f"The tree arm beats the best passing non-tree arm "
+                         f"(`{d['best_passing_non_tree']}`) by {d['tree_gain_over_non_tree']} = "
+                         f"{d['tree_gain_in_floors']}x the floor.\n")
+            if d.get("tree_clause"):
+                L.append(d["tree_clause"] + "\n")
+            if d.get("note"):
+                L.append(d["note"] + "\n")
+    L.append("### 12.3 What is adopted\n")
+    L.append(f"Adopted reading: **`{out['adopted_reading']}`**. {out['adopted_reading_why']}\n")
+    rows = [{"shot_class": c, "pre-registered gate": v["was"] or "NONE",
+             "Decision 8 gate": v["now"] or "NONE",
+             "changed": "yes" if v["was"] != v["now"] else "no"}
+            for c, v in out["changes_vs_pre_registered_gate"].items()]
+    L.append(_table(rows, list(rows[0].keys())))
+    L.append("")
+    L.append("Artifacts re-exported (the only fits in this step; same fold, same frozen "
+             "parameters, a serialisation of an arm the grid already scored):\n")
+    for k, v in out["artifacts"].items():
+        L.append(f"- `{k}`: {v}")
+    L.append("")
+    mx = out["efg_gate_trio"]
+    L.append("### 12.4 G4 on the re-decided trio\n")
+    if not mx.get("computable"):
+        L.append(mx.get("note", "") + "\n")
+        return "\n".join(L)
+    L.append("Same construction as section 10 -- each class's adopted arm refit on F2 train, "
+             "scored on the same F2 test rows and the same actual shot mix:\n")
+    rows = []
+    for side in ("offense", "defense"):
+        e = mx[side]
+        row = {"side": side, "n_teams": e["n_teams"],
+               "actual eFG%": e["overall_actual_efg_pct"],
+               "implied eFG%": e["overall_implied_efg_pct"],
+               "overall gap pp": e["overall_gap_pp"],
+               "team MAE pp": e["team_level_mae_pp"], "team corr": e["team_level_corr"]}
+        for label in ("asof", "actual"):
+            for r in e[f"terciles_{label}"]:
+                row[f"T{r['tercile']} gap pp ({label})"] = r["gap_pp"]
+            row[f"worst gap pp ({label})"] = e[f"worst_gap_pp_{label}"]
+            row[f"G4 ({label})"] = "PASS" if e[f"pass_{label}"] else "FAIL"
+        rows.append(row)
+    L.append(_table(rows, list(rows[0].keys())))
+    L.append("")
+    return "\n".join(L)
+
+
 def winner_mix_only(args) -> int:
     """`--efg-winner-mix-only`: the G4 check on the adopted trio, from the run
     report the main pass already wrote. Separate entry point so the expensive
@@ -335,7 +611,8 @@ def winner_mix_only(args) -> int:
     return 0
 
 
-def efg_winner_mix(design: pd.DataFrame, report: dict, lgbm_params: dict) -> dict:
+def efg_winner_mix(design: pd.DataFrame, report: dict, lgbm_params: dict,
+                   mix: dict | None = None) -> dict:
     """The G4 check on the TRIO THAT WAS ACTUALLY ADOPTED.
 
     The per-arm table in section 6 holds one arm fixed across all three classes,
@@ -345,7 +622,7 @@ def efg_winner_mix(design: pd.DataFrame, report: dict, lgbm_params: dict) -> dic
     winners are mixed the adopted trio gets its own row, refit on F2 train and
     scored on the same F2 test rows."""
     tr_all, te_all = FG.fold_slices(design, "F2")
-    mix = {c: report["decision"][c]["winner"] for c in FG.SHOT_CLASSES}
+    mix = mix or {c: report["decision"][c]["winner"] for c in FG.SHOT_CLASSES}
     parts, preds = [], []
     for c in FG.SHOT_CLASSES:
         arm = mix[c]
@@ -400,7 +677,12 @@ def decide(rows: list[dict], floor: float, shot_class: str) -> dict:
     # arm, and can never win the bake-off.
     f2 = [r for r in rows if r["fold"] == "F2" and r["shot_class"] == shot_class
           and r["arm"] in FG.ARMS]
-    passing = [r for r in f2 if r["calib"] == "PASS" and r["respons"] == "PASS"]
+    # The LIVE responsiveness gate is ARCHITECTURE_DECISIONS.md Decision 8
+    # (slope band + steps, 4-of-4 dropped below a 2 pp realised span). The
+    # superseded steps-only verdict is still reported in every table as
+    # `respons`, so a re-run's decision and the original run's decision can be
+    # read next to each other.
+    passing = [r for r in f2 if r["calib"] == "PASS" and r["respons_d8"] == "PASS"]
     v: dict = {"n_arms": len(f2), "n_passing": len(passing),
                "passing_arms": [r["arm"] for r in passing], "floor": round(floor, 6)}
     if not passing:
@@ -446,11 +728,17 @@ def main() -> int:
     ap.add_argument("--efg-winner-mix-only", action="store_true",
                     help="re-open the last run report, compute G4 on the adopted trio and append "
                          "that section only (the rest of the run is untouched)")
+    ap.add_argument("--redecide", action="store_true",
+                    help="re-apply the amended responsiveness gate (ARCHITECTURE_DECISIONS.md "
+                         "Decision 8) to the run report on disk, re-export the winner artifacts "
+                         "and recompute G4 on the re-decided trio. Nothing is retrained")
     args = ap.parse_args()
 
     OUT_DIR.mkdir(parents=True, exist_ok=True)
     if args.efg_winner_mix_only:
         return winner_mix_only(args)
+    if args.redecide:
+        return redecide(args)
     t_start = time.time()
     universe = ES.load_universe(require_pbp_complete=True)
     universe_loose = ES.load_universe()
@@ -683,7 +971,7 @@ def _table(rows: list[dict], cols: list[str]) -> str:
 
 
 GRID_COLS = ["arm", "feature_set", "n", "log_loss", "brier", "pred_make_pct", "actual_make_pct",
-             "calib", "worst_gap_pp", "level_pp", "shape_pp", "respons",
+             "calib", "worst_gap_pp", "level_pp", "shape_pp", "respons", "respons_d8",
              "steps_shooter_make_c", "slope_shooter_make_c", "steps_def_allow_c",
              "slope_def_allow_c", "chancegap_first", "chancegap_continuation", "fit_s"]
 

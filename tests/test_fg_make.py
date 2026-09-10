@@ -481,6 +481,91 @@ def test_rows_with_no_as_of_rate_are_reported_separately_not_bucketed():
     assert sum(r["n"]) == 60
 
 
+# ---------------------------------------------------------------------------
+# Decision 8's amended responsiveness gate
+# ---------------------------------------------------------------------------
+def _driver(steps: int, slope: float | None, span_pp: float) -> dict:
+    return {"pred_monotone_steps": steps, "slope_ratio": slope,
+            "span_actual": span_pp / 100.0}
+
+
+def _resp(shooter: dict, defence: dict) -> dict:
+    return {"shooter_make_c->MAKE": shooter, "def_allow_c->MAKE": defence}
+
+
+def test_decision8_rejects_a_model_that_is_flat_at_the_mean():
+    # the FGA_3 team baseline: monotone in 4 of 4 steps, and 116x too flat
+    resp = _resp(_driver(4, 0.0086, 35.9), _driver(4, 1.012, 1.37))
+    for reading in FG.DECISION8_READINGS:
+        v = FG.decision8_verdict(resp, reading=reading)
+        assert not v["pass"], reading
+        assert v["failed_drivers"] == ["shooter_make_c->MAKE"]
+
+
+def test_decision8_rejects_an_over_steep_driver_too():
+    # the FGA_jump2 EB arm: 1.388 is outside the band on the OTHER side
+    resp = _resp(_driver(4, 0.839, 8.14), _driver(4, 1.3876, 3.33))
+    v = FG.decision8_verdict(resp, reading="strict")
+    assert not v["pass"]
+    assert v["failed_drivers"] == ["def_allow_c->MAKE"]
+
+
+def test_decision8_the_two_readings_differ_only_on_a_low_span_driver():
+    # the FGA_3 tree: 3/4 steps and slope 0.474 on a 1.37 pp driver
+    resp = _resp(_driver(4, 0.988, 35.9), _driver(3, 0.4736, 1.37))
+    strict = FG.decision8_verdict(resp, reading="strict")
+    lenient = FG.decision8_verdict(resp, reading="low_span_exempt")
+    assert not strict["pass"]
+    assert strict["by_driver"]["def_allow_c->MAKE"]["steps_ok"]        # 3 of 4 is allowed
+    assert not strict["by_driver"]["def_allow_c->MAKE"]["slope_ok"]    # the band is not
+    assert lenient["pass"]
+    assert not lenient["by_driver"]["def_allow_c->MAKE"]["slope_clause_applies"]
+
+
+def test_decision8_keeps_the_four_of_four_rule_on_a_high_span_driver():
+    resp = _resp(_driver(3, 1.0, 35.9), _driver(4, 1.0, 4.98))
+    for reading in FG.DECISION8_READINGS:
+        v = FG.decision8_verdict(resp, reading=reading)
+        assert not v["pass"], reading
+        assert not v["by_driver"]["shooter_make_c->MAKE"]["steps_ok"]
+
+
+@pytest.mark.parametrize("slope,ok", [(0.8, True), (1.2, True), (0.79, False), (1.21, False)])
+def test_decision8_band_edges_are_inclusive(slope, ok):
+    resp = _resp(_driver(4, slope, 35.9), _driver(4, 1.0, 4.98))
+    assert FG.decision8_verdict(resp, reading="strict")["pass"] is ok
+
+
+def test_decision8_refuses_an_unknown_reading():
+    resp = _resp(_driver(4, 1.0, 35.9), _driver(4, 1.0, 4.98))
+    with pytest.raises(KeyError):
+        FG.decision8_verdict(resp, reading="whatever_makes_my_arm_win")
+
+
+def test_score_reports_both_the_superseded_and_the_live_responsiveness_verdict():
+    n = 4000
+    rng = np.random.default_rng(0)
+    te = pd.DataFrame({
+        "shooter_make_c": rng.normal(size=n), "def_allow_c": rng.normal(size=n),
+        "shooter_att_c": rng.integers(1, 40, n), "def_att_prior": rng.integers(1, 900, n),
+        "chance_number": np.ones(n), "class_key": "three",
+    })
+    te["y"] = (rng.random(n) < 0.34).astype("int8")
+    p = np.column_stack([np.full(n, 0.66), np.full(n, 0.34)])
+    s = FG.score(te, p)
+    assert {"resp_pass", "resp_min_steps", "resp_pass_decision8", "resp_decision8",
+            "resp_failed_drivers_decision8"} <= set(s)
+    # a constant prediction has no slope at all, so the LIVE gate must reject it
+    assert s["resp_pass_decision8"] is False
+    assert FG.DECISION8_ADOPTED_READING in FG.DECISION8_READINGS
+
+
+def test_decision8_constants_match_the_recorded_decision():
+    assert FG.SLOPE_BAND == (0.8, 1.2)
+    assert FG.LOW_SPAN_PP == 2.0
+    assert (FG.MIN_STEPS_DEFAULT, FG.MIN_STEPS_LOW_SPAN) == (4, 3)
+
+
 def test_efg_is_the_standard_formula_on_the_given_shot_mix():
     # one team, 10 threes (3 made) and 10 rim (6 made):
     # eFG = (9 + 0.5*3) / 20 = 0.525

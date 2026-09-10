@@ -5,16 +5,17 @@ executes: `docs/models/fg_make/experiments.md`. Feature provenance:
 `docs/models/fg_make/features.md`. Code: `src/cbb_sim/models/fg_make.py`,
 `scripts/train_fg_make_v1.py`.
 
-**Headline.** Two of the three shot classes have a clean winner and one does
-not, and the one that does not is a finding about the GATE rather than about
-the models. `FGA_rim` and `FGA_jump2` go to LightGBM on the full bundle, each
-beating the best passing non-tree arm by more than thirty noise floors with
-calibration inside the gate and both responsiveness drivers monotone in 4 of 4
-steps. `FGA_3` is adopted as the **team-level baseline** because it is the only
-arm that passes both gates — while being 92 noise floors WORSE on log loss than
-the arm that fails, and while carrying a shooter slope ratio of 0.0086, i.e.
-essentially flat in the one dimension that matters most. Section 4.3 says
-exactly what happened and what the PM has to decide.
+**Headline.** All three shot classes go to **LightGBM on the full bundle**
+(`C_plus_state`), each with calibration inside the gate and with the shooter
+driver tracked at slope 0.99-1.01. `FGA_rim` and `FGA_jump2` beat the best
+passing non-tree arm by 33.7 and 32.4 noise floors. `FGA_3` is LightGBM under
+the amended responsiveness gate of **`ARCHITECTURE_DECISIONS.md` Decision 8**,
+which replaced the steps-only wording of this model's pre-registration after
+that wording selected a model 92 noise floors worse on log loss whose shooter
+slope ratio was 0.0086 (flat at the mean). Section 4.3 records both the
+original verdict and the re-decision; `experiments.md` section 12 is the
+mechanical re-application, and it flags one clause of Decision 8 that still
+needs tightening.
 
 ---
 
@@ -70,11 +71,15 @@ the class that model chose, with the shooter the L4 usage layer selected.
 - Primary metric: attempt-level log loss on F2, per class — the engine samples
   from this probability rather than thresholding it, so the proper score that
   punishes a confident wrong probability is the right one.
-- Gates: decile calibration (worst gated gap <= 2.0 pp) and BOTH responsiveness
-  drivers monotone in 4 of 4 quintile steps — the shooter's as-of class make
-  rate and the defence's as-of allowed rate. Applying the matchup rule to the
-  defence is stricter than any earlier L3 bake-off, and it is what decided
-  `FGA_3`.
+- Gates: decile calibration (worst gated gap <= 2.0 pp) and responsiveness on
+  BOTH drivers — the shooter's as-of class make rate and the defence's as-of
+  allowed rate. Applying the matchup rule to the defence is stricter than any
+  earlier L3 bake-off, and it is what decided `FGA_3`. The responsiveness rule
+  is now **Decision 8**'s: slope ratio within [0.8, 1.2] AND monotone in at
+  least 3 of 4 quintile steps, with the 4-of-4 requirement dropped when the
+  driver's realised quintile span is below 2 pp. The pre-registration's
+  steps-only wording is superseded; both readings are on record in
+  `experiments.md` sections 9 and 12.
 - Families: team-level logistic ridge (A only); empirical Bayes on the
   shooter's class rate combined with the defence's allowed rate on the logit
   scale, prior and both strengths fitted on the training fold; logistic ridge
@@ -87,11 +92,11 @@ the class that model chose, with the shooter the L4 usage layer selected.
 
 ## 4. Winner
 
-| class | winner | F2 log loss | worst decile gap | shooter slope | defence slope | margin over the best passing non-tree arm |
+| class | winner | F2 log loss | worst decile gap | shooter steps / slope | defence steps / slope | margin over the best passing non-tree arm |
 |---|---|---|---|---|---|---|
-| `FGA_rim` | `lgbm` / `C_plus_state` | 0.641605 | 1.19 pp | 1.008 | 0.999 | 33.7 floors over `ridge` |
-| `FGA_jump2` | `lgbm` / `C_plus_state` | 0.642003 | 1.58 pp | 0.986 | 0.828 | 32.4 floors over `ridge` |
-| `FGA_3` | `team_baseline` / `A_team` (by the rule; see 4.3) | 0.639094 | 1.05 pp | **0.009** | 1.012 | it is the only passing arm |
+| `FGA_rim` | `lgbm` / `C_plus_state` | 0.641605 | 1.19 pp | 4/4, 1.008 | 4/4, 0.999 | 33.7 floors over `ridge` |
+| `FGA_jump2` | `lgbm` / `C_plus_state` | 0.642003 | 1.58 pp | 4/4, 0.986 | 4/4, 0.828 | 32.4 floors over `ridge` |
+| `FGA_3` | `lgbm` / `C_plus_state` (Decision 8; see 4.3) | 0.561085 | 1.01 pp | 4/4, 0.988 | 3/4, 0.474 on a 1.37 pp driver | it is the only passing arm; 32.1 floors over the best non-tree arm of any gate status (`ridge`) |
 
 ### 4.1 What beat what
 
@@ -116,10 +121,19 @@ therefore a per-shot-class statement here, not a blanket one, and the
 free-throw result (L18, where the team arm fails by 6.8 pp of shape) is the
 extreme end of the same axis.
 
-### 4.3 `FGA_3`: the rule's answer, and why it is perverse
+### 4.3 `FGA_3`: the original verdict, and the Decision 8 re-decision
 
-The pre-registered rule selects `team_baseline` for threes because it is the
-only arm that passes both gates. The numbers behind that sentence:
+**As adopted now:** `lgbm`, F2 log loss 0.561085, calibration 1.01 pp, shooter
+driver 4/4 at slope 0.988. It is the only arm that clears Decision 8's gate on
+this class, so the "a tree must beat the best PASSING non-tree arm by more than
+the floor" clause has no passing non-tree arm to bind against; the gap to the
+best non-tree arm of any gate status (`ridge`, 0.588370 — which itself fails
+calibration at 3.18 pp) is 0.027285 = 32.1 floors, so the stricter reading of
+that clause selects the same arm.
+
+**What the pre-registration's steps-only gate did, and why it was amended.** The
+original rule selected `team_baseline` because it was the only arm passing a
+4-of-4 monotone requirement on both drivers. The numbers behind that sentence:
 
 | arm | F2 log loss | calibration | shooter driver | defence driver |
 |---|---|---|---|---|
@@ -153,14 +167,44 @@ anticipates this in its own docstring — "an arm that slopes the right way but
 flatter than reality still passes the SHAPE test and is caught by `slope_ratio`
 instead" — but the pre-registration gates on the steps and reports the slope.
 
-So the honest statement is: **by the pre-registered rule, `FGA_3` adopts
-`team_baseline`.** Under any reading that also gates the slope ratio (say,
-0.5-1.5 on both drivers), `FGA_3` adopts `lgbm` and all three classes agree.
-The difference between the two answers is 0.078 log loss, 92 noise floors, and
-a model that cannot tell a 15% three-point shooter from a 51% one. This is not
-a decision a worker should take by amending the spec after seeing the numbers;
-it is written up here and in `experiments.md` section 11.1 for the PM. Nothing was
-tuned, dropped or re-run to produce either answer.
+The difference between the two answers was 0.078 log loss, 92 noise floors, and
+a model that cannot tell a 15% three-point shooter from a 51% one. The worker
+did not amend the spec; the finding went to the PM (`experiments.md` section
+11.1), and the PM amended the GATE generically in
+`ARCHITECTURE_DECISIONS.md` **Decision 8**: slope ratio within [0.8, 1.2] AND
+monotone in at least 3 of 4 quintile steps, with the 4-of-4 requirement dropped
+when the driver's realised quintile span is below 2 pp, on every driver.
+
+**Re-applying Decision 8 mechanically** (`experiments.md` section 12; the
+decision step only, nothing retrained) changes one thing in this model and
+sharpens two others:
+
+- `FGA_3`: `team_baseline` -> `lgbm`. The flat arm now fails on its own shooter
+  slope (0.0086, outside the band) instead of passing on direction alone.
+- `FGA_rim`: unchanged winner, and `team_baseline` now fails responsiveness on
+  the shooter slope (0.180) as well as calibration.
+- `FGA_jump2`: unchanged winner, but the passing set narrows from four arms to
+  two: `eb_shrink` now fails on a defence slope of 1.388 (over-steep, the other
+  side of the band) and `team_baseline` on a shooter slope of 0.142.
+
+**One clause of Decision 8 still needs tightening, and it is not rhetorical.**
+Clause (b) exempts a sub-2 pp driver from the step count "the steps are then
+noise"; clause (a) says the slope band "applies to every driver" and does not
+say whether a sub-2 pp driver is exempt from IT. `FGA_3`'s defence driver spans
+1.37 pp and `lgbm`'s slope on it is 0.474, so the two readings disagree exactly
+once:
+
+| reading | `FGA_rim` | `FGA_jump2` | `FGA_3` |
+|---|---|---|---|
+| `strict` — the band applies to every driver | `lgbm` | `lgbm` | **NONE passes** |
+| `low_span_exempt` — a sub-2 pp driver is noise for BOTH clauses | `lgbm` | `lgbm` | `lgbm` |
+
+Decision 8's own text states the corrected gate changes `FGA_3` to LightGBM, so
+`low_span_exempt` is the reading adopted here and recorded as such. Both are
+computed in `experiments.md` section 12 and in
+`fg_make.decision8_verdict(..., reading=...)`, so nothing is hidden by the
+choice. The PM should settle clause (a)'s scope in Decision 8 itself rather than
+leaving it to a per-model reading.
 
 ## 5. Robustness checks
 
@@ -198,17 +242,22 @@ attempt a team actually took, weighted by its class model's predicted make
 probability instead of by the outcome, so the mix is taken as given and this is
 a check of the make models alone.
 
-The adopted trio (`lgbm`, `lgbm`, `team_baseline`) lands the league level
-essentially exactly — implied 50.876% against an actual 50.874% — and passes
-G4 on the honest pregame grouping on both sides (worst tercile gap 0.98 pp on
-offence, 0.87 pp on defence, against a 1.0 pp tolerance). On the ORACLE
-grouping (terciles of realised eFG%, reported because it is the grouping that
-exposes a flat model) it misses at 1.21 pp on offence and 1.09 pp on defence,
-under-predicting the top tercile and over-predicting the bottom — the classic
-too-narrow spread, and the `FGA_3` decision above is exactly where it comes
-from. An all-`lgbm` trio passes the oracle grouping on offence too (0.74 pp)
-and misses defence by 1.03 pp. Team-level correlation between implied and
-actual eFG% is 0.82 for the adopted trio.
+The adopted trio is now all-LightGBM (`experiments.md` section 12.4): implied
+**50.932%** against an actual 50.874% (gap 0.058 pp), and it PASSES G4 on the
+honest pregame grouping on both sides (worst tercile gap 0.71 pp on offence,
+0.91 pp on defence, against a 1.0 pp tolerance). On the ORACLE grouping
+(terciles of realised eFG%, reported because it is the grouping that exposes a
+flat model) it passes on offence at 0.74 pp and misses defence at 1.03 pp.
+Team-level implied-vs-actual correlation 0.77 (offence), 0.76 (defence).
+
+The superseded mixed trio (`lgbm`, `lgbm`, `team_baseline`, `experiments.md`
+section 10) had a tighter league LEVEL — implied 50.876% against 50.874%, gap
+0.002 pp — and a worse SHAPE: it missed the oracle grouping on both sides
+(1.21 pp offence, 1.09 pp defence), under-predicting the top tercile and
+over-predicting the bottom. That is the too-narrow-spread signature, and it was
+sourced in exactly the `FGA_3` decision Decision 8 reversed: swapping the flat
+three-point model out closes 0.46 pp of the offence oracle gap. What remains
+(defence oracle 1.03 pp) is not from that arm.
 
 ### 5.4 Is the defence lineup-level or team-level? — TEAM-LEVEL
 
@@ -306,16 +355,20 @@ p_make = p[:, FG.CLASS_INDEX["MAKE"]]
 | `data/processed/models/fg_make/grid_results.csv` | Every (class, fold, arm) row of the bake-off |
 | `data/processed/models/fg_make/run_report.json` | Everything the `experiments.md` section renders from, including the full EB grids, every decile calibration table and every responsiveness ladder |
 | `data/processed/models/fg_make/lgbm_ladder_v2.json` | The F1-only parameter search and the frozen per-class parameters |
-| `data/processed/models/fg_make/winner_{class}.joblib` | The adopted arm per class, refit on F2 train |
+| `data/processed/models/fg_make/winner_{class}.joblib` | The adopted arm per class, refit on F2 train. All three are `lgbm` after the Decision 8 re-decision; `winner_FGA_3.joblib` carries `meta["gate"] = "ARCHITECTURE_DECISIONS.md Decision 8"` and `meta["supersedes_arm"] = "team_baseline"` |
+| `data/processed/models/fg_make/reference_superseded_FGA_3.joblib` | The `team_baseline` arm the steps-only gate had selected for threes, kept for reference. NOT for use by the engine |
 | `data/processed/models/fg_make/run_report_partial.json` | Checkpoint written before the lineup block |
 
 ## 9. Known gaps / followups
 
-1. **The `FGA_3` decision is with the PM** (4.3). Either the responsiveness gate
-   gains a slope-ratio clause — in which case all three classes take `lgbm` —
-   or the 4-of-4 monotone rule stands on a driver whose true span is 1.37 pp and
-   threes ship a team-level model. It should not be resolved by a worker after
-   the fact.
+1. **The `FGA_3` gate question is RESOLVED** (Decision 8, 2026-09-10): the
+   responsiveness gate gained the slope-ratio clause and all three classes take
+   `lgbm`. What is still open is the SCOPE of clause (a) — whether a driver
+   with a sub-2 pp realised span is exempt from the slope band as well as from
+   the step count (4.3). The two readings disagree only on `FGA_3`, where the
+   strict one adopts nothing at all; `low_span_exempt` is adopted here because
+   Decision 8's own text states the outcome it expects. The PM should write that
+   scope into Decision 8.
 2. **`minutes-to-date`** is the obvious first addition once the L4 player layer
    supplies minutes in CBBD id space (6.3 above). It needs its own
    pre-registration.
