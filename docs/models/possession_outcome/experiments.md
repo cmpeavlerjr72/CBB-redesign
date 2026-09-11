@@ -1829,3 +1829,36 @@ folder as a round of its own.
 role/late-game column to the served bundle outside that bake-off: it would
 consume the comparison before it is run. Nothing here blocks rounds 5+ on any
 other axis.
+
+---
+
+## 11. Round 4b: the two round-4 cells that were NOT RUN -- COMPLETION ROUND, no new pre-registration (worker note written and committed 2026-09-11 13:06 ET, BEFORE any fitting)
+
+**This is a completion round, not a new pre-registration.** Section 8 already pre-registers both
+cells, character for character, and nothing in their definition, grading, floor or decision rule is
+being changed here:
+
+* `G3` on `first`, fold 2, `S1_monthly`, seed 0 -- section 8.1 arm `G3` (two-level empirical Bayes,
+  complexity rank 3), section 8.7 stage 5.
+* The **second-seed noise-floor cell** -- `G0 x S1_monthly` on `first`, fold 2, **seed 1**,
+  spec-identical to the reference including the whole refit calendar -- section 8.4, section 8.7
+  stage 6.
+
+Round 4 stopped on its own pre-registered wall clock (12:15 ET) with both of these written to NOT
+RUN (sections 9.7, 9.10, 9.11). This round fits exactly those two and nothing else.
+
+Held fixed and NOT reopened: the trainer (`scripts/train_possession_outcome_v4.py`, unedited), the
+grader (round 3's `R1.score`, `conf_window_calibration`, `responsiveness_by`, plus round 4's
+`per_week_table`), the design (`design_v4.parquet`, read from cache, never rewritten), the folds,
+the seal on 2025-26, the 0.25 pp segment threshold, the complexity ranks, and the section 8.5
+decision rule including the `G1`-beats-`G4` tie-break. The merge is round 4's own read-only
+`--render-only --merge` path (9.10). Outputs go to versioned sibling checkpoints
+(`ckpt_c_g3.json`, `ckpt_d_floor.json`, `ckpt_render_r4b.json`); no round-4 file is overwritten.
+
+**Start time: 2026-09-11 13:06 ET.** Both cells start concurrently, three threads each (six total,
+the shared cap), under a hard external deadline: a cell that has not finished by **13:35 ET** is
+reported as still running and never as a result. What this round can change is bounded and is stated
+before the numbers arrive: the measured seed-1 spread **replaces the block-bootstrap-only PARTIAL
+floor of 0.000804** in section 9.2 for `first`, and every "beats the reference beyond the floor"
+claim in 9.3, 9.10 and 9.11 is re-read against whichever floor is larger. Two seeds is still PARTIAL
+against round 1's five and stays labelled PARTIAL.
