@@ -1793,3 +1793,39 @@ existing column bit-identical and adds two counters, so nothing the model alread
 3. `G3` -- the two-level prior, the one arm no population has rejected, and the winner of `cont`'s
    log loss and weeks-0-3 cell -- is still NOT RUN on the tree and is the next cell either way.
 4. Nothing here touches the alignment cells or Decision 9.
+
+
+## 10. PROPOSED (cross-reference only) -- the late-game regime round, and what it would ask of this model (written 2026-09-11 by the LATE-GAME lane; NOT RUN, NOT ADOPTED, nothing here changes a served arm)
+
+**This section changes nothing in this model and proposes no arm on this
+lane's own grid.** It is recorded here so that a future possession-outcome
+round cannot collide unknowingly with a pre-registration that touches the same
+conditional law. The full spec lives in `docs/models/late_game/experiments.md`
+section 1; the evidence is `docs/tests/late_game_regime_2026-09-11.md`.
+
+**The finding that concerns this model.** Inside the final 2:00 of regulation
+with the margin within 6 points, the served `round2_s1` / `C_plus_state` arm
+reproduces the CLOCK-conditioned averages well -- three-point share 0.4123
+against an actual 0.4219, bonus-FT rate 0.2531 against 0.2775, and a
+three-point ramp across the five seconds-remaining buckets that tracks the
+actual to within 0.02-0.04 -- and reproduces almost none of the ROLE
+conditioning. Trailing minus leading: three-point share **+0.007 in the sim
+against -0.158 in the data** (wrong sign), bonus-FT rate **+0.024 against
++0.265** (9% of the asymmetry). The engine plays the same last two minutes for
+both teams.
+
+**Why this is not filed as a missing feature on this lane.** `C_plus_state`
+already carries `score_diff`, `seconds_remaining` and `in_bonus`
+(`STATE_FEATURES`, `src/cbb_sim/models/possession_outcome.py`). The arm has the
+columns and still averages the regime away, because the region is 2.6% of
+regulation possessions with a sign flip inside it. That is why the
+pre-registration is written as a regime layer with a hard gate rather than as a
+feature addition here -- **and why arm B of that round is exactly the feature
+addition, run head to head, so the simpler hypothesis gets a fair test.** If
+arm B wins, the regime-layer hypothesis is rejected and the work lands in this
+folder as a round of its own.
+
+**What this lane is asked NOT to do in the meantime.** Do not add a
+role/late-game column to the served bundle outside that bake-off: it would
+consume the comparison before it is run. Nothing here blocks rounds 5+ on any
+other axis.

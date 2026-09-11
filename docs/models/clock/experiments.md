@@ -3611,3 +3611,43 @@ NOT TOUCHED. Threads capped at 6, engine pool at 6 workers. Results are appended
 to this file as section 25 and the evidence goes to
 `docs/tests/clock_q2_responsiveness_2026-09-11.md`; a row goes to
 `docs/models/change_ledger.md` only if an arm passes every line.
+
+
+## 23. PROPOSED (cross-reference only) -- the late-game regime round, and the one structural gap it names in the served clock (written 2026-09-11 by the LATE-GAME lane; NOT RUN, NOT ADOPTED, nothing here changes a served arm)
+
+**This section changes nothing in this model and proposes no arm on this
+lane's own grid.** It is recorded here so that a future clock round cannot
+collide unknowingly with a pre-registration that touches the same conditional
+law. The full spec lives in `docs/models/late_game/experiments.md` section 1;
+the evidence is `docs/tests/late_game_regime_2026-09-11.md`.
+
+**The structural fact.** The served `v3c_srfloor_P3` clock draws from empirical
+cells keyed on `(prev_end, sr_bucket, period_group, bonus, tempo_tercile)` --
+`CELL_DIMS` in `src/cbb_sim/engine/clock_adapter_v3.py`. **`score_diff` is not
+among them.** The model therefore cannot shorten a trailing team's possession
+or lengthen a leading team's, and in the data that split is large: inside the
+final 2:00 with the margin within 6, the actual leading offence holds the ball
+18.38 s at 60-120 s remaining against the trailing offence's 13.52 s, and is off
+it in 2.15 s inside 10 seconds (it is being fouled) against the trailing
+offence's 3.53 s.
+
+**The measured consequence.** Window duration: sim 13.35 s against an actual
+10.56 s; `P(duration <= 8)` 0.401 against 0.522. By seconds-remaining bucket
+the sim **flatlines at ~10.4 s below 60 seconds remaining** where the actual
+falls to 6.56 s and then 2.89 s. Window possessions per game: sim 8.855 against
+an actual 9.24 (level) to 11.34 (six points down), with no slope in the margin
+to produce because the clock never sees it.
+
+**Two caveats this lane states against its own finding.** (1) The measurement
+is on run A's `ENGINE_CLOCK=v3c_srfloor_P3_s1`, NOT the default
+`v5b_glat_pmean` adopted at `e3ccce5`; a re-read against the default is a
+BLOCKING precondition of the regime round (section 1.0 of the late-game spec),
+and if the round-5b latent already carries a score-conditioned split this
+section is amended before anything is fitted. (2) The actual `duration_s` is
+the L5 post-outcome quantity while the sim column is the drawn pre-outcome
+duration, so the SIGN of the gap survives and the magnitude does not.
+
+**What this lane is asked NOT to do in the meantime.** Do not add `score_diff`
+to the served cell grid outside that bake-off. `FEATURES_C` and the R2 bundles
+already define the column; the open question is whether it belongs in the
+served conditioning, and that is a pre-registered comparison, not a patch.
