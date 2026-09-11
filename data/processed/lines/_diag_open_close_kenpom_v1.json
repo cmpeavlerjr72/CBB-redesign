@@ -1,0 +1,59 @@
+{
+  "open_close_rows": [
+    {
+      "season": 2023,
+      "n_total": 5629,
+      "n_with_open": 0,
+      "pct_with_open": 0.0,
+      "underpowered": true
+    },
+    {
+      "season": 2024,
+      "n_total": 5228,
+      "n_with_open": 0,
+      "pct_with_open": 0.0,
+      "underpowered": true
+    },
+    {
+      "season": 2025,
+      "n_total": 5383,
+      "n_with_open": 1802,
+      "pct_with_open": 0.3347575701281813,
+      "open_mae": 8.508879023307436,
+      "close_mae_same_subset": 8.45338512763596,
+      "moved_pct": 0.6026637069922308,
+      "move_mean": -0.026637069922308545,
+      "move_std": 1.2108892893179204,
+      "move_min": -6.0,
+      "move_max": 6.0
+    }
+  ],
+  "kenpom_n_common": 16076,
+  "kenpom_mae_pooled": 9.00482574401771,
+  "market_mae_pooled_same_subset": 8.810182881313759,
+  "corr_pred_pooled": 0.9658644867038331,
+  "by_season_rows": [
+    {
+      "season": 2023,
+      "n": 5569,
+      "kenpom_mae": 8.99279070748788,
+      "market_mae": 8.823846291973425,
+      "corr_pred": 0.9680361584048393
+    },
+    {
+      "season": 2024,
+      "n": 5178,
+      "kenpom_mae": 9.05344814038035,
+      "market_mae": 8.870799536500579,
+      "corr_pred": 0.9659229699614542
+    },
+    {
+      "season": 2025,
+      "n": 5329,
+      "kenpom_mae": 8.970158142229167,
+      "market_mae": 8.737005066616627,
+      "corr_pred": 0.9654544831007302
+    }
+  ],
+  "hca_assumption": 3.75
+}

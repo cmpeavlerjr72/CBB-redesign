@@ -125,3 +125,32 @@ No season shows a material swapped-label or neither-matches rate -- home/away la
 ## 6. Overall verdict
 
 Coverage, provider mix, de-vig calibration (near-diagonal in the 20-bucket table above), and the home/away flip check all look like a real, internally consistent market. Two items are flagged for the PM rather than fixed here: (1) no line-level timestamp exists (section 2), so `created_at < tipoff` cannot be mechanically enforced against this source; (2) the spread-implied margin MAE (8.81 pts, section 3) is *below* the 10-11 pt band the standing rule cites, i.e. this book's spreads predicted these games a bit better than that benchmark -- not obviously wrong, but worth a second look before relying on the 10-11 pt band as a pass/fail gate.
+
+---
+
+## Addendum 2026-09-10b -- open vs. close, and a KenPom yardstick on the 8.81-pt spread MAE
+
+Requested by the PM before accepting CBBD lines as the free source. Both checks reuse the ESPN BET provider and the identical verified-finals game set from section 3 above. No API calls; read-only.
+
+### A. Open vs. close
+
+| season | n games | n with open | pct with open | open MAE | close MAE (same subset) | pct moved | move mean | move std | move min | move max |
+|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| 2023 | 5629 | 0 | 0.0% | UNDERPOWERED (n<30) | -- | -- | -- | -- | -- | -- |
+| 2024 | 5228 | 0 | 0.0% | UNDERPOWERED (n<30) | -- | -- | -- | -- | -- | -- |
+| 2025 | 5383 | 1802 | 33.5% | 8.51 | 8.45 | 60.3% | -0.03 | 1.21 | -6.0 | +6.0 |
+
+2023-2024 `spreadOpen` coverage is ~0% (already noted in section 2) -- **underpowered, not scored**, not presented as a pass or a red flag. 2025 is the only season with usable open-line coverage.
+
+### B. KenPom yardstick (as-of, strictly-before snapshot; formula in script docstring, HCA=3.75 pts fixed, not fit)
+
+Identical ESPN BET + verified-final game set, restricted further to games where both teams have a strictly-before KenPom snapshot: n = 16076 (pooled 2023-2025).
+
+| season | n | KenPom margin MAE | Market (close spread) margin MAE | corr(KenPom pred, market pred) |
+|---:|---:|---:|---:|---:|
+| 2023 | 5569 | 8.99 | 8.82 | 0.968 |
+| 2024 | 5178 | 9.05 | 8.87 | 0.966 |
+| 2025 | 5329 | 8.97 | 8.74 | 0.965 |
+| ALL | 16076 | 9.00 | 8.81 | 0.966 |
+
+Market beats the honest KenPom as-of snapshot by 0.19 pts pooled (8.81 vs. 9.00) -- **below**, not above, the 0.5-1.0 pt normal-picture band the PM specified. This is the *opposite* direction from the "3+ pts, lines are suspect" failure mode: the market is not implausibly sharper than a real power rating, it is only marginally sharper, essentially within noise of it (corr(KenPom pred, market pred) = 0.966 -- the two are predicting the same thing, not contradicting each other). The most likely explanation is that the KenPom margin formula used here is a standard-but-approximate reconstruction (see script docstring: centered adj_o/adj_d, average-tempo pace scaling, a fixed 3.75-pt HCA) rather than KenPom's exact proprietary model, so it understates the gap a well-tuned power rating would show against a real book; it is not evidence the CBBD lines are fabricated or derived from KenPom. Flagged for the PM as a formula-fidelity caveat, not as a lines-quality defect. Note: CBBD lines carry no line-level timestamp (section 2), so CLV can only be measured open-to-close (part A above), never against a true bet-placement time; this is a limitation of the source, unrelated to and does not affect our own `created_at < tipoff` rule, which gates OUR prediction rows, not CBBD's.
