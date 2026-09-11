@@ -793,7 +793,7 @@ INSIDE the engine on 500 games x 25 seeds rather than on the offline chain:
 | round 2 (old flag, static) | +1.516 | offline chain |
 | round 3 (horn censoring) | +1.130 | offline chain |
 | round 3b P3 + S1 | +0.885 | offline chain |
-| **incumbent in the engine** | **+2.697** | engine, 25 seeds |
+| **incumbent in the engine** | **+2.743** | engine, 25 seeds |
 | **round 3c best, `srfloor|P3|S1`** | **+1.161** | engine, 25 seeds |
 
 The offline and engine numbers are not the same quantity and are not comparable
@@ -804,19 +804,19 @@ governs.
 ### 12.2 What round 3c decided
 
 1. **The state parametrisation question is CLOSED.** P2 (margin deleted) and P3
-   (engine-safe end-game indicators) TIE at +1.458 / +1.469 against a
-   0.089-possession floor, and both beat P1 (margin live, +1.876) by **0.42
+   (engine-safe end-game indicators) TIE at +1.458 / +1.446 against a
+   0.135-possession floor, and both beat P1 (margin live, +1.876) by **0.42-0.43
    possessions**. Offline, the same contrast read 0.038-0.227 -- round 3b was
    right that only the engine can price it, and the engine prices it at roughly
    double.
 2. **The cell-based family is preferred on a second axis.** Pregame tempo-prior
    quintile slope ratio: `srfloor` 1.061-1.079, INSIDE Decision 8's [0.8, 1.2];
-   gamma 1.376-1.400 and the incumbent 1.432, OUTSIDE it. Every arm is monotone
+   gamma 1.387-1.400 and the incumbent 1.434, OUTSIDE it. Every arm is monotone
    4 of 4, so nothing is flat -- the gamma family over-responds. This adds to
    L26's binning-error argument.
 3. **The censoring fix arrives in the engine.** Mean last-possession duration:
-   incumbent 5.88 s against an actual 11.89 (-6.01 s); every round-3 arm
-   -0.29 to -0.72 s.
+   incumbent 5.92 s against an actual 11.89 (-5.97 s); every round-3 arm
+   -0.14 to -0.72 s, `gamma|P3` best at -0.138 s.
 4. **A freeze is not a measurement.** Holding the margin at zero for a model
    trained WITH it swings the count 4.47 possessions and the total 9.9 points and
    lands BELOW actual on both, because `score_diff = 0` late is a tie game and
@@ -829,10 +829,20 @@ governs.
 Not the horn, not the margin loop, not binning, not responsiveness. Actual mean
 regulation possession duration on the subset is **17.555 s**; the best arm
 produces **17.216 s**. A 1.93% shortfall in the conditional MEAN implies +1.35
-possessions and +1.161 is observed. **The remaining G1 miss is a uniform
+possessions and +1.161 is observed (gamma P3: 17.166 s, -2.22%, implies +1.55
+against +1.446; incumbent 16.829 s, -4.14%, implies +2.95 against +2.743).
 duration-level bias of about a third of a second on ordinary possessions**, and
 round 4 is a duration-level question, not a state one.
 
-Also visible and NOT the clock's: PPP is -0.03 on every arm including the
+Also visible and NOT the clock's: PPP is -0.024 to -0.030 on every arm including
 incumbent, so the candidates' near-zero total bias is two errors cancelling, and
 the sim OT rate is 2.6-4.2% against an actual 6.8%.
+
+### 12.4 Provenance
+
+Every number above was produced on the engine loop at commit `6431772`. Six
+arms were originally run on the previous loop; they were found by bit-identical
+reproduction, re-run, and the design re-graded before any of it was read as
+evidence. The incident, the bisection that bounded it and what moved:
+`experiments.md` section 14 and
+`docs/tests/clock_round3c_closed_loop_2026-09-10.md` section 11.

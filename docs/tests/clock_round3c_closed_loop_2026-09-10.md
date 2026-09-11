@@ -2,8 +2,13 @@
 
 Pre-registration: `docs/models/clock/experiments.md` section 12, committed
 **a08635f** before any round-3c code was written and before the first engine
-process started. Harness commit **1450faf**. Runs executed 2026-09-10 21:50 to
-2026-09-11 00:04 local.
+process started. Harness commit **1450faf**.
+
+**Every number in this document was produced on the engine loop at commit
+`6431772`** (`src/cbb_sim/engine/loop.py`, rotation round 4: `push_lineups()`
+moved after the period/halftime block, `rotation_sub` RNG family added).
+Six arms were originally run on the previous loop and were **re-run** before any
+of this was read; the incident and the bisection that bounded it are section 11.
 
 **Verdict: NO ARM ADOPTED. 0 of 6 candidates pass G1 on either game set.**
 The round nevertheless answers the question round 3b could not (section 11.2 of
@@ -61,7 +66,7 @@ home/away score correlation 0.237; PPP 1.0705; OT rate 6.80%.
 
 | id | arm | G1 cc mean | G1 cc SD | G1 all mean | G1 all SD | margin SD | corr(h,a) | total bias | PPP | OT% |
 |---|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|
-| I | incumbent | +2.662 | -0.327 | +3.394 | -0.159 | 16.418 | 0.045 | +3.007 | 1.0408 | 3.88 |
+| I | incumbent | +2.634 | -0.208 | +3.342 | -0.186 | 16.291 | 0.052 | +2.912 | 1.0408 | 3.44 |
 | B3 | srfloor P3 + S1 | **+1.072** | -0.603 | **+1.582** | -0.632 | 15.983 | 0.006 | -0.961 | 1.0397 | 2.64 |
 | B1 | srfloor P1 + S1 | +1.022 | -0.512 | +1.620 | -0.570 | 16.131 | -0.000 | -0.749 | 1.0406 | 3.60 |
 | A3 | gamma P3 + S1 | +1.403 | -0.191 | +1.863 | -0.045 | 16.330 | 0.055 | -0.043 | 1.0417 | 2.92 |
@@ -74,10 +79,10 @@ home/away score correlation 0.237; PPP 1.0705; OT rate 6.80%.
 
 | id | arm | G1 cc mean | G1 cc SD | G1 all mean | G1 all SD | margin SD | corr(h,a) | total bias | PPP | OT% |
 |---|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|
-| I | incumbent | +2.697 | -0.058 | +3.411 | -0.090 | 16.255 | 0.069 | +2.830 | 1.0391 | 3.94 |
+| I | incumbent | +2.743 | +0.096 | +3.443 | -0.037 | 16.459 | 0.047 | +3.184 | 1.0412 | 3.91 |
 | B3 | srfloor P3 + S1 | **+1.161** | -0.493 | **+1.666** | -0.582 | 15.878 | 0.018 | -0.934 | 1.0385 | 2.76 |
 | B1 | srfloor P1 + S1 | +1.243 | -0.285 | +1.741 | -0.417 | 15.806 | 0.033 | -0.737 | 1.0388 | 3.77 |
-| A3 | gamma P3 + S1 | +1.469 | +0.133 | +1.921 | +0.068 | 16.074 | 0.075 | -0.136 | 1.0402 | 2.70 |
+| A3 | gamma P3 + S1 | +1.446 | +0.109 | +1.899 | +0.114 | 16.275 | 0.062 | +0.394 | 1.0443 | 2.97 |
 | A2 | gamma P2 + S1 | +1.458 | +0.146 | +1.872 | +0.105 | 16.070 | 0.079 | -0.262 | 1.0400 | 2.58 |
 | A1 | gamma P1 + S1 | +1.876 | +0.363 | +2.245 | +0.294 | 15.895 | 0.109 | +0.549 | 1.0402 | 4.20 |
 | F | gamma P1, margin FROZEN | -2.592 | -0.329 | -2.176 | -0.352 | 15.724 | 0.045 | -9.381 | 1.0347 | 2.89 |
@@ -86,12 +91,12 @@ home/away score correlation 0.237; PPP 1.0705; OT rate 6.80%.
 
 | floor, 25 seeds | G1 cc mean | G1 all mean | margin SD | corr(h,a) | total bias |
 |---|---:|---:|---:|---:|---:|
-| I incumbent | -0.089 | -0.037 | -0.072 | +0.008 | -0.261 |
-| A3 gamma P3 + S1 | -0.047 | -0.055 | +0.158 | +0.001 | -0.128 |
-| **THE FLOOR (larger of the two)** | **0.089** | **0.055** | **0.158** | **0.008** | **0.261** |
+| I incumbent | -0.135 | -0.069 | -0.276 | +0.030 | -0.616 |
+| A3 gamma P3 + S1 | -0.025 | -0.034 | -0.043 | +0.015 | -0.658 |
+| **THE FLOOR (larger of the two)** | **0.135** | **0.069** | **0.276** | **0.030** | **0.658** |
 
-(5-seed floors: incumbent +0.135 / +0.091 / +0.004 / +0.028 / -0.310;
-A3 +0.100 / +0.146 / +0.016 / +0.014 / -0.264.)
+(5-seed floors: incumbent +0.163 / +0.142 / +0.131 / +0.021 / -0.215;
+A3 +0.025 / +0.113 / +0.133 / +0.018 / +0.150.)
 
 ---
 
@@ -104,35 +109,37 @@ A3 +0.100 / +0.146 / +0.016 / +0.014 / -0.264.)
 |---|---:|---|---:|---|---|---|---|
 | B3 | +1.161 | NO | +1.666 | NO | -0.493 / -0.582 | yes | **FAIL** |
 | B1 | +1.243 | NO | +1.741 | NO | -0.285 / -0.417 | yes | **FAIL** |
-| A3 | +1.469 | NO | +1.921 | NO | +0.133 / +0.068 | yes | **FAIL** |
+| A3 | +1.446 | NO | +1.899 | NO | +0.109 / +0.114 | yes | **FAIL** |
 | A2 | +1.458 | NO | +1.872 | NO | +0.146 / +0.105 | yes | **FAIL** |
 | A1 | +1.876 | NO | +2.245 | NO | +0.363 / +0.294 | yes | **FAIL** |
-| I | +2.697 | NO | +3.411 | NO | -0.058 / -0.090 | yes | **FAIL** |
+| I | +2.743 | NO | +3.443 | NO | +0.096 / -0.037 | yes | **FAIL** |
 
 **0 of 6. The SD half of G1 passes everywhere; the MEAN half fails everywhere.**
 Dispersion has not been the blocking half of G1 since round 1 and still is not.
+Every candidate is at least 1.3 possessions better than the incumbent on the
+clock-complete read, and all six misses are 9 to 20 floors wide, so none of this
+is noise.
 
 **Criterion 2: margin SD and home/away correlation must not move beyond the
-floor relative to the incumbent.** Reported as pre-registered:
+floor relative to the incumbent.**
 
-| id | margin SD vs I | floor 0.158 | corr vs I | floor 0.008 |
-|---|---:|---|---:|---|
-| B3 | -0.377 | outside | -0.051 | outside |
-| B1 | -0.449 | outside | -0.036 | outside |
-| A3 | -0.181 | outside | +0.006 | INSIDE |
-| A2 | -0.185 | outside | +0.010 | outside |
-| A1 | -0.360 | outside | +0.040 | outside |
+| id | margin SD vs I | floor 0.276 | corr vs I | floor 0.030 | criterion 2 |
+|---|---:|---|---:|---|---|
+| B3 | -0.581 | outside | -0.029 | INSIDE | FAIL |
+| B1 | -0.653 | outside | -0.014 | INSIDE | FAIL |
+| A3 | -0.184 | **INSIDE** | +0.015 | **INSIDE** | **PASS** |
+| A2 | -0.389 | outside | +0.032 | outside | FAIL |
+| A1 | -0.564 | outside | +0.062 | outside | FAIL |
 
-**Criterion 2 as written is close to unsatisfiable and that is a
-mis-specification in the pre-registration, recorded rather than repaired.** The
-clock model changes the possession COUNT, and the count is a variance driver for
-the score; a clock change that moved margin SD by less than 0.158 on 12,500 rows
-would have to be a clock change that did nothing. The floor here measures
-seed-to-seed noise in margin SD, which is small, not the size of a legitimate
-clock effect. It changes no verdict -- criterion 1 already fails for every arm --
-so **no gate is softened and nothing is adopted**; the next pre-registration
-should state criterion 2 against the ACTUAL, not against the incumbent, or
-restrict it to the frozen-versus-live contrast it was borrowed from.
+Criterion 2 is satisfiable and one arm satisfies it -- but it is worth recording
+that it is **a strict criterion for the wrong reason**: a clock model changes the
+possession COUNT, and the count is a variance driver for the score, so an arm
+that moved margin SD by less than the seed-to-seed floor would largely be an arm
+that did nothing. The correlation half is the informative half (it is what L23's
+loop signature moves) and every candidate except A2 and A1 is inside it. No gate
+was softened and the criterion was not restated after the fact; the next
+pre-registration should state the margin-SD half against the ACTUAL rather than
+against the incumbent.
 
 **DECISION: adopt nothing.** `ENGINE_CLOCK` stays `reference` and
 `provisional_clock` stays True. The best arm the project has produced inside the
@@ -151,21 +158,25 @@ arms). The engine ranks them, and it ranks them by about twice as much:
 
 | contrast | offline (round 3b, G1-CC) | ENGINE (25 seeds, G1-CC) |
 |---|---:|---:|
-| gamma P1 -> P3 | -0.227 | **-0.407** |
+| gamma P1 -> P3 | -0.227 | **-0.430** |
 | gamma P1 -> P2 | -0.038 | **-0.418** |
-| gamma P2 -> P3 | -0.189 | +0.011 |
+| gamma P2 -> P3 | -0.189 | -0.012 |
 | srfloor P1 -> P3 | (not fitted offline) | -0.082 |
 
-Readings, against a 0.089-possession floor:
+Readings, against a 0.135-possession floor:
 
-1. **Removing the simulation's own margin from the clock is worth about 0.42
-   possessions per team-game**, and only the engine can see it. Offline, deleting
-   `score_diff` outright (P2) moved the count by 0.038 -- inside any floor.
-2. **P2 and P3 are a TIE** (+1.458 vs +1.469, 0.011 apart against a 0.089 floor).
+1. **Removing the simulation's own margin from the clock is worth about 0.42 to
+   0.43 possessions per team-game**, and only the engine can see it. Offline,
+   deleting `score_diff` outright (P2) moved the count by 0.038 -- inside any
+   floor.
+2. **P2 and P3 are a TIE** (+1.458 vs +1.446, 0.012 apart against a 0.135 floor).
    The engine-safe end-game window buys nothing over deleting the margin
-   outright, which means the late-game behaviour P3 was built to keep is not
-   reaching the possession count. By the pre-registered simplicity order
-   (P2 < P3) P2 would win that tie if the family were adoptable.
+   outright on the possession COUNT, which means the late-game behaviour P3 was
+   built to keep is not reaching it. By the pre-registered simplicity order
+   (P2 < P3) P2 would win that tie if the family were adoptable -- but P3 is
+   clearly better on the end-of-half duration (-0.138 s vs -0.630 s, section 6),
+   which is the statistic that behaviour should show up in, so the tie is on the
+   aggregate and not on the mechanism.
 3. **On the cell-based arm the P1 -> P3 gap is 0.082, inside the floor** -- also a
    tie. The cell arm's score dimension is a 3-level state rather than a
    continuous coefficient, so it carries less loop to remove. That is consistent
@@ -180,7 +191,7 @@ Readings, against a 0.089-possession floor:
 | A1 gamma P1, margin live | +1.876 | +0.549 | 11.361 | 17.121 |
 | F gamma P1, margin FROZEN at 0 | **-2.592** | **-9.381** | 15.344 | 18.210 |
 | A2 gamma P2, REFIT without margin | +1.458 | -0.262 | 11.260 | 17.164 |
-| A3 gamma P3, margin live | +1.469 | -0.136 | 11.601 | 17.153 |
+| A3 gamma P3, margin live | +1.446 | +0.394 | 11.752 | 17.166 |
 | F3 gamma P3, margin FROZEN (5 seeds) | +0.366 | -2.398 | 12.663 | 17.429 |
 
 Freezing the margin swings the count by **4.468 possessions** and the game total
@@ -199,7 +210,7 @@ coefficients absorb the average effect of the margin.
 
 **Consequence for Decision 10:** the freeze ablation is a valid DETECTOR of a
 feedback loop and an invalid MEASUREMENT of one. It was a fair measurement for
-`fg_make` (L23) only because there the refit-without-the-feature arm agreed with
+`fg_make` (L23) only because there the refit-without-the-feature arms agreed with
 it; the two must both be run before a magnitude is quoted. This does not weaken
 L23 -- the fg_make round-2 bake-off refit five state parametrisations and the
 closed-loop gate agreed with the freeze -- but it does mean the clock's "+3.8
@@ -219,17 +230,17 @@ uses.
 
 | id | share last poss starts < 35 s | gap | mean last-poss duration s | gap |
 |---|---:|---:|---:|---:|
-| I incumbent | 0.9968 | +0.1210 | 5.878 | **-6.012** |
+| I incumbent | 0.9965 | +0.1207 | 5.916 | **-5.974** |
 | B3 srfloor P3 | 0.9847 | +0.1089 | 11.175 | -0.715 |
 | B1 srfloor P1 | 0.9853 | +0.1095 | 11.242 | -0.648 |
-| A3 gamma P3 | 0.9448 | **+0.0690** | 11.601 | **-0.289** |
+| A3 gamma P3 | 0.9420 | **+0.0662** | 11.752 | **-0.138** |
 | A2 gamma P2 | 0.9456 | +0.0698 | 11.260 | -0.630 |
 | A1 gamma P1 | 0.9423 | +0.0665 | 11.361 | -0.530 |
 | F gamma P1 frozen | 0.9100 | +0.0342 | 15.344 | +3.453 |
 | **ACTUAL (926 cc halves)** | **0.8758** | -- | **11.890** | -- |
 
-The incumbent's end-of-half duration gap is **-6.01 s**; every round-3 arm cuts
-it to -0.29 to -0.72 s. That is the single largest improvement in the table and
+The incumbent's end-of-half duration gap is **-5.97 s**; every round-3 arm cuts
+it to -0.14 to -0.72 s. That is the single largest improvement in the table and
 it is the censoring fix (L20) arriving in the engine. The SHARE is still too
 high on every arm (0.94-0.99 against 0.876): the sim almost always has a
 possession in progress at the horn, reality sometimes does not.
@@ -244,10 +255,10 @@ per bucket). Team-level quintiles are UNDERPOWERED on a 500-game subset -- about
 
 | id | slope ratio | sim span | actual span | monotone steps | Decision-8 band [0.8, 1.2] |
 |---|---:|---:|---:|---:|---|
-| I incumbent | 1.432 | +9.02 | +6.30 | 4/4 | **outside** |
+| I incumbent | 1.434 | +9.04 | +6.30 | 4/4 | **outside** |
 | B3 srfloor P3 | **1.061** | +6.69 | +6.30 | 4/4 | inside |
 | B1 srfloor P1 | **1.079** | +6.80 | +6.30 | 4/4 | inside |
-| A3 gamma P3 | 1.376 | +8.67 | +6.30 | 4/4 | **outside** |
+| A3 gamma P3 | 1.387 | +8.74 | +6.30 | 4/4 | **outside** |
 | A2 gamma P2 | 1.400 | +8.82 | +6.30 | 4/4 | **outside** |
 | A1 gamma P1 | 1.388 | +8.75 | +6.30 | 4/4 | **outside** |
 
@@ -266,10 +277,10 @@ offline chain replays the real sequence of previous-end types.
 
 | id | 2024-11 (109) | 2024-12 (83)* | 2025-01 (132) | 2025-02 (124) | 2025-03 (52)* |
 |---|---:|---:|---:|---:|---:|
-| I incumbent | +3.52 | +3.90 | +3.07 | +3.48 | +3.10 |
+| I incumbent | +3.64 | +3.89 | +3.03 | +3.54 | +3.13 |
 | B3 srfloor P3 | +2.25 | +1.87 | +1.28 | +1.64 | +1.16 |
 | B1 srfloor P1 | +2.29 | +1.78 | +1.37 | +1.82 | +1.30 |
-| A3 gamma P3 | +2.13 | +2.37 | +1.58 | +1.90 | +1.69 |
+| A3 gamma P3 | +2.11 | +2.36 | +1.58 | +1.80 | +1.78 |
 | A2 gamma P2 | +2.03 | +2.29 | +1.58 | +1.82 | +1.73 |
 | A1 gamma P1 | +2.38 | +2.67 | +1.97 | +2.21 | +2.07 |
 | F gamma P1 frozen | -2.12 | -1.88 | -2.40 | -2.14 | -2.27 |
@@ -291,12 +302,12 @@ two errors cancelling, exactly the pattern the multi-level rule exists to catch:
 | id | possessions | PPP | total bias |
 |---|---:|---:|---:|
 | B3 | +1.67 (+2.4%) | 1.0385 vs 1.0705 (-3.0%) | -0.934 |
-| A3 | +1.92 (+2.8%) | 1.0402 (-2.8%) | -0.136 |
-| I | +3.41 (+5.0%) | 1.0391 (-2.9%) | +2.830 |
+| A3 | +1.90 (+2.8%) | 1.0443 (-2.4%) | +0.394 |
+| I | +3.44 (+5.0%) | 1.0412 (-2.7%) | +3.184 |
 
-PPP is -0.03 on every arm including the incumbent, so the per-possession
-shortfall is NOT the clock's and is not moved by any clock arm. It belongs to the
-scoring cascade and is its own defect.
+PPP is -0.024 to -0.030 on every arm including the incumbent, so the
+per-possession shortfall is NOT the clock's and is not moved by any clock arm. It
+belongs to the scoring cascade and is its own defect.
 
 The possession half has an exact arithmetic account. Actual mean regulation
 possession duration on the subset is **17.555 s** on clock-complete games
@@ -306,12 +317,12 @@ possession duration on the subset is **17.555 s** on clock-complete games
 | id | engine mean poss duration s | gap vs 17.555 | implied G1 cc | observed G1 cc |
 |---|---:|---:|---:|---:|
 | B3 | 17.216 | -0.339 (-1.93%) | +1.35 | +1.161 |
-| A3 | 17.153 | -0.402 (-2.29%) | +1.61 | +1.469 |
-| I | 16.835 | -0.720 (-4.10%) | +2.93 | +2.697 |
+| A3 | 17.166 | -0.389 (-2.22%) | +1.55 | +1.446 |
+| I | 16.829 | -0.726 (-4.14%) | +2.95 | +2.743 |
 
 **The residual overshoot IS a uniform mean-duration shortfall of about a third of
 a second per possession.** It is not concentrated at the horn: the end-of-half
-last possession is now within 0.3-0.7 s (section 6), and at roughly two
+last possession is now within 0.14-0.72 s (section 6), and at roughly two
 period-ending possessions per game that accounts for about 0.02 possessions of
 the 1.16. It is not the margin loop (section 4: 0.42, and removing it entirely
 leaves +1.46). It is not binning error (the cell arms are lookup tables by
@@ -346,3 +357,52 @@ Scored output: `data/processed/models/clock/v3c_closed_loop_{s5,s25}.json`,
 `v3c_eoh_truth.json`, `v3c_duration_truth.json`.
 Tests: `tests/test_clock_adapter_v3.py` 16 passed, `tests/test_engine.py` 15
 passed.
+
+---
+
+## 11. The engine changed mid-design, and how that was found and fixed
+
+While round 3c was running, the rotation worker landed commit **`6431772`**
+(2026-09-11 00:10:59 -0400) on `src/cbb_sim/engine/loop.py`: `push_lineups()`
+moved after the period/halftime block and a `rotation_sub` RNG family was added.
+Both change the lineups on the floor, hence usage, shot and foul draws, hence
+every arm's output. **A paired comparison whose arms straddle that change is not
+a paired comparison**, so the design had to be proved to sit on one side of it.
+
+Timestamps were not used to decide this, because a working-tree edit precedes its
+commit by an unknown interval. The question was settled by **bit-identical
+reproduction**: re-run a stored arm on today's code and compare `games.parquet`
+row for row.
+
+| arm re-run | when it was first produced | rows differing / 2500 | reading |
+|---|---|---:|---|
+| `clock3c_incumbent_s5` | 21:52 EDT (phase 1) | **1286** | produced on the OLD loop |
+| `clkchk_gamma_P1_s5` | 22:49 EDT (phase 3) | 0 | already on the new loop |
+| `clock3c_srfloor_P3_s5` | 22:59 EDT (phase 3) | 0 | already on the new loop |
+
+The change therefore landed inside the run sequence's own idle window -- phase 2,
+22:23 to 22:45 EDT, while this worker was waiting for
+`scripts/train_clock_v3c_s1.py` and no engine process of mine was running. That
+bounds it exactly: the six phase-1 runs are old-loop, everything from phase 3 on
+is new-loop.
+
+The six were deleted and re-run on the current loop:
+`clock3c_incumbent_s5`, `clock3c_gamma_P3_s5`, `clock3c_incumbent_s5_floor`,
+`clock3c_gamma_P3_s5_floor`, `clock3c_incumbent_s25`, `clock3c_gamma_P3_s25`.
+Every table above is the re-run set. What moved, on the deciding read:
+
+| arm | G1 cc mean, old loop | new loop | G1 all, old -> new |
+|---|---:|---:|---|
+| I incumbent | +2.697 | +2.743 | +3.411 -> +3.443 |
+| A3 gamma P3 | +1.469 | +1.446 | +1.921 -> +1.899 |
+
+and A3's end-of-half duration gap improved from -0.289 s to -0.138 s while its
+total bias moved -0.136 -> +0.394. **No verdict, ordering or conclusion in this
+document changes**, which is worth stating precisely: it was verified, not
+assumed, and the numbers on record are the single-loop ones.
+
+Because the mixed set was found and replaced before any of it was read as
+evidence, nothing downstream was ever graded on a straddled design. The lesson is
+recorded as a cheap, general one: **a paired engine design should record the
+engine commit in `run_meta.json`, and a long run sequence should re-verify its
+earliest arm against its latest code before the table is read.**

@@ -1605,3 +1605,108 @@ results: `results/engine_v0/clock4_<arm>/`, not committed. Threads capped at 4
 and the engine pool at 8 workers; three other workers share the machine. Results
 and the decision are appended to this file as section 15, `model.md` is updated
 once, and a row goes to `docs/models/change_ledger.md`.
+
+---
+
+## 14. Correction to section 13 -- six arms were run on a pre-`6431772` engine loop and have been re-run (2026-09-11)
+
+`experiments.md` is append-only, so section 13 stands as written and this section
+supersedes its numbers. Nothing in its VERDICT or its ORDERING changes; the
+numbers move in the third decimal to the second.
+
+### 14.1 What happened
+
+While round 3c was running, the rotation worker landed commit **`6431772`**
+(2026-09-11 00:10:59 -0400) on `src/cbb_sim/engine/loop.py`: `push_lineups()`
+moved after the period/halftime block, and a `rotation_sub` RNG family was added.
+Both change which five are on the floor, hence usage, shot and foul draws, hence
+every arm's output. A paired comparison whose arms straddle that change is not a
+paired comparison.
+
+Commit timestamps cannot settle this -- a working-tree edit precedes its commit by
+an unknown interval -- so it was settled by **bit-identical reproduction**:
+re-run a stored arm on today's code and compare `games.parquet` row for row.
+
+| arm re-run | first produced | rows differing / 2500 | reading |
+|---|---|---:|---|
+| `clock3c_incumbent_s5` | 21:52 EDT (phase 1) | **1286** | OLD loop |
+| `clkchk_gamma_P1_s5` | 22:49 EDT (phase 3) | 0 | new loop |
+| `clock3c_srfloor_P3_s5` | 22:59 EDT (phase 3) | 0 | new loop |
+
+The change landed inside the run sequence's own idle window -- phase 2, 22:23 to
+22:45 EDT, while this worker was waiting on `train_clock_v3c_s1.py` with no
+engine process running. That bounds it exactly: the six phase-1 runs are
+old-loop, everything from phase 3 on is new-loop. The six (`incumbent_s5`,
+`gamma_P3_s5`, both of their seed-offset floors, `incumbent_s25`, `gamma_P3_s25`)
+were deleted and re-run. **All 19 runs now sit on the loop at `6431772`.**
+
+### 14.2 The corrected deciding read (25 seeds, one loop)
+
+| id | arm | G1 cc mean | G1 cc SD | G1 all mean | G1 all SD | margin SD | corr(h,a) | total bias | PPP |
+|---|---|---:|---:|---:|---:|---:|---:|---:|---:|
+| I | incumbent `reference` | +2.743 | +0.096 | +3.443 | -0.037 | 16.459 | 0.047 | +3.184 | 1.0412 |
+| B3 | srfloor P3 + S1 | **+1.161** | -0.493 | **+1.666** | -0.582 | 15.878 | 0.018 | -0.934 | 1.0385 |
+| B1 | srfloor P1 + S1 | +1.243 | -0.285 | +1.741 | -0.417 | 15.806 | 0.033 | -0.737 | 1.0388 |
+| A3 | gamma P3 + S1 | +1.446 | +0.109 | +1.899 | +0.114 | 16.275 | 0.062 | +0.394 | 1.0443 |
+| A2 | gamma P2 + S1 | +1.458 | +0.146 | +1.872 | +0.105 | 16.070 | 0.079 | -0.262 | 1.0400 |
+| A1 | gamma P1 + S1 | +1.876 | +0.363 | +2.245 | +0.294 | 15.895 | 0.109 | +0.549 | 1.0402 |
+| F | gamma P1, margin FROZEN | -2.592 | -0.329 | -2.176 | -0.352 | 15.724 | 0.045 | -9.381 | 1.0347 |
+
+Noise floor (same arm, seeds +1000): G1 cc **0.135**, G1 all 0.069, margin SD
+0.276, correlation 0.030, total bias 0.658.
+
+Only the two re-run arms moved: incumbent +2.697 -> **+2.743** cc and +3.411 ->
+**+3.443** all; gamma P3 +1.469 -> **+1.446** cc and +1.921 -> **+1.899** all,
+with its end-of-half duration gap improving -0.289 -> **-0.138 s** and its total
+bias moving -0.136 -> **+0.394**. B3, B1, A2, A1 and F are unchanged because
+they were already on the new loop.
+
+### 14.3 What does and does not change
+
+**Unchanged: the verdict.** 0 of 6 pass the G1 mean on either game set; all six
+pass the G1 SD. Adopt nothing; `ENGINE_CLOCK` stays `reference`.
+
+**Unchanged: the ordering.** B3 `srfloor|P3|S1` is still the best arm the project
+has produced in the engine.
+
+**Unchanged in substance, refined in value: the P-contrasts.** gamma P1 -> P3 is
+now **-0.430** (was -0.407) and P1 -> P2 is -0.418, against a 0.135 floor;
+P2 vs P3 is 0.012 apart, still a TIE. Removing the simulation's own margin from
+the clock is worth **0.42 to 0.43** possessions per team-game.
+
+**Changed: criterion 2 is satisfiable after all, and one arm satisfies it.** With
+the corrected incumbent and the corrected floor (margin SD 0.276, correlation
+0.030), A3 `gamma|P3` is inside BOTH halves (-0.184 and +0.015) and B3 and B1 are
+inside the correlation half. Section 13.2 called criterion 2 "mis-specified"; that
+reading was itself an artefact of the straddled incumbent row and is **withdrawn**.
+The accurate statement is narrower: the margin-SD half is strict for the wrong
+reason -- a clock model moves the possession count and the count drives score
+variance, so an arm inside a seed-noise floor on margin SD would largely be an arm
+that did nothing -- and the correlation half is the informative one, because that
+is what L23's loop signature moves. The next pre-registration states the margin-SD
+half against the ACTUAL, not against the incumbent. No gate was softened at any
+point and nothing was adopted under either reading.
+
+**Refined: the duration-level diagnosis.** Actual mean regulation possession
+duration on the subset is 17.555 s (clock-complete, 21,722 possessions). B3
+produces 17.216 s (-1.93%, implying +1.35 against an observed +1.161); A3
+produces 17.166 s (-2.22%, implying +1.55 against +1.446); the incumbent 16.829 s
+(-4.14%, implying +2.95 against +2.743). The conclusion stands and is if anything
+tighter: **what is left is a uniform duration LEVEL bias of about a third of a
+second on ordinary possessions**, not the horn, not the loop, not binning, not
+responsiveness.
+
+**Refined: end of half.** The incumbent's mean last-possession duration is 5.92 s
+against an actual 11.89 (**-5.97 s**); every round-3 arm is within **-0.14 to
+-0.72 s**, with `gamma|P3` best at -0.138. P3 beating P2 by 0.49 s there, while
+tying it on the possession count, says the end-game behaviour P3 preserves is
+real but is not what the count is missing.
+
+### 14.4 The procedural lesson
+
+Because the mixed set was found and replaced before any of it was read as
+evidence, nothing downstream was ever graded on a straddled design -- but that
+was luck of timing, not a control. Two cheap controls follow: **`run_meta.json`
+should record the engine commit hash**, and **a long run sequence should re-run
+its earliest arm against its latest code and assert bit-identity before the table
+is read**. Both are cheaper than the four hours of engine time this cost.

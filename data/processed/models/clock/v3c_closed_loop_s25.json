@@ -584,129 +584,133 @@
         "ENGINE_CLOCK": "v3c_gamma_P3_s1",
         "ENGINE_ROTATION": "reference",
         "ENGINE_FG3": "decision8",
-        "ENGINE_FG_MAKE": "round2b_S_C_s1"
+        "ENGINE_FG_MAKE": "round2b_S_C_s1",
+        "ENGINE_REBOUND": "s1_weekly",
+        "ENGINE_FREE_THROW": "s1_conf_aligned",
+        "ENGINE_ROTATION_SCHEME": "s1",
+        "ENGINE_INPUTS_VERSION": "v2"
       },
-      "runtime_s": 651.2,
+      "runtime_s": 1055.0,
       "G1_cc": {
         "n_games": 159,
-        "sim_mean": 69.99899291992188,
-        "sim_sd": 5.253289222717285,
+        "sim_mean": 69.97622680664062,
+        "sim_sd": 5.229686260223389,
         "actual_mean": 68.53006289308176,
         "actual_sd": 5.12038906463509,
-        "mean_delta": 1.4689300268401126,
-        "sd_delta": 0.13290015808219557
+        "mean_delta": 1.4461639135588626,
+        "sd_delta": 0.10929719558829909
       },
       "G1_all": {
         "n_games": 500,
-        "sim_mean": 70.24932098388672,
-        "sim_sd": 5.2584452629089355,
+        "sim_mean": 70.22760009765625,
+        "sim_sd": 5.304826259613037,
         "actual_mean": 68.32821643286573,
         "actual_sd": 5.190841237822209,
-        "mean_delta": 1.9211045510209885,
-        "sd_delta": 0.0676040250867267
+        "mean_delta": 1.8993836647905198,
+        "sd_delta": 0.11398502179082826
       },
-      "margin_sd": 16.07381357165184,
-      "total_sd": 17.33278746699763,
-      "corr_home_away": 0.07531001427869231,
-      "margin_mean": 5.29568,
-      "margin_bias": -0.00032000000000032003,
-      "total_mean": 146.15215999999998,
-      "total_bias": -0.13584000000003016,
-      "total_mae": 14.13536,
-      "margin_mae": 9.915040000000001,
-      "ppp": 1.040166946864771,
-      "ot_rate": 0.02696,
+      "margin_sd": 16.274796817389635,
+      "total_sd": 17.319280685763992,
+      "corr_home_away": 0.062129877957890434,
+      "margin_mean": 5.298559999999999,
+      "margin_bias": 0.0025599999999990075,
+      "total_mean": 146.68207999999998,
+      "total_bias": 0.394079999999974,
+      "total_mae": 13.95216,
+      "margin_mae": 9.788799999999998,
+      "ppp": 1.044251374945499,
+      "ot_rate": 0.02968,
       "end_of_half": {
-        "n_possessions": 1748964,
+        "n_possessions": 1747616,
         "n_period_ending": 25000,
-        "share_last_starts_under_35s": 0.9448,
-        "mean_last_possession_duration_s": 11.60116,
-        "mean_possession_duration_s": 17.153011725798816
+        "share_last_starts_under_35s": 0.94204,
+        "mean_last_possession_duration_s": 11.7524,
+        "mean_possession_duration_s": 17.166242469741636
       },
       "end_of_half_by_period": {
         "H1": {
-          "n_possessions": 858736,
+          "n_possessions": 858099,
           "n_period_ending": 12500,
-          "share_last_starts_under_35s": 0.91784,
-          "mean_last_possession_duration_s": 15.00288,
-          "mean_possession_duration_s": 17.46753367740493
+          "share_last_starts_under_35s": 0.91456,
+          "mean_last_possession_duration_s": 15.2004,
+          "mean_possession_duration_s": 17.480500501690365
         },
         "H2": {
-          "n_possessions": 890228,
+          "n_possessions": 889517,
           "n_period_ending": 12500,
-          "share_last_starts_under_35s": 0.97176,
-          "mean_last_possession_duration_s": 8.19944,
-          "mean_possession_duration_s": 16.84961605341553
+          "share_last_starts_under_35s": 0.96952,
+          "mean_last_possession_duration_s": 8.3044,
+          "mean_possession_duration_s": 16.86308412318146
         },
         "OT": {
-          "n_possessions": 7269,
-          "n_period_ending": 367,
-          "share_last_starts_under_35s": 0.9591280653950953,
-          "mean_last_possession_duration_s": 8.950953678474114,
-          "mean_possession_duration_s": 15.146512587701197
+          "n_possessions": 8074,
+          "n_period_ending": 410,
+          "share_last_starts_under_35s": 0.9585365853658536,
+          "mean_last_possession_duration_s": 9.06829268292683,
+          "mean_possession_duration_s": 15.234084716373545
         },
         "REG": {
-          "n_possessions": 1748964,
+          "n_possessions": 1747616,
           "n_period_ending": 25000,
-          "share_last_starts_under_35s": 0.9448,
-          "mean_last_possession_duration_s": 11.60116,
-          "mean_possession_duration_s": 17.153011725798816
+          "share_last_starts_under_35s": 0.94204,
+          "mean_last_possession_duration_s": 11.7524,
+          "mean_possession_duration_s": 17.166242469741636
         }
       },
-      "horn_truncated_per_game": 2.02936,
+      "horn_truncated_per_game": 2.0328,
       "months": [
         {
           "n_games": 109,
-          "sim_mean": 70.81687927246094,
-          "sim_sd": 5.214442729949951,
+          "sim_mean": 70.79596710205078,
+          "sim_sd": 5.141168117523193,
           "actual_mean": 68.68403669724772,
           "actual_sd": 5.385141271792167,
-          "mean_delta": 2.1328425752132176,
-          "sd_delta": -0.17069854184221622,
+          "mean_delta": 2.1119304048030614,
+          "sd_delta": -0.24397315426897404,
           "month": "2024-11",
           "powered": true
         },
         {
           "n_games": 83,
-          "sim_mean": 70.41252899169922,
-          "sim_sd": 5.035304546356201,
+          "sim_mean": 70.40168762207031,
+          "sim_sd": 5.100639820098877,
           "actual_mean": 68.04,
           "actual_sd": 4.796922794113215,
-          "mean_delta": 2.3725289916992125,
-          "sd_delta": 0.23838175224298652,
+          "mean_delta": 2.3616876220703062,
+          "sd_delta": 0.3037170259856623,
           "month": "2024-12",
           "powered": false
         },
         {
           "n_games": 132,
-          "sim_mean": 70.20075988769531,
-          "sim_sd": 5.237085342407227,
+          "sim_mean": 70.20500183105469,
+          "sim_sd": 5.233099460601807,
           "actual_mean": 68.625,
           "actual_sd": 4.742211533557696,
-          "mean_delta": 1.5757598876953125,
-          "sd_delta": 0.4948738088495306,
+          "mean_delta": 1.5800018310546875,
+          "sd_delta": 0.49088792704411066,
           "month": "2025-01",
           "powered": true
         },
         {
           "n_games": 124,
-          "sim_mean": 69.96806335449219,
-          "sim_sd": 5.388776779174805,
+          "sim_mean": 69.865966796875,
+          "sim_sd": 5.518572807312012,
           "actual_mean": 68.06894308943089,
           "actual_sd": 5.7034152571152745,
-          "mean_delta": 1.899120265061299,
-          "sd_delta": -0.31463847794046984,
+          "mean_delta": 1.7970237074441116,
+          "sd_delta": -0.1848424498032628,
           "month": "2025-02",
           "powered": true
         },
         {
           "n_games": 52,
-          "sim_mean": 69.59307861328125,
-          "sim_sd": 5.252300262451172,
+          "sim_mean": 69.6780776977539,
+          "sim_sd": 5.425045967102051,
           "actual_mean": 67.90230769230769,
           "actual_sd": 5.30471289363159,
-          "mean_delta": 1.6907709209735629,
-          "sd_delta": -0.0524126311804185,
+          "mean_delta": 1.775770005446219,
+          "sd_delta": 0.1203330734704604,
           "month": "2025-03",
           "powered": false
         }
@@ -715,46 +719,46 @@
         {
           "q": 1,
           "n": 100,
-          "sim": 66.01599884033203,
+          "sim": 65.94219970703125,
           "act": 65.01520000000001,
-          "delta": 1.000798840332024
+          "delta": 0.9269997070312428
         },
         {
           "q": 2,
           "n": 100,
-          "sim": 68.64859771728516,
+          "sim": 68.67259979248047,
           "act": 66.6638,
-          "delta": 1.9847977172851614
+          "delta": 2.008799792480474
         },
         {
           "q": 3,
           "n": 99,
-          "sim": 70.10626220703125,
+          "sim": 70.03838348388672,
           "act": 68.41515151515152,
-          "delta": 1.6911106918797287
+          "delta": 1.6232319687351975
         },
         {
           "q": 4,
           "n": 100,
-          "sim": 71.77999877929688,
+          "sim": 71.7947998046875,
           "act": 70.2308,
-          "delta": 1.5491987792968729
+          "delta": 1.5639998046874979
         },
         {
           "q": 5,
           "n": 100,
-          "sim": 74.69039916992188,
+          "sim": 74.68299865722656,
           "act": 71.317,
-          "delta": 3.373399169921882
+          "delta": 3.3659986572265694
         }
       ],
-      "slope_ratio": 1.3764956567313884,
-      "slope_span_sim": 8.674400329589844,
+      "slope_ratio": 1.3870321099043657,
+      "slope_span_sim": 8.740798950195312,
       "slope_span_act": 6.301799999999986,
       "monotone_steps": 4,
       "game_ids": 500,
-      "eoh_share_gap": 0.0689900647948164,
-      "eoh_duration_gap": -0.2890989395807644
+      "eoh_share_gap": 0.06623006479481641,
+      "eoh_duration_gap": -0.13785893958076478
     },
     "clock3c_gamma_P3_s25_floor": {
       "arm": "v3c_gamma_P3_s1",
@@ -950,129 +954,133 @@
         "ENGINE_CLOCK": "reference",
         "ENGINE_ROTATION": "reference",
         "ENGINE_FG3": "decision8",
-        "ENGINE_FG_MAKE": "round2b_S_C_s1"
+        "ENGINE_FG_MAKE": "round2b_S_C_s1",
+        "ENGINE_REBOUND": "s1_weekly",
+        "ENGINE_FREE_THROW": "s1_conf_aligned",
+        "ENGINE_ROTATION_SCHEME": "s1",
+        "ENGINE_INPUTS_VERSION": "v2"
       },
-      "runtime_s": 812.4,
+      "runtime_s": 351.9,
       "G1_cc": {
         "n_games": 159,
-        "sim_mean": 71.22666931152344,
-        "sim_sd": 5.062740802764893,
+        "sim_mean": 71.27320861816406,
+        "sim_sd": 5.216411113739014,
         "actual_mean": 68.53006289308176,
         "actual_sd": 5.12038906463509,
-        "mean_delta": 2.696606418441675,
-        "sd_delta": -0.057648261870197004
+        "mean_delta": 2.7431457250823,
+        "sd_delta": 0.09602204910392409
       },
       "G1_all": {
         "n_games": 500,
-        "sim_mean": 71.73956298828125,
-        "sim_sd": 5.100553035736084,
+        "sim_mean": 71.77127838134766,
+        "sim_sd": 5.153570652008057,
         "actual_mean": 68.32821643286573,
         "actual_sd": 5.190841237822209,
-        "mean_delta": 3.41134655541552,
-        "sd_delta": -0.09028820208612487
+        "mean_delta": 3.443061948481926,
+        "sd_delta": -0.03727058581415221
       },
-      "margin_sd": 16.25512164423181,
-      "total_sd": 17.41833921282034,
-      "corr_home_away": 0.06918716885981288,
-      "margin_mean": 5.55864,
-      "margin_bias": 0.2626399999999993,
-      "total_mean": 149.11752,
-      "total_bias": 2.8295200000000023,
-      "total_mae": 14.366959999999999,
-      "margin_mae": 10.0284,
-      "ppp": 1.0391472296702722,
-      "ot_rate": 0.03936,
+      "margin_sd": 16.45900537004049,
+      "total_sd": 17.244785040193648,
+      "corr_home_away": 0.04671546902776774,
+      "margin_mean": 5.496239999999999,
+      "margin_bias": 0.20023999999999909,
+      "total_mean": 149.47207999999998,
+      "total_bias": 3.184079999999966,
+      "total_mae": 14.19224,
+      "margin_mae": 9.81192,
+      "ppp": 1.0412408898832204,
+      "ot_rate": 0.03912,
       "end_of_half": {
-        "n_possessions": 1781990,
+        "n_possessions": 1782678,
         "n_period_ending": 25000,
-        "share_last_starts_under_35s": 0.9968,
-        "mean_last_possession_duration_s": 5.87804,
-        "mean_possession_duration_s": 16.835111308144267
+        "share_last_starts_under_35s": 0.99648,
+        "mean_last_possession_duration_s": 5.91604,
+        "mean_possession_duration_s": 16.8286140290058
       },
       "end_of_half_by_period": {
         "H1": {
-          "n_possessions": 876640,
+          "n_possessions": 876197,
           "n_period_ending": 12500,
-          "share_last_starts_under_35s": 0.994,
-          "mean_last_possession_duration_s": 7.71008,
-          "mean_possession_duration_s": 17.110786639897793
+          "share_last_starts_under_35s": 0.99328,
+          "mean_last_possession_duration_s": 7.83304,
+          "mean_possession_duration_s": 17.11943775201239
         },
         "H2": {
-          "n_possessions": 905350,
+          "n_possessions": 906481,
           "n_period_ending": 12500,
-          "share_last_starts_under_35s": 0.9996,
-          "mean_last_possession_duration_s": 4.046,
-          "mean_possession_duration_s": 16.568178052686807
+          "share_last_starts_under_35s": 0.99968,
+          "mean_last_possession_duration_s": 3.99904,
+          "mean_possession_duration_s": 16.547506235651934
         },
         "OT": {
-          "n_possessions": 11499,
+          "n_possessions": 11604,
           "n_period_ending": 545,
-          "share_last_starts_under_35s": 1.0,
-          "mean_last_possession_duration_s": 3.695412844036697,
-          "mean_possession_duration_s": 14.21862770675711
+          "share_last_starts_under_35s": 0.998165137614679,
+          "mean_last_possession_duration_s": 3.1302752293577982,
+          "mean_possession_duration_s": 14.089968976215099
         },
         "REG": {
-          "n_possessions": 1781990,
+          "n_possessions": 1782678,
           "n_period_ending": 25000,
-          "share_last_starts_under_35s": 0.9968,
-          "mean_last_possession_duration_s": 5.87804,
-          "mean_possession_duration_s": 16.835111308144267
+          "share_last_starts_under_35s": 0.99648,
+          "mean_last_possession_duration_s": 5.91604,
+          "mean_possession_duration_s": 16.8286140290058
         }
       },
       "horn_truncated_per_game": 2.0436,
       "months": [
         {
           "n_games": 109,
-          "sim_mean": 72.20403289794922,
-          "sim_sd": 5.058293342590332,
+          "sim_mean": 72.32697296142578,
+          "sim_sd": 5.1295270919799805,
           "actual_mean": 68.68403669724772,
           "actual_sd": 5.385141271792167,
-          "mean_delta": 3.519996200701499,
-          "sd_delta": -0.32684792920183536,
+          "mean_delta": 3.6429362641780614,
+          "sd_delta": -0.2556141798121869,
           "month": "2024-11",
           "powered": true
         },
         {
           "n_games": 83,
-          "sim_mean": 71.9371109008789,
-          "sim_sd": 4.85777473449707,
+          "sim_mean": 71.93253326416016,
+          "sim_sd": 4.916977405548096,
           "actual_mean": 68.04,
           "actual_sd": 4.796922794113215,
-          "mean_delta": 3.8971109008789,
-          "sd_delta": 0.06085194038385566,
+          "mean_delta": 3.89253326416015,
+          "sd_delta": 0.12005461143488105,
           "month": "2024-12",
           "powered": false
         },
         {
           "n_games": 132,
-          "sim_mean": 71.6971206665039,
-          "sim_sd": 5.05735445022583,
+          "sim_mean": 71.65848541259766,
+          "sim_sd": 4.993319034576416,
           "actual_mean": 68.625,
           "actual_sd": 4.742211533557696,
-          "mean_delta": 3.0721206665039062,
-          "sd_delta": 0.3151429166681341,
+          "mean_delta": 3.0334854125976562,
+          "sd_delta": 0.25110750101872004,
           "month": "2025-01",
           "powered": true
         },
         {
           "n_games": 124,
-          "sim_mean": 71.55258178710938,
-          "sim_sd": 5.244222640991211,
+          "sim_mean": 71.60613250732422,
+          "sim_sd": 5.420680522918701,
           "actual_mean": 68.06894308943089,
           "actual_sd": 5.7034152571152745,
-          "mean_delta": 3.4836386976784866,
-          "sd_delta": -0.4591926161240636,
+          "mean_delta": 3.5371894178933303,
+          "sd_delta": -0.28273473419657336,
           "month": "2025-02",
           "powered": true
         },
         {
           "n_games": 52,
-          "sim_mean": 71.00423431396484,
-          "sim_sd": 5.184027671813965,
+          "sim_mean": 71.02922821044922,
+          "sim_sd": 5.141432285308838,
           "actual_mean": 67.90230769230769,
           "actual_sd": 5.30471289363159,
-          "mean_delta": 3.1019266216571566,
-          "sd_delta": -0.12068522181762553,
+          "mean_delta": 3.1269205181415316,
+          "sd_delta": -0.16328060832275249,
           "month": "2025-03",
           "powered": false
         }
@@ -1081,46 +1089,46 @@
         {
           "q": 1,
           "n": 100,
-          "sim": 67.32479858398438,
+          "sim": 67.46839904785156,
           "act": 65.01520000000001,
-          "delta": 2.309598583984368
+          "delta": 2.4531990478515553
         },
         {
           "q": 2,
           "n": 100,
-          "sim": 70.09919738769531,
+          "sim": 70.01460266113281,
           "act": 66.6638,
-          "delta": 3.4353973876953177
+          "delta": 3.3508026611328177
         },
         {
           "q": 3,
           "n": 99,
-          "sim": 71.74222564697266,
+          "sim": 71.71595764160156,
           "act": 68.41515151515152,
-          "delta": 3.327074131821135
+          "delta": 3.3008061264500412
         },
         {
           "q": 4,
           "n": 100,
-          "sim": 73.17019653320312,
+          "sim": 73.13880157470703,
           "act": 70.2308,
-          "delta": 2.939396533203123
+          "delta": 2.908001574707029
         },
         {
           "q": 5,
           "n": 100,
-          "sim": 76.34839630126953,
+          "sim": 76.50540161132812,
           "act": 71.317,
-          "delta": 5.031396301269538
+          "delta": 5.188401611328132
         }
       ],
-      "slope_ratio": 1.4319079814156552,
-      "slope_span_sim": 9.023597717285156,
+      "slope_ratio": 1.4340351270234826,
+      "slope_span_sim": 9.037002563476562,
       "slope_span_act": 6.301799999999986,
       "monotone_steps": 4,
       "game_ids": 500,
-      "eoh_share_gap": 0.12099006479481644,
-      "eoh_duration_gap": -6.012218939580764
+      "eoh_share_gap": 0.12067006479481646,
+      "eoh_duration_gap": -5.974218939580765
     },
     "clock3c_incumbent_s25_floor": {
       "arm": "reference",
