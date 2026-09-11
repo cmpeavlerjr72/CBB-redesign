@@ -1,6 +1,30 @@
 # Rotation model (L4) — who is on the floor, and for how long
 
-Status: **BAKE-OFF RUN 2026-09-10/11, FOUR rounds, NO ARM ADOPTED.** Round 4
+Status: **BAKE-OFF RUN 2026-09-10/11, SIX rounds, NO ARM ADOPTED.** Round 6
+conditioned the substitution COMPOSITION on who left (L33) and produced the best
+per-player minutes of any arm in six rounds -- `K1_cond_class` 8.862 min against
+R2's 9.794 and round 5's W4 8.928, with the best per-player minutes K-S D ever
+measured (0.0589) and 5 of 6 G8 cells, which only the incumbent has matched --
+and it is **not adopted**: it passes 4 of the 8 state cells, and it loses the
+second as-of-minutes quintile to W4 by 0.060 min against a 0.016 floor, which the
+pre-registered responsiveness condition vetoes. Round 6 settles two questions and
+opens one. **The temperature story is dead**: the entry-weight exponent `tau` is
+fitted at **1.00 in all six S1 windows** -- exactly round 5's W4 -- and the
+likelihood rejects the rank direction by 320,000-350,000 log units, so no
+temperature between the two knob-free endpoints is preferred to the one already
+in use. **The conditional story is real and half-works**: a substitution REVERSES
+the class (a bench player leaving puts a starter on 0.749, a starter leaving puts
+one on 0.316, measured on both seasons), W4's unconditional race realises a 20 pp
+spread against a real 34 pp, and K1 realises 43 pp -- past the target rather than
+onto it. **The binding defect has moved to the EXIT side**: every arm since round
+5 takes a starter off at 0.456-0.467 of single swaps against a real 0.587, a
+12-13 pp miss, because the rank exit rule was carried over unchanged. Round 6
+also measures, report-only, what the gate cannot separate: re-grading the ACTUAL
+sequence with the model's as-of starter set moves the opening-ten-minutes cell
+**-4.4 pp** and both close-late bands -2.8 pp, so those cells are unreachable for
+starter-identification reasons and the arms sit within 1.2 pp of the honest
+benchmark; foul trouble, at +0.2 pp of benchmark, is the one veto cell whose
+failure is genuinely the model's own. Round 4
 changed model family (L25): per-player discrete-time substitution hazards
 (sub-out over the five on the floor, sub-in over the eligible bench) in place of
 a minutes budget or a donor sequence. It **produces both structural facts three
@@ -352,6 +376,52 @@ Three readings the round does establish:
    gives back 3-4 pp of late stickiness. The truth is between a zero-temperature
    race and a unit-temperature one, and no knob-free rule can express it.
 
+### 5.7 Round 6 (same 1,600 games, 3 seeds under S1; `experiments.md` 14-15)
+
+Round 6 changed the **entry rule** and nothing else: round 5's wave tables,
+round 4's hazards, round 5's rank exit rule and the hard second-half reset are
+all reused byte for byte, so a difference between a round-6 arm and W4 is a
+difference in the entry composition alone. Three arms -- **T1** one fitted
+temperature on the entry weights, **K1** the entry class count conditioned on how
+many predicted starters left, **A1** a fitted 4x4 tier-pair log-affinity -- with
+R2, W1 and W4 as reference columns from round 5's JSON (a 1-seed W4 reproduction
+re-run inside this round moves every state cell by less than its floor).
+
+| | ACTUAL | R2 | W1 | W4 | T1 | K1 | A1 |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| per-player minutes MAE | 0.0 | 9.7939 | 9.1244 | 8.9281 | 8.9266 | **8.8622** | 8.9167 |
+| K-S D, per-player minutes | -- | 0.0798 | 0.1152 | 0.0747 | 0.0752 | **0.0589** | 0.0730 |
+| state cells passed (of 8) | | 2 | **5** | 4 | 4 | 4 | 4 |
+| round-5 cells passed (of 2) | | 2 | 1 | **2** | **2** | **2** | **2** |
+| G8 cells passed (of 6) | | 5 | 2 | 3 | 3 | **5** | 3 |
+| final 8:00, \|m\| <= 5 | 0.7491 | 0.7254 | 0.7281 | 0.7135 | 0.7096 | 0.7001 | 0.7089 |
+| starters at >= 4 fouls | 0.4613 | 0.4626 | 0.4432 | 0.4216 | 0.4286 | 0.4212 | 0.4295 |
+| distinct lineups / team-game | 14.836 | 15.514 | 11.515 | 14.474 | 14.442 | 14.571 | 14.341 |
+
+Reading, in the order the evidence forces:
+
+1. **`tau = 1.00` in all six windows kills the temperature hypothesis.** T1 is
+   therefore W4's rule exactly, and its cells reproduce W4's within the seed
+   floor -- a free extra noise reading, and a negative answer to round 5's own
+   option (a).
+2. **The conditional object is real, and K1 represents it too strongly.** The
+   measured joint (a class-reversing swap, 0.749 / 0.316 at size 1 on 2024 and
+   0.737 / 0.323 on 2025) is missed by W4's race (20 pp of spread against 34) and
+   overshot by K1 (43 pp).
+3. **The defect is now on the exit side**, by 12-13 pp of the starter share of
+   single-swap leavers, and no entry rule can pay while the leaver mix is wrong.
+4. **Most of what the late and opening cells still read is starter
+   identification**, not rotation: against the as-of-starter benchmark the arms
+   are -1.2 / -0.4 / +1.7 pp on the three late bands and -0.5 pp on the opening
+   ten minutes. Foul trouble is the exception and is the model's own miss.
+5. **Decision 10 passes at both seed counts**: live/frozen margin SD ratio
+   0.9998 at 5 seeds and 0.9934 at 25, with possessions moving 0.027 and 0.016
+   against a G1 tolerance of 1.0. Round 6 adds no margin, clock or foul term to
+   size under L31 -- the objects that carry state are round 5's, already sized
+   there -- so the freeze is the instrument that applies and it finds no new
+   channel.
+
+
 ---
 
 ## 6. Garbage time: how each arm produces it, from data rather than a rule
@@ -533,6 +603,28 @@ events of the game being simulated would be a leak of exactly the kind
     on a common rhythm and flattens the team-to-team spread the cell exists to
     show. Recorded against any future coupling arm.
 
+23. **Round 6 changes the ENTRY RULE and fits only the composition object.**
+    Round 5's wave tables, round 4's hazards and round 3b's base fits are reused
+    byte for byte and nothing is written to any of them, so a round-6 arm minus
+    W4 is the entry rule and nothing else. All three round-6 arms draw the same
+    uniforms whether or not they use them (K1's `k_in` draw), so the three are
+    paired with each other; the cost, stated, is that they are NOT byte-aligned
+    with W4, which is why W4's column comes from round 5's JSON and is checked by
+    a 1-seed reproduction re-run.
+24. **`tau` is fitted by maximum likelihood on the training window, never
+    against a gate cell**, over a grid declared in the pre-registration. It
+    returns 1.00 in all six windows. `p_in` was itself fitted by logistic ML on
+    those rows, so the argmax at 1 is close to a property of that fit; the
+    informative content is the curvature, which rejects the rank direction by
+    320k-350k log units and is what makes round 5's option (a) empty.
+25. **The as-of-starter benchmark is report-only and was declared so before the
+    run.** It re-grades the ACTUAL sequence with the model's predicted five and
+    shows which gate cells are reachable at all (-4.4 pp on the opening ten
+    minutes, -2.8 pp on both close-late bands, +0.2 pp on foul trouble). It
+    changed no tolerance and no verdict; every arm is still scored against each
+    side's own real starting five. Whether the gate SHOULD score against the
+    benchmark is a PM decision and is not taken inside a running bake-off.
+
 ---
 
 ## 8. Consumption from the sim
@@ -613,12 +705,31 @@ Notes for the caller:
 | `data/processed/models/rotation/rotation_F1_round5_{results.json,table.csv}` | round-5 results, verdicts, both noise floors, the reproduction check, the slope table and the decision |
 | `data/processed/models/rotation/wave_audit_2026-09-11.json` | the round-5 wave audit's raw cells (`docs/tests/rotation_wave_audit_2026-09-11.md`) |
 | `data/processed/models/rotation/wave_reachability_2026-09-11.json` | the L25 on-paper probe over all four composition rules, computed before the pre-registration |
+| `data/processed/models/rotation/round6/rotation_v6_comp_{YYYYMM}.json` | round 6: `tau`, `P(k_in \| size, k_out)`, the 4x4 tier log-affinity and the tau likelihood curve, one per S1 window, plus `rotation_v6_manifest.json`. Gitignored (`data/processed/models/*/round*/`), HF-synced |
+| `data/processed/models/rotation/round6/rotation_v6_comp_seed2_*.json` | round 6 noise floor B: the spec-identical refit under fit seed 101 |
+| `data/processed/models/rotation/rotation_F1_round6_{results.json,table.csv}` | round-6 results, verdicts, floor A, the quintile and per-team blocks, the as-of-starter benchmark, the slope table and the decision |
+| `data/processed/models/rotation/rotation_F1_round6_floorB.json` | round-6 floor B (A1), run in its own process so the bake-off JSON is on disk first |
+| `data/processed/models/rotation/comp_audit_2026-09-11.json` | the round-6 composition audit's raw cells (`docs/tests/rotation_composition_audit_2026-09-11.md`): the measured joint on both seasons, the state split, and the realised joint under W4/K1/A1 |
 
 ---
 
 ## 10. Known gaps / followups
 
-- **ROUND 5, and it is the only item that matters.** The round-4 family needs a
+- **ROUND 7, and it is the only item that matters.** The **exit rule**. Round 5
+  fixed WHETHER and HOW MANY, round 6 shows the entry side can be conditioned and
+  that conditioning cannot pay while the leaver mix is wrong: every arm since
+  round 5 takes a starter off at 0.456-0.467 of single swaps against a real
+  0.587. The object is K1's mirror, `P(k_out | size, state)` drawn first and the
+  leavers raced within class -- the same counts pass, the same declared shrinkage
+  constant, the same engine primitives. The one state term the composition
+  measurably needs is the final eight minutes of a decided game, where
+  P(a starter enters | a bench player leaves) is 0.53 against 0.75 everywhere
+  else (`docs/tests/rotation_composition_audit_2026-09-11.md` section 2).
+- **Foul trouble is the only veto cell left that is the model's own.** -3.2 to
+  -4.2 pp against the like-for-like benchmark, with the "at exactly 4 fouls"
+  share 0.59-0.61 against a real 0.517. It is a foul-process and
+  benching-response question and nothing in the substitution draw will fix it.
+- **SUPERSEDED BY ROUND 6 (kept for the record): ROUND 5.** The round-4 family needs a
   **joint dead-ball substitution draw**: one Bernoulli per (team, boundary) for
   "is there a substitution wave here", conditioned on `prev_end` and the state,
   then a wave size and a composition drawn from the same per-player hazards.

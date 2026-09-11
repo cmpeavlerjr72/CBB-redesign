@@ -238,3 +238,24 @@ For the sim: clock round 5 has no target worth a round; the +1.0 to +1.7 possess
 Round 3, Stage A: round 2's S1 winner is 0.98 pp calibrated overall but 2.49 pp on non-conference games and 2.95 pp pre-boundary (gate 2.0). Bucketing residuals by each team's own first conference game explains LESS structure than plain calendar week (excess RMS 0.62 vs 0.75 pp on FGA_3, every class agrees), one binary conference flag reproduces over half of the 20-bucket calendar structure, and weeks-since-refit explains essentially nothing (0.15 pp), so refit staleness is not the mechanism. The residual lives in season weeks 0-3 (FGA_3 -1.5 to -1.9 pp). The raw-centred style rates do shift at the boundary by own-rating quintile, but only on free-throw rate (Q1 +1.6, Q4 -1.5 feature units) and it is small. Round 3 cross on `first` (fold 2, floor 0.000804): the conference flag (-0.000054), one-pass opponent adjustment (+0.000213) and iterative adjustment (+0.000225) are all inside the floor, and calibration does not improve on non-conference games (2.39-3.00 pp); the reference stands. On `cont`, S1_conf_aligned wins on a 0.00004 gain and a 0.26 pp non-conference gain against a 0.25 threshold, a lead, not a finding. The alignment cells on `first` (conf-aligned, weekly) were NOT RUN by the 03:15 stop. Every adjusted feature passes the leak test (|corr| <= 0.023). Free throw's S1 confirmation picked conference-aligned refit on early-conference calibration (a0810d8), so the alignment question is open across models. Decision 9 stays PENDING EVIDENCE. Evidence: `docs/tests/possession_outcome_conference_regime_2026-09-10.md`, `docs/models/possession_outcome/experiments.md` round 3.
 
 For the sim: the early-season defect is the style-rate features' own thin-sample behaviour in November (as-of rates on a handful of games), to be fixed where it lives, with shrinkage of as-of rates toward the prior-season or league value as the pre-registered arm, not by re-timing the refit or adjusting for opponents. The `first`-population alignment cells still owe an answer and run next with the shrinkage arm.
+
+## L36. A conditional rule cannot pay while the thing it conditions on arrives with the wrong frequency; and a "temperature" between two knob-free rules can be refuted by its own likelihood (2026-09-11)
+
+Rotation round 6 (`docs/models/rotation/experiments.md` 14-15,
+`docs/tests/rotation_composition_audit_2026-09-11.md`) took the two options L33
+left -- (a) one fitted temperature on the entry weights, (b) the composition
+conditioned on WHO LEFT -- and killed the first and half-answered the second.
+(a) The entry-weight exponent `tau` is fitted at **1.00 in all six S1 windows**,
+which IS the incumbent rule, with the rank direction rejected by 320k-350k log
+units: there is no temperature between two knob-free endpoints that the data
+prefers to the one already in use, and a grid whose argmax is the status quo is
+an answer, not a failed search. (b) The joint is real and large -- a substitution
+**reverses the class** (a bench player leaving puts a starter on 0.749, a starter
+leaving puts one on 0.316, both seasons, n = 46k-89k) -- and the arm that
+represents it sets the best per-player minutes MAE in six rounds (8.862 against
+8.928) and moves **no state cell**. The reason is measurable: every arm takes a
+starter off at 0.456-0.467 of single swaps against a real 0.587, because the exit
+rule was carried over unchanged, so the conditional entry rule conditions
+correctly on a class that arrives 13 pp too rarely. **Condition on an input your
+own model gets wrong and you inherit its error with a smaller variance.** Fix the
+marginal that feeds the conditional before enriching the conditional.

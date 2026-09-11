@@ -1,0 +1,414 @@
+{
+  "generated_at": "2026-09-11T14:33:29.636464+00:00",
+  "arm": "A1_tier_affinity",
+  "fit_seed_2": 101,
+  "sim_seed_2": 23,
+  "n_games": 150,
+  "manifest_seed2": [
+    {
+      "refit_date": "2024-11-01",
+      "path": "rotation_v6_comp_seed2_202411.json",
+      "max_train_date": "2024-04-30",
+      "hazards": "rotation_v4_sub_static.json",
+      "wave": "rotation_v5_wave_202411.json",
+      "tau": 1.0,
+      "n_waves": 124189,
+      "n_pairs": 121917,
+      "team_games": 6000,
+      "log_a": [
+        [
+          -0.1779,
+          0.1524,
+          0.3065,
+          -0.228
+        ],
+        [
+          0.046,
+          -0.0459,
+          0.0691,
+          -0.3318
+        ],
+        [
+          0.0454,
+          -0.021,
+          0.0691,
+          -0.308
+        ],
+        [
+          0.0269,
+          0.027,
+          0.0593,
+          -0.3056
+        ]
+      ],
+      "kin_size1": [
+        [
+          0.29,
+          0.71
+        ],
+        [
+          0.6765,
+          0.3235
+        ]
+      ],
+      "seconds": 177.4
+    },
+    {
+      "refit_date": "2024-12-01",
+      "path": "rotation_v6_comp_seed2_202412.json",
+      "max_train_date": "2024-11-30",
+      "hazards": "rotation_v4_sub_S1_202412.json",
+      "wave": "rotation_v5_wave_202412.json",
+      "tau": 1.0,
+      "n_waves": 124598,
+      "n_pairs": 121828,
+      "team_games": 6000,
+      "log_a": [
+        [
+          -0.1815,
+          0.1311,
+          0.3131,
+          -0.2093
+        ],
+        [
+          0.0442,
+          -0.0631,
+          0.0742,
+          -0.3191
+        ],
+        [
+          0.0434,
+          -0.0377,
+          0.0842,
+          -0.2822
+        ],
+        [
+          0.0272,
+          0.0059,
+          0.0612,
+          -0.2825
+        ]
+      ],
+      "kin_size1": [
+        [
+          0.296,
+          0.704
+        ],
+        [
+          0.6783,
+          0.3217
+        ]
+      ],
+      "seconds": 183.5
+    },
+    {
+      "refit_date": "2025-01-01",
+      "path": "rotation_v6_comp_seed2_202501.json",
+      "max_train_date": "2024-12-31",
+      "hazards": "rotation_v4_sub_S1_202501.json",
+      "wave": "rotation_v5_wave_202501.json",
+      "tau": 1.0,
+      "n_waves": 125479,
+      "n_pairs": 122555,
+      "team_games": 6000,
+      "log_a": [
+        [
+          -0.1732,
+          0.1246,
+          0.3001,
+          -0.2006
+        ],
+        [
+          0.0461,
+          -0.0787,
+          0.0678,
+          -0.3012
+        ],
+        [
+          0.0487,
+          -0.0552,
+          0.0712,
+          -0.2763
+        ],
+        [
+          0.0234,
+          0.0023,
+          0.0766,
+          -0.2622
+        ]
+      ],
+      "kin_size1": [
+        [
+          0.2998,
+          0.7002
+        ],
+        [
+          0.681,
+          0.319
+        ]
+      ],
+      "seconds": 190.8
+    },
+    {
+      "refit_date": "2025-02-01",
+      "path": "rotation_v6_comp_seed2_202502.json",
+      "max_train_date": "2025-01-31",
+      "hazards": "rotation_v4_sub_S1_202502.json",
+      "wave": "rotation_v5_wave_202502.json",
+      "tau": 1.0,
+      "n_waves": 126103,
+      "n_pairs": 123555,
+      "team_games": 6000,
+      "log_a": [
+        [
+          -0.1657,
+          0.1335,
+          0.2964,
+          -0.2124
+        ],
+        [
+          0.0492,
+          -0.0764,
+          0.0623,
+          -0.3027
+        ],
+        [
+          0.0568,
+          -0.0546,
+          0.0376,
+          -0.3029
+        ],
+        [
+          0.0373,
+          -0.0172,
+          0.0605,
+          -0.3074
+        ]
+      ],
+      "kin_size1": [
+        [
+          0.2982,
+          0.7018
+        ],
+        [
+          0.6768,
+          0.3232
+        ]
+      ],
+      "seconds": 182.4
+    },
+    {
+      "refit_date": "2025-03-01",
+      "path": "rotation_v6_comp_seed2_202503.json",
+      "max_train_date": "2025-02-28",
+      "hazards": "rotation_v4_sub_S1_202503.json",
+      "wave": "rotation_v5_wave_202503.json",
+      "tau": 1.0,
+      "n_waves": 125766,
+      "n_pairs": 123469,
+      "team_games": 6000,
+      "log_a": [
+        [
+          -0.1632,
+          0.116,
+          0.2496,
+          -0.1444
+        ],
+        [
+          0.0479,
+          -0.0992,
+          0.0243,
+          -0.2501
+        ],
+        [
+          0.0493,
+          -0.0695,
+          0.0199,
+          -0.2354
+        ],
+        [
+          0.0347,
+          -0.0378,
+          0.0257,
+          -0.2202
+        ]
+      ],
+      "kin_size1": [
+        [
+          0.3022,
+          0.6978
+        ],
+        [
+          0.6726,
+          0.3274
+        ]
+      ],
+      "seconds": 186.9
+    },
+    {
+      "refit_date": "2025-04-01",
+      "path": "rotation_v6_comp_seed2_202504.json",
+      "max_train_date": "2025-03-31",
+      "hazards": "rotation_v4_sub_S1_202504.json",
+      "wave": "rotation_v5_wave_202504.json",
+      "tau": 1.0,
+      "n_waves": 124391,
+      "n_pairs": 122339,
+      "team_games": 6000,
+      "log_a": [
+        [
+          -0.1711,
+          0.129,
+          0.2853,
+          -0.1735
+        ],
+        [
+          0.0455,
+          -0.0716,
+          0.0636,
+          -0.2897
+        ],
+        [
+          0.0481,
+          -0.0379,
+          0.0449,
+          -0.2785
+        ],
+        [
+          0.0241,
+          0.0012,
+          0.0702,
+          -0.2522
+        ]
+      ],
+      "kin_size1": [
+        [
+          0.298,
+          0.702
+        ],
+        [
+          0.6726,
+          0.3274
+        ]
+      ],
+      "seconds": 190.1
+    }
+  ],
+  "seed1": {
+    "n_team_games": 300,
+    "n_nonzero_mean": 8.83,
+    "top5_share": 0.7738898289882848,
+    "top8_share": 0.9769107691909342,
+    "lu_top1": 0.2591043869782229,
+    "lu_top3": 0.5419826569661583,
+    "lu_top5": 0.713524966653355,
+    "n_lineups_mean": 13.99,
+    "late_starter_share_b0": 0.7026259758694109,
+    "late_slots_b0": 2818.0,
+    "late_starter_share_b1": 0.6888452914798207,
+    "late_slots_b1": 3568.0,
+    "late_starter_share_b2": 0.5433867735470942,
+    "late_slots_b2": 1996.0,
+    "foul_trouble_share": 0.4292945024139542,
+    "foul_trouble_opps": 12842.0,
+    "foul4_share": 0.6231404958677685,
+    "foul4_opps": 8470.0,
+    "arm": "A1_tier_affinity",
+    "minutes_mean": 26.24109019607843,
+    "minutes_sd_pooled": 9.95623011950722,
+    "minutes_sd_within": 6.5793805678934865,
+    "ks_minutes_d": 0.09691230832050135,
+    "ks_minutes_p": 2.0764189398652324e-16,
+    "n_rot_player_games": 2125,
+    "h2tip_starter_share_b0": 0.9241379310344827,
+    "h2tip_slots_b0": 580.0,
+    "h2tip_starter_share_b1": 0.9324324324324325,
+    "h2tip_slots_b1": 740.0,
+    "h2tip_starter_share_b2": 0.9611111111111111,
+    "h2tip_slots_b2": 180.0,
+    "opentip_starter_share_close": 0.7333924499619965,
+    "opentip_slots_close": 39470.0,
+    "minutes_mae": 23.053532725582425,
+    "minutes_mae_seed_sd": 0.0,
+    "sub_rate_per_boundary": 0.15350790513833992,
+    "distinct_lineups_per_game": 13.99,
+    "ks_lineup_top1_d": 0.12354166666666666,
+    "ks_lineup_top1_p": 0.00041754175398054993
+  },
+  "seed2": {
+    "n_team_games": 300,
+    "n_nonzero_mean": 8.866666666666667,
+    "top5_share": 0.7706785627502898,
+    "top8_share": 0.9757174489620805,
+    "lu_top1": 0.24993644676234297,
+    "lu_top3": 0.5363088496780425,
+    "lu_top5": 0.708152903269881,
+    "n_lineups_mean": 14.403333333333334,
+    "late_starter_share_b0": 0.6997870830376153,
+    "late_slots_b0": 2818.0,
+    "late_starter_share_b1": 0.6918161434977579,
+    "late_slots_b1": 3568.0,
+    "late_starter_share_b2": 0.5216432865731463,
+    "late_slots_b2": 1996.0,
+    "foul_trouble_share": 0.4595214683710259,
+    "foul_trouble_opps": 12204.0,
+    "foul4_share": 0.6443089430894309,
+    "foul4_opps": 8364.0,
+    "arm": "A1_tier_affinity",
+    "minutes_mean": 25.895065176908755,
+    "minutes_sd_pooled": 10.024582253213353,
+    "minutes_sd_within": 6.350005495844624,
+    "ks_minutes_d": 0.08671848487496081,
+    "ks_minutes_p": 2.406579427684916e-13,
+    "n_rot_player_games": 2148,
+    "h2tip_starter_share_b0": 0.9551724137931035,
+    "h2tip_slots_b0": 580.0,
+    "h2tip_starter_share_b1": 0.9391891891891891,
+    "h2tip_slots_b1": 740.0,
+    "h2tip_starter_share_b2": 0.9611111111111111,
+    "h2tip_slots_b2": 180.0,
+    "opentip_starter_share_close": 0.7456295920952623,
+    "opentip_slots_close": 39470.0,
+    "minutes_mae": 23.030669330669326,
+    "minutes_mae_seed_sd": 0.0,
+    "sub_rate_per_boundary": 0.15659584980237154,
+    "distinct_lineups_per_game": 14.403333333333334,
+    "ks_lineup_top1_d": 0.15083333333333337,
+    "ks_lineup_top1_p": 6.548731794614882e-06
+  },
+  "ACTUAL": {
+    "n_team_games": 300,
+    "n_nonzero_mean": 9.71,
+    "top5_share": 0.7450382745218627,
+    "top8_share": 0.9567868077251838,
+    "lu_top1": 0.27118000214265,
+    "lu_top3": 0.5314928850946122,
+    "lu_top5": 0.6845897635054092,
+    "n_lineups_mean": 15.083333333333334,
+    "late_starter_share_b0": 0.7435770049680624,
+    "late_slots_b0": 2818.0,
+    "late_starter_share_b1": 0.7185538116591929,
+    "late_slots_b1": 3568.0,
+    "late_starter_share_b2": 0.5518036072144289,
+    "late_slots_b2": 1996.0,
+    "foul_trouble_share": 0.43624733475479743,
+    "foul_trouble_opps": 4690.0,
+    "foul4_share": 0.4809590973201692,
+    "foul4_opps": 4254.0,
+    "arm": "ACTUAL",
+    "minutes_mean": 24.477451865222623,
+    "minutes_sd_pooled": 9.753223978953644,
+    "minutes_sd_within": 5.854588285761356,
+    "ks_minutes_d": NaN,
+    "ks_minutes_p": NaN,
+    "n_rot_player_games": 2216,
+    "h2tip_starter_share_b0": 0.9655172413793104,
+    "h2tip_slots_b0": 580.0,
+    "h2tip_starter_share_b1": 0.9662162162162162,
+    "h2tip_slots_b1": 740.0,
+    "h2tip_starter_share_b2": 0.9611111111111111,
+    "h2tip_slots_b2": 180.0,
+    "opentip_starter_share_close": 0.7710412971877375,
+    "opentip_slots_close": 39470.0
+  }
+}
