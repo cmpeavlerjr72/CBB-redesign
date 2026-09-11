@@ -1,0 +1,402 @@
+{
+  "season": 2025,
+  "actual": {
+    "n_games": 500,
+    "poss_mean_all": 68.32821643286573,
+    "poss_sd_all": 5.190841237822209,
+    "n_cc": 159,
+    "poss_mean_cc": 68.53006289308176,
+    "poss_sd_cc": 5.12038906463509,
+    "margin_sd": 15.471882312264695,
+    "total_sd": 19.69631807957476,
+    "corr_home_away": 0.23738201149859772,
+    "margin_mean": 5.296,
+    "total_mean": 146.288,
+    "ot_rate": 0.068,
+    "ppp": 1.0704801591281972,
+    "end_of_half": {
+      "n_clock_complete_halves": 926,
+      "actual_share_last_poss_under_35s": 0.8758099352051836,
+      "actual_mean_last_poss_duration_s": 11.890258939580765,
+      "definition": "clock-complete regulation halves of the 500-game round-3c subset; clock.eoh_stats on clock_v3.actual_end_of_half_cc, the same functions the offline gate uses",
+      "subset_rule": "F2 2025 slate sorted by game_id ascending, every 11th row, first 500"
+    }
+  },
+  "month_min_games": 100,
+  "arms": {
+    "clock4_R_s25": {
+      "arm": "v3c_srfloor_P3_s1",
+      "freeze": false,
+      "tag": "clock4_R_s25",
+      "n_seeds": 25,
+      "seed_offset": 0,
+      "flags": {
+        "ENGINE_EVENT": "round2_s1",
+        "ENGINE_CLOCK": "v3c_srfloor_P3_s1",
+        "ENGINE_ROTATION": "reference",
+        "ENGINE_FG3": "decision8",
+        "ENGINE_FG_MAKE": "round3_shooter_S_C_s1",
+        "ENGINE_REBOUND": "s1_weekly",
+        "ENGINE_FREE_THROW": "s1_conf_aligned",
+        "ENGINE_ROTATION_SCHEME": "s1",
+        "ENGINE_INPUTS_VERSION": "v2"
+      },
+      "runtime_s": 804.1,
+      "G1_cc": {
+        "n_games": 159,
+        "sim_mean": 69.68628692626953,
+        "sim_sd": 4.643716812133789,
+        "actual_mean": 68.53006289308176,
+        "actual_sd": 5.12038906463509,
+        "mean_delta": 1.156224033187769,
+        "sd_delta": -0.4766722525013005
+      },
+      "G1_all": {
+        "n_games": 500,
+        "sim_mean": 70.0322036743164,
+        "sim_sd": 4.5922064781188965,
+        "actual_mean": 68.32821643286573,
+        "actual_sd": 5.190841237822209,
+        "mean_delta": 1.703987241450676,
+        "sd_delta": -0.5986347597033124
+      },
+      "margin_sd": 15.941359276085763,
+      "total_sd": 15.992100529347208,
+      "corr_home_away": 0.0031780066057727624,
+      "margin_mean": 5.09184,
+      "margin_bias": -0.2041599999999999,
+      "total_mean": 145.35696000000002,
+      "total_bias": -0.9310399999999959,
+      "total_mae": 14.10544,
+      "margin_mae": 9.75136,
+      "ppp": 1.0380266921446624,
+      "ot_rate": 0.03104,
+      "end_of_half": {
+        "n_possessions": 1742570,
+        "n_period_ending": 25000,
+        "share_last_starts_under_35s": 0.98428,
+        "mean_last_possession_duration_s": 11.19016,
+        "mean_possession_duration_s": 17.21595115260793
+      },
+      "end_of_half_by_period": {
+        "H1": {
+          "n_possessions": 857188,
+          "n_period_ending": 12500,
+          "share_last_starts_under_35s": 0.97696,
+          "mean_last_possession_duration_s": 13.11832,
+          "mean_possession_duration_s": 17.49907838187189
+        },
+        "H2": {
+          "n_possessions": 885382,
+          "n_period_ending": 12500,
+          "share_last_starts_under_35s": 0.9916,
+          "mean_last_possession_duration_s": 9.262,
+          "mean_possession_duration_s": 16.94183979344509
+        },
+        "OT": {
+          "n_possessions": 8235,
+          "n_period_ending": 423,
+          "share_last_starts_under_35s": 0.9952718676122931,
+          "mean_last_possession_duration_s": 9.680851063829786,
+          "mean_possession_duration_s": 15.40983606557377
+        },
+        "REG": {
+          "n_possessions": 1742570,
+          "n_period_ending": 25000,
+          "share_last_starts_under_35s": 0.98428,
+          "mean_last_possession_duration_s": 11.19016,
+          "mean_possession_duration_s": 17.21595115260793
+        }
+      },
+      "horn_truncated_per_game": 2.03384,
+      "months": [
+        {
+          "n_games": 109,
+          "sim_mean": 71.05908203125,
+          "sim_sd": 4.6303510665893555,
+          "actual_mean": 68.68403669724772,
+          "actual_sd": 5.385141271792167,
+          "mean_delta": 2.37504533400228,
+          "sd_delta": -0.7547902052028119,
+          "month": "2024-11",
+          "powered": true
+        },
+        {
+          "n_games": 83,
+          "sim_mean": 69.95301055908203,
+          "sim_sd": 4.48870849609375,
+          "actual_mean": 68.04,
+          "actual_sd": 4.796922794113215,
+          "mean_delta": 1.913010559082025,
+          "sd_delta": -0.30821429801946465,
+          "month": "2024-12",
+          "powered": false
+        },
+        {
+          "n_games": 132,
+          "sim_mean": 69.88833618164062,
+          "sim_sd": 4.6181254386901855,
+          "actual_mean": 68.625,
+          "actual_sd": 4.742211533557696,
+          "mean_delta": 1.263336181640625,
+          "sd_delta": -0.12408609486751043,
+          "month": "2025-01",
+          "powered": true
+        },
+        {
+          "n_games": 124,
+          "sim_mean": 69.72193908691406,
+          "sim_sd": 4.456928253173828,
+          "actual_mean": 68.06894308943089,
+          "actual_sd": 5.7034152571152745,
+          "mean_delta": 1.652995997483174,
+          "sd_delta": -1.2464870039414464,
+          "month": "2025-02",
+          "powered": true
+        },
+        {
+          "n_games": 52,
+          "sim_mean": 69.11115264892578,
+          "sim_sd": 4.532370567321777,
+          "actual_mean": 67.90230769230769,
+          "actual_sd": 5.30471289363159,
+          "mean_delta": 1.208844956618094,
+          "sd_delta": -0.772342326309813,
+          "month": "2025-03",
+          "powered": false
+        }
+      ],
+      "quintiles": [
+        {
+          "q": 1,
+          "n": 100,
+          "sim": 66.8147964477539,
+          "act": 65.01520000000001,
+          "delta": 1.799596447753899
+        },
+        {
+          "q": 2,
+          "n": 100,
+          "sim": 67.73660278320312,
+          "act": 66.6638,
+          "delta": 1.0728027832031302
+        },
+        {
+          "q": 3,
+          "n": 99,
+          "sim": 70.2662582397461,
+          "act": 68.41515151515152,
+          "delta": 1.8511067245945725
+        },
+        {
+          "q": 4,
+          "n": 100,
+          "sim": 71.91799926757812,
+          "act": 70.2308,
+          "delta": 1.6871992675781229
+        },
+        {
+          "q": 5,
+          "n": 100,
+          "sim": 73.41539764404297,
+          "act": 71.317,
+          "delta": 2.0983976440429757
+        }
+      ],
+      "slope_ratio": 1.0474152141116946,
+      "slope_span_sim": 6.6006011962890625,
+      "slope_span_act": 6.301799999999986,
+      "monotone_steps": 4,
+      "game_ids": 500,
+      "eoh_share_gap": 0.10847006479481647,
+      "eoh_duration_gap": -0.700098939580764
+    },
+    "clock4_R_s25_floor": {
+      "arm": "v3c_srfloor_P3_s1",
+      "freeze": false,
+      "tag": "clock4_R_s25_floor",
+      "n_seeds": 25,
+      "seed_offset": 1000,
+      "flags": {
+        "ENGINE_EVENT": "round2_s1",
+        "ENGINE_CLOCK": "v3c_srfloor_P3_s1",
+        "ENGINE_ROTATION": "reference",
+        "ENGINE_FG3": "decision8",
+        "ENGINE_FG_MAKE": "round3_shooter_S_C_s1",
+        "ENGINE_REBOUND": "s1_weekly",
+        "ENGINE_FREE_THROW": "s1_conf_aligned",
+        "ENGINE_ROTATION_SCHEME": "s1",
+        "ENGINE_INPUTS_VERSION": "v2"
+      },
+      "runtime_s": 677.1,
+      "G1_cc": {
+        "n_games": 159,
+        "sim_mean": 69.52918243408203,
+        "sim_sd": 4.6324543952941895,
+        "actual_mean": 68.53006289308176,
+        "actual_sd": 5.12038906463509,
+        "mean_delta": 0.9991195410002689,
+        "sd_delta": -0.48793466934090013
+      },
+      "G1_all": {
+        "n_games": 500,
+        "sim_mean": 69.95771789550781,
+        "sim_sd": 4.614156723022461,
+        "actual_mean": 68.32821643286573,
+        "actual_sd": 5.190841237822209,
+        "mean_delta": 1.6295014626420823,
+        "sd_delta": -0.5766845147997479
+      },
+      "margin_sd": 16.02204387433741,
+      "total_sd": 16.013969919173874,
+      "corr_home_away": -0.0005040614662621375,
+      "margin_mean": 5.2284,
+      "margin_bias": -0.06760000000000055,
+      "total_mean": 144.97992,
+      "total_bias": -1.3080800000000181,
+      "total_mae": 13.90152,
+      "margin_mae": 9.747279999999998,
+      "ppp": 1.0364946926987946,
+      "ot_rate": 0.0292,
+      "end_of_half": {
+        "n_possessions": 1741161,
+        "n_period_ending": 25000,
+        "share_last_starts_under_35s": 0.98332,
+        "mean_last_possession_duration_s": 11.1668,
+        "mean_possession_duration_s": 17.229882819566946
+      },
+      "end_of_half_by_period": {
+        "H1": {
+          "n_possessions": 856281,
+          "n_period_ending": 12500,
+          "share_last_starts_under_35s": 0.97464,
+          "mean_last_possession_duration_s": 13.1592,
+          "mean_possession_duration_s": 17.517613960837622
+        },
+        "H2": {
+          "n_possessions": 884880,
+          "n_period_ending": 12500,
+          "share_last_starts_under_35s": 0.992,
+          "mean_last_possession_duration_s": 9.1744,
+          "mean_possession_duration_s": 16.951451044209385
+        },
+        "OT": {
+          "n_possessions": 7782,
+          "n_period_ending": 405,
+          "share_last_starts_under_35s": 0.9950617283950617,
+          "mean_last_possession_duration_s": 9.925925925925926,
+          "mean_possession_duration_s": 15.612952968388589
+        },
+        "REG": {
+          "n_possessions": 1741161,
+          "n_period_ending": 25000,
+          "share_last_starts_under_35s": 0.98332,
+          "mean_last_possession_duration_s": 11.1668,
+          "mean_possession_duration_s": 17.229882819566946
+        }
+      },
+      "horn_truncated_per_game": 2.0324,
+      "months": [
+        {
+          "n_games": 109,
+          "sim_mean": 70.83798217773438,
+          "sim_sd": 4.518718719482422,
+          "actual_mean": 68.68403669724772,
+          "actual_sd": 5.385141271792167,
+          "mean_delta": 2.153945480486655,
+          "sd_delta": -0.8664225523097455,
+          "month": "2024-11",
+          "powered": true
+        },
+        {
+          "n_games": 83,
+          "sim_mean": 69.81084442138672,
+          "sim_sd": 4.53493595123291,
+          "actual_mean": 68.04,
+          "actual_sd": 4.796922794113215,
+          "mean_delta": 1.7708444213867125,
+          "sd_delta": -0.2619868428803045,
+          "month": "2024-12",
+          "powered": false
+        },
+        {
+          "n_games": 132,
+          "sim_mean": 69.89575958251953,
+          "sim_sd": 4.666618824005127,
+          "actual_mean": 68.625,
+          "actual_sd": 4.742211533557696,
+          "mean_delta": 1.2707595825195312,
+          "sd_delta": -0.07559270955256903,
+          "month": "2025-01",
+          "powered": true
+        },
+        {
+          "n_games": 124,
+          "sim_mean": 69.76435852050781,
+          "sim_sd": 4.5854902267456055,
+          "actual_mean": 68.06894308943089,
+          "actual_sd": 5.7034152571152745,
+          "mean_delta": 1.695415431076924,
+          "sd_delta": -1.117925030369669,
+          "month": "2025-02",
+          "powered": true
+        },
+        {
+          "n_games": 52,
+          "sim_mean": 68.96538543701172,
+          "sim_sd": 4.51814079284668,
+          "actual_mean": 67.90230769230769,
+          "actual_sd": 5.30471289363159,
+          "mean_delta": 1.0630777447040316,
+          "sd_delta": -0.7865721007849107,
+          "month": "2025-03",
+          "powered": false
+        }
+      ],
+      "quintiles": [
+        {
+          "q": 1,
+          "n": 100,
+          "sim": 66.75959777832031,
+          "act": 65.01520000000001,
+          "delta": 1.7443977783203053
+        },
+        {
+          "q": 2,
+          "n": 100,
+          "sim": 67.5645980834961,
+          "act": 66.6638,
+          "delta": 0.9007980834960989
+        },
+        {
+          "q": 3,
+          "n": 99,
+          "sim": 70.33879089355469,
+          "act": 68.41515151515152,
+          "delta": 1.9236393784031662
+        },
+        {
+          "q": 4,
+          "n": 100,
+          "sim": 71.6825942993164,
+          "act": 70.2308,
+          "delta": 1.4517942993164041
+        },
+        {
+          "q": 5,
+          "n": 100,
+          "sim": 73.41940307617188,
+          "act": 71.317,
+          "delta": 2.102403076171882
+        }
+      ],
+      "slope_ratio": 1.0568100063238404,
+      "slope_span_sim": 6.6598052978515625,
+      "slope_span_act": 6.301799999999986,
+      "monotone_steps": 4,
+      "game_ids": 500,
+      "eoh_share_gap": 0.1075100647948164,
+      "eoh_duration_gap": -0.7234589395807642
+    }
+  }
+}

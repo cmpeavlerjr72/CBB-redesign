@@ -2991,3 +2991,319 @@ Threads capped at 6 and the engine pool at 6 workers; other lanes share the
 machine. Results are appended to this file as section 22, the evidence goes to
 `docs/tests/clock_mean_consistent_latent_2026-09-11.md`, and a row goes to
 `docs/models/change_ledger.md` only if an arm passes every line.
+
+---
+
+## 22. Run R10 -- the round-5b grid, and the 25-seed paired gate (2026-09-11)
+
+`scripts/exp_clk5b_mean_consistent.py` (module `clock_v5.latent_values(..., m)`
+and `loc_for`), scored by the SAME blind path rounds 3, 3b, 3c, 4 and 5 used
+(`clock_v3.score_arm_v3`, unedited), with round 5's fitter, variance algebra and
+summaries imported and NOT edited. Pre-registration section 21 committed
+**58d5050** BEFORE the module change, the script and any fitted round-5b
+parameter existed; code **ce2cd94**. Evidence, multi-level:
+`docs/tests/clock_mean_consistent_latent_2026-09-11.md`.
+
+**THE HEADLINE: the mean cost is gone.** Round 5's A1 regresses the G1
+possession mean by **+0.109 on the all-500 set at 25 paired seeds** (round 5
+measured +0.230 at 5 seeds), 1.5 measured floors. B1 -- the same latent moved to
+`m = +sigma^2/2` so that `E[1/A] = 1` -- moves it **-0.055, INSIDE the floor**,
+and moves the clock-complete mean **-0.167**, while delivering A1's dispersion
+gain to within one floor on every dispersion line. **Nothing is adopted**, for
+reasons that are NOT the mean: see 22.5.
+
+### 22.1 The identity the round turns on
+
+    A = exp(sigma*z + m):  E[A] = e^{m+s2/2},  E[1/A] = e^{-m+s2/2}
+    P = 1200/Dbar  scales with  E[1/A],  NOT with  E[A]
+
+| arm | `m` | `E[A]` | `E[1/A]` | analytic `E[P]` inflation at `Pbar = 68` |
+|---|---|---:|---:|---:|
+| A1 `v5_glat_shared` | `-s2/2` | 1.000000 | **1.002235** | **+0.152** |
+| B1 `v5b_glat_pmean` | `+s2/2` | 1.002214 | **1.000000** | **0.000** |
+| B2 `v5b_glat_joint` | fitted | 1.009734 | 0.992492 | -0.511 |
+
+Section 20.3 called the cost "mechanical rather than a defect of the fit". The
+mechanism was right; the conclusion was incomplete. It is a free choice of
+LOCATION, and `m = +s2/2` is the unique location that preserves the count.
+
+### 22.2 F2 offline -- the deciding table
+
+Universe unchanged: the 2025 clock-complete regulation possessions, **270,530
+rows over 1,991 games**, needed per-team-game possession SD **4.2795**.
+
+| id | arm | sigma | **P SD** | **ratio** | CRPS_trunc | cens. loglik | PIT worst D | leak | `E[min(T,R)]` | mean gap | poss delta |
+|---|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| R | `v3c_srfloor_P3_s1` (served) | -- | 2.9430 | **0.6877** | 4.927457 | -3.51919 | 0.43062 | 20 | 17.4965 | -0.1561 | +0.6066 |
+| A1 | `v5_glat_shared` (round 5) | 0.047248 | 4.2980 | **1.0043** | 4.927770 | -3.50994 | 0.43066 | 20 | 17.5041 | -0.1485 | +0.5768 |
+| **B1** | **`v5b_glat_pmean`** | 0.047028 | **4.3194** | **1.0093** | **4.927595** | **-3.50698** | 0.43066 | 20 | **17.5275** | **-0.1251** | **+0.4853** |
+| B2 | `v5b_glat_joint` | 0.046373 | 4.3189 | 1.0092 | 4.927663 | -3.51000 | 0.43060 | 20 | **17.6009** | **-0.0518** | **+0.1999** |
+| B3 | `v5b_glat_pmean_tempo` | fn(tempo) | 4.3157 | 1.0085 | 4.927629 | -3.50716 | 0.42953 | 20 | 17.5269 | -0.1257 | +0.4876 |
+
+**The R and A1 rows reproduce section 17.2 to four decimals.** That is the
+byte-for-byte reuse check: the round-5b path is round 5's with a location
+argument whose default is round 5's own.
+
+Fitted parameters, F2 {2022, 2023, 2024} with F1 {2022, 2023} beside it:
+`B1 sigma 0.047028 / 0.046742, m +0.001106 / +0.001092`;
+`B2 sigma 0.046373 / 0.045924, c 1.009734 / 1.011575`;
+`B3 b0 -0.0023313 / -0.0027448, b1 6.6792e-05 / 7.2634e-05`. As in round 5, F1
+and F2 agree to the third decimal on every parameter EXCEPT B2's `c`, which
+moves in the third decimal -- see 22.6.
+
+**Floor, re-measured.** Game-block bootstrap refits of the F2 training window,
+seeds 20260911 / 20260912, graded blind: `B1 sigma 0.047271 / 0.046889`, P SD
+**4.3301 / 4.3182** against 4.3194. **Measured floor 0.0107.** Round 5's 0.0242
+is carried as pre-registered and used everywhere below, the conservative choice.
+
+**The three pre-registered predictions, all checked:**
+
+1. `|P SD(B1) - P SD(A1)| <= 0.0242`: measured **+0.0214, inside the floor**.
+   CONFIRMED -- location and dispersion are separable, so the mean is bought for
+   nothing.
+2. B1 IMPROVES round 4's mean gate rather than holding it: predicted `+0.039 s`,
+   measured **+0.0310 s** (gap -0.1561 -> -0.1251). CONFIRMED, slightly under
+   the prediction because `round(A*T)` and `min(T,R)` absorb part of it.
+3. B3 fails the responsiveness band at Q2: CONFIRMED (22.4).
+
+No offline no-regression line moved beyond its floor. CRPS_trunc R -> B1 is
+**+0.000138 against a 0.00684 floor** (2% of it) and B1 is BETTER than A1 on it;
+the censored log-likelihood is best for B1 of all five arms; PIT worst-cell D
+moves +0.00005 and the leaking-cell count is 20 for every arm including R.
+
+### 22.3 The 25-seed paired closed-loop gate -- section 18.2, now RUN
+
+500 games of the section 14.4 subset (159 clock-complete), 25 seeds, paired by
+construction through the `(seed, game_id, family)` streams, every other
+sub-model pinned identically on every run. **R is `clock4_R_s25` and its
+seed-offset twin `clock4_R_s25_floor` (offset 1000), the round-4 reference runs
+under the same pinning and the same subset, reused rather than re-run.**
+Graders: `grade_clk3c_closed_loop.py` and `grade_clk5_dispersion_loop.py`, both
+unedited.
+
+**FLOORS, MEASURED at 25 seeds from the two R runs, not assumed** -- this is
+what section 18.2 item 4 asked for and round 5 could not supply:
+
+| line | R offset 0 | R offset 1000 | **measured floor** |
+|---|---:|---:|---:|
+| G1 possessions/team-game mean, cc | +1.156 | +0.999 | **0.157** |
+| G1 possessions/team-game mean, all 500 | +1.704 | +1.630 | **0.074** |
+| within-game possessions SD, cc | 3.6992 | 3.6135 | **0.0857** |
+| possession SD ratio, cc | 0.8041 | 0.7999 | **0.0042** |
+| G5 total SD ratio | 0.7357 | 0.7522 | **0.0165** |
+| G5 margin SD ratio | 0.9704 | 0.9819 | **0.0115** |
+| **`corr(P, eFG%)` within game** | **-0.2105** | **-0.1874** | **0.0231** |
+| `corr(home, away)` | +0.0032 | -0.0005 | **0.0037** |
+| margin SD (points) | 15.941 | 16.022 | 0.081 |
+| total bias | -0.931 | -1.308 | 0.377 |
+
+Round 4's carried 25-seed floors were G1 cc 0.180 / G1 all 0.074 / margin SD
+0.101 / corr 0.013; the re-measurement agrees on G1 all to three decimals.
+**`corr(P, eFG%)` now has a floor, so it stops being report-only.**
+
+**The deciding table (25 seeds, paired, 500 games):**
+
+| line | R | A1 | **B1** | A1 - R | **B1 - R** | floor | actual |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| **G1 poss mean, all 500** | **+1.704** | **+1.813** | **+1.649** | **+0.109 (1.5 fl)** | **-0.055 (inside)** | 0.074 | 0.000 |
+| **G1 poss mean, cc** | **+1.156** | **+1.136** | **+0.989** | -0.020 (inside) | **-0.167 (1.1 fl)** | 0.157 | 0.000 |
+| within-game poss SD, cc | 3.6992 | 4.8202 | **4.8147** | +1.121 | **+1.116 (13 fl)** | 0.0857 | 4.6652 |
+| **possession SD ratio, cc** | **0.8041** | 1.0350 | **1.0320** | +0.2309 | **+0.2279 (54 fl)** | 0.0042 | 1.000 |
+| **G5 total SD ratio** | **0.7357** | 0.8256 | **0.8227** | +0.0899 | **+0.0870 (5.3 fl)** | 0.0165 | 1.000 |
+| **`corr(home, away)`** | **+0.0032** | 0.1060 | **0.1005** | +0.1028 | **+0.0973 (26 fl)** | 0.0037 | 0.2374 |
+| **`corr(P, eFG%)`** | **-0.2105** | -0.1242 | **-0.1223** | +0.0863 | **+0.0882 (3.8 fl)** | 0.0231 | ~0.000 |
+| G5 margin SD ratio | 0.9704 | 0.9567 | 0.9563 | -0.0137 | **-0.0141 (1.2 fl)** | 0.0115 | 1.000 |
+| margin SD (points) | 15.941 | 15.867 | 15.881 | -0.074 | -0.060 (inside) | 0.081 | 15.472 |
+| total bias | -0.931 | -0.696 | -1.061 | +0.235 | -0.130 (inside) | 0.377 | 0.000 |
+| PPP | 1.0380 | 1.0381 | 1.0379 | +0.0001 | -0.0001 | -- | 1.0705 |
+| responsiveness slope ratio | 1.047 | -- | 1.029 | -- | -0.018 | -- | 1.000 |
+| G1 poss SD delta, cc | -0.477 | +0.445 | +0.423 | -- | +0.900 | -- | 5.120 |
+
+**B2 `v5b_glat_joint` at 25 paired seeds, the third arm**, printed separately
+because it changes the law's mean LEVEL as well as the latent's location and is
+therefore not a like-for-like of the other two:
+
+| line | R | **B2** | B2 - R | floor |
+|---|---:|---:|---:|---:|
+| **G1 poss mean, all 500** | +1.704 | **+1.135** | **-0.569 (7.7 fl better)** | 0.074 |
+| **G1 poss mean, cc** | +1.156 | **+0.463** | **-0.693 (4.4 fl better)** | 0.157 |
+| **possession SD ratio, cc** | 0.8041 | **1.0109** | +0.2068 (49 fl) | 0.0042 |
+| G5 total SD ratio | 0.7357 | 0.8158 | +0.0801 (4.9 fl) | 0.0165 |
+| `corr(home, away)` | +0.0032 | 0.0914 | +0.0882 (24 fl) | 0.0037 |
+| `corr(P, eFG%)` | -0.2105 | -0.1248 | +0.0857 (3.7 fl) | 0.0231 |
+| **G5 margin SD ratio** | 0.9704 | **0.9651** | **-0.0053 (inside)** | 0.0115 |
+| **total bias** | **-0.931** | **-2.178** | **-1.247 (3.3 fl WORSE)** | 0.377 |
+| PPP | 1.0380 | 1.0376 | -0.0004 | -- |
+
+**B2 lands the possession SD ratio closest to 1.000 of any arm (1.0109), takes
+the possession mean 7.7 floors closer to the truth, and is the only arm that
+does NOT regress the margin SD ratio -- and it pays 3.3 floors of TOTAL BIAS for
+it** (-0.931 -> -2.178). That trade is the round's second general result and is
+priced in 22.6.
+
+**Read line by line:**
+
+1. **THE MEAN COST IS GONE.** A1 regresses the all-500 possession mean by
+   **+0.109, 1.5 measured floors**; B1 moves it **-0.055, inside the floor**,
+   and is **0.164 (2.2 floors) better than A1**. On the clock-complete set B1 is
+   **0.167 better than R** and 0.147 better than A1. Both directions of the
+   pre-registered M1 line pass for B1 and the all-500 line FAILS for A1. Round
+   5's +0.230 at 5 seeds is confirmed in sign and cut roughly in half by seed
+   count -- which is why the gate was specified at 25 seeds.
+2. **It is bought for nothing.** Every dispersion line is A1's to within about
+   one floor: possession SD ratio 1.0320 against 1.0350 (0.7 floors), total SD
+   ratio 0.8227 against 0.8256 (0.2 floors), `corr(home, away)` 0.1005 against
+   0.1060, `corr(P, eFG%)` -0.1223 against -0.1242 (0.1 floors). **Section
+   21.1's prediction 1, made in writing before the arm was fitted, is confirmed
+   in the engine as well as offline.**
+3. **The engine numbers are much larger than round 5's 5-seed read, and the
+   5-seed read was biased.** R's own within-game possession SD is 3.699 at 25
+   seeds against 3.380 at 5; B1 is 4.815 at 25 against 4.578 at 5; the SD ratio
+   is 1.032 at 25 against 0.894 at 5. A 5-seed within-game SD is biased low on
+   BOTH sides of the ratio and by different amounts. **Round 5's headline
+   0.662 -> 0.907 understates the move; the honest 25-seed read is
+   0.804 -> 1.032.** No 5-seed number in section 20 should be quoted as a level.
+4. **The dispersion now slightly OVERSHOOTS**: 1.032 against a target of 1.000,
+   i.e. 7.6 floors past it, where the offline algebra predicted 1.009. The
+   engine's own across-seed state composition adds the difference, exactly the
+   direction section 17.1 said it would. This is reported, not adjusted.
+5. **`corr(P, eFG%)` is now a READABLE line and it moves 3.8 floors** toward
+   zero (-0.2105 -> -0.1223, 42% of the way). The engine lane's published
+   counterfactual (section 18, `docs/tests/pace_efficiency_sign_2026-09-11.md`)
+   was "a pace latent alone moves the line -0.1976 -> -0.124". **Measured
+   -0.1223 against a predicted -0.124 on a line neither lane fitted against.**
+6. **One gate regresses beyond its floor**: the G5 MARGIN SD ratio,
+   0.9704 -> 0.9563, **-0.0141 against a 0.0115 floor, 1.2 floors**. It is small
+   and it is real, and it is NOT waived. The raw margin SD moves the other way
+   (15.941 -> 15.881 against an actual 15.472, inside its own floor), so the
+   two margin readings disagree in sign; the G5 ratio is the gate and it is the
+   one recorded as failing.
+
+### 22.4 Responsiveness -- unchanged, unsoftened, and still failing
+
+`produced / needed` per-game possession SD by pregame-tempo quintile, five
+powered quintiles of 398-399 games. Needed: Q1 3.8050, **Q2 3.6175**, Q3 3.9886,
+Q4 4.4199, Q5 5.0344.
+
+| arm | Q1 | **Q2** | Q3 | Q4 | Q5 | worst |
+|---|---:|---:|---:|---:|---:|---:|
+| R | 0.711 | 0.793 | 0.732 | 0.684 | 0.631 | 0.369 |
+| A1 | 1.035 | **1.168** | 1.067 | 0.997 | 0.919 | 0.168 |
+| B1 | 1.040 | **1.174** | 1.072 | 1.002 | 0.924 | 0.174 |
+| B2 | 1.041 | **1.175** | 1.072 | 1.001 | 0.922 | 0.175 |
+| B3 | **1.004** | **1.158** | 1.075 | 1.017 | **0.954** | 0.158 |
+
+**Every arm that lands the primary is outside the pre-registered
+[0.85, 1.15] band at Q2**, exactly as in round 5. Section 21.7 carried the band
+verbatim and unsoftened and it is not waived now that a different arm is in
+front of it.
+
+The mechanism is in the needed column: **Q2's needed SD is a DIP below Q1's**,
+while a constant-CV latent produces an SD proportional to the game's own pace
+and is therefore monotone in tempo by construction. B3 -- `sigma^2` linear in
+pregame tempo -- closes both ENDS (Q1 1.035 -> 1.004, Q5 0.919 -> 0.954) and
+moves Q2 by 0.010. **A monotone linear function of tempo cannot reproduce a
+non-monotone dip, and section 21.1 item 4 predicted this failure in writing
+before B3 was fitted.** The open question is what state variable Q2's dip is a
+function of; that is a DISPERSION-FUNCTION question and it is round 6's.
+
+### 22.5 Verdict
+
+**NO ARM ADOPTED. `ENGINE_CLOCK` stays `v3c_srfloor_P3_s1`,
+`provisional_clock` stays True, this lane changed no default, and nothing was
+hand-tuned, capped, scaled, clipped or blended at any point.**
+
+Against section 21.7's five conditions, for B1:
+
+| # | condition | B1 |
+|---|---|---|
+| 1 | primary `|ratio-1| <= 0.10` and beyond the floor | **PASS** -- 1.0093 offline, 57 floors over R |
+| 2 | **M1**, G1 possession mean, both sets, vs R within 1 floor | **PASS** -- -0.055 (all, inside 0.074) and -0.167 (cc, better) |
+| 3 | N1-N4 offline within 1 floor each | **PASS** -- CRPS +0.000138 of 0.00684; loglik better; PIT unchanged; the mean gate IMPROVED |
+| 4 | responsiveness, no quintile outside [0.85, 1.15] | **FAIL** -- Q2 1.174 |
+| 5 | no other closed-loop gate regressed beyond its floor | **FAIL** -- G5 margin SD ratio -0.0141 against a 0.0115 floor (1.2 floors) |
+
+Two failures, both small, both pre-registered, neither softened. A failing
+criterion is not waived because the rest of the table is good.
+
+**B1 `v5b_glat_pmean` SUPERSEDES A1 as the leading CANDIDATE** and the
+adjudication handed to the PM is now strictly easier than round 5's, because the
+objection round 5 handed over has been removed rather than argued away:
+
+- **the mean regression that blocked A1 is gone** (A1 +0.109 / 1.5 floors on
+  all-500 at 25 seeds; B1 -0.055, inside the floor, and -0.167 on the
+  clock-complete set), and it is gone because the latent was specified to
+  preserve the possession count's expectation, fitted walk-forward, not because
+  anything was corrected after the fact;
+- **the 25-seed gate of section 18.2 has now RUN**, with a MEASURED seed-offset
+  floor for `corr(P, eFG%)` (0.0231) and for the within-game possession SD
+  (0.0857), which is what item 4 of that section required;
+- what remains against it is **Q2's responsiveness band** and a **1.2-floor
+  margin-SD-ratio regression** -- one of which is a known, located,
+  round-6-shaped defect in the dispersion FUNCTION, and neither of which is the
+  mean.
+
+**B2 `v5b_glat_joint` is NOT put forward by this lane**, although at 25 paired
+seeds it lands the biggest mean move of any arm (G1 cc +0.463, all +1.135
+against R's +1.156 / +1.704), the possession SD ratio closest to 1.000 of any
+arm, and no margin-SD-ratio regression. It fails criterion 4 at Q2 exactly as
+B1 does, and it fails criterion 5 harder: **total bias -2.178 against R's
+-0.931, 3.3 floors**. Three measured reasons it is not the arm to put forward,
+in 22.6.
+
+### 22.6 B2, and where a fitted mean level stops being free
+
+B2's `c = E[A] = 1.009734` is a method-of-moments estimate on TRAINING seasons
+of the marginal mean duration -- the textbook joint fit of a scale-mixture
+model, computed without touching the test fold, the engine, or any gate. It is a
+legitimate estimator and it is still the wrong arm to put forward:
+
+1. **It is not identified as tightly as it looks.** The two game-block bootstrap
+   refits give `c` 1.00816 / 1.01085 against a point estimate of 1.00973 --
+   **+/-0.0027, about +/-0.18 possessions per team-game**, on a line whose
+   measured 25-seed floor is 0.074. And it drifts between folds (F1 1.01158, F2
+   1.00973) where every other round-5 and round-5b parameter agrees to the third
+   decimal.
+2. **A scalar buys the long `prev_end` cells by overshooting the short ones.**
+   B2 sends DREB from -0.007 s to **+0.062** and TOV from +0.048 to **+0.113**
+   while improving `made_FT` -0.457 -> -0.384 and `made_FG` -0.225 -> -0.143.
+   L34 assigns those cells to the upstream MIX and to the law's own level; a
+   global level parameter does not respect that decomposition.
+3. **It pays for possessions with points.** At 25 paired seeds B2's total bias
+   is **-2.178 against R's -0.931 and B1's -1.061**, a **3.3-floor** move on a
+   line whose measured floor is 0.377: removing 0.57 possessions per team-game
+   removes the points that came with them, and the scoring rate (PPP 1.0376
+   against an actual 1.0705) is already the engine's larger defect. **The
+   possession MEAN and the TOTAL cannot be calibrated independently either** --
+   the same lesson section 20.3 recorded for the mean and the variance, one
+   channel further on, and the reason a clock arm must not be allowed to buy G1
+   at the till of G5. A clock that lands the possession count on a scoring rate
+   that is 3% light produces a worse total than one that does not.
+
+### 22.7 What this round establishes, beyond the verdict
+
+- **A mean-1 random effect is only mean-preserving on the scale it is written
+  on.** `E[A] = 1` on durations is `E[1/A] = e^{s2}` on counts. Every future
+  latent, in any sub-model, must be specified on the scale the GATE reads, and
+  the check is one line of algebra that costs nothing. Round 5 paid 0.23
+  possessions for not doing it and round 5b got them back for one character.
+- **Section 20.3's "adding correct dispersion necessarily adds possessions" is
+  now REFUTED as stated.** Adding correct dispersion adds possessions only under
+  a duration-scale mean constraint. The mean and the variance still cannot be
+  gated separately -- that part stands, and is why section 21 gated them
+  jointly -- but the trade is a specification artefact, not a law.
+- **A 5-seed within-game SD is biased low on both sides of its own ratio.**
+  R 3.380 (5 seeds) against 3.699 (25); B1 4.578 against 4.815; the ratio 0.894
+  against 1.032. Any round reading a within-game dispersion line needs 25 seeds,
+  and section 20's 5-seed levels should be quoted only as directions.
+- **Three predictions from three sources landed on the same arm.** The clock
+  lane's own algebra (`E[1/A] = 1` removes the cost: measured, inside the
+  floor), the clock lane's offline prediction (`|P SD(B1) - P SD(A1)| <= 0.0242`:
+  measured 0.0214), and the ENGINE lane's published counterfactual for
+  `corr(P, eFG%)` (-0.1976 -> "-0.124": measured -0.1223 at 25 seeds). None of
+  the three was fitted against.
+- **The remaining clock defect is now precisely one thing**: the dispersion
+  FUNCTION, i.e. what state Q2's non-monotone dip in needed per-game SD is a
+  function of. The level is right, the location is right, the conditional law is
+  right, the joint law's magnitude is right, and the state-dependence of the
+  joint law's magnitude is wrong. That is round 6's object.
