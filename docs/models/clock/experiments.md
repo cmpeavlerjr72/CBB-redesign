@@ -3793,3 +3793,39 @@ to be outside it by more than 0.55 SE, so C4's most defensible claim is not "it
 fixes Q2" but "it closes 30% of a 3.1-SE tempo slope in the between-game
 component, with a stable fitted minimum near tempo 67.5 on both folds, and it
 costs nothing on the primary or the mean".
+
+### 25.6 ADDENDUM -- N1 and N3 DID run, after 25.5 was written (2026-09-11, 12:43 ET)
+
+`scripts/exp_clk5c_score_n1n3.py`, scored by the SAME blind path rounds 3, 3b,
+3c, 4, 5 and 5b used (`clock_v3.score_arm_v3` and `clock_v3.pit_by_cell_v3`,
+both UNEDITED) over `clock_v5.LatentArm(..., loc_kind="plus_half")` with each
+arm's per-row sigma. Nothing was refitted. Sections 25.1-25.5 are STATIC and are
+NOT edited; this subsection is appended.
+
+| id | arm | `CRPS_trunc` | vs R | cens. loglik | PIT worst D | leak cells | powered cells |
+|---|---|---:|---:|---:|---:|---:|---:|
+| R | `v3c_srfloor_P3_s1` | 4.927457 | -- | -3.519192 | 0.430616 | 20 | 38 |
+| B1 | `v5b_glat_pmean` (served) | 4.927595 | +0.000138 | -3.506979 | 0.430662 | 20 | 38 |
+| C1 | `v5c_glat_team` | 4.927593 | +0.000136 | -3.507342 | 0.430595 | 20 | 38 |
+| C2 | `v5c_glat_asofsd` | 4.927576 | +0.000119 | -3.507414 | 0.430662 | 20 | 38 |
+| **C4** | **`v5c_glat_pace2`** | **4.927590** | **+0.000133** | **-3.507176** | **0.430395** | **20** | 38 |
+
+**The R and B1 rows reproduce section 22.2 to six decimals** (R 4.927457 /
+-3.51919 / 0.43062 / 20; B1 4.927595 / -3.50698 / 0.43066 / 20). That is the
+byte-for-byte reuse check for the scoring path.
+
+**N1 PASSES for every arm**: the worst move against R is +0.000138, **2% of the
+0.00684 floor**. **N3 PASSES for every arm**: the leaking-cell count is 20 for
+all five including R, and C4 has the BEST PIT worst-cell D of the five
+(0.430395 against R's 0.430616 and B1's 0.430662). The censored log-likelihood
+is better than R for every latent arm.
+
+**C4 therefore satisfies every OFFLINE line of section 24.5**: primary 1.0100
+(inside +/-10%, and inside B1's floor), N1, N2, N3, N4, and the responsiveness
+band verbatim in all five quintiles. **M1 and criterion 5 remain UNREAD -- no
+closed loop was run, and wiring a tempo-dependent `sigma` into the engine
+adapter was not attempted with the session's remaining wall clock.** Under
+section 24.5 an arm that has not cleared M1 and criterion 5 cannot qualify:
+**the verdict of 25.5 stands unchanged -- NO ARM ADOPTED, no default changed,
+nothing hand-tuned, and C4 is a CANDIDATE whose closed loop is round 5c's
+remaining work.**

@@ -154,8 +154,8 @@ A team's own **as-of possession-count SD** does NOT predict the latent:
 Pre-registered in section 24 and committed at `98f8db5` before any arm was
 fitted. Arms: B1 (reference), C1 per-team hierarchical, C2 as-of SD (failure
 predicted in advance), C4 `sigma^2` quadratic in pregame pace. C3 not fitted.
-**CRPS_trunc (N1), the PIT table (N3), M1 and the closed loop did not run, so
-NOTHING IS ADOPTED and no default changed.**
+**M1 and the closed loop did not run, so NOTHING IS ADOPTED and no default
+changed.** N1 and N3 did run (table below).
 
 | arm | primary ratio | Q1 | Q2 | Q3 | Q4 | Q5 | mean gate gap | between-ratio range |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|
@@ -174,6 +174,21 @@ NOTHING IS ADOPTED and no default changed.**
   both folds, its feature covers 32% of training games, and it passes the band
   by shrinking the dispersion level 8% -- which costs it the primary
   (|ratio-1| 0.0155 against B1's 0.0093).
+**N1 and N3** (`scripts/exp_clk5c_score_n1n3.py`, the unedited round-3 scoring
+path; the R and B1 rows reproduce section 22.2 to six decimals):
+
+| arm | `CRPS_trunc` | vs R | cens. loglik | PIT worst D | leak cells |
+|---|---:|---:|---:|---:|---:|
+| R | 4.927457 | -- | -3.519192 | 0.430616 | 20 |
+| B1 | 4.927595 | +0.000138 | -3.506979 | 0.430662 | 20 |
+| C1 | 4.927593 | +0.000136 | -3.507342 | 0.430595 | 20 |
+| C2 | 4.927576 | +0.000119 | -3.507414 | 0.430662 | 20 |
+| **C4** | 4.927590 | +0.000133 | -3.507176 | **0.430395** | 20 |
+
+Every arm passes N1 (worst move 2% of the 0.00684 floor) and N3 (20 leaking
+cells for all five, R included); C4 has the best PIT worst-cell D of the five.
+**C4 satisfies every offline line; M1 and criterion 5 are the ones left.**
+
 - **C1 confirms section 8 both ways**: the team component is real (z = 6.50) and
   too small after honest shrinkage to move a quintile ratio by more than 0.006.
 
@@ -192,7 +207,6 @@ NOTHING IS ADOPTED and no default changed.**
 3. **The open line that is NOT noise is criterion 5**: B1's G5 margin SD ratio
    regression, -0.0141 against a measured 0.0115 floor. Nothing in this document
    touches it.
-4. Before C4 could be put forward it needs `CRPS_trunc`, the PIT cell table, and
-   the 25-seed paired closed loop against B1 on M1, the margin SD ratio,
+4. Before C4 could be put forward it needs the 25-seed paired closed loop against B1 on M1, the margin SD ratio,
    `corr(P, eFG%)` and the total bias -- round 5b section 22.6 is the warning it
    must clear.
