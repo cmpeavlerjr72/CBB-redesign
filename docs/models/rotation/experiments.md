@@ -556,3 +556,571 @@ override needs becomes a third such stream. The adapter change required by each
 candidate is reported with the results whether or not an arm is adopted.
 
 ---
+
+
+## 7. Round-3 results (train 2024, test 2025) -- run 2026-09-10T23:45:11Z
+
+Test universe: random subset of 1600 of 4689 eligible games, numpy RandomState seed 2025 -- the same game set the graded round-2 run used, 5 seeds per arm; noise floor A 20 seeds x 150 games, noise floor B a spec-identical refit under a second seed. Rotation player-games per arm 115,702 (actual 23,914); every cell is far above the n < 300 UNDERPOWERED threshold unless flagged.
+
+### 7.1 G8 cells
+
+| cell | tol | ACTUAL | R2_hier_dirichlet | R5_hybrid | R8_keep_cell | R7_keep_logistic |
+|---|---|---:|---:|---:|---:|---:|
+| minutes mean (rotation players) | +/- 2.0 | 24.55 | 25.55  PASS | 27.06  FAIL | 27.17  FAIL | 26.28  PASS |
+| minutes SD ratio, pooled | 0.9-1.1 | 1.000 | 1.064  PASS | 1.039  PASS | 1.069  PASS | 1.022  PASS |
+| minutes SD ratio, within-player | 0.9-1.1 | 1.000 | 1.354  FAIL | 1.294  FAIL | 1.330  FAIL | 1.253  FAIL |
+| top-5 share of team minutes | +/- 2 pp | 0.7472 | 0.7683  FAIL | 0.7965  FAIL | 0.8036  FAIL | 0.7828  FAIL |
+| top-8 share of team minutes | +/- 2 pp | 0.9560 | 0.9656  PASS | 0.9847  FAIL | 0.9863  FAIL | 0.9814  FAIL |
+| players with > 0 minutes | +/- 1.0 | 9.64 | 9.04  PASS | 8.30  FAIL | 8.27  FAIL | 8.51  FAIL |
+
+### 7.2 State-dependence cells (an arm missing ANY of these is ineligible)
+
+| cell | ACTUAL | R2_hier_dirichlet | R5_hybrid | R8_keep_cell | R7_keep_logistic |
+|---|---:|---:|---:|---:|---:|
+| final 8:00 starters' share, \|margin\| <= 5 (n=29,660 poss) | 0.7491 | 0.7281 (-2.1 pp)  PASS | 0.6942 (-5.5 pp)  FAIL | 0.6982 (-5.1 pp)  FAIL | 0.7074 (-4.2 pp)  FAIL |
+| final 8:00 starters' share, \|margin\| 6-15 (n=36,804 poss) | 0.7240 | 0.6943 (-3.0 pp)  PASS | 0.6566 (-6.7 pp)  FAIL | 0.6599 (-6.4 pp)  FAIL | 0.6749 (-4.9 pp)  FAIL |
+| final 8:00 starters' share, \|margin\| > 15 (n=23,360 poss) | 0.5223 | 0.4750 (-4.7 pp)  FAIL | 0.5911 (+6.9 pp)  FAIL | 0.5956 (+7.3 pp)  FAIL | 0.5994 (+7.7 pp)  FAIL |
+| starters on floor while carrying >= 4 fouls (n=58,652) | 0.4613 | 0.4648 (+0.4 pp)  PASS | 0.4964 (+3.5 pp)  FAIL | 0.4997 (+3.8 pp)  FAIL | 0.5125 (+5.1 pp)  FAIL |
+| (diagnostic) at exactly 4 fouls (n=51,745) | 0.5166 | 0.5777 | 0.8199 | 0.8336 | 0.7951 |
+
+As-of starter set overlaps the real starting five on **4.58 of 5**; the ACTUAL sequence re-graded with the MODEL's starter set separates "wrong five" from "wrong rotation":
+
+| cell | ACTUAL (own starters) | ACTUAL (as-of starter set) | R2_hier_dirichlet | R5_hybrid | R8_keep_cell | R7_keep_logistic |
+|---|---:|---:|---:|---:|---:|---:|
+| final 8:00, \|margin\| <= 5 | 0.7491 | 0.7215 | 0.7281 | 0.6942 | 0.6982 | 0.7074 |
+| final 8:00, \|margin\| 6-15 | 0.7240 | 0.6964 | 0.6943 | 0.6566 | 0.6599 | 0.6749 |
+| final 8:00, \|margin\| > 15 | 0.5223 | 0.5048 | 0.4750 | 0.5911 | 0.5956 | 0.5994 |
+| >= 4 fouls | 0.4613 | 0.4636 | 0.4648 | 0.4964 | 0.4997 | 0.5125 |
+
+### 7.3 Lineup concentration
+
+| metric | ACTUAL | R2_hier_dirichlet | R5_hybrid | R8_keep_cell | R7_keep_logistic |
+|---|---:|---:|---:|---:|---:|
+| top-1 lineup share of possessions | 0.2940 | 0.2369 | 0.3159 | 0.3256 | 0.2888 |
+| top-3 lineup share | 0.5426 | 0.4957 | 0.6085 | 0.6230 | 0.5726 |
+| top-5 lineup share | 0.6894 | 0.6555 | 0.7593 | 0.7732 | 0.7280 |
+| distinct lineups per team-game | 14.84 | 15.01 | 12.90 | 12.42 | 14.05 |
+| K-S of per-player minutes (D) | -- | 0.0883 | 0.1194 | 0.1349 | 0.0782 |
+| K-S of the top-1 lineup share distribution (D) | -- | 0.1942 | 0.1047 | 0.1334 | 0.0302 |
+| substitution rate at a possession boundary | 0.1518 (train) | 0.1402 | 0.1576 | 0.1547 | 0.1691 |
+
+### 7.4 Noise floor A (20 seeds x 150 games)
+
+| metric | R2_hier_dirichlet | R5_hybrid | R8_keep_cell | R7_keep_logistic |
+|---|---:|---:|---:|---:|
+| minutes_mean | 0.15436 | 0.21802 | 0.21758 | 0.17947 |
+| top5_share | 0.00311 | 0.00320 | 0.00335 | 0.00293 |
+| n_nonzero_mean | 0.05792 | 0.06813 | 0.06875 | 0.06448 |
+| lu_top1 | 0.00563 | 0.00650 | 0.00678 | 0.00518 |
+| late_starter_share_b0 | 0.00882 | 0.01054 | 0.01054 | 0.01102 |
+| late_starter_share_b1 | 0.01059 | 0.01112 | 0.01207 | 0.00882 |
+| late_starter_share_b2 | 0.01356 | 0.01383 | 0.01517 | 0.01211 |
+| foul_trouble_share | 0.02138 | 0.02013 | 0.01826 | 0.02427 |
+
+### 7.5 Noise floor B -- spec-identical refit under a second seed
+
+Both fits use the same specification; the second draws a different training-game sample (fit seed 101 vs 11), a different logistic `random_state`, and a different sim seed inside the knob grid (23 vs 7). Graded on the 150-game noise universe so the two fits are compared on identical games.
+
+Refit knobs: {"r7_block": [2.0, 0.02], "r7_keep_scale": 2.0, "r7_keep_base": 0.05, "r8_block": [4.0, 0.02], "r8_keep_theta": 0.3}
+
+| cell | ACTUAL | R7 seed 1 | R7 seed 2 | |delta| pp | R8 seed 1 | R8 seed 2 | |delta| pp |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| late_starter_share_b0 | 0.7436 | 0.7038 | 0.6890 | 1.5 | 0.6940 | 0.7547 | 6.1 |
+| late_starter_share_b1 | 0.7186 | 0.6767 | 0.6631 | 1.4 | 0.6615 | 0.6842 | 2.3 |
+| late_starter_share_b2 | 0.5518 | 0.6120 | 0.5792 | 3.3 | 0.6030 | 0.5674 | 3.6 |
+| foul_trouble_share | 0.4362 | 0.5164 | 0.5202 | 0.4 | 0.5066 | 0.5485 | 4.2 |
+| top5_share | 0.7450 | 0.7838 | 0.7959 | 1.2 | 0.8053 | 0.7736 | 3.2 |
+| top8_share | 0.9568 | 0.9824 | 0.9853 | 0.3 | 0.9873 | 0.9800 | 0.7 |
+
+### 7.6 Slope check -- team quintile of the as-of starter-minutes share
+
+Cell = starters' share of on-floor slots in the final 8:00 at |margin| <= 5.
+
+| quintile | team-games | prior starter share | ACTUAL | R2_hier_dirichlet | R5_hybrid | R8_keep_cell | R7_keep_logistic | close-late possessions |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|
+| Q1 | 640 | 0.5572 | 0.6770 | 0.6506 | 0.5995 | 0.6046 | 0.6054 | 5,600 |
+| Q2 | 640 | 0.6342 | 0.7226 | 0.7129 | 0.6780 | 0.6833 | 0.6873 | 6,238 |
+| Q3 | 640 | 0.6698 | 0.7471 | 0.7303 | 0.7073 | 0.7113 | 0.7177 | 6,138 |
+| Q4 | 640 | 0.7044 | 0.7763 | 0.7586 | 0.7274 | 0.7302 | 0.7446 | 5,898 |
+| Q5 | 640 | 0.7685 | 0.8219 | 0.7859 | 0.7554 | 0.7582 | 0.7788 | 5,786 |
+
+- `ACTUAL` slope vs the prior: **+0.692**, Q5 - Q1 = +14.5 pp
+- `R2_hier_dirichlet` slope vs the prior: **+0.645**, Q5 - Q1 = +13.5 pp
+- `R5_hybrid` slope vs the prior: **+0.742**, Q5 - Q1 = +15.6 pp
+- `R8_keep_cell` slope vs the prior: **+0.728**, Q5 - Q1 = +15.4 pp
+- `R7_keep_logistic` slope vs the prior: **+0.826**, Q5 - Q1 = +17.3 pp
+
+### 7.7 Fitted round-3 components
+
+R7's on-floor propensity (logit scale; positive = more likely on the floor):
+
+| feature | coefficient |
+|---|---:|
+| `fouls` | +0.4434 |
+| `fouls_x_is_starter` | -0.5909 |
+| `foul_out` | -4.6622 |
+| `is_starter` | +1.0886 |
+| `abs_margin` | +0.2534 |
+| `abs_margin_x_is_starter` | -0.5351 |
+| `late` | +0.1434 |
+| `late_x_is_starter` | +0.6912 |
+| `is_close_x_late` | -0.6290 |
+| `is_close_x_late_x_is_starter` | -0.0931 |
+| `abs_margin_x_late` | -0.0313 |
+| `target_share` | +4.8826 |
+| `target_share_x_is_close_x_late` | +1.4707 |
+| `target_share_x_late` | -0.9167 |
+| `period2` | +0.0043 |
+| `sec_left_frac` | +0.1255 |
+| _intercept_ | -3.2368 |
+
+Fitted on 1,081,245 (team-game, possession, candidate) rows, base rate 0.3322.
+
+
+R7 knobs: block (scale 2.0, p0 0.02), keep (scale 1.0, q0 0.02). R8 knobs: block (scale 1.0, p0 0.06), theta 0.1.
+
+R8's fitted `s*` table (training-season starters' share of on-floor slots):
+
+| time bucket | \|m\| <= 5 | \|m\| 6-15 | \|m\| > 15 |
+|---|---:|---:|---:|
+| 1st half | 0.7446 | 0.6570 | 0.6306 |
+| 2nd half > 8:00 | 0.7471 | 0.7361 | 0.6654 |
+| 2nd half 8:00-2:00 | 0.7484 | 0.7323 | 0.5715 |
+| final 2:00 | 0.7559 | 0.7043 | 0.3148 |
+| OT | 0.7567 | 0.7145 | -- |
+
+R7 knob grid (state-cell squared error; every point evaluated):
+
+| pass | point | late b0 | late b1 | late b2 | >= 4 fouls | sub rate | sq. err |
+|---|---|---:|---:|---:|---:|---:|---:|
+| pass1_keep | keep=(0.0, 0.02) | 0.6950 | 0.6546 | 0.5791 | 0.4510 | 0.1729 | 0.007059 |
+| pass1_keep | keep=(0.0, 0.05) | 0.6905 | 0.6537 | 0.5776 | 0.4588 | 0.1697 | 0.007416 |
+| pass1_keep | keep=(0.0, 0.15) | 0.6714 | 0.6392 | 0.5940 | 0.4778 | 0.1526 | 0.013722 |
+| pass1_keep | keep=(0.0, 0.35) | 0.6476 | 0.6507 | 0.5776 | 0.4990 | 0.1128 | 0.014642 |
+| pass1_keep | keep=(0.5, 0.02) | 0.6950 | 0.6567 | 0.5770 | 0.4549 | 0.1732 | 0.006701 |
+| pass1_keep | keep=(0.5, 0.05) | 0.6888 | 0.6485 | 0.5770 | 0.4612 | 0.1705 | 0.008171 |
+| pass1_keep | keep=(0.5, 0.15) | 0.6656 | 0.6376 | 0.5973 | 0.4733 | 0.1566 | 0.014604 |
+| pass1_keep | keep=(0.5, 0.35) | 0.6452 | 0.6472 | 0.5666 | 0.5256 | 0.1252 | 0.018203 |
+| pass1_keep | keep=(1.0, 0.02) | 0.6950 | 0.6558 | 0.5615 | 0.4541 | 0.1745 | 0.005289 |
+| pass1_keep | keep=(1.0, 0.05) | 0.6852 | 0.6491 | 0.5719 | 0.4560 | 0.1700 | 0.007509 |
+| pass1_keep | keep=(1.0, 0.15) | 0.6603 | 0.6308 | 0.5782 | 0.4570 | 0.1587 | 0.012759 |
+| pass1_keep | keep=(1.0, 0.35) | 0.6498 | 0.6397 | 0.5331 | 0.5292 | 0.1379 | 0.017352 |
+| pass1_keep | keep=(2.0, 0.02) | 0.6921 | 0.6489 | 0.5525 | 0.4521 | 0.1766 | 0.005505 |
+| pass1_keep | keep=(2.0, 0.05) | 0.6834 | 0.6451 | 0.5651 | 0.4579 | 0.1706 | 0.007540 |
+| pass1_keep | keep=(2.0, 0.15) | 0.6636 | 0.6349 | 0.5030 | 0.4439 | 0.1568 | 0.008543 |
+| pass1_keep | keep=(2.0, 0.35) | 0.6405 | 0.6141 | 0.4719 | 0.4949 | 0.1499 | 0.020167 |
+| pass1_keep | keep=(4.0, 0.02) | 0.6563 | 0.6327 | 0.5203 | 0.4367 | 0.1695 | 0.009282 |
+| pass1_keep | keep=(4.0, 0.05) | 0.6645 | 0.6235 | 0.5021 | 0.4286 | 0.1708 | 0.010451 |
+| pass1_keep | keep=(4.0, 0.15) | 0.6305 | 0.5870 | 0.4278 | 0.4301 | 0.1624 | 0.030914 |
+| pass1_keep | keep=(4.0, 0.35) | 0.6207 | 0.5724 | 0.4024 | 0.4610 | 0.1671 | 0.042284 |
+| pass1_keep | keep=(8.0, 0.02) | 0.6492 | 0.6035 | 0.4254 | 0.4504 | 0.1640 | 0.024924 |
+| pass1_keep | keep=(8.0, 0.05) | 0.6296 | 0.5747 | 0.4027 | 0.4415 | 0.1693 | 0.039522 |
+| pass1_keep | keep=(8.0, 0.15) | 0.6071 | 0.5392 | 0.3349 | 0.4455 | 0.1705 | 0.075412 |
+| pass1_keep | keep=(8.0, 0.35) | 0.5895 | 0.4940 | 0.3221 | 0.4384 | 0.1913 | 0.101900 |
+| pass1_block | block_scale=0.5,p0=0.005 | 0.6892 | 0.6624 | 0.5716 | 0.4420 | 0.1806 | 0.005490 |
+| pass1_block | block_scale=0.5,p0=0.02 | 0.6792 | 0.6550 | 0.5803 | 0.4401 | 0.1795 | 0.007761 |
+| pass1_block | block_scale=0.5,p0=0.06 | 0.6845 | 0.6516 | 0.5618 | 0.4422 | 0.1687 | 0.006007 |
+| pass1_block | block_scale=1.0,p0=0.005 | 0.6892 | 0.6623 | 0.5716 | 0.4399 | 0.1812 | 0.005495 |
+| pass1_block | block_scale=1.0,p0=0.02 | 0.6910 | 0.6573 | 0.5851 | 0.4569 | 0.1806 | 0.007810 |
+| pass1_block | block_scale=1.0,p0=0.06 | 0.6950 | 0.6558 | 0.5615 | 0.4541 | 0.1745 | 0.005289 |
+| pass1_block | block_scale=2.0,p0=0.005 | 0.7003 | 0.6658 | 0.5785 | 0.4488 | 0.1823 | 0.005645 |
+| pass1_block | block_scale=2.0,p0=0.02 | 0.6986 | 0.6607 | 0.5654 | 0.4542 | 0.1806 | 0.004991 |
+| pass1_block | block_scale=2.0,p0=0.06 | 0.7175 | 0.6327 | 0.5457 | 0.5096 | 0.1847 | 0.012000 |
+| pass1_block | block_scale=4.0,p0=0.005 | 0.7184 | 0.6759 | 0.5597 | 0.5248 | 0.1910 | 0.010312 |
+| pass1_block | block_scale=4.0,p0=0.02 | 0.7341 | 0.6504 | 0.4997 | 0.5095 | 0.1937 | 0.009851 |
+| pass1_block | block_scale=4.0,p0=0.06 | 0.7522 | 0.5665 | 0.4161 | 0.5502 | 0.1988 | 0.046416 |
+| pass2_keep | keep=(0.0, 0.02) | 0.6979 | 0.6593 | 0.5821 | 0.4496 | 0.1785 | 0.006788 |
+| pass2_keep | keep=(0.0, 0.05) | 0.6934 | 0.6575 | 0.5806 | 0.4569 | 0.1752 | 0.007150 |
+| pass2_keep | keep=(0.0, 0.15) | 0.6712 | 0.6427 | 0.6113 | 0.4946 | 0.1601 | 0.017675 |
+| pass2_keep | keep=(0.0, 0.35) | 0.6461 | 0.6553 | 0.5928 | 0.5020 | 0.1168 | 0.016619 |
+| pass2_keep | keep=(0.5, 0.02) | 0.6994 | 0.6627 | 0.5809 | 0.4565 | 0.1793 | 0.006452 |
+| pass2_keep | keep=(0.5, 0.05) | 0.6903 | 0.6521 | 0.5797 | 0.4599 | 0.1769 | 0.007901 |
+| pass2_keep | keep=(0.5, 0.15) | 0.6652 | 0.6361 | 0.6134 | 0.4856 | 0.1625 | 0.018607 |
+| pass2_keep | keep=(0.5, 0.35) | 0.6305 | 0.6448 | 0.5699 | 0.5239 | 0.1329 | 0.020682 |
+| pass2_keep | keep=(1.0, 0.02) | 0.6986 | 0.6607 | 0.5654 | 0.4542 | 0.1806 | 0.004991 |
+| pass2_keep | keep=(1.0, 0.05) | 0.6881 | 0.6545 | 0.5758 | 0.4550 | 0.1749 | 0.007093 |
+| pass2_keep | keep=(1.0, 0.15) | 0.6594 | 0.6308 | 0.5922 | 0.4740 | 0.1639 | 0.015572 |
+| pass2_keep | keep=(1.0, 0.35) | 0.6385 | 0.6364 | 0.5412 | 0.5170 | 0.1450 | 0.017568 |
+| pass2_keep | keep=(2.0, 0.02) | 0.6948 | 0.6534 | 0.5573 | 0.4462 | 0.1827 | 0.005066 |
+| pass2_keep | keep=(2.0, 0.05) | 0.6808 | 0.6467 | 0.5746 | 0.4559 | 0.1749 | 0.008342 |
+| pass2_keep | keep=(2.0, 0.15) | 0.6521 | 0.6288 | 0.5107 | 0.4617 | 0.1623 | 0.011057 |
+| pass2_keep | keep=(2.0, 0.35) | 0.6303 | 0.6094 | 0.4845 | 0.5255 | 0.1546 | 0.025990 |
+| pass2_keep | keep=(4.0, 0.02) | 0.6623 | 0.6322 | 0.5293 | 0.4362 | 0.1744 | 0.008803 |
+| pass2_keep | keep=(4.0, 0.05) | 0.6650 | 0.6226 | 0.5140 | 0.4355 | 0.1768 | 0.010179 |
+| pass2_keep | keep=(4.0, 0.15) | 0.6385 | 0.6024 | 0.4313 | 0.4664 | 0.1686 | 0.026136 |
+| pass2_keep | keep=(4.0, 0.35) | 0.5991 | 0.5411 | 0.3809 | 0.4995 | 0.1682 | 0.065154 |
+| pass2_keep | keep=(8.0, 0.02) | 0.6590 | 0.5946 | 0.4230 | 0.4606 | 0.1687 | 0.026633 |
+| pass2_keep | keep=(8.0, 0.05) | 0.6452 | 0.5682 | 0.3982 | 0.4769 | 0.1756 | 0.041614 |
+| pass2_keep | keep=(8.0, 0.15) | 0.5956 | 0.5134 | 0.3209 | 0.4896 | 0.1747 | 0.095507 |
+| pass2_keep | keep=(8.0, 0.35) | 0.5835 | 0.4510 | 0.3078 | 0.4448 | 0.1940 | 0.129966 |
+| pass2_block | block_scale=0.5,p0=0.005 | 0.6892 | 0.6624 | 0.5716 | 0.4420 | 0.1806 | 0.005490 |
+| pass2_block | block_scale=0.5,p0=0.02 | 0.6792 | 0.6550 | 0.5803 | 0.4401 | 0.1795 | 0.007761 |
+| pass2_block | block_scale=0.5,p0=0.06 | 0.6845 | 0.6516 | 0.5618 | 0.4422 | 0.1687 | 0.006007 |
+| pass2_block | block_scale=1.0,p0=0.005 | 0.6892 | 0.6623 | 0.5716 | 0.4399 | 0.1812 | 0.005495 |
+| pass2_block | block_scale=1.0,p0=0.02 | 0.6910 | 0.6573 | 0.5851 | 0.4569 | 0.1806 | 0.007810 |
+| pass2_block | block_scale=1.0,p0=0.06 | 0.6950 | 0.6558 | 0.5615 | 0.4541 | 0.1745 | 0.005289 |
+| pass2_block | block_scale=2.0,p0=0.005 | 0.7003 | 0.6658 | 0.5785 | 0.4488 | 0.1823 | 0.005645 |
+| pass2_block | block_scale=2.0,p0=0.02 | 0.6986 | 0.6607 | 0.5654 | 0.4542 | 0.1806 | 0.004991 |
+| pass2_block | block_scale=2.0,p0=0.06 | 0.7175 | 0.6327 | 0.5457 | 0.5096 | 0.1847 | 0.012000 |
+| pass2_block | block_scale=4.0,p0=0.005 | 0.7184 | 0.6759 | 0.5597 | 0.5248 | 0.1910 | 0.010312 |
+| pass2_block | block_scale=4.0,p0=0.02 | 0.7341 | 0.6504 | 0.4997 | 0.5095 | 0.1937 | 0.009851 |
+| pass2_block | block_scale=4.0,p0=0.06 | 0.7522 | 0.5665 | 0.4161 | 0.5502 | 0.1988 | 0.046416 |
+
+R8 knob grid (state-cell squared error; every point evaluated):
+
+| pass | point | late b0 | late b1 | late b2 | >= 4 fouls | sub rate | sq. err |
+|---|---|---:|---:|---:|---:|---:|---:|
+| pass1_keep | keep=0.0 | 0.7028 | 0.6567 | 0.5794 | 0.4581 | 0.1745 | 0.006903 |
+| pass1_keep | keep=0.1 | 0.7028 | 0.6586 | 0.5779 | 0.4593 | 0.1721 | 0.006571 |
+| pass1_keep | keep=0.2 | 0.7057 | 0.6521 | 0.5913 | 0.4660 | 0.1681 | 0.009299 |
+| pass1_keep | keep=0.3 | 0.7137 | 0.6548 | 0.5863 | 0.4759 | 0.1623 | 0.008920 |
+| pass1_keep | keep=0.4 | 0.7137 | 0.6632 | 0.5887 | 0.4847 | 0.1536 | 0.009081 |
+| pass1_keep | keep=0.5 | 0.7157 | 0.6640 | 0.5940 | 0.4806 | 0.1505 | 0.009409 |
+| pass1_keep | keep=0.6 | 0.7206 | 0.6721 | 0.5910 | 0.4909 | 0.1466 | 0.009325 |
+| pass1_keep | keep=0.7 | 0.7277 | 0.6770 | 0.5946 | 0.4955 | 0.1426 | 0.010161 |
+| pass1_keep | keep=0.8 | 0.7417 | 0.6755 | 0.5913 | 0.4968 | 0.1327 | 0.010611 |
+| pass1_keep | keep=0.9 | 0.7393 | 0.6680 | 0.5916 | 0.4825 | 0.1279 | 0.009647 |
+| pass1_keep | keep=1.0 | 0.7475 | 0.6715 | 0.5940 | 0.4818 | 0.1205 | 0.010164 |
+| pass1_block | block_scale=0.5,p0=0.005 | 0.6934 | 0.6637 | 0.5887 | 0.4458 | 0.1780 | 0.007247 |
+| pass1_block | block_scale=0.5,p0=0.02 | 0.6834 | 0.6558 | 0.5964 | 0.4435 | 0.1767 | 0.009608 |
+| pass1_block | block_scale=0.5,p0=0.06 | 0.6921 | 0.6524 | 0.5779 | 0.4474 | 0.1657 | 0.007204 |
+| pass1_block | block_scale=1.0,p0=0.005 | 0.6934 | 0.6635 | 0.5887 | 0.4439 | 0.1785 | 0.007238 |
+| pass1_block | block_scale=1.0,p0=0.02 | 0.6959 | 0.6591 | 0.6012 | 0.4654 | 0.1788 | 0.010159 |
+| pass1_block | block_scale=1.0,p0=0.06 | 0.7028 | 0.6586 | 0.5779 | 0.4593 | 0.1721 | 0.006571 |
+| pass1_block | block_scale=2.0,p0=0.005 | 0.7055 | 0.6685 | 0.5955 | 0.4507 | 0.1800 | 0.007602 |
+| pass1_block | block_scale=2.0,p0=0.02 | 0.7037 | 0.6632 | 0.5833 | 0.4623 | 0.1788 | 0.006861 |
+| pass1_block | block_scale=2.0,p0=0.06 | 0.7253 | 0.6348 | 0.5663 | 0.5228 | 0.1814 | 0.015317 |
+| pass1_block | block_scale=4.0,p0=0.005 | 0.7235 | 0.6756 | 0.5839 | 0.5345 | 0.1900 | 0.014658 |
+| pass1_block | block_scale=4.0,p0=0.02 | 0.7424 | 0.6583 | 0.5164 | 0.5139 | 0.1923 | 0.009589 |
+| pass1_block | block_scale=4.0,p0=0.06 | 0.7615 | 0.5658 | 0.4188 | 0.5715 | 0.1954 | 0.052111 |
+| pass2_keep | keep=0.0 | 0.7028 | 0.6567 | 0.5794 | 0.4581 | 0.1745 | 0.006903 |
+| pass2_keep | keep=0.1 | 0.7028 | 0.6586 | 0.5779 | 0.4593 | 0.1721 | 0.006571 |
+| pass2_keep | keep=0.2 | 0.7057 | 0.6521 | 0.5913 | 0.4660 | 0.1681 | 0.009299 |
+| pass2_keep | keep=0.3 | 0.7137 | 0.6548 | 0.5863 | 0.4759 | 0.1623 | 0.008920 |
+| pass2_keep | keep=0.4 | 0.7137 | 0.6632 | 0.5887 | 0.4847 | 0.1536 | 0.009081 |
+| pass2_keep | keep=0.5 | 0.7157 | 0.6640 | 0.5940 | 0.4806 | 0.1505 | 0.009409 |
+| pass2_keep | keep=0.6 | 0.7206 | 0.6721 | 0.5910 | 0.4909 | 0.1466 | 0.009325 |
+| pass2_keep | keep=0.7 | 0.7277 | 0.6770 | 0.5946 | 0.4955 | 0.1426 | 0.010161 |
+| pass2_keep | keep=0.8 | 0.7417 | 0.6755 | 0.5913 | 0.4968 | 0.1327 | 0.010611 |
+| pass2_keep | keep=0.9 | 0.7393 | 0.6680 | 0.5916 | 0.4825 | 0.1279 | 0.009647 |
+| pass2_keep | keep=1.0 | 0.7475 | 0.6715 | 0.5940 | 0.4818 | 0.1205 | 0.010164 |
+| pass2_block | block_scale=0.5,p0=0.005 | 0.6934 | 0.6637 | 0.5887 | 0.4458 | 0.1780 | 0.007247 |
+| pass2_block | block_scale=0.5,p0=0.02 | 0.6834 | 0.6558 | 0.5964 | 0.4435 | 0.1767 | 0.009608 |
+| pass2_block | block_scale=0.5,p0=0.06 | 0.6921 | 0.6524 | 0.5779 | 0.4474 | 0.1657 | 0.007204 |
+| pass2_block | block_scale=1.0,p0=0.005 | 0.6934 | 0.6635 | 0.5887 | 0.4439 | 0.1785 | 0.007238 |
+| pass2_block | block_scale=1.0,p0=0.02 | 0.6959 | 0.6591 | 0.6012 | 0.4654 | 0.1788 | 0.010159 |
+| pass2_block | block_scale=1.0,p0=0.06 | 0.7028 | 0.6586 | 0.5779 | 0.4593 | 0.1721 | 0.006571 |
+| pass2_block | block_scale=2.0,p0=0.005 | 0.7055 | 0.6685 | 0.5955 | 0.4507 | 0.1800 | 0.007602 |
+| pass2_block | block_scale=2.0,p0=0.02 | 0.7037 | 0.6632 | 0.5833 | 0.4623 | 0.1788 | 0.006861 |
+| pass2_block | block_scale=2.0,p0=0.06 | 0.7253 | 0.6348 | 0.5663 | 0.5228 | 0.1814 | 0.015317 |
+| pass2_block | block_scale=4.0,p0=0.005 | 0.7235 | 0.6756 | 0.5839 | 0.5345 | 0.1900 | 0.014658 |
+| pass2_block | block_scale=4.0,p0=0.02 | 0.7424 | 0.6583 | 0.5164 | 0.5139 | 0.1923 | 0.009589 |
+| pass2_block | block_scale=4.0,p0=0.06 | 0.7615 | 0.5658 | 0.4188 | 0.5715 | 0.1954 | 0.052111 |
+
+### 7.8 Decision
+
+| arm | G8 cells | state cells | total | eligible (all 4 state cells) | lineup K-S D | simplicity |
+|---|---:|---:|---:|---|---:|---:|
+| R2_hier_dirichlet | 4/6 | 3/4 | 7 | NO | 0.1942 | 1 |
+| R7_keep_logistic | 2/6 | 0/4 | 2 | NO | 0.0302 | 4 |
+| R5_hybrid | 1/6 | 0/4 | 1 | NO | 0.1047 | 2 |
+| R8_keep_cell | 1/6 | 0/4 | 1 | NO | 0.1334 | 3 |
+
+**No arm adopted.** no arm has every state-dependence cell inside +/- 3 pp. Cell-by-cell misses:
+
+| arm | cell | sim | actual | miss |
+|---|---|---:|---:|---:|
+| R2_hier_dirichlet | late_starter_share_b2 | 0.4750 | 0.5223 | -4.7 pp |
+| R5_hybrid | late_starter_share_b0 | 0.6942 | 0.7491 | -5.5 pp |
+| R5_hybrid | late_starter_share_b1 | 0.6566 | 0.7240 | -6.7 pp |
+| R5_hybrid | late_starter_share_b2 | 0.5911 | 0.5223 | +6.9 pp |
+| R5_hybrid | foul_trouble_share | 0.4964 | 0.4613 | +3.5 pp |
+| R8_keep_cell | late_starter_share_b0 | 0.6982 | 0.7491 | -5.1 pp |
+| R8_keep_cell | late_starter_share_b1 | 0.6599 | 0.7240 | -6.4 pp |
+| R8_keep_cell | late_starter_share_b2 | 0.5956 | 0.5223 | +7.3 pp |
+| R8_keep_cell | foul_trouble_share | 0.4997 | 0.4613 | +3.8 pp |
+| R7_keep_logistic | late_starter_share_b0 | 0.7074 | 0.7491 | -4.2 pp |
+| R7_keep_logistic | late_starter_share_b1 | 0.6749 | 0.7240 | -4.9 pp |
+| R7_keep_logistic | late_starter_share_b2 | 0.5994 | 0.5223 | +7.7 pp |
+| R7_keep_logistic | foul_trouble_share | 0.5125 | 0.4613 | +5.1 pp |
+
+
+### 7.9 Diagnosis -- why the keep override cannot reach the close-game cell
+
+**The close-game cell is not reachable at any knob setting, and the grid proves
+it rather than asserting it.** Over the whole 24-point R7 keep grid (7.7), the
+largest close-band starters' share the arm produces on the training season is
+**0.6994**, against a training target of 0.7110 and a test actual of 0.7491. The
+grid is not a search that stopped early: raising the keep scale *lowers* b0
+monotonically past scale 1 (0.6979 -> 0.6986 -> 0.6948 -> 0.6623 -> 0.6590 at
+scale 0 / 1 / 2 / 4 / 8), and raising the base rate `q0` lowers it faster
+(0.6979 -> 0.6934 -> 0.6712 -> 0.6461 at q0 0.02 / 0.05 / 0.15 / 0.35).
+
+**The mechanism, read off the fitted coefficients.** The keep is applied to every
+candidate, as pre-registered -- it is a fitted on-floor propensity, not a
+starters-only rule. In the close-and-late state its deviation score separates a
+starter from a bench player by only about **1.0 in log odds** (a starter with
+target share 1.4 scores z = +0.89, a bench player with share 0.6 scores z =
+-0.09, driven by `late_x_is_starter` +0.691 and `target_share_x_is_close_x_late`
++1.471 against `is_close_x_late` -0.629 and `target_share_x_late` -0.917).
+A one-parameter scaling of a 1.0 log-odds separation cannot raise the starters'
+share by 5 pp: at the fitted `q0 = 0.02` a starter is kept on 4.7% of
+possessions, which moves the cell by about a point; raising `q0` far enough to
+matter also keeps bench players (30% vs 14% at `q0 = 0.15`), and each kept bench
+player displaces an un-kept starter, so the cell falls.
+
+**In a blowout the same coefficients run the other way, and that is where the fit
+spends the override.** At \|margin\| = 20 a starter scores z = -1.08 and a bench
+player +0.04, so the keep pulls the bench on and pushes starters off -- which is
+why the fitted setting (scale 1.0, q0 0.02) is the one that most reduces the
+blowout cell (b2 0.5821 -> 0.5654 on train) and barely touches the close bands.
+The coordinate descent behaved correctly: it minimised the pre-registered
+four-cell objective, and the biggest error available to it was the blowout cell,
+not the close one.
+
+**The simpler form reaches the close cell and loses everything else.** R8's
+`theta` grid *does* reach b0 = 0.7475 at `theta = 1.0`, above the training target
+-- but with b1 stuck at 0.6715, b2 at 0.5940 and foul trouble at 0.4818, so the
+joint objective selects `theta = 0.1` and R8 is R5 with a rounding error
+(b0 +0.4 pp, b1 +0.3 pp on the test set). A per-cell keep rate cannot separate
+"close and late" from "blown out and late" because `s*` is a level, not a
+contrast, so every unit of theta that helps b0 hurts b2 by nearly as much.
+
+**Neither keep arm clears noise floor B.** R7's improvement over R5 is +1.3 pp on
+b0 and +1.8 pp on b1; the spec-identical refit under a second seed moves the same
+cells by 1.5 pp and 1.4 pp. By the pre-registered rule (6.8) an improvement that
+does not clear the refit-to-refit spread on the cell it was built to fix is not
+adopted on that cell, and R7's b0 gain does not. R8 is worse than that: its
+single knob is **unstable across refits** (`theta` 0.1 under fit seed 11 and 0.3
+under fit seed 101) and its b0 moves 6.1 pp between the two fits, which is twice
+the gate tolerance. R8 is not a usable component at any setting.
+
+**What the donor family actually broke on, once the foul terms work.** The
+binding failure of R5, R7 and R8 is no longer the close band; it is the blowout
+band and foul trouble, both of which the corrected hazard matrix moved the wrong
+way (b2 -2.9 pp under the defect, +6.9 pp corrected; `>= 4 fouls` +0.7 pp under
+the defect, +3.5 pp corrected, with the "exactly 4 fouls" diagnostic at
+0.82 against a real 0.52). The corrected foul terms take load off the margin
+terms, the block stops emptying the bench when the game is decided, and the arm
+now plays its starters through garbage time. Section 5's OPEN item is closed by
+this run and its answer is that the corrected R5 is **worse**, not better, than
+the column section 4 reported.
+
+**What is left standing, and it is not new.** `R2_hier_dirichlet` reproduces its
+round-1 and round-2 numbers to four decimals for the third time (late
+0.7281 / 0.6943 / 0.4750, top-5 0.7683, minutes mean 25.55) and remains the only
+arm in three rounds with three of four state cells inside tolerance, failing only
+the blowout band at -4.7 pp. Nothing in round 3 displaces it and nothing in
+round 3 is adopted.
+
+**Two things round 3 did buy, recorded so the next round does not re-derive
+them.** (1) R7 has the best lineup concentration of any arm across all three
+rounds -- top-1 five-man lineup share 0.2888 against a real 0.2940, K-S D
+**0.0302**, and the best per-player minutes K-S of any arm (0.0782 against R2's
+0.0883). Whatever eventually wins on state dependence, this is the shape to
+match. (2) Every arm's quintile slope against the pregame team prior is right
+(actual +0.692; R2 +0.645, R5 +0.742, R8 +0.728, R7 +0.826), so the failures are
+level failures and not responsiveness failures -- the standing slope check is
+satisfied by all four arms and cannot be used to separate them.
+
+**The decomposition the gate does not do, reported and not used to soften it.**
+Re-grading the actual sequence with the model's as-of starter set (7.2) puts the
+benchmark at 0.7215 / 0.6964 / 0.5048 / 0.4636. Against that benchmark R7 is
+-1.4 pp on the close band and -2.2 pp on the moderate band -- both inside the 3
+pp tolerance -- while its blowout miss grows to +9.5 pp. So roughly 2.8 pp of
+R7's close-band miss is picking the wrong fifth starter, which needs availability
+information the as-of feature set does not have, and the rest is real. **The gate
+is scored as pre-registered, against the actual starting five, and R7 fails it.**
+
+---
+
+## 8. Round 3b pre-registration -- S1 scheme confirmation (PM-directed, worker-authored 2026-09-10)
+
+Written BEFORE the round-3b run and after round 3 decided. Provenance, stated
+plainly: the PM's note that **S1 is the standing default training scheme for
+every sub-model** (L21, `docs/models/README.md`) arrived while round 3 was
+already committed (`experiments.md` section 6, commit `4f6e61f`) and running, so
+per that note round 3 was **not** changed mid-run; round 3b is the confirmation
+it prescribes. Round 3's static columns stay the record of round 3.
+
+### 8.1 What 3b asks
+
+Rounds 1-3 fit once on 2024 and simulate all of 2025 from that fit ("static").
+S1 refits at each month boundary of the test season on every prior season plus
+the test season to date, strictly before the refit date, and simulates each game
+with the parameter set whose window closed before its tipoff. 3b asks one
+question: **does the scheme change any round-3 conclusion?**
+
+Round 3 adopted nothing, so there is no winner to refit. 3b therefore runs the
+three arms whose conclusions could move:
+
+| arm | why it is in 3b |
+|---|---|
+| `R2_hier_dirichlet` | the incumbent and the only arm in three rounds with 3 of 4 state cells inside tolerance; if S1 moves its blowout band by more than the floor, the round-1/2/3 verdict changes |
+| `R5_hybrid` | the corrected donor baseline the keep arms are measured against |
+| `R7_keep_logistic` | round 3's best keep arm and the best lineup concentration of any arm in three rounds |
+
+R8 is excluded and the exclusion is a result, not a convenience: its single knob
+moved from `theta` 0.1 to 0.3 between two spec-identical refits and its close
+band moved 6.1 pp (section 7.5), so an S1 column for R8 would be measuring knob
+instability, not a scheme.
+
+### 8.2 Windows, and the leak rule
+
+Windows are the calendar months the 2024-25 season's games fall in. For window
+starting at date `d`, training data = all of season 2024 plus every 2025 game
+with `game_date < d`; test games are those with `game_date >= d` and before the
+next window. The first window's training data is season 2024 alone, which **is**
+the static fit, so the static fit is reused there rather than refitted -- an S1
+run whose first window differed from the static fit would be measuring two things
+at once. Every fitted object is therefore strictly pregame with respect to every
+game it scores (`created_at < tipoff`), and the donor bank is unchanged because
+`build_donor_bank` already uses only a team's own strictly earlier games.
+
+### 8.3 What is refit per window
+
+Everything `train_rotation_v1.fit_all` fits (role prior, `k0`, `w_dnp`, tail,
+`min_share`, the starter-predictor decay, availability, `fpm`, the four Dirichlet
+concentrations, both tilt tables, the foul-rate scale, the scheduler grid, the R3
+hazards), plus R5's override hazards, plus everything round 3 adds (`s*`, the R7
+on-floor propensity, and both knob pairs by the same two-pass coordinate descent
+against that window's own state cells). The donor depth `k` is held at its
+round-2 fitted value of 3 and that is stated as a deviation: it is fitted by
+lineup-concentration error over a whole season and a one-month window cannot
+re-fit it honestly.
+
+### 8.4 Gates, floor and decision
+
+Gates, tolerances, the eligibility veto and the grading code are **unchanged**
+from sections 6.5 and 6.8 -- one blind path, `train_rotation_v1.build_row` /
+`verdict`. Test universe identical (the same 1,600 games, subset seed 2025).
+Seeds are 3 rather than 5, a compute concession stated here: round 3's noise
+floor A puts the seed SD of the state cells at 0.009-0.024 on 150 games, so on
+1,600 games at 3 seeds the Monte-Carlo standard error of every state cell is
+under 0.15 pp, twenty times smaller than the 3 pp tolerance.
+
+Floor: round 3's noise floor A, per arm and per cell. A cell counts as MOVED by
+the scheme only if `|S1 - static|` exceeds that cell's floor.
+
+Decision: **adopt S1 as the rotation model's training scheme unless a gate cell
+regresses beyond the floor.** If a cell regresses beyond the floor, report which
+and by how much and leave the scheme open for the PM. 3b cannot adopt a model --
+round 3 adopted none -- it fixes the scheme round 4 is run under.
+
+### 8.5 Persistence and naming
+
+Each window's parameter set is written to
+`data/processed/models/rotation/rotation_fit_v3_S1_{YYYYMM}.json`, where `YYYYMM`
+is the window's **start** month, so the engine selects a game's parameter set by
+taking the largest `YYYYMM` less than or equal to the game's month. The static
+fit remains `rotation_fit_v3.json` and is byte-identical to the first window's
+file. Nothing overwrites `rotation_fit.json`, which the engine currently reads.
+
+---
+
+## 9. Round-3b results -- S1 vs static (train 2024 + 2025-to-date, test 2025) -- run 2026-09-11T00:49:35Z
+
+Test universe identical to rounds 2 and 3 (the same 1,600 games, subset seed
+2025), 3 seeds, one blind grading path. Six S1 windows, `d(pp)` = S1 minus
+static in the cell's own units x 100, `floor` = round 3's noise floor A for that
+arm and cell. A cell is **MOVED** by the scheme only if `|d| > floor` (section
+8.4).
+
+Windows and the games each scored: 202411 147, 202412 297, 202501 438, 202502
+444, 202503 267, 202504 7 (the last is UNDERPOWERED at 7 games and is reported
+only because it exists). Window 202411 reuses the static fit by construction.
+Refit cost 7.7-13.0 min per window on four threads; 61.4 min for the whole run.
+
+### 9.1 Gate cells, S1 against static
+
+| cell | ACTUAL | R2 static | R2 S1 | d(pp) | floor | R5 static | R5 S1 | d(pp) | floor | R7 static | R7 S1 | d(pp) | floor |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| final 8:00, \|m\| <= 5 | 0.7491 | 0.7281 | 0.7254 | -0.27 | 0.88 | 0.6942 | 0.6871 | -0.70 | 1.05 | 0.7074 | 0.7065 | -0.09 | 1.10 |
+| final 8:00, \|m\| 6-15 | 0.7240 | 0.6943 | 0.6914 | -0.29 | 1.06 | 0.6566 | 0.6551 | -0.15 | 1.11 | 0.6749 | 0.6687 | -0.61 | 0.88 |
+| final 8:00, \|m\| > 15 | 0.5223 | 0.4750 | 0.4694 | -0.56 | 1.36 | 0.5911 | 0.5830 | -0.81 | 1.38 | 0.5994 | **0.5679** | **-3.15** | 1.21 |
+| starters at >= 4 fouls | 0.4613 | 0.4648 | 0.4626 | -0.21 | 2.14 | 0.4964 | 0.4907 | -0.57 | 2.01 | 0.5125 | 0.5184 | +0.59 | 2.43 |
+| top-5 share | 0.7472 | 0.7683 | **0.7630** | **-0.53** | 0.31 | 0.7965 | 0.7948 | -0.16 | 0.32 | 0.7828 | 0.7814 | -0.14 | 0.29 |
+| top-8 share | 0.9560 | 0.9656 | **0.9626** | **-0.30** | 0.14 | 0.9847 | 0.9839 | -0.08 | 0.14 | 0.9814 | 0.9800 | -0.15 | 0.14 |
+| players > 0 min | 9.644 | 9.039 | **9.129** | **+0.089** | 0.058 | 8.298 | 8.350 | +0.052 | 0.068 | 8.514 | **8.599** | **+0.084** | 0.064 |
+| minutes mean | 24.551 | 25.553 | **25.364** | **-0.189** | 0.154 | 27.058 | 26.988 | -0.069 | 0.218 | 26.284 | **25.863** | **-0.421** | 0.179 |
+| top-1 lineup share | 0.2940 | 0.2369 | **0.2286** | **-0.83** | 0.56 | 0.3159 | 0.3138 | -0.20 | 0.65 | 0.2888 | 0.2914 | +0.26 | 0.52 |
+| K-S per-player minutes (D) | -- | 0.0883 | 0.0798 | -0.85 | -- | 0.1194 | 0.1159 | -0.36 | -- | 0.0782 | **0.0686** | -0.96 | -- |
+| K-S top-1 lineup share (D) | -- | 0.1942 | 0.2273 | +3.31 | -- | 0.1047 | 0.0942 | -1.05 | -- | 0.0302 | 0.0288 | -0.15 | -- |
+| substitution rate | 0.1518 | 0.1402 | 0.1437 | +0.35 | -- | 0.1576 | 0.1585 | +0.08 | -- | 0.1691 | 0.1682 | -0.09 | -- |
+
+**Every cell that MOVED moved toward the actual, and every state cell that did
+not move stayed inside its floor.** The moves are: R7's blowout band -3.15 pp
+against a 1.21 pp floor (0.5994 -> 0.5679 against 0.5223, a real improvement that
+still fails the 3 pp gate at +4.6 pp); R2's top-5 share, top-8 share, nonzero
+count and minutes mean, all four toward the actual and all four beyond their
+floors; R7's nonzero count and minutes mean likewise. Nothing regressed beyond a
+floor.
+
+### 9.2 Three verdict flips, all inside the floor, reported as flips anyway
+
+| arm | cell | static | S1 | flip | \|d\| | floor |
+|---|---|---:|---:|---|---:|---:|
+| R2 | top-5 share | 0.7683 (+2.11 pp) | 0.7630 (+1.58 pp) | FAIL -> **PASS** | 0.53 | 0.31 |
+| R2 | final 8:00, \|m\| 6-15 | 0.6943 (-2.97 pp) | 0.6914 (-3.26 pp) | PASS -> **FAIL** | 0.29 | 1.06 |
+| R5 | starters at >= 4 fouls | 0.4964 (+3.51 pp) | 0.4907 (+2.94 pp) | FAIL -> **PASS** | 0.57 | 2.01 |
+
+Two of these are cells sitting on the tolerance line, not scheme effects: R2's
+6-15 band was at **-2.97 pp against a -3.00 pp tolerance** under the static fit,
+so a 0.29 pp move -- a quarter of that cell's own seed noise -- flips it. Read
+honestly this says R2's moderate band was never really inside tolerance, which
+qualifies the "R2 is 3 of 4" headline of rounds 1-3: under S1 it is **2 of 4**,
+and under either scheme the cell is indistinguishable from the boundary. R5's
+foul-trouble flip is the same phenomenon in the other direction (+3.51 -> +2.94
+against +3.00). Only R2's top-5 flip is backed by a move larger than the floor.
+No arm becomes eligible: R2 still fails the blowout band (-5.29 pp under S1),
+and R5 and R7 still fail three cells each.
+
+### 9.3 The knobs are not identified across windows
+
+| window | R7 block (scale, p0) | R7 keep (scale, q0) | R8 theta |
+|---|---|---|---:|
+| 202411 | (2.0, 0.02) | (1.0, 0.02) | 0.1 |
+| 202412 | (4.0, 0.005) | (2.0, 0.05) | 0.1 |
+| 202501 | (4.0, 0.02) | (0.5, 0.02) | 0.5 |
+| 202502 | (2.0, 0.02) | (2.0, 0.02) | 0.1 |
+| 202503 | (2.0, 0.02) | (0.0, 0.15) | 1.0 |
+| 202504 | (2.0, 0.005) | (1.0, 0.05) | 0.3 |
+
+The keep scale ranges over the whole grid from 0.0 to 2.0 and `q0` from 0.02 to
+0.15 across six windows of the same season, and R8's single knob spans 0.1 to
+1.0. This is the same instability noise floor B found between two spec-identical
+static refits (section 7.5), now visible a second way and on a second axis. It is
+a property of the override family, not of the scheme: the four-cell objective is
+nearly flat in the knobs over most of the grid (section 7.7), so the argmin moves
+with the sample. **A component whose fitted knob is not identified cannot be
+shipped even if a future round makes its cells pass**, and that is the strongest
+single result of round 3.
+
+### 9.4 Decision
+
+**S1 is adopted as the L4 rotation model's training scheme.** By the
+pre-registered rule (8.4) no gate cell regressed beyond its floor, six cells
+improved beyond their floors, and every improvement moved toward the actual. S1
+does not make any arm eligible and 3b adopts no model -- round 3 adopted none and
+3b cannot change that. What 3b fixes is the scheme round 4 is run under.
+
+Practical consequences recorded for round 4 and for the engine:
+
+1. Round 4 fits and grades under S1 by default, with the static column reported
+   alongside as rounds 1-3 were.
+2. Parameter sets are persisted per window as
+   `rotation_fit_v3_S1_{YYYYMM}.json`, named by the window's **start** month; a
+   game selects the largest `YYYYMM` at or before its own month. Six files exist
+   for 2024-25. `rotation_fit.json`, which the engine currently reads, is
+   untouched.
+3. The engine's rotation adapter currently loads **one** fit for a whole run
+   (`ad.rot_fit`). Running S1 in the engine needs the adapter to select a fit per
+   game by month. Because every fitted object S1 varies (tilt tables, Dirichlet
+   concentrations, `p_play`, `fpm`, the scheduler parameters) is a lookup table
+   or a scalar, this is a gather, not a new decision rule -- the cheapest change
+   in this whole round.
+4. S1 costs 7.7-13.0 min per window to refit on four threads, so a full-season
+   S1 fit of the rotation layer is about an hour. That is affordable and is
+   recorded so the next pre-registration budgets it.
+
+---

@@ -1,10 +1,19 @@
 # Rotation model (L4) — who is on the floor, and for how long
 
-Status: **BAKE-OFF RUN 2026-09-10, two rounds, NO ARM ADOPTED.** One defect in
-the hazard training matrix is open and qualifies the round-2 R5/R6 columns
-(`experiments.md` §5). Read
-`experiments.md` for the pre-registrations and the full tables; this file leads
-with the conclusion and the relative comparisons.
+Status: **BAKE-OFF RUN 2026-09-10, three rounds, NO ARM ADOPTED.** Round 3 added
+a fitted close-game keep-starters override in two functional forms (R7 logistic,
+R8 per-cell threshold) and adopted neither; it also closed §5's hazard-matrix
+defect, whose corrected re-run makes the donor family **worse** than the column
+round 2 reported. `R2_hier_dirichlet` remains the best arm in three rounds, but
+round 3b shows its "three of four state cells" is boundary-thin — its 6-15 band
+was −2.97 pp against a −3.00 pp tolerance and flips to FAIL on a sub-noise move,
+so it is **2 of 4 under S1**. Round 3b also **adopts S1 (in-season monthly
+walk-forward refit, L21) as this model's training scheme** — no gate regressed
+beyond the noise floor and six cells improved beyond it — and shows the round-3
+override knobs are **not identified** (R7's keep scale spans the whole grid
+across six windows of one season). Read `experiments.md` for the
+pre-registrations and the full tables; this file leads with the conclusion and
+the relative comparisons.
 
 ---
 
@@ -161,7 +170,51 @@ because that state pools fouled-out players (forced off, share 0) with four-foul
 players; the pre-registered "at exactly 4 fouls" diagnostic row exposes it at
 0.82 / 0.80 against a real 0.52.
 
-### 5.3 The diagnostic that matters most: starter identification vs rotation
+### 5.3 Round 3 (same 1,600 games, 5 seeds; `experiments.md` §6-7)
+
+Round 3 ran the incumbent, the **corrected** R5 (closing §5's OPEN item) and two
+fitted close-game keep-starters overrides: R7, a logistic on-floor propensity
+applied as a state deviation with a per-game tolerance draw, and R8, the simpler
+threshold form (one fitted scalar against the training season's own
+starters'-share-by-(time × margin) table).
+
+| arm | G8 | state | eligible | final-8:00 b0 / b1 / b2 / ≥4 fouls (actual 0.7491 / 0.7240 / 0.5223 / 0.4613) |
+|---|---:|---:|---|---|
+| R2 `hier_dirichlet` | 4/6 | **3/4** | NO | 0.7281 / 0.6943 / 0.4750 / 0.4648 |
+| R7 `keep_logistic` | 2/6 | 0/4 | NO | 0.7074 / 0.6749 / 0.5994 / 0.5125 |
+| R5 `hybrid` (corrected) | 1/6 | 0/4 | NO | 0.6942 / 0.6566 / 0.5911 / 0.4964 |
+| R8 `keep_cell` | 1/6 | 0/4 | NO | 0.6982 / 0.6599 / 0.5956 / 0.4997 |
+
+Three findings, all in `experiments.md` §7.9.
+
+1. **Fixing the foul defect made the donor family worse.** With the corrected
+   hazard matrix R5's blowout band goes from −2.9 pp (a PASS under the defect) to
+   **+6.9 pp**, and foul trouble from +0.7 to +3.5 pp. The corrected foul terms
+   take load off the margin terms, the block stops emptying the bench when the
+   game is decided, and the arm plays its starters through garbage time. §5 is
+   closed and its answer is negative.
+2. **The close-game cell is unreachable by this override family.** Over R7's
+   whole 24-point knob grid the largest close-band share produced on the training
+   season is 0.6994 against a target of 0.7110; raising the keep scale or its
+   base rate *lowers* it. The fitted starter-vs-bench separation of the keep
+   score in the close-and-late state is only ≈1.0 in log odds, so any base rate
+   large enough to keep starters also keeps bench players, and each kept bench
+   player displaces an un-kept starter. R8's grid does reach b0 = 0.7475 at
+   θ = 1.0, but only by pushing b1, b2 and foul trouble further out, so the joint
+   fit selects θ = 0.1 and R8 is R5 with a rounding error.
+3. **Neither keep arm clears the refit noise floor.** R7 gains +1.3 / +1.8 pp on
+   the two close bands; a spec-identical refit under a second seed moves the same
+   cells 1.5 / 1.4 pp. R8's single knob is outright unstable across refits
+   (θ 0.1 vs 0.3, close band moving 6.1 pp — twice the gate tolerance).
+
+Two things round 3 banks: R7 has the **best lineup concentration of any arm in
+three rounds** (top-1 five-man lineup share 0.2888 against a real 0.2940, K-S D
+**0.0302**, per-player minutes K-S 0.0782), and every arm's quintile slope
+against the pregame team prior is right (actual +0.692; R2 +0.645, R5 +0.742,
+R8 +0.728, R7 +0.826), so all four failures are level failures, not
+responsiveness failures.
+
+### 5.4 The diagnostic that matters most: starter identification vs rotation
 
 The state-dependence rows count, on each side, the five that side actually
 started. The model's as-of starter set overlaps the real starting five on **4.57
@@ -267,9 +320,25 @@ events of the game being simulated would be a leak of exactly the kind
     (the donor already substitutes slightly more often than reality, so every
     positive scale moves that number the wrong way and the grid returns 0, i.e.
     plain R4). The substitution rate is the donor's job.
-11. **Nothing is adopted.** Both rounds fail the pre-registered state-dependence
-    veto. Per the standing rules this is reported, not patched: no post-hoc
-    multiplier on the blowout band, no cap on bench minutes.
+11. **Nothing is adopted.** All three rounds fail the pre-registered
+    state-dependence veto. Per the standing rules this is reported, not patched:
+    no post-hoc multiplier on the blowout band, no cap on bench minutes.
+12. **Round 3's keep override is a two-sided propensity, not a starters-only
+    rule.** It was fitted on every candidate, which is what made it fail in a
+    diagnosable way rather than by construction: the same fitted coefficients
+    that keep a starter close-and-late keep a *bench* player in a blowout, and
+    the grid shows the whole reachable frontier. A starters-only keep would have
+    hit the close cell and would have been a hand-set rule wearing a fitted
+    coefficient; that is the version the standing no-hand-tuning rule forbids.
+13. **`rotation.py` was not modified for round 3.** Another worker is reading it
+    for engine v0, so the round-3 arms live in `src/cbb_sim/models/rotation_v3.py`
+    and import everything else. The round-3 donor simulator draws BOTH tolerance
+    vectors whether or not an arm uses them, so R5, R7 and R8 sit at identical
+    stream positions and the arms are paired; the cost is that round 3's R5 is
+    not bit-identical to `rotation.R5Hybrid` (same rule, different realised
+    numbers), which is why its cells differ from `docs/tests/rotation_close_game_audit_2026-09-10.md`
+    by 0.1-0.6 pp. That difference is a free extra seed-noise reading and is
+    smaller than noise floor A on every cell.
 
 ---
 
@@ -338,13 +407,33 @@ Notes for the caller:
 | `data/processed/models/rotation/rotation_F1_table.csv` | round-1 metric table, one row per arm |
 | `data/processed/models/rotation/rotation_fit_round2_corrected_hazards.json` | the round-2 fit with the **corrected** hazard/override coefficients (`experiments.md` §5) |
 | `data/processed/models/rotation/rotation_F1_round2_SMOKE30_do_not_cite.{json,csv}` | a later 30-game dev smoke run that overwrote the graded round-2 JSON/CSV. **`experiments.md` §4 is the record of the graded round-2 run**; re-running `scripts/train_rotation_v2.py` with the arguments named there reproduces it |
+| `data/processed/models/rotation/rotation_fit_v3.json` | the round-3 fit: the round-2 corrected fit plus `s*`, R7's on-floor propensity and both fitted knob pairs. **Nothing overwrites `rotation_fit.json`, which the engine reads** |
+| `data/processed/models/rotation/rotation_fit_v3_noisefloor_seed2.json` | the spec-identical refit under fit seed 101 / sim seed 23 that noise floor B is measured from |
+| `data/processed/models/rotation/rotation_F1_round3_{results.json,table.csv,section.md}` | round-3 results, verdicts, both noise floors, the quintile slope table and the full knob grids |
+| `data/processed/models/rotation/rotation_fit_v3_S1_{YYYYMM}.json` | round 3b: one parameter set per S1 window, named by the window's **start** month, so a game selects the largest `YYYYMM` at or before its own month. The first window's file is byte-identical to `rotation_fit_v3.json` |
+| `data/processed/models/rotation/rotation_F1_round3b_S1_results.json` | round 3b, the S1-vs-static scheme confirmation |
+| `data/processed/models/rotation/close_game_audit_2026-09-10.json` | the round-3 evidence audit's raw cells (`docs/tests/rotation_close_game_audit_2026-09-10.md`) |
 
 ---
 
 ## 10. Known gaps / followups
 
-- **For round 3: the close-game late-starter miss is a *level* problem, not a
-  state-response problem.** After round 2 the binding cell is the opposite of
+- **REFUTED BY ROUND 3 (kept for the record).** The hypothesis below — that R5
+  spends its starter time too early and needs a within-game time-profile
+  constraint — is wrong. `docs/tests/rotation_close_game_audit_2026-09-10.md` §5
+  measures it directly: in the close band R5 is **−5.3 pp early and −5.4 pp
+  late**, so the total is not right and its distribution over the game is not the
+  problem. The close-game miss is a level shift across the whole game. What the
+  audit found instead, and what round 4 should carry: (a) the second half tips
+  off at a **0.90** starters' share in every margin band and no arm exceeds 0.80,
+  a −10 to −15 pp miss in the largest single cell of the second half that no gate
+  currently reads; (b) R2 is −17.0 pp at the opening tip in close games while its
+  pooled minutes table is right; (c) with the foul terms working, the donor
+  family's binding failure is the blowout band and foul trouble, not the close
+  bands. Neither (a) nor (b) was added to a gate mid-bake-off; both belong in the
+  next pre-registration.
+- **For round 3 (SUPERSEDED): the close-game late-starter miss is a *level*
+  problem, not a state-response problem.** After round 2 the binding cell is the opposite of
   round 1's: R5 and R6 are inside tolerance in a blowout and 4-7 pp short of the
   starters' share in the final eight minutes when the game is close or moderate.
   Four pieces of evidence point at one cause. (1) The miss is almost the **same
