@@ -1899,3 +1899,105 @@ Ties (both arms clear every gate, no arm strictly closer to truth on (a) and
 (b) combined) go to the simpler model, `reference`, per `CLAUDE.md`'s
 standing bake-off rule. The served default is changed only by the PM; this
 round recommends, it does not switch `adapters.py`.
+
+### 12.6 Results (grading run 2026-09-11, after the 12.1-12.5 pre-registration
+was committed, commit `c41ec25`)
+
+Full write-up with per-team and per-quintile tables: `docs/tests/
+usage_nostate_bakeoff_2026-09-11.md`. Summary here.
+
+**(a) Decision-8 slope ratio, engine scale, F2 2025 500-game subset.**
+Realised (truth) quintile span of credited usage share, `rate_total`
+quintile bin edges fixed from the truth side: **11.8528 pp**.
+
+| arm | predicted span (pp) | realised span (pp) | slope ratio | monotone steps | in [0.85,1.15]? | in [0.8,1.2]? |
+|---|---:|---:|---:|---:|---|---|
+| `reference` (U1) | 10.9307 | 11.8528 | 0.9222 | 4/4 | YES | YES |
+| `tree_v3_nostate` | 11.3209 | 11.8528 | 0.9551 | 4/4 | YES | YES |
+
+Both arms pass (a); `tree_v3_nostate`'s ratio sits closer to 1.000.
+
+**(b) Top-1 / top-3 usage-share gap vs actual, same subset, same
+`usage_events = fga + fta` convention both sides** (n = 998 team-games with
+truth coverage; actual top-1 mean 0.2490, actual top-3 mean 0.5945):
+
+| arm | sim top-1 (+/- SE) | gap top-1 (pp) | sim top-3 (+/- SE) | gap top-3 (pp) |
+|---|---:|---:|---:|---:|
+| `reference` (U1) | 0.2526 +/- 0.0003 | +0.361 | 0.5973 +/- 0.0005 | +0.279 |
+| `tree_v3_nostate` | 0.2577 +/- 0.0003 | +0.867 | 0.6063 +/- 0.0004 | +1.175 |
+
+Noise band for the gap DIFFERENCE (truth side has no seed variance; combined
+seed SE only): top-1 ~0.04 pp, top-3 ~0.06 pp. Observed differences
+(nostate minus reference): **+0.506 pp top-1 (z ~ 12), +0.896 pp top-3
+(z ~ 14)** -- both far outside the noise band. **`tree_v3_nostate` moves
+FURTHER from truth than `reference` on both reads. Gate (b) FAILS for
+`tree_v3_nostate`.**
+
+Per-team cross-check (347 teams in the truth-covered subset, 342 with a
+sim match): mean |gap| 2.605 pp (`reference`) vs 2.706 pp (`nostate`);
+teams within +/-2 pp of actual top-1 share: 164/342 (`reference`) vs
+149/342 (`nostate`); team-level responsiveness corr(sim, actual) 0.427 vs
+0.421 (a tie -- neither arm is flat against the team-quality driver, and
+neither is more matchup-specific than the other at the team level). The
+team-level cut **confirms (b)'s player-level finding at a second level**:
+`reference` sits closer to truth on every count except the (tied)
+correlation.
+
+**(c) `eval_gates.py` G1-G9 vs truth**, new outputs (existing engine-v1 gate
+docs untouched): `docs/tests/gates_usage_reference_s25_2026-09-11.md`,
+`docs/tests/gates_usage_tree_v3_nostate_s25_2026-09-11.md`.
+
+| gate | reference | nostate | max numeric delta vs section-11 |z|<1 band |
+|---|---|---|---|
+| G1 (possessions) | FAIL | FAIL | mean 70.030 vs 70.025 (delta 0.005, noise) |
+| G2 (PPP tercile) | FAIL | FAIL | matches to 3-4 decimals per cell |
+| G3 (shot mix) | NEEDS-INSTRUMENTATION | NEEDS-INSTRUMENTATION | -- |
+| G4 (four factors) | FAIL | FAIL | matches to 3-4 decimals per cell |
+| G5 (dispersion) | FAIL | FAIL | margin SD ratio 0.9520 vs 0.9504; home/away corr 0.0013 vs 0.0079 (both inside the +/-1 z noise band from section 11.5) |
+| G6 (home margin) | PASS | PASS | -- |
+| G7 (OT / half split) | FAIL | FAIL | matches to 3-4 decimals |
+| G8 (player layer) | FAIL | FAIL | top-1 FGA share (gates.py's own truth-restricted 458-game convention) 0.2576 vs 0.2608 (truth 0.2476) -- both above truth, nostate further above, consistent with (b) |
+| G9 (spread/total accuracy) | FAIL | FAIL | matches to 3-4 decimals |
+
+**Every gate's status is IDENTICAL between arms; every numeric line moves by
+less than the section-11 noise band. Gate (c) PASSES: no regression.** The
+FAIL statuses themselves are pre-existing engine-v1 characteristics of this
+500-game/25-seed subset (this lane does not change usage's contribution to
+G1/G2/G4/G5/G7/G9, which are dominated by clock/fg_make/event, not usage) --
+out of scope for this round, reported for completeness per the gate line,
+not re-litigated here.
+
+**(d) Config reuse.** Confirmed field-for-field in 12.2; no new engine run
+executed.
+
+### 12.7 Verdict
+
+**Gate (b) fails for `tree_v3_nostate`. Per the section-12.5 decision rule,
+`tree_v3_nostate` is NOT ADOPTED.** It passes (a) and (c), but a pass on (a)
+does not override a fail on (b): the pre-registered rule is explicit that a
+better internal slope ratio does not offset moving further from truth on the
+top-1/top-3 read. This reconciles with, and sharpens, section 11's finding:
+the arm-vs-arm concentration lift `tree_v3_nostate` shows over `reference`
+(section 11.5, z = 4.8-13.5) is real but is a move in the WRONG direction
+relative to ground truth on this 500-game F2 2025 sample -- `reference`
+already sits closer to the actual top-1/top-3 shares than either tree arm,
+so "more concentrated" is not "more correct" here. **The served default
+stays `ENGINE_USAGE=reference` (U1 proportional); no change is made to
+`adapters.py` by this lane.**
+
+### 12.8 What this round does not establish
+
+- It does not re-open section 11 (state-carrying tree DO NOT WIRE stands).
+- It grades one 500-game F2 2025 subset at 25 seeds; a full-season or
+  higher-seed-count re-grade could in principle move the gap numbers, but
+  the effect size here (0.5-0.9 pp, 12-14 noise floors) is large relative to
+  the seed noise measured, so more seeds are not expected to close it.
+- Per-class (`FGA_rim`/`FGA_jump2`/`FGA_3`/`TOV`/`FT_trip`) breakdown is not
+  re-cut at engine scale in this round for the same reason section 11.4
+  gave: usage is a single allocation draw per event; the offline per-class
+  log-loss/top-3-gap deltas from the score_diff fix (section 10.3) already
+  showed no single class carrying the tree's offline behaviour, and all
+  five classes' state importance sat in a narrow 27.2-29.6% band -- cited
+  for context, not re-run.
+- 2026 was not read; only F2 2025 (test) and the existing truth tables
+  entered this round's computation.
