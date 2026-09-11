@@ -219,6 +219,11 @@ def simulate_chunk(inp: EngineInputs, ad: Adapters, game_index: np.ndarray,
     # COMPOSITION conditioned on who left (`models/rotation_v6.py`,
     # experiments.md section 14). Default-off: `reference` is unchanged.
     r6 = RA.load_round6(inp.games) if RA.rotation_mode() == "round6" else None
+    # ENGINE_ROTATION=round9 serves round 6's K1 entry rule with the round-7/8/9
+    # exit DRAW over the (state x composition) table (`models/rotation_v9.py`,
+    # experiments.md sections 20-21, adapter scope 21.15). Default-off:
+    # `reference` is unchanged and no served default moves.
+    r9 = RA.load_round9(inp.games) if RA.rotation_mode() == "round9" else None
     wave_book = (StreamBook(seeds, gids, families=("rotation_wave",))
                  if (r5 is not None and r5["coupled"]) else None)
     # ENGINE_ROTATION_SCHEME=s1: R2's fitted objects are a SCHEDULE (rotation
@@ -233,6 +238,7 @@ def simulate_chunk(inp: EngineInputs, ad: Adapters, game_index: np.ndarray,
         round4=None if r4 is None else RA.round4_rows(r4, gg),
         round5=None if r5 is None else RA.round5_rows(r5, gg),
         round6=None if r6 is None else RA.round6_rows(r6, gg),
+        round9=None if r9 is None else RA.round9_rows(r9, gg),
         fitset=None if rot_s1 is None else RA.r2_s1_fitset(rot_s1, gg))
     # the rotation decides foul-outs off the same counters the box score reports,
     # so the (2n, S) block is the single source of truth until the game is over

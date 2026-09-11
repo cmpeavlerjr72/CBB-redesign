@@ -1,0 +1,63 @@
+{
+  "check": "round-9 adapter exit block vs rotation_v8.run_wave8 scalar block",
+  "scope": "experiments.md 21.15; floor A for an identity check is 0",
+  "arm": "Z1",
+  "n_games": 150,
+  "n_seeds": 3,
+  "n_sims": 450,
+  "n_waves_audited": 21506,
+  "n_possessions": 64896,
+  "k_out_mismatches": 0,
+  "max_abs_share_delta": 0.0,
+  "exit_side_starter_share_by_n_starters": [
+    {
+      "n_starters": 0,
+      "n_waves": 201,
+      "engine_starter_share": 0.0,
+      "offline_starter_share": 0.0,
+      "abs_delta": 0.0,
+      "underpowered": true
+    },
+    {
+      "n_starters": 1,
+      "n_waves": 1457,
+      "engine_starter_share": 0.224374,
+      "offline_starter_share": 0.224374,
+      "abs_delta": 0.0,
+      "underpowered": false
+    },
+    {
+      "n_starters": 2,
+      "n_waves": 4588,
+      "engine_starter_share": 0.350178,
+      "offline_starter_share": 0.350178,
+      "abs_delta": 0.0,
+      "underpowered": false
+    },
+    {
+      "n_starters": 3,
+      "n_waves": 7267,
+      "engine_starter_share": 0.502056,
+      "offline_starter_share": 0.502056,
+      "abs_delta": 0.0,
+      "underpowered": false
+    },
+    {
+      "n_starters": 4,
+      "n_waves": 5728,
+      "engine_starter_share": 0.728523,
+      "offline_starter_share": 0.728523,
+      "abs_delta": 0.0,
+      "underpowered": false
+    },
+    {
+      "n_starters": 5,
+      "n_waves": 2265,
+      "engine_starter_share": 1.0,
+      "offline_starter_share": 1.0,
+      "abs_delta": 0.0,
+      "underpowered": false
+    }
+  ],
+  "runtime_s": 150.3
+}

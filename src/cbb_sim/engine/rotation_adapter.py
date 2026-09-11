@@ -209,7 +209,8 @@ class RotationBatch:
 def init_batch(fit: RotationFit, share: np.ndarray, srank: np.ndarray,
                fpm: np.ndarray, pavail: np.ndarray, book, rows: np.ndarray,
                round4: dict | None = None, fitset: FitSet | None = None,
-               round5: dict | None = None, round6: dict | None = None):
+               round5: dict | None = None, round6: dict | None = None,
+               round9: dict | None = None):
     """Open the rotation for 2N team-simulations.
 
     `share`/`srank`/`fpm`/`pavail` are (2n, S) gathers of the per-(game, side)
@@ -221,6 +222,8 @@ def init_batch(fit: RotationFit, share: np.ndarray, srank: np.ndarray,
     per-row choice). `None` means the static fit, which is built here as a
     schedule of length one so there is exactly one code path.
     """
+    if round9 is not None:
+        return init_batch_round9(fit, share, srank, fpm, pavail, book, rows, round9)
     if round6 is not None:
         return init_batch_round6(fit, share, srank, fpm, pavail, book, rows, round6)
     if round5 is not None:
@@ -304,6 +307,13 @@ def next_lineup(rb, period: np.ndarray, seconds_remaining: np.ndarray,
     foul-out rule the scheduler enforces and the foul-out the box score reports
     are the same number. `live` selects the rows whose game is still running.
     """
+    if isinstance(rb, Round9Batch):
+        if prev_end is None or team_fouls is None:
+            raise ValueError("ENGINE_ROTATION=round9 needs `prev_end` and "
+                             "`team_fouls`; the loop carries both")
+        return next_lineup_round9(rb, period, seconds_remaining, home_score_diff,
+                                  last_duration, fouls, book, rows, live,
+                                  prev_end, team_fouls, shared)
     if isinstance(rb, Round6Batch):
         if prev_end is None or team_fouls is None:
             raise ValueError("ENGINE_ROTATION=round6 needs `prev_end` and "
@@ -1390,4 +1400,306 @@ def round6_rows(r6: dict, game_rows: np.ndarray) -> dict:
     d.update({"mode": r6["arm"], "tau": r6["TAU"], "kin": r6["KIN"],
               "log_a": r6["LOG_A"], "draw_exit": False, "draw_entry": True,
               "coupled": False})
+    return d
+
+
+# ===========================================================================
+# ENGINE_ROTATION=round9 -- X1/Y1/Z1's exit-side DRAW over K1's entry rule
+# ===========================================================================
+#: Round 9's engine adapter, scoped in `docs/models/rotation/experiments.md`
+#: section 21.15 and written here to the letter of that scope. It is round 6's
+#: K1 path with the exit block replaced by the round-7/8/9 exit DRAW:
+#:
+#:   ce  = V7.exit_cell(period, seconds_remaining, margin, foul_state)
+#:   row = zexit[seg, clip(size,1,5)-1, ce, min(n_starters_on, N_ST-1)]
+#:   support clipped to [max(0, size - n_bench_on, forced_starters),
+#:                       min(size, n_starters_on, size - forced_bench)],
+#:   renormalised, `k_out` drawn, then round 5's RANK rule WITHIN each class.
+#:
+#: `exit_mode` selects which fitted table is gathered: `Z1` the state cell
+#: shrunk to the composition marginal, `Z2` the gated interaction
+#: (`models/rotation_v9.py`, experiments.md section 20). The mechanism, every
+#: clip and the uniform ORDER are identical in both, exactly as `run_wave9`
+#: delegates to `run_wave8` in round 8's own gather position (20.1), so the
+#: round-9 arms are byte-aligned with each other.
+#:
+#: STATED RNG DIVERGENCE from round 6, declared here as round 6 declared one
+#: from round 5 (14.11): the `rotation_sub` draw block is `2S + 5` wide, not
+#: `2S + 4`, and the new scalar at `2S + 4` is the `k_out` uniform. Round-9 arms
+#: are paired with EACH OTHER and NOT with round 6 or round 5. The served
+#: `reference` (R2) path draws from its own families and is untouched.
+#:
+#: Default-off. `ENGINE_ROTATION=reference` remains the served default and this
+#: section changes no default anywhere.
+
+ROUND9_DIR = ROUND4_DIR / "round9"
+ROUND9_MANIFEST = ROUND9_DIR / "rotation_v9_manifest.json"
+ROUND9_ARMS = ("Z1", "Z2")
+
+#: the round-9 exit table's starter axis (`rotation_v8.N_ST`); the gather index
+#: is `min(n_starters_on, N_ST - 1)`, which is what the offline sampler clips to.
+ROUND9_N_ST = 6
+
+#: default-off parity instrumentation (`ENGINE_ROT9_AUDIT=1`). When on, every
+#: wave the round-9 exit block resolves appends its (size, n_st_on, n_bn_on,
+#: forced_st, forced_bn, exit_cell, seg, u_x, k_out) to this list so
+#: `scripts/diag_rot9_adapter_parity.py` can recompute `k_out` with the OFFLINE
+#: scalar block (`rotation_v8.run_wave8`) on identical states. Off, the branch
+#: costs one env lookup per possession and nothing is recorded.
+ROUND9_AUDIT: list = []
+
+
+def round9_audit_on() -> bool:
+    return os.environ.get("ENGINE_ROT9_AUDIT", "0") not in ("", "0", "false", "False")
+
+
+@dataclass
+class Round9Batch(Round6Batch):
+    """Round 6's K1 batch plus the round-9 exit table."""
+
+    exit_mode: str = "Z1"
+    zexit: np.ndarray | None = None      # (n_seg, MAX_WAVE, N_EXIT_CELL, N_ST, MW+1)
+
+
+def init_batch_round9(fit: RotationFit, share: np.ndarray, srank: np.ndarray,
+                      fpm: np.ndarray, pavail: np.ndarray, book, rows: np.ndarray,
+                      coefs: dict) -> Round9Batch:
+    """Open the round-9 rotation. Everything except the exit table comes from
+    `init_batch_round6` with `mode='K1'`, so round 6's K1 arm and round 9 differ
+    ONLY in how `k_out` is chosen."""
+    c6 = dict(coefs)
+    zexit = c6.pop("zexit")
+    exit_mode = str(c6.pop("exit_mode", "Z1"))
+    c6["mode"] = "K1"                    # 21.15: K1's entry rule, unchanged
+    rb6 = init_batch_round6(fit, share, srank, fpm, pavail, book, rows, c6)
+    return Round9Batch(**vars(rb6), exit_mode=exit_mode,
+                       zexit=np.asarray(zexit, dtype=np.float64))
+
+
+def next_lineup_round9(rb: Round9Batch, period: np.ndarray,
+                       seconds_remaining: np.ndarray, home_score_diff: np.ndarray,
+                       last_duration: np.ndarray, fouls: np.ndarray, book,
+                       rows: np.ndarray, live: np.ndarray, prev_end: np.ndarray,
+                       team_fouls: np.ndarray, shared: np.ndarray | None = None
+                       ) -> np.ndarray:
+    """Advance the round-9 rotation one possession.
+
+    A copy of `next_lineup_round6` with the exit block replaced and nothing else
+    touched, so a round-6 run started by another lane cannot change behaviour
+    because round 9 exists.
+    """
+    from cbb_sim.models import rotation_v7 as V7
+
+    S = rb.n_slots
+    half = rb.n
+    two_n = 2 * half
+
+    credit = live & rb.started
+    if credit.any():
+        d = last_duration.astype(np.float64)
+        c = credit[:, None]
+        rb.played += d[:, None] * rb.prev_on * c
+        rb.half_min += (d[:, None] / 60.0) * rb.prev_on * c
+        rb.state_min += (d[:, None] / 60.0) * c
+        u_f = np.zeros((two_n, S))
+        sel = np.flatnonzero(credit)
+        u_f[sel] = book.draw_block("rotation_foul", rows[sel], S)
+        hit = (u_f < rb.fpm * (d[:, None] / 60.0) * rb.fit.foul_rate_scale) \
+            & rb.prev_on & c
+        fouls += hit.astype(fouls.dtype)
+
+    cur_half = (period >= 2).astype(np.int8)
+    newhalf = live & (cur_half != rb.prev_half)
+    if newhalf.any():
+        rb.half_min[newhalf] = 0.0
+    rb.prev_half = np.where(live, cur_half, rb.prev_half)
+
+    margin = np.concatenate([home_score_diff[:half], -home_score_diff[half:]])
+    f_model = fouls.astype(np.float64)
+    tf_model = np.asarray(team_fouls, dtype=np.float64)
+    if rb.freeze:                       # Decision 10
+        margin = np.zeros_like(margin)
+        f_model = np.zeros_like(f_model)
+        tf_model = np.zeros_like(tf_model)
+
+    out_of_fouls = fouls >= FOUL_OUT
+    eligible = rb.avail & ~out_of_fouls
+    n_elig = eligible.sum(axis=1)
+    on = rb.onmask
+    bench_ok = ~on & eligible
+    n_bench = bench_ok.sum(axis=1)
+
+    foul_state = ((f_model >= 4.0) & on).any(axis=1).astype(np.int64)
+    cell = V5.wave_cell(prev_end, period, seconds_remaining, margin, foul_state)
+    pw = rb.p_wave[rb.seg, cell]
+    cdf = rb.size_cdf[rb.seg, cell]
+
+    # 2S + 5: the new scalar at 2S + 4 is the `k_out` uniform (stated above)
+    u = book.draw_block("rotation_sub", rows, 2 * S + 5)
+    u_race = u[:, S:2 * S]
+    u_wave, u_size = u[:, 2 * S], u[:, 2 * S + 1]
+    u_k, u_x = u[:, 2 * S + 3], u[:, 2 * S + 4]
+
+    forced = (on & out_of_fouls).sum(axis=1)
+    wave = (u_wave < pw) | (forced > 0)
+    size = (u_size[:, None] > cdf).sum(axis=1) + 1
+    size = np.maximum(size, forced)
+    size = np.minimum(np.minimum(size, n_bench), 5)
+    size = np.where(wave, size, 0)
+
+    X = V4.design(rb.is_starter, rb.share, f_model, rb.state_min, rb.half_min,
+                  period, seconds_remaining, margin, prev_end, tf_model)
+    p_out = _sigmoid(np.einsum("msf,mf->ms", X, rb.w_out) + rb.b_out[:, None])
+    p_in = _sigmoid(np.einsum("msf,mf->ms", X, rb.w_in) + rb.b_in[:, None])
+
+    # ---- the exit side: round 9's DRAW over the (state x composition) table -
+    is_st = rb.is_starter > 0.5
+    st_on = on & is_st
+    bn_on = on & ~is_st
+    n_st_on = st_on.sum(axis=1)
+    n_bn_on = bn_on.sum(axis=1)
+    forced_st = (st_on & out_of_fouls).sum(axis=1)
+    forced_bn = (bn_on & out_of_fouls).sum(axis=1)
+    ce = V7.exit_cell(period, seconds_remaining, margin, foul_state)
+    nst_ix = np.minimum(n_st_on, ROUND9_N_ST - 1)
+    zrow = rb.zexit[rb.seg, np.clip(size, 1, 5) - 1, ce, nst_ix]
+
+    lo = np.maximum(np.maximum(0, size - n_bn_on), forced_st)
+    hi = np.minimum(np.minimum(size, n_st_on), size - forced_bn)
+    bad_sup = hi < lo
+    if bad_sup.any():                    # offline: hi = lo = min(max(lo, 0), sz)
+        fix = np.minimum(np.maximum(lo, 0), size)
+        lo = np.where(bad_sup, fix, lo)
+        hi = np.where(bad_sup, fix, hi)
+    j = np.arange(zrow.shape[1])[None, :]
+    zrow = np.where((j >= lo[:, None]) & (j <= hi[:, None]), zrow, 0.0)
+    ztot = zrow.sum(axis=1, keepdims=True)
+    zcdf = np.cumsum(np.where(ztot > 0, zrow / np.where(ztot > 0, ztot, 1.0), 0.0),
+                     axis=1)
+    k_out = (u_x[:, None] > zcdf).sum(axis=1)
+    k_out = np.where(ztot[:, 0] > 0, k_out, lo)
+    k_out = np.clip(k_out, lo, np.maximum(hi, lo))
+
+    if round9_audit_on():
+        m = live & (on.sum(axis=1) == 5) & (size > 0)
+        if m.any():
+            ROUND9_AUDIT.append(np.stack([
+                size[m], n_st_on[m], n_bn_on[m], forced_st[m], forced_bn[m],
+                ce[m], rb.seg[m], u_x[m], k_out[m]]).astype(np.float64))
+
+    # within class, round 5's RANK rule, unchanged
+    k_out_key = np.where(out_of_fouls, -1e12, -p_out)
+    leaving = (_pick_k(st_on, k_out_key, k_out)
+               | _pick_k(bn_on, k_out_key, size - k_out))
+
+    # ---- the entry side: round 6's K1 rule, byte for byte ------------------
+    pi = np.clip(p_in, 1e-9, 1.0 - 1e-9)
+    logw = np.log(pi) - np.log1p(-pi)
+    w = np.exp(logw - logw.max(axis=1, keepdims=True))
+    key_in = -np.log(np.clip(u_race, 1e-12, 1.0)) / np.maximum(w, 1e-300)
+
+    k_out_seen = (leaving & is_st).sum(axis=1)
+    n_st_b = (bench_ok & is_st).sum(axis=1)
+    n_bn_b = (bench_ok & ~is_st).sum(axis=1)
+    row = rb.kin[rb.seg, np.clip(size, 1, 5) - 1, np.clip(k_out_seen, 0, 5)]
+    klo = np.maximum(0, size - n_bn_b)
+    khi = np.minimum(size, n_st_b)
+    jj = np.arange(row.shape[1])[None, :]
+    row = np.where((jj >= klo[:, None]) & (jj <= khi[:, None]), row, 0.0)
+    tot = row.sum(axis=1, keepdims=True)
+    ccdf = np.cumsum(np.where(tot > 0, row / np.where(tot > 0, tot, 1.0), 0.0),
+                     axis=1)
+    k_in = (u_k[:, None] > ccdf).sum(axis=1)
+    k_in = np.where(tot[:, 0] > 0, k_in, klo)
+    k_in = np.clip(k_in, klo, np.maximum(khi, klo))
+    entering = (_pick_k(bench_ok & is_st, key_in, k_in)
+                | _pick_k(bench_ok & ~is_st, key_in, size - k_in))
+
+    act = live & (on.sum(axis=1) == 5) & (size > 0)
+    if act.any():
+        a = act[:, None]
+        rb.onmask = np.where(a, (rb.onmask & ~leaving) | entering, rb.onmask)
+
+    if rb.hard_reset:
+        newper = live & (period.astype(np.int16) == 2) & (rb.prev_period == 1) \
+            & (n_elig >= 5)
+        if newper.any():
+            k = np.where(eligible[newper], rb.srank[newper].astype(np.float64), 1e9)
+            pick = np.argsort(k, kind="stable")[:, :5]
+            nm = np.zeros_like(rb.onmask[newper])
+            np.put_along_axis(nm, pick, True, axis=1)
+            rb.onmask[newper] = nm
+    rb.prev_period = np.where(live, period.astype(np.int16), rb.prev_period)
+
+    cnt = rb.onmask.sum(axis=1)
+    bad = live & (cnt != 5)
+    if bad.any():
+        rb.diag["rotation_five_repaired"] = rb.diag.get("rotation_five_repaired", 0) \
+            + int(bad.sum())
+        score = np.where(eligible[bad], rb.share[bad], _NEG) \
+            + 10.0 * rb.onmask[bad].astype(np.float64)
+        pick = np.argsort(-score, kind="stable")[:, :5]
+        nm = np.zeros_like(rb.onmask[bad])
+        np.put_along_axis(nm, pick, True, axis=1)
+        rb.onmask[bad] = nm
+
+    stuck = rb.onmask & out_of_fouls
+    if stuck.any():
+        for _ in range(2):
+            rowsel = np.flatnonzero(stuck.any(axis=1) & live)
+            if not len(rowsel):
+                break
+            for r in rowsel:
+                bad_slots = np.flatnonzero(stuck[r])
+                pool = np.flatnonzero(~rb.onmask[r] & eligible[r])
+                pool = pool[np.argsort(-rb.share[r][pool], kind="stable")]
+                for aa, bb in zip(bad_slots, pool):
+                    rb.onmask[r, aa] = False
+                    rb.onmask[r, bb] = True
+            stuck = rb.onmask & out_of_fouls
+
+    changed = rb.onmask != rb.prev_on
+    rb.state_min = np.where(changed & live[:, None], 0.0, rb.state_min)
+    rb.prev_on = np.where(live[:, None], rb.onmask, rb.prev_on)
+    rb.started |= live
+    return np.argsort(~rb.onmask, kind="stable")[:, :5].astype(np.int16)
+
+
+def round9_arm() -> str:
+    a = os.environ.get("ENGINE_ROTATION_ARM", "Z1")
+    return a if a in ROUND9_ARMS else "Z1"
+
+
+def load_round9(games, arm: str | None = None,
+                manifest_path: Path | None = None) -> dict:
+    """Round 6's K1 objects plus round 9's exit tables. The segment-alignment
+    assertion round 6 makes against round 5 is made again here against round 6,
+    so the wave table, the composition object and the exit table cannot come
+    from different refit windows."""
+    from cbb_sim.engine.manifest import ArtifactManifest
+    from cbb_sim.models import rotation_v9 as V9
+
+    r6 = load_round6(games, arm="K1")          # 21.15: K1's entry rule
+    man9 = ArtifactManifest.from_json(Path(manifest_path or ROUND9_MANIFEST), games)
+    if len(man9.entries) != len(r6["manifest6"].entries):
+        raise ValueError("round-9 and round-6 manifests have different lengths")
+    if not np.array_equal(man9.seg_of_game, r6["seg_of_game"]):
+        raise ValueError("round-9 and round-6 manifests select different segments")
+    fits = [V9.ExitFit9.from_json(e.path) for e in man9.entries]
+    nm = arm or round9_arm()
+    out = dict(r6)
+    out.update({
+        "manifest9": man9, "exit_arm": nm,
+        "ZEXIT": np.stack([(f.Z2 if nm == "Z2" else f.Z1) for f in fits]),
+        "exit_sources": [e.path.name for e in man9.entries],
+        "k_shrink": [float(f.k_shrink) for f in fits],
+        "provenance9": man9.provenance(),
+    })
+    return out
+
+
+def round9_rows(r9: dict, game_rows: np.ndarray) -> dict:
+    d = round6_rows(r9, game_rows)
+    d.update({"mode": "K1", "exit_mode": r9["exit_arm"], "zexit": r9["ZEXIT"],
+              "draw_exit": True})
     return d
