@@ -117,6 +117,14 @@ FG_SLOT_ALIAS = {
     "shooter_att_c": "shooter_att_c__{k}",
     "prior_season_make_c": "prior_season_make_c__{k}",
     "has_prior_season": "has_prior_season_fg",
+    # fg_make round 4 (experiments.md section 19). `_alias` only adds a key
+    # when the real column EXISTS in the inputs' own `slot_names`, so these two
+    # are a no-op against the stock engine inputs and every pre-round-4
+    # `ENGINE_FG_MAKE` value keeps resolving exactly as before. They resolve
+    # only against a slot block built by
+    # `scripts/build_engine_inputs_shotshooter.py --with-round4`.
+    "shooter_shrunk_dev_c": "shooter_shrunk_dev_c__{k}",
+    "prior_season_att_c": "prior_season_att_c__{k}",
 }
 FT_SLOT_ALIAS = {"has_prior_season": "has_prior_season_ft"}
 
@@ -365,6 +373,33 @@ class ClockAdapter:
 # ===========================================================================
 # fg_make -- make probability per shot class, keyed on the shooter
 # ===========================================================================
+#: The shooter column every artifact built before fg_make round 3 was keyed on.
+#: A manifest that does not declare `shooter_key` predates the round-3 fix, so
+#: this is the honest value to report for it, not a guess.
+ES_DEFAULT_SHOOTER_KEY = "participant_1_id"
+
+#: `ENGINE_FG_MAKE` prefix -> (artifact round directory, the trainer that
+#: writes it). Every round from 2b on serves a DATED S1 schedule of the same
+#: shape, so `_load_dated` handles all of them and the round directory is never
+#: hard-coded inside it. Order matters only in that no prefix may be a prefix of
+#: another; `round2_` is NOT here (it is the static round-2 loader).
+_FG_DATED_ROUNDS: tuple[tuple[str, str, str], ...] = (
+    ("round2b_", "round2b", "scripts/train_fg_make_v2b_s1.py"),
+    ("round3_shooter_", "round3_shooter", "scripts/train_fg_make_v3_shooter.py"),
+    ("round4_", "round4", "scripts/train_fg_make_v4_shooter_block.py"),
+)
+_FG_ROUND_NOTE = {
+    "round2b": ("fg_make round 2b (experiments.md s15): the round-2 winner under "
+                "the standing S1 scheme; shooter keyed on participant_1_id (L28/L29)"),
+    "round3_shooter": ("fg_make round 3 (experiments.md s18, L29): the round-2b arm "
+                       "retrained with the shooter keyed on shot_shooter_id; the "
+                       "INTERIM served model, Decision-8 shooter slope open on "
+                       "FGA_jump2 and FGA_3"),
+    "round4": ("fg_make round 4 (experiments.md s19): the shooter block re-baked "
+               "from scratch on shot_shooter_id"),
+}
+
+
 @dataclass
 class FgMakeAdapter:
     plans: dict[str, FeaturePlan]
@@ -374,23 +409,28 @@ class FgMakeAdapter:
     source: dict
     provisional: bool
 
-    #: `winner` (the adopted round-1 artifacts, the default and the historical
-    #: behaviour), `round2_S_A` .. `round2_S_E` (fg_make round 2,
-    #: `docs/models/fg_make/experiments.md` section 13) or `round2b_S_C_s1`
-    #: (round 2b, section 15: the same arm as a monthly S1 schedule).
+    #: `winner` (the adopted round-1 artifacts, the historical behaviour),
+    #: `round2_S_A` .. `round2_S_E` (fg_make round 2,
+    #: `docs/models/fg_make/experiments.md` section 13), `round2b_S_C_s1`
+    #: (round 2b, section 15: the same arm as a monthly S1 schedule),
+    #: `round3_shooter_S_C_s1` (round 3, section 18 + L29: the same arm again,
+    #: trained with the shooter keyed on `shot_shooter_id`; the interim served
+    #: model and today's DEFAULT), or `round4_<arm>` (round 4's shooter-block
+    #: bake-off, section 19).
     mode: str = "winner"
-    #: round 2b only: one `ArtifactManifest` per shot class, and the fitted
-    #: model per (class, refit segment). The per-game artifact choice is made by
-    #: `cbb_sim.engine.manifest`, never here, because S1 is the standing scheme
-    #: for EVERY sub-model and that rule lives in one place.
+    #: Every DATED round (2b, 3, 4): one `ArtifactManifest` per shot class, and
+    #: the fitted model per (class, refit segment). The per-game artifact choice
+    #: is made by `cbb_sim.engine.manifest`, never here, because S1 is the
+    #: standing scheme for EVERY sub-model and that rule lives in one place.
     manifests: dict = field(default_factory=dict)
     models_by_seg: dict = field(default_factory=dict)
 
     @classmethod
     def load(cls, inp: EngineInputs, fold: str = "F2", fg3: str = "decision8",
              mode: str = "winner") -> FgMakeAdapter:
-        if mode.startswith("round2b_"):
-            return cls._load_round2b(inp, fold, mode)
+        for prefix, round_dir, trainer in _FG_DATED_ROUNDS:
+            if mode.startswith(prefix):
+                return cls._load_dated(inp, fold, mode, prefix, round_dir, trainer)
         if mode != "winner":
             return cls._load_round2(inp, fold, mode)
         plans, arms, models, fsets, src = {}, {}, {}, {}, {}
@@ -466,19 +506,26 @@ class FgMakeAdapter:
         return cls(plans, arms_, models, fsets, src, provisional, mode=mode)
 
     @classmethod
-    def _load_round2b(cls, inp: EngineInputs, fold: str, mode: str) -> FgMakeAdapter:
-        """fg_make round 2b: one arm served as a dated S1 schedule per class."""
-        arm = mode.removeprefix("round2b_")
-        d = FG_DIR / "round2b" / arm
+    def _load_dated(cls, inp: EngineInputs, fold: str, mode: str, prefix: str,
+                    round_dir: str, trainer: str) -> FgMakeAdapter:
+        """One fg_make arm served as a DATED S1 schedule per shot class.
+
+        Round 2b was the first such round and this used to be `_load_round2b`
+        with `round2b` hard-coded in the path. Rounds 3 and 4 produce artifact
+        sets of exactly the same shape in their own directories, so the round
+        directory is now derived from the `ENGINE_FG_MAKE` prefix
+        (`_FG_DATED_ROUNDS`) rather than typed in. Every previously valid
+        `ENGINE_FG_MAKE` value still resolves to the same files."""
+        arm = mode.removeprefix(prefix)
+        d = FG_DIR / round_dir / arm
         if not d.exists():
             raise FileNotFoundError(
-                f"{d} missing; run scripts/train_fg_make_v2b_s1.py, or pass "
-                "ENGINE_FG_MAKE=winner")
+                f"{d} missing; run {trainer}, or pass ENGINE_FG_MAKE=winner")
         plans, arms_, models, fsets, src, mans, by_seg = {}, {}, {}, {}, {}, {}, {}
         for cls_name, key in (("FGA_rim", "rim"), ("FGA_jump2", "jump2"), ("FGA_3", "three")):
             mpath = d / f"manifest_{cls_name}.json"
             if not mpath.exists():
-                raise FileNotFoundError(f"{mpath} missing; run scripts/train_fg_make_v2b_s1.py")
+                raise FileNotFoundError(f"{mpath} missing; run {trainer}")
             obj = json.loads(mpath.read_text(encoding="utf-8"))
             man = ArtifactManifest.from_obj(obj, d, inp.games)
             loaded = tuple(joblib.load(e.path) for e in man.entries)
@@ -499,9 +546,9 @@ class FgMakeAdapter:
             src[cls_name] = {"path": str(d), "arm": "lgbm", "scheme": "S1",
                              "feature_set": obj["feature_set"], "round2_arm": obj.get("arm"),
                              "adopted": bool(loaded[-1].get("adopted", False)),
+                             "shooter_key": obj.get("shooter_key", ES_DEFAULT_SHOOTER_KEY),
                              **man.provenance(),
-                             "note": "fg_make round 2b (experiments.md s15): the round-2 "
-                                     "winner under the standing S1 scheme"}
+                             "note": _FG_ROUND_NOTE[round_dir]}
         provisional = not all(v.get("adopted") for v in src.values())
         return cls(plans, arms_, models, fsets, src, provisional, mode=mode,
                    manifests=mans, models_by_seg=by_seg)
@@ -679,10 +726,16 @@ class Adapters:
     @classmethod
     def load(cls, inp: EngineInputs, fold: str = "F2", season: int = 2025) -> Adapters:
         ev_mode = os.environ.get("ENGINE_EVENT", "reference")
-        ck_mode = os.environ.get("ENGINE_CLOCK", "reference")
+        ck_mode = os.environ.get("ENGINE_CLOCK", "v3c_srfloor_P3_s1")
         rot_mode = os.environ.get("ENGINE_ROTATION", "reference")
         fg3 = os.environ.get("ENGINE_FG3", "decision8")
-        fg_mode = os.environ.get("ENGINE_FG_MAKE", "round2b_S_C_s1")
+        # DEFAULT, 2026-09-10 (PM decision recorded in L29 and the change
+        # ledger): the corrected-label round-3 arm. Round 2b is keyed on
+        # `participant_1_id`, which L28 proved is the ASSISTER on half of all
+        # assisted made field goals, so it is ineligible to be SERVED on data
+        # integrity -- the same precedence round 2 applied to the leaked S-A.
+        # `round2b_S_C_s1` stays selectable for reproduction.
+        fg_mode = os.environ.get("ENGINE_FG_MAKE", "round3_shooter_S_C_s1")
         if rot_mode != "reference":
             raise NotImplementedError(
                 "the rotation bake-off adopted nothing; ENGINE_ROTATION=reference "
