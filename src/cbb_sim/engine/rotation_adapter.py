@@ -209,7 +209,7 @@ class RotationBatch:
 def init_batch(fit: RotationFit, share: np.ndarray, srank: np.ndarray,
                fpm: np.ndarray, pavail: np.ndarray, book, rows: np.ndarray,
                round4: dict | None = None, fitset: FitSet | None = None,
-               round5: dict | None = None):
+               round5: dict | None = None, round6: dict | None = None):
     """Open the rotation for 2N team-simulations.
 
     `share`/`srank`/`fpm`/`pavail` are (2n, S) gathers of the per-(game, side)
@@ -221,6 +221,8 @@ def init_batch(fit: RotationFit, share: np.ndarray, srank: np.ndarray,
     per-row choice). `None` means the static fit, which is built here as a
     schedule of length one so there is exactly one code path.
     """
+    if round6 is not None:
+        return init_batch_round6(fit, share, srank, fpm, pavail, book, rows, round6)
     if round5 is not None:
         return init_batch_round5(fit, share, srank, fpm, pavail, book, rows, round5)
     if round4 is not None:
@@ -302,6 +304,13 @@ def next_lineup(rb, period: np.ndarray, seconds_remaining: np.ndarray,
     foul-out rule the scheduler enforces and the foul-out the box score reports
     are the same number. `live` selects the rows whose game is still running.
     """
+    if isinstance(rb, Round6Batch):
+        if prev_end is None or team_fouls is None:
+            raise ValueError("ENGINE_ROTATION=round6 needs `prev_end` and "
+                             "`team_fouls`; the loop carries both")
+        return next_lineup_round6(rb, period, seconds_remaining, home_score_diff,
+                                  last_duration, fouls, book, rows, live,
+                                  prev_end, team_fouls, shared)
     if isinstance(rb, Round5Batch):
         if prev_end is None or team_fouls is None:
             raise ValueError("ENGINE_ROTATION=round5 needs `prev_end` and "
@@ -1130,3 +1139,255 @@ def round5_rows(r5: dict, game_rows: np.ndarray) -> dict:
             "rho": r5["RHO"], "draw_exit": r5["draw_exit"],
             "draw_entry": r5["draw_entry"], "coupled": r5["coupled"],
             "hard_reset": True}
+
+
+# ===========================================================================
+# ENGINE_ROTATION=round6 -- the entry COMPOSITION conditioned on who left
+# ===========================================================================
+#: Round 5's wave draw and round 4's hazards, unchanged, with round 5's RANK
+#: exit rule and one of the three round-6 entry rules
+#: (`docs/models/rotation/experiments.md` section 14):
+#:
+#:   T1  w_j = (p_in/(1-p_in))**tau, one fitted scalar per artifact;
+#:   K1  the number of predicted STARTERS entering drawn from
+#:       `P(k_in | size, k_out)` where `k_out` is read off the leavers, then a
+#:       temperature-1 race WITHIN each class;
+#:   A1  log w_j += mean over the leavers of `logA[tier(leaver), tier(j)]`,
+#:       with tiers from the as-of start rank (1-5 / 6-7 / 8-9 / 10+).
+#:
+#: `next_lineup_round6` is a copy of `next_lineup_round5` with the entry block
+#: replaced and nothing else touched, so a round-5 run started by another lane
+#: cannot change behaviour because round 6 exists.
+#:
+#: STATED RNG DIVERGENCE beyond round 5's: the draw block is `2S + 4` wide, not
+#: `2S + 3` -- every round-6 arm draws the `k_in` uniform whether or not it uses
+#: it (14.11), so the three arms are paired with each other and NOT with W4.
+
+
+@dataclass
+class Round6Batch(Round5Batch):
+    """Round 5's batch plus the three composition objects and the slot tiers."""
+
+    mode: str = "T1"
+    tau: np.ndarray | None = None        # (n_seg,)
+    kin: np.ndarray | None = None        # (n_seg, MAX_WAVE, 6, 6)
+    log_a: np.ndarray | None = None      # (n_seg, N_TIER, N_TIER)
+    tier: np.ndarray | None = None       # (2n, S) int64
+
+
+def init_batch_round6(fit: RotationFit, share: np.ndarray, srank: np.ndarray,
+                      fpm: np.ndarray, pavail: np.ndarray, book, rows: np.ndarray,
+                      coefs: dict) -> Round6Batch:
+    """Open the round-6 rotation. Availability, the share normalisation and the
+    opening five come from `init_batch_round5` unchanged, so round 5 and round 6
+    differ only in how the entrants of a wave are chosen."""
+    rb5 = init_batch_round5(fit, share, srank, fpm, pavail, book, rows, coefs)
+    tier = np.digitize(np.asarray(srank, dtype=np.int64), [6, 8, 10])
+    return Round6Batch(**vars(rb5), mode=str(coefs["mode"]), tau=coefs["tau"],
+                       kin=coefs["kin"], log_a=coefs["log_a"], tier=tier)
+
+
+def next_lineup_round6(rb: Round6Batch, period: np.ndarray,
+                       seconds_remaining: np.ndarray, home_score_diff: np.ndarray,
+                       last_duration: np.ndarray, fouls: np.ndarray, book,
+                       rows: np.ndarray, live: np.ndarray, prev_end: np.ndarray,
+                       team_fouls: np.ndarray, shared: np.ndarray | None = None
+                       ) -> np.ndarray:
+    S = rb.n_slots
+    half = rb.n
+    two_n = 2 * half
+
+    credit = live & rb.started
+    if credit.any():
+        d = last_duration.astype(np.float64)
+        c = credit[:, None]
+        rb.played += d[:, None] * rb.prev_on * c
+        rb.half_min += (d[:, None] / 60.0) * rb.prev_on * c
+        rb.state_min += (d[:, None] / 60.0) * c
+        u_f = np.zeros((two_n, S))
+        sel = np.flatnonzero(credit)
+        u_f[sel] = book.draw_block("rotation_foul", rows[sel], S)
+        hit = (u_f < rb.fpm * (d[:, None] / 60.0) * rb.fit.foul_rate_scale) \
+            & rb.prev_on & c
+        fouls += hit.astype(fouls.dtype)
+
+    cur_half = (period >= 2).astype(np.int8)
+    newhalf = live & (cur_half != rb.prev_half)
+    if newhalf.any():
+        rb.half_min[newhalf] = 0.0
+    rb.prev_half = np.where(live, cur_half, rb.prev_half)
+
+    margin = np.concatenate([home_score_diff[:half], -home_score_diff[half:]])
+    f_model = fouls.astype(np.float64)
+    tf_model = np.asarray(team_fouls, dtype=np.float64)
+    if rb.freeze:                       # Decision 10
+        margin = np.zeros_like(margin)
+        f_model = np.zeros_like(f_model)
+        tf_model = np.zeros_like(tf_model)
+
+    out_of_fouls = fouls >= FOUL_OUT
+    eligible = rb.avail & ~out_of_fouls
+    n_elig = eligible.sum(axis=1)
+    on = rb.onmask
+    bench_ok = ~on & eligible
+    n_bench = bench_ok.sum(axis=1)
+
+    foul_state = ((f_model >= 4.0) & on).any(axis=1).astype(np.int64)
+    cell = V5.wave_cell(prev_end, period, seconds_remaining, margin, foul_state)
+    pw = rb.p_wave[rb.seg, cell]
+    cdf = rb.size_cdf[rb.seg, cell]
+
+    u = book.draw_block("rotation_sub", rows, 2 * S + 4)
+    u_race = u[:, S:2 * S]
+    u_wave, u_size, u_k = u[:, 2 * S], u[:, 2 * S + 1], u[:, 2 * S + 3]
+
+    forced = (on & out_of_fouls).sum(axis=1)
+    wave = (u_wave < pw) | (forced > 0)
+    size = (u_size[:, None] > cdf).sum(axis=1) + 1
+    size = np.maximum(size, forced)
+    size = np.minimum(np.minimum(size, n_bench), 5)
+    size = np.where(wave, size, 0)
+
+    X = V4.design(rb.is_starter, rb.share, f_model, rb.state_min, rb.half_min,
+                  period, seconds_remaining, margin, prev_end, tf_model)
+    p_out = _sigmoid(np.einsum("msf,mf->ms", X, rb.w_out) + rb.b_out[:, None])
+    p_in = _sigmoid(np.einsum("msf,mf->ms", X, rb.w_in) + rb.b_in[:, None])
+
+    # ---- the exit side is round 5's rank rule, for every round-6 arm -------
+    k_out_key = np.where(out_of_fouls, -1e12, -p_out)
+    leaving = _pick_k(on, k_out_key, size)
+
+    # ---- the entry side: the round-6 rule ---------------------------------
+    pi = np.clip(p_in, 1e-9, 1.0 - 1e-9)
+    logw = np.log(pi) - np.log1p(-pi)
+    is_st = rb.is_starter > 0.5
+    if rb.mode == "T1":
+        lw = rb.tau[rb.seg][:, None] * logw
+    elif rb.mode == "A1":
+        L = np.stack([(leaving & (rb.tier == t)).sum(axis=1)
+                      for t in range(rb.log_a.shape[1])], axis=1).astype(np.float64)
+        avg = np.einsum("mt,mtb->mb", L, rb.log_a[rb.seg]) \
+            / np.maximum(size, 1)[:, None]
+        lw = logw + np.take_along_axis(avg, rb.tier, axis=1)
+    else:
+        lw = logw
+    w = np.exp(lw - lw.max(axis=1, keepdims=True))
+    key_in = -np.log(np.clip(u_race, 1e-12, 1.0)) / np.maximum(w, 1e-300)
+
+    if rb.mode == "K1":
+        k_out = (leaving & is_st).sum(axis=1)
+        n_st = (bench_ok & is_st).sum(axis=1)
+        n_bn = (bench_ok & ~is_st).sum(axis=1)
+        row = rb.kin[rb.seg, np.clip(size, 1, 5) - 1, np.clip(k_out, 0, 5)]
+        lo = np.maximum(0, size - n_bn)
+        hi = np.minimum(size, n_st)
+        j = np.arange(row.shape[1])[None, :]
+        row = np.where((j >= lo[:, None]) & (j <= hi[:, None]), row, 0.0)
+        tot = row.sum(axis=1, keepdims=True)
+        ccdf = np.cumsum(np.where(tot > 0, row / np.where(tot > 0, tot, 1.0), 0.0),
+                         axis=1)
+        k_in = (u_k[:, None] > ccdf).sum(axis=1)
+        k_in = np.where(tot[:, 0] > 0, k_in, lo)
+        k_in = np.clip(k_in, lo, np.maximum(hi, lo))
+        entering = (_pick_k(bench_ok & is_st, key_in, k_in)
+                    | _pick_k(bench_ok & ~is_st, key_in, size - k_in))
+    else:
+        entering = _pick_k(bench_ok, key_in, size)
+
+    act = live & (on.sum(axis=1) == 5) & (size > 0)
+    if act.any():
+        a = act[:, None]
+        rb.onmask = np.where(a, (rb.onmask & ~leaving) | entering, rb.onmask)
+
+    if rb.hard_reset:
+        newper = live & (period.astype(np.int16) == 2) & (rb.prev_period == 1) \
+            & (n_elig >= 5)
+        if newper.any():
+            k = np.where(eligible[newper], rb.srank[newper].astype(np.float64), 1e9)
+            pick = np.argsort(k, kind="stable")[:, :5]
+            nm = np.zeros_like(rb.onmask[newper])
+            np.put_along_axis(nm, pick, True, axis=1)
+            rb.onmask[newper] = nm
+    rb.prev_period = np.where(live, period.astype(np.int16), rb.prev_period)
+
+    cnt = rb.onmask.sum(axis=1)
+    bad = live & (cnt != 5)
+    if bad.any():
+        rb.diag["rotation_five_repaired"] = rb.diag.get("rotation_five_repaired", 0) \
+            + int(bad.sum())
+        score = np.where(eligible[bad], rb.share[bad], _NEG) \
+            + 10.0 * rb.onmask[bad].astype(np.float64)
+        pick = np.argsort(-score, kind="stable")[:, :5]
+        nm = np.zeros_like(rb.onmask[bad])
+        np.put_along_axis(nm, pick, True, axis=1)
+        rb.onmask[bad] = nm
+
+    stuck = rb.onmask & out_of_fouls
+    if stuck.any():
+        for _ in range(2):
+            rowsel = np.flatnonzero(stuck.any(axis=1) & live)
+            if not len(rowsel):
+                break
+            for r in rowsel:
+                bad_slots = np.flatnonzero(stuck[r])
+                pool = np.flatnonzero(~rb.onmask[r] & eligible[r])
+                pool = pool[np.argsort(-rb.share[r][pool], kind="stable")]
+                for aa, bb in zip(bad_slots, pool):
+                    rb.onmask[r, aa] = False
+                    rb.onmask[r, bb] = True
+            stuck = rb.onmask & out_of_fouls
+
+    changed = rb.onmask != rb.prev_on
+    rb.state_min = np.where(changed & live[:, None], 0.0, rb.state_min)
+    rb.prev_on = np.where(live[:, None], rb.onmask, rb.prev_on)
+    rb.started |= live
+    return np.argsort(~rb.onmask, kind="stable")[:, :5].astype(np.int16)
+
+
+ROUND6_DIR = ROUND4_DIR / "round6"
+ROUND6_MANIFEST = ROUND6_DIR / "rotation_v6_manifest.json"
+ROUND6_ARMS = ("T1", "K1", "A1")
+
+
+def round6_arm() -> str:
+    a = os.environ.get("ENGINE_ROTATION_ARM", "T1")
+    return a if a in ROUND6_ARMS else "T1"
+
+
+def load_round6(games, arm: str | None = None,
+                manifest_path: Path | None = None) -> dict:
+    """Round 5's wave schedule plus round 6's composition schedule.
+
+    Both manifests carry the same refit dates by construction, and that is
+    ASSERTED here rather than assumed: a game must select the same segment in
+    both, or the wave table and the composition object could come from different
+    windows."""
+    from cbb_sim.engine.manifest import ArtifactManifest
+    from cbb_sim.models import rotation_v6 as V6
+
+    r5 = load_round5(games, arm="W4")          # rank exit, the round-6 exit rule
+    man6 = ArtifactManifest.from_json(Path(manifest_path or ROUND6_MANIFEST), games)
+    if len(man6.entries) != len(r5["manifest"].entries):
+        raise ValueError("round-6 and round-5 manifests have different lengths")
+    if not np.array_equal(man6.seg_of_game, r5["seg_of_game"]):
+        raise ValueError("round-6 and round-5 manifests select different segments")
+    fits = [V6.CompFit.from_json(e.path) for e in man6.entries]
+    nm = arm or round6_arm()
+    out = dict(r5)
+    out.update({
+        "manifest6": man6, "arm": nm,
+        "TAU": np.array([f.tau for f in fits], dtype=np.float64),
+        "KIN": np.stack([f.kin for f in fits]),
+        "LOG_A": np.stack([f.A for f in fits]),
+        "comp_sources": [e.path.name for e in man6.entries],
+        "provenance6": man6.provenance(),
+    })
+    return out
+
+
+def round6_rows(r6: dict, game_rows: np.ndarray) -> dict:
+    d = round5_rows(r6, game_rows)
+    d.update({"mode": r6["arm"], "tau": r6["TAU"], "kin": r6["KIN"],
+              "log_a": r6["LOG_A"], "draw_exit": False, "draw_entry": True,
+              "coupled": False})
+    return d

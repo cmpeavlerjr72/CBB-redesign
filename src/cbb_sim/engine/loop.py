@@ -215,6 +215,10 @@ def simulate_chunk(inp: EngineInputs, ad: Adapters, game_index: np.ndarray,
     # per (game, boundary) SHARED by the two team rows, so it is keyed on
     # (seed, game_id) WITHOUT the side fold that `rot_book` carries.
     r5 = RA.load_round5(inp.games) if RA.rotation_mode() == "round5" else None
+    # ENGINE_ROTATION=round6 serves round 5's wave draw with the entry
+    # COMPOSITION conditioned on who left (`models/rotation_v6.py`,
+    # experiments.md section 14). Default-off: `reference` is unchanged.
+    r6 = RA.load_round6(inp.games) if RA.rotation_mode() == "round6" else None
     wave_book = (StreamBook(seeds, gids, families=("rotation_wave",))
                  if (r5 is not None and r5["coupled"]) else None)
     # ENGINE_ROTATION_SCHEME=s1: R2's fitted objects are a SCHEDULE (rotation
@@ -228,6 +232,7 @@ def simulate_chunk(inp: EngineInputs, ad: Adapters, game_index: np.ndarray,
         inp.rot_pavail[gg, two], rot_book, rot_rows,
         round4=None if r4 is None else RA.round4_rows(r4, gg),
         round5=None if r5 is None else RA.round5_rows(r5, gg),
+        round6=None if r6 is None else RA.round6_rows(r6, gg),
         fitset=None if rot_s1 is None else RA.r2_s1_fitset(rot_s1, gg))
     # the rotation decides foul-outs off the same counters the box score reports,
     # so the (2n, S) block is the single source of truth until the game is over
