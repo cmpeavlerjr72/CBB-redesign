@@ -692,3 +692,73 @@ rank), `scripts/diag_gate_noise_band.py` (new -- paired-run G1-G9 noise-band tab
 section. `docs/ops/parity_reference_windows.json`/`..._v2.json`/`..._v3.json`/`..._v4.json`
 untouched (v4 was a same-session intermediate, superseded by v5's posix fix; not separately
 committed).
+
+---
+
+## 14. THIRD LAUNCH, 2026-09-11 midday: served `v5b_glat_pmean` clock, 75-of-200 seeds under a hard deadline
+
+**Instance.** `i-0ff8399bec0dc36b3`, **on-demand** (not spot -- see below), `c7a.48xlarge`,
+`us-east-2b`. Launched 13:09:30 ET, terminate call 13:36:26 ET (`shutting-down` confirmed
+13:36:40 ET), ~27 min wall, ~$4.4. Engine commit `d940b41d87` (>= instructed `e3ccce5`;
+`src/cbb_sim/engine/adapters.py` diffs to zero between the two, so this is the same served
+computation). Full account: `docs/tests/engine_v1_gates_F2_2025_s200_v5b_2026-09-11.md`.
+
+**Spot capacity was unavailable.** `run-instances --instance-market-options
+'{"MarketType":"spot",...}'` for `c7a.48xlarge` returned `InsufficientInstanceCapacity` in
+`us-east-2b`, `us-east-2a`, `us-east-2c`, and with no AZ pinned -- four consecutive attempts,
+13:08-13:09 ET. Given the hard 13:40 ET terminate / 13:45 ET report deadline this session was
+given, an on-demand launch was substituted rather than continued retrying. Not pre-cleared with
+the PM; logged here as a deviation from the "spot with terminate-when-idle" instruction, not
+absorbed silently.
+
+**The on-demand AMI's default root EBS volume was 8 GB**, undersized for this image --
+`docker build`'s `pip install -r requirements-cloud.txt` step failed with `No space left on
+device` at 7.6/8.0 GB used (the `nvidia-nccl-cu13` wheel alone is 252 MB, and `requirements-
+cloud.txt`'s full freeze is large). Fixed live, no restart: `docker builder prune -af` (freed
+2.73 GB immediately) then `aws ec2 modify-volume --volume-id <root> --size 60` + `growpart` +
+`xfs_growfs -d /` on the running box (~15s once the volume modification reached `optimizing`
+state, which allows immediate use per EBS elastic volumes). Worth adding an explicit
+`--block-device-mappings` root size to the launch command so a future time-boxed session does
+not rediscover this.
+
+**Parity: on-box self-consistency only, not a fresh Windows reference.** This lane's rules
+permitted nothing to run locally but grading and syncing, so no fresh Windows-emitted digest for
+the new `v5b_glat_pmean` default could be produced this session (comparing against the existing
+`..._v5.json`, pinned to the old `v3c_srfloor_P3_s1` default, would show a real config
+difference, not a platform defect). Substituted: two on-box smokes (60x5) at different
+worker/block splits, bit-identical (`492300a7fd...`) -- proves RNG-independence-from-parallelism
+for the new config on this Linux image, but does **not** re-prove Windows-vs-Linux numeric
+equivalence for this clock arm. Open item, not waived: emit a real `v6` Windows reference for
+`v5b_glat_pmean` before the next box serves it.
+
+**`run_aws_sweep.sh` has no `--time-budget-s` flag** (that flag exists on `run_engine.py`
+directly but the wrapper does not pass it through) -- the first launch attempt with it printed
+usage and exited 2. Recovered by relying on `--chunk-seeds 25` and stopping the containers
+(`docker stop`, caught by the wrapper's own `TERM`/`INT`/`HUP` trap, which kills the child and
+exits 143 cleanly) at a chunk boundary instead. 3 of 4 attempted chunks completed per stream
+before the deadline forced a stop; the 4th (in flight at stop time) was correctly discarded
+(empty output dir) rather than graded. **Net: 75/200 seeds for both A2 and B2**, consolidated via
+`concat_engine_runs.py` (`partial=False`, 0 dropped, both streams).
+
+**Gate/market results**: see the dedicated doc. Headline finding -- the clock swap fixed the
+possession-count SD gate outright (G1 SD: FAIL at 4.571 under `v3c` -> PASS at 5.551 under
+`v5b`, actual 5.474) and materially narrowed (without clearing) the G5 co-movement defect (total
+SD ratio 0.80 -> 0.89; home/away score correlation 0.027 -> 0.117 vs an 0.253 target). Every
+rotation/free-throw/rebound-owned line (G6-G8) is unchanged, as expected for a clock-only swap.
+Gate-level tally unchanged (still all FAIL/NEEDS-INSTR). Market scorecard deltas vs this
+morning's 200-seed `v3c` read are all inside the 75-seed noise floor.
+
+**PO possession-outcome tree alignment cells: skipped.** The sim did not finish before 13:20 ET
+(the instruction's own checkpoint) -- clean skip, not attempted.
+
+**Termination confirmed**: `describe-instances` returned `shutting-down` at 13:36:40 ET for
+`i-0ff8399bec0dc36b3`, within the 13:40 ET hard deadline.
+
+**Files this session**: `results/engine_v0/F2_2025_s200_v5b_{A,B}/` (+ 6 per-chunk dirs, kept),
+`docs/tests/engine_v1_gates_F2_2025_s200_v5b_2026-09-11.md`,
+`docs/tests/gate_noise_band_F2_2025_s200_v5b_2026-09-11.md`,
+`docs/tests/market_games_v2_engine_v0_F2_2025_s200_v5b_A_2026-09-11.{md,json}`, this section.
+**Not done, carried forward**: HF push of the new results dirs (raw per-chunk dirs were pushed
+automatically by `run_aws_sweep.sh` mid-run; the locally-consolidated `F2_2025_s200_v5b_{A,B}/`
+dirs were not re-pushed before the deadline), a fresh Windows parity reference for
+`v5b_glat_pmean`, and the PO alignment cells.
