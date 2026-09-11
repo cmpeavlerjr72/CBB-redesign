@@ -1809,3 +1809,300 @@ but it is a behaviour change for every engine run started after this commit and
 any paired comparison that straddles it is invalid.
 
 ---
+
+## 12. Round 5 pre-registration -- the joint substitution wave (PM-directed, worker-authored 2026-09-11)
+
+Written and committed BEFORE any round-5 arm was run. Evidence it is built on:
+`docs/tests/rotation_wave_audit_2026-09-11.md`, also written and committed
+before this section, and round 4's own results (section 11).
+
+### 12.1 Why round 5 changes the DRAW and not the family
+
+Round 4 changed family and proved two things at once (L30):
+
+* the fitted per-player hazards reproduce **every** marginal rate the audit
+  measured -- at a period boundary a bench player's exit is 0.786 predicted
+  against 0.791 actual, an off-floor starter's entry 0.771 against 0.780
+  (section 11.1) -- so nothing is wrong with the fit;
+* and the arms built on them cannot make a coordinated substitution. They
+  substitute **43% too often** (0.2058 per boundary against 0.1518), run **19.7
+  distinct lineups** per team-game against 14.84, lose **11 pp** at the
+  second-half tip when the reset must be earned, and compress the late-game
+  margin response to 12.4 pp against 22.7 (section 11.11).
+
+The defect is the **independence assumption of the sampler**, not the family:
+five independent Bernoulli coins spread the same total exits over more
+boundaries, and each extra churn event resamples the floor toward the arm's
+unconditional mix. Round 5 therefore keeps round 4's fitted hazards **byte for
+byte** and changes only how a boundary is drawn:
+
+1. one Bernoulli per (team, boundary) -- *is there a wave here* -- from a cell
+   table over (`prev_end`, time cell, margin band, foul state);
+2. a wave **size** from a categorical over the same cell;
+3. a **composition** from round 4's own per-player exit/entry hazards;
+4. optionally one shared dead-ball draw so the two teams' waves correlate, with
+   every marginal preserved exactly.
+
+The PM's direction for round 5, not to be reopened: the wave mechanism, the same
+eight state cells as round 4, plus substitutions per boundary and distinct
+lineups per game as gates.
+
+### 12.2 The model
+
+**The cell.** 324 = 6 `prev_end` x 9 time cells x 3 margin bands x 2 foul
+states, where the foul state is 1 when any player on the floor carries >= 4
+personal fouls. In 2024, 153 cells carry n >= 300 and hold **99.39%** of all
+boundaries (audit 1.3). Every component is state the possession loop already
+has at a boundary.
+
+**The two tables.** `p_wave[cell]` and `p_size[cell, 1..5]`, each fitted by
+**two-level shrinkage** -- cell -> (`prev_end` x time cell) -> `prev_end` ->
+root -- with the shrinkage constant fixed at **k = 300**, the project's
+UNDERPOWERED threshold. `k` is declared here and is NOT tuned: no grid, no
+selection over it, and each parent is a marginalisation of the same counts, so
+each level is the maximum-likelihood estimate of its own coarser model. Both
+objects are lookup tables by construction, so the sim loop makes no model call
+(`CLAUDE.md`).
+
+**The composition.** Round 4's fitted logistic hazards, unchanged and not
+refitted: `rotation_v4_sub_static.json` and `rotation_v4_sub_S1_{YYYYMM}.json`,
+copied into each round-5 artifact so an artifact is self-contained. Given a
+wave of size s, the s leavers come out of the five on the floor and the s
+entrants off the eligible bench, by one of two knob-free rules per side:
+
+* **rank** -- the s largest `p_out` leave, the s largest `p_in` enter;
+* **draw** -- an Efraimidis-Spirakis race weighted by `p/(1-p)`, i.e. weighted
+  sampling without replacement, which is round 4's own entry rule.
+
+A player with five fouls leaves first and forces a wave; the wave size is then
+at least the number of fouled-out players. That is a rule of the game, not a
+fitted term.
+
+**The hard second-half reset** (round 4's H1/H3 form: the model's own predicted
+starting five among the eligible, at the first possession of period 2 only) is
+part of **every** round-5 arm. Round 4's H2 landed 11 pp short with an earned
+reset and the audit's probe lands 15-19 pp short with the wave draw and no hard
+reset (audit 6, row "H2 tip (earned)"), so two families in two rounds have now
+failed it from below and the question is **closed**, not re-opened.
+
+**The coupling (W3 only).** One shared uniform per (game, boundary): with
+probability `rho` both teams compare their own cell probability to the SAME
+uniform, otherwise each uses its own. `rho` is one fitted scalar, by moment
+matching on the training window's joint counts,
+`P(both) = rho E[min(p_A,p_B)] + (1-rho) E[p_A p_B]`, over non-period
+boundaries. Marginals are preserved exactly, because a uniform shared with the
+other team is still a uniform. The audit measures the residual dependence the
+scalar exists to carry: observed P(both) 0.0749 against 0.0296 under the fitted
+cells, residual lift **2.53**, **rho = 0.393** on 2024 (audit 5).
+
+**Deliberately EXCLUDED, with the number.** A timeout indicator: P(wave) is
+0.4967 at a timeout against 0.1371 elsewhere and timeouts carry 13.3% of all
+waves (audit 2). The engine has no timeout model, so a wave probability
+conditioned on it could be fitted offline and could not be evaluated in
+simulation -- the same class of exclusion as `is_transition` in `features.md`
+section 3 and as round 4's own (10.2). Round 5 IS the test of whether the wave
+draw makes it unnecessary.
+
+### 12.3 Arms
+
+| arm | composition (exit / entry) | coupling | simplicity | status |
+|---|---|---|---:|---|
+| `R2_hier_dirichlet` (S1) | -- | -- | 1 | reference (incumbent) |
+| `H1_sub_hazard` (S1) | round 4's independent coins | -- | 2 | reference (round 4's best) |
+| `W1_wave_rank` | rank / rank | no | 3 | candidate |
+| `W2_wave_draw` | draw / draw | no | 4 | candidate |
+| `W4_wave_rank_draw` | rank / draw | no | 5 | candidate |
+| `W5_wave_draw_rank` | draw / rank | no | 6 | candidate |
+| `W3_wave_coupled` | rank / rank | yes, `rho` | 7 | candidate |
+
+W1 and W2 are the PM's two endpoints; W3 is the PM's coupling arm. **W4 and W5
+are added by the worker on L25 grounds and the reason is recorded before the
+fit**: the audit's reachability probe (audit 6) shows the target lies STRICTLY
+INSIDE the composition grid, with the two uniform rules as its endpoints --
+distinct lineups 10.85 (W1) < 15.37 actual < 17.54 (W2), close-and-late starter
+share 0.6896 (W2) < 0.7388 actual < 0.7878 (W1). Pre-registering only the
+endpoints would pre-register two arms the probe already says cannot pass, and
+L25 exists to stop exactly that. The grid is exhaustive: two sides, two
+knob-free rules, four members, all four run.
+
+The PM's simplicity ordering `R2 < W1 < W2 < W3` is preserved; the two mixed
+rules sit between the uniform rules and the coupled arm because each is less
+simple than either uniform rule and simpler than adding a fitted scalar.
+`H1` is graded as a reference and is **not adoptable in round 5**: it is
+unchanged from round 4, where it failed 3 of the 8 state cells.
+
+### 12.4 Scheme, folds, and what is refitted
+
+**Scheme: S1 for every arm**, per round 3b (section 9.4) and round 4 (10.4).
+Windows are the calendar months of the 2024-25 season; a game uses the parameter
+set whose window closed before its tipoff; the first window's training data is
+2024 alone. The static column is reported for the winner and for W1 only, not
+for every arm, and that is a stated deviation from round 4 taken to keep the
+round inside its compute budget.
+
+**Folds.** F1 = train 2024, test 2025, which IS the standing fold 2; CBBD
+carries no on-floor data before 2023-24 (L13) so no other fold exists. **This is
+the selection fold and the only one.** Within-2025 walk-forward (the six S1
+windows reported separately) is the robustness check and is reported only if an
+arm is otherwise adoptable. 2026 stays sealed (`seal.assert_not_sealed` guards
+the trainer).
+
+**What round 5 fits: the two wave tables and `rho`, per window, and nothing
+else.** Base fits (`rotation_fit_v3.json`, `rotation_fit_v3_S1_*.json`) and the
+round-4 hazards (`rotation_v4_sub_*.json`) are REUSED, not refitted; nothing is
+written to any of them. Consequence, stated so it cannot be read as a
+coincidence: any difference between a round-5 arm and H1 is a difference in the
+DRAW alone.
+
+**The two reference columns are taken from round 4's results JSON**
+(`rotation_F1_round4_results.json`), not re-simulated: the same 1,600-game
+universe, the same subset seed 2025, the same sim seeds 0-2, the same base fits,
+the same grading functions and the same hazards reproduce them by construction.
+A **1-seed re-run of H1 is executed as a reproduction check** and its cells are
+reported next to round 4's; if any cell moves by more than its floor-A SD the
+reference columns are discarded and both arms are re-run in full. This is
+declared in advance because it is a deviation from "one grading script scores
+every arm in this run".
+
+### 12.5 Test universe and grading path
+
+The **same** 1,600-game subset of 2025 that rounds 2, 3, 3b and 4 used (numpy
+RandomState seed 2025), 3 seeds per arm under S1, one blind grading path:
+`train_rotation_v1.build_row` / `verdict` / `rotation.aggregate_stats`, extended
+by `train_rotation_v4.extra_cells` for the two second-half-tip cells and
+`train_rotation_v4.minutes_mae` for the primary metric, and by
+`train_rotation_v5.wave_cells` for the two new gate cells. Sim and actual go
+through the identical functions. Any cell with n < 300 player-games or
+possessions is labelled UNDERPOWERED.
+
+### 12.6 Gates
+
+**Every round-4 gate unchanged.**
+
+*G8 cells (report, not veto):* minutes mean +/- 2.0; minutes SD ratio pooled and
+within-player 0.9-1.1; top-5 and top-8 share of team minutes +/- 2 pp; players
+with > 0 minutes +/- 1.0.
+
+*The eight state cells (the veto), each +/- 3 pp:* starters' share of on-floor
+slots in the final 8:00 at \|m\| <= 5 / 6-15 / > 15; starters' share while
+carrying >= 4 fouls; the second-half TIP starter share in each of the three
+margin bands; and starters' share over H1 20:00-10:00 at \|m\| <= 5. **An arm
+missing ANY of the eight is ineligible regardless of G8 or of MAE.** The "at
+exactly 4 fouls" diagnostic is reported alongside.
+
+**Two NEW cells, also veto, with their tolerances stated here.**
+
+| new cell | definition | tolerance | why this number |
+|---|---|---|---|
+| `sub_rate_per_boundary` | fraction of possession boundaries at which the team's on-floor SET changes, `rotation.sim_change_rate`, computed identically on sim and on the actual sequence of the same universe | **+/- 0.015**, or 3x the floor-A seed SD if that is larger | 10% of the actual 0.1518. Round 4's arms sit at +0.054 (3.6 tolerances out) and R2 at -0.008 (inside), so the gate is neither vacuous nor unreachable |
+| `distinct_lineups_per_game` | `aggregate_stats.n_lineups_mean`, distinct five-man lineups per team-game | **+/- 1.5**, or 3x the floor-A seed SD if that is larger | 10% of the actual 14.84. Round 4's arms sit at +4.9 to +5.6 and R2 at +0.67 |
+
+Whichever of the two numbers is larger governs, and the governing one is named
+in the results table. Both cells are computed for ACTUAL on the round-5 test
+universe rather than quoted from the training season, so sim and actual are the
+same universe and the same function.
+
+**Lineup concentration (report):** top-1 / top-3 / top-5 five-man lineup share,
+K-S D of the top-1 lineup share, K-S D of per-player minutes, mean wave size and
+the wave-size histogram against the audit's.
+
+**Decision 8 (a condition on adoption):** team-games bucketed into quintiles of
+the pregame as-of share of team minutes going to the predicted starting five;
+the close-and-late cell per quintile for ACTUAL and every arm, with slope and
+Q5 - Q1. An arm whose profile is flat, or whose slope sign disagrees with
+actual, is reported as not matchup-specific whatever its pooled cells say.
+
+### 12.7 Primary metric
+
+**Per-player minutes MAE**, unchanged from round 4 (10.7): outer join of
+simulated and actual minutes on (game_id, team_id, pid) over the as-of rotation
+set (as-of `mpg >= 10`), per seed then averaged over seeds.
+
+### 12.8 Noise floor and the decision rule
+
+**Floor A, seed-varied sim runs:** 20 seeds x 150 games per arm, the SD of every
+gate cell, of the two new cells and of the MAE -- the round-3 and round-4
+configuration, so the three rounds' floors are comparable.
+
+**Floor B, spec-identical refit under a second seed:** the wave tables refitted
+from a different training-game sample (fit seed 101 vs 11) and simulated under a
+different sim seed (23 vs 7), graded on the same 150-game universe. Run on
+**W1**, the new object round 5 adds. An arm counts as beating a reference on a
+cell only if its improvement exceeds the refit-to-refit spread on that cell.
+
+**Decision rule.** Adopt the **simplest** arm that
+
+1. passes **every** one of the eight state cells at +/- 3 pp, AND
+2. passes **both** new cells at the tolerances of 12.6, AND
+3. beats `R2_S1` on per-player minutes MAE by more than the floor, AND
+4. satisfies the Decision 8 slope check, AND
+5. passes the Decision 10 checks of 12.9.
+
+Ties go to the simpler model in the order
+`R2 < H1 < W1 < W2 < W4 < W5 < W3`. An arm whose improvement on the cell it was
+built to fix does not clear floor B is not adopted on that cell. **If no arm is
+eligible, adopt nothing**, report which cell fails and by how much, and name the
+diagnosis. No gate is relaxed to produce a winner and no cell is dropped after
+seeing a result.
+
+### 12.9 Decision 10: closed loop, BOTH the freeze and the refit-without
+
+Every round-5 arm consumes `margin` and `fouls` twice over -- in the wave cell
+and in round 4's composition hazards -- and the engine produces both. L31 fixed
+the protocol: *"every Decision-10 gate runs both the frozen arm and the refit-
+without-feature arm before any magnitude is quoted"*, because a freeze detects a
+loop and only a refit sizes one.
+
+Paired-stream runs of **5 seeds over the fixed 500-game subset** of the F2 2025
+slate (sorted by `game_id` ascending, every 11th row, the first 500 -- the same
+subset the clock round-3c and rotation round-4 checks use), reporting margin SD
+ratio, home/away score correlation, possessions per game and per-player minutes
+MAE. Sub-model flags pinned on every run and recorded in `run_meta.json`:
+`ENGINE_EVENT=round2_s1`, `ENGINE_FG_MAKE=round3_shooter_S_C_s1`,
+`ENGINE_CLOCK=reference`.
+
+| run | what it is |
+|---|---|
+| winner, live | the arm as served |
+| winner, `ENGINE_ROTATION_FREEZE=1` | margin held at 0 and the personal/team-foul counts at 0 FOR THE ROTATION MODEL ONLY; foul accrual, the foul-out eviction and the box-score counters stay live |
+| winner, **refit-without** | the wave tables refitted with the margin band and the foul state MARGINALISED OUT of the counts before the shrinkage -- the maximum-likelihood fit of the state-free cell model on the same rows, not an ablation of a fitted coefficient -- and round 4's hazards refitted on the same rows with every margin and foul column dropped |
+| H1, live and frozen | round 4's arm, re-run so the two rounds' closed loops are the same comparison |
+
+A winner that moves margin SD ratio, home/away correlation or possessions
+outside the G1/G2 tolerances between live and frozen is not adopted, and no
+magnitude for the loop is quoted from the freeze alone.
+
+### 12.10 Engine expressibility (a condition on adoption)
+
+`wave_cell()` is written over (M,) arrays and is called with M = 1 offline and
+M = 2N in the engine, exactly as `rotation_v4.design()` is, so the offline
+sampler and the adapter cannot drift apart. The wave draw is one uniform per
+(team, boundary), the size an inverse-CDF lookup on a gathered (2N, 5) row, and
+the composition an argsort over the 15 roster slots -- all vectorised, no model
+call. W3 needs one extra uniform per (game, boundary) shared by the two team
+rows, drawn from a game-keyed `StreamBook` family. The winner ships behind
+`ENGINE_ROTATION=round5` (plus `ENGINE_ROTATION_ARM`) with S1 artifacts per
+month and a manifest in the `engine/manifest.py` format under
+`data/processed/models/rotation/round5/`. The two stated RNG divergences of
+`docs/models/engine/model.md` section 4.5 apply unchanged, and the shared
+coupling stream is a third.
+
+### 12.11 Disclosures
+
+1. The audit's reachability probe (audit section 6) was run before this section
+   was written and its numbers are cited here, which is what L25 requires. It
+   used the real starting fives, the real participant pools and the real foul
+   sequence, so it is not a bake-off result and is never quoted as one.
+2. W4 and W5 were added to the arm list after seeing that probe. The probe
+   measures the FAMILY's frontier, not an arm's score on the gates, and no gate,
+   tolerance or metric was changed after seeing it.
+3. The reference columns for R2 and H1 are taken from round 4's results JSON
+   rather than re-simulated (12.4), with a 1-seed H1 reproduction check.
+4. The static column is reported for W1 and the winner only, not for every arm.
+5. `k = 300` in the shrinkage and the `prev_end` x time-cell parent are fixed
+   from the audit's cell-coverage table before any arm was fitted.
+6. `scripts/diag_rotation_wave_v5.py` and `src/cbb_sim/models/rotation_v5.py`
+   existed before this section was committed: the audit script is the evidence
+   this section is built on, and the model module was needed to compute the
+   `rho` of 12.2 from the audit's own counts. Neither had been run against a
+   gate, a bake-off universe or a verdict.
