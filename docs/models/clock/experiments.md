@@ -2337,3 +2337,121 @@ mis-specified, in the same commit as the result.
   latent reproduces +17% of that; A6's fitted tempo coefficient closes both
   ends and still misses Q2 by 16%. That is the target a round 6 would have, and
   it is a DISPERSION-function question, not a family question.
+
+## 18. PROPOSED -- Round 5 closed-loop gate: the PACE-EFFICIENCY lines (written 2026-09-11 by the ENGINE lane; NOT YET RUN, NOT YET ACCEPTED by this lane)
+
+**Status: PROPOSED. Nothing below has been run. No arm is selected here, no
+served default is touched, and this section selects nothing -- round 5's
+selection is section 17's and is already closed on fold 2.** This is a proposal
+for the *closed-loop gate* that round 5's winner has to pass before it can ship,
+covering a consequence of the same defect that section 16's pre-registration
+does not measure. The clock lane owns it and may accept, amend or reject it.
+
+Evidence and the full derivation: `docs/tests/pace_efficiency_sign_2026-09-11.md`.
+
+### 18.1 Why the engine lane is proposing a clock gate
+
+`docs/tests/engine_v1_variance_ot_diag_2026-09-11.md` section 4 found that the
+engine's within-game `corr(possessions, eFG%)` is **-0.1976** where the season
+reads +0.0454, priced it at 39% of the G5 total-SD gap, and ranked **fg_make**
+as the responsible sub-model. Re-measured like for like (the season
+matchup-residualised, which is the object the engine's across-seed read
+actually corresponds to), the target is **+0.0050**, not +0.0454, and the
+attribution comes out differently:
+
+| slope of eFG on P, per possession | SIM (within game) | ACTUAL (matchup-resid.) | gap | share |
+|---|---:|---:|---:|---:|
+| total | -0.001399 | +0.000034 | -0.001433 | 100% |
+| COMPOSITION channel (outcomes -> pace) | -0.001660 | -0.001384 | -0.000276 | 19.3% |
+| **RESIDUAL-PACE channel (pace not caused by outcomes)** | **+0.000262** | **+0.001418** | **-0.001156** | **80.7%** |
+
+`Var(P_resid)` within game is **40.17** against the season's **90.19**, and its
+efficiency slope is 0.18x. That is section 17's missing game-level pace
+realisation, read from the efficiency side instead of the dispersion side:
+because durations are i.i.d., 73% of the engine's within-game pace variance is
+clock draw noise and 27% is outcome composition, with no exogenous tempo
+component at all, so the correlation is forced negative.
+
+Three things the engine lane measured that bound this to the clock and rule out
+the alternatives, all in the evidence doc:
+
+- **fg_make is not responsible.** Its served transition lift is **1.63x its own
+  design's**, not short: design `is_transition_f` lift +7.80 / +1.98 / +0.60 pp
+  by class against a served +11.26 / +5.29 / +0.79 pp. The +32.5 pp figure that
+  makes fg_make look short comes from the possessions table's POST-OUTCOME
+  `is_transition` / `duration_s`, the column the change ledger bans at L5; on
+  fg_make's own `chance_elapsed_s` the lift is +6.5 pp and the engine serves
+  +9.4 pp.
+- **The composition LEVER is right to 2.9%**: made_FG minus DREB duration is
+  **7.066 s** in the engine against **7.274 s** in the season. The 19.3% row
+  above is L34's `prev_end` MIX (made-FG starts -3.0 pp, DREB starts +2.1 pp),
+  already owned, and no new round is proposed for it here.
+- **The transition population and its pace responsiveness are right**:
+  transition share 0.1587 against 0.1642, `corr(P, transition share)` +0.5793
+  against +0.5035, `d(trans share)/dP` +0.002692 against +0.002440.
+
+So the engine's own SERVED efficiency already rises with pace
+(`corr(P, served eFG) = +0.2260`); the negative sign is entirely the
+realisation channel, and the reason it is not offset is that the engine has no
+pace variation the outcomes did not cause.
+
+### 18.2 The proposed gate
+
+1. **Candidates.** **A1 `v5_glat_shared`** (section 17's winner, `sigma` FROZEN
+   at its fold-fitted 0.047248 -- no refit in the loop) against **R
+   `v3c_srfloor_P3_s1`** (the served reference). **A2 `v5_glat_team`** as the
+   per-team variant and **A4 `v5_ar1`** as the within-game-correlation
+   alternative that adds no latent, both report-only, so the round can say
+   whether a SHARED latent specifically is what moves the efficiency line.
+   Paired streams, identical seeds, one engine commit.
+2. **Primary metric.** Within-game (across-seed) **`corr(P, eFG%)`**, both teams
+   pooled, regulation, against the matchup-residualised season target
+   **0.000**, band **+-0.05**. Reported ALWAYS beside the served-eFG slope from
+   the per-possession tap (`scripts/diag_pace_efficiency_poss_log_v1.py`), so
+   the state channel and the realisation channel are never conflated again --
+   that conflation is what produced the original mis-attribution.
+3. **Folds and universe.** Selection is section 17's and is not re-opened. This
+   is a **Decision-10 closed-loop gate** on the engine's F2/2025 slate, 500
+   games x 25 seeds, paired, every `ENGINE_*` flag pinned to the values in
+   `results/engine_v0/F2_2025_s200_rewire1/run_meta.json` and the engine commit
+   recorded in the run report. Per L31, report BOTH the freeze and the
+   refit-without instrument, and state whether the frozen value is inside the
+   model's operating range.
+4. **Floor.** (a) A spec-identical refit of A1 under a second fit seed --
+   section 17.3 already has it at 0.0242 possessions; (b) **the seed-offset
+   floor for `corr(P, eFG%)` itself, which has never been measured and MUST be
+   measured before the primary metric is read** -- two disjoint seed windows of
+   the SAME configuration, the method
+   `docs/tests/gates_pair_seedfloor_20_2026-09-11.md` used for G1-G9. No
+   movement is called a finding until that band exists.
+5. **Decision rule.** A1 ships only if **all four** hold: (a) `corr(P, eFG%)`
+   moves toward zero by more than its measured floor; (b) no G1-G9 gate line
+   regresses beyond its own floor; (c) the per-team-tempo and per-team-scoring
+   quintile tables stay flat -- the engine's are flat at -0.19 to -0.21 across
+   all ten cells today, and a fix that moves the slate mean by concentrating the
+   change in one tier is a FAIL; (d) the served-eFG slope stays positive. Ties
+   go to R, per CLAUDE.md. **No multiplier, cap, clip, offset or calibration
+   curve on eFG%, on any make rate, or on the possession count is an admissible
+   response to any outcome of this round.**
+
+**Expected movement, stated in advance so the round cannot be read
+retrospectively.** Arithmetic on the measured decomposition, NOT a
+re-simulation: taking within-game `Var(P)` from 54.92 to 98.9 at the engine's
+own measured served slope (+0.000279/possession, a LOWER bound for a
+multiplicative latent) moves `corr(P, eFG%)` from **-0.1976 to about -0.124**,
+closing 37% of the distance to zero. **A1 is therefore expected to IMPROVE the
+line and NOT to close it**, and an outcome near -0.12 is a pass on the
+pre-registered rule, not a disappointment. If A1 lands at or beyond 0.00 the
+arithmetic was wrong and the round must say so.
+
+### 18.3 Report-only, not a gate
+
+Re-measure the residual after A1: the arithmetic leaves `corr(P, eFG%)` at
+about -0.071 once the pace latent and L34's `prev_end` mix are both corrected.
+That residual corresponds to the engine's served efficiency response to pace
+being +0.000279 where the season's non-composition channel is +0.001418. It is
+**not attributable to any sub-model today**, because the engine has almost no
+exogenous pace variation for its models to respond to and the served slope is
+measured on a mixture that is 73% i.i.d. noise. Naming an owner before the
+latent ships would repeat the mis-attribution this section corrects. Round 5's
+closed loop should print the number and stop there.
