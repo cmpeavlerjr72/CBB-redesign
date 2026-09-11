@@ -1,4 +1,111 @@
-# ENGINE v0 -- resume state (2026-09-10, evening session)
+# ENGINE v1 -- resume state (2026-09-11, overnight session)
+
+Supersedes the 2026-09-10 evening version, which is kept below in full because
+every diagnosis in it is still live. Gate read:
+`docs/tests/engine_v1_gates_F2_2025_s200_2026-09-11.md` (PROVISIONAL, 50 of 200
+seeds). Architecture: `docs/models/engine/model.md`.
+
+---
+
+## 0. What changed on 2026-09-11 (the rewiring)
+
+**Every sub-model that has adopted a winner or a scheme is now served BY
+DEFAULT.** Until tonight four were wired but not defaulted, so a run that did
+not export the right environment variable silently served a superseded arm.
+
+| flag | now | authority |
+|---|---|---|
+| `ENGINE_INPUTS_VERSION` | `v2` | required by `round4_B1` |
+| `ENGINE_EVENT` | `round2_s1` | possession_outcome round 2 |
+| `ENGINE_FG_MAKE` | `round4_B1` | fg_make s20.6 |
+| `ENGINE_REBOUND` | `s1_weekly` (23 artifacts) | rebound S1 confirmation |
+| `ENGINE_FREE_THROW` | `s1_conf_aligned` (29) | free_throw S1 confirmation |
+| `ENGINE_ROTATION_SCHEME` | `s1` (6) | rotation round 3b s9.4 |
+| `ENGINE_CLOCK` | `v3c_srfloor_P3_s1` | the clock lane owns it (L31) |
+
+1. **Engine inputs v2** (`build_engine_inputs.py --version v2`, 8.6 s) --
+   versioned siblings `*_F2_2025_v2.*`, composed from v1 so byte-identity of
+   every non-shooter array is a property of the construction and is asserted,
+   not claimed. Three things change: the 15 fg_make shooter slot columns
+   (re-keyed on `shot_shooter_id`), 10 round-4 columns appended, and
+   `usage_rate` rebuilt off the usage round-2 panel with every (prior, m)
+   unchanged. `EngineInputs.load` resolves `ENGINE_INPUTS_VERSION`; an
+   explicitly named missing version RAISES.
+2. **`run_meta.json` carries `max_train_date` per family per artifact**, and
+   `grade_market_games_v2.py` now asserts `max_train_date < tipoff` on **9
+   artifact schedules across 6 families** (5710/5710 rows each) instead of 2
+   paths. `usage` reports static and is not fabricated a date.
+3. **`engine_commit` + a per-file dirty-tree list** in `run_meta.json` (commit
+   `0cfd68a`), so a paired design can prove it did not straddle an engine
+   change instead of bisecting for it.
+4. **Parity digest v3**: `docs/ops/parity_reference_windows_v3.json`, sha256
+   `09260d82...`, git `493a818eeb`, reproducible across worker/block splits.
+   NOT comparable to v2 -- four flags moved, three are new.
+5. **20/20 engine tests**, five of them new.
+
+## 1. The gate read (PROVISIONAL, 50 seeds)
+
+`results/engine_v0/F2_2025_s200_rewire1`: 5,710 games x **50 complete seeds of
+200 requested**, 41.6M possessions, 500 of 1,920 blocks, 5,368 poss/s on 12
+local workers (447/core, contended). A full 200-seed slate needs ~8.3 h at
+that rate.
+
+**PASS 0 / FAIL 8 / NEEDS-INSTRUMENTATION 1 at the gate level -- and the
+engine is much better than v0, which was 0/6/3.** G4 and G8 moved from
+unmeasured to measured-and-failing, which is progress, not regression. At the
+LINE level v1 passes 7 lines v0 passed 0 of.
+
+| | engine v1 | engine v0 | actual |
+|---|---:|---:|---:|
+| margin SD ratio | **1.0265 PASS** | 1.5977 | 1.0 |
+| margin bias | **-0.210 PASS** | -1.819 | 0 |
+| total bias | -0.888 PASS* | +0.014 | 0 |
+| calibration slope | 0.891 | 0.181 | 1.0 |
+| possessions/game | 69.880 (+2.00) | 72.118 (+4.24) | 67.875 |
+| PPP | 1.0350 | 1.0090 | 1.0730 |
+| home/away score corr | +0.027 | -0.615 | +0.253 |
+| OT rate | 3.00% | 1.21% | 5.57% |
+| per-team-quintile slope | **0.843**, 4/4 | 0.555 | 1.0 |
+| market margin MAE / corr | **9.29 / 0.908** | 16.03 / 0.329 | close 8.74 |
+
+*Total bias passes on TWO CANCELLING ERRORS (OREB% -1.58 pp and FTA/FGA -1.24
+pp against possessions +2.00) and must be read as a fail.
+
+## 2. The three things to fix next, in size order
+
+1. **Possessions +2.0 while every per-possession rate lands within 1.6 pp.**
+   The clock owns it; round 4 is already on L31's duration-level shortfall.
+2. **Home/away score correlation +0.027 vs +0.253, total SD ratio 0.79.** Two
+   views of one defect: simulated opponents do not co-move. Nothing in the
+   cascade couples the two teams' scoring within a game except the shared
+   possession count.
+3. **The player layer: 8.79 players used vs 9.80, minutes SD ratio 1.23.** L30
+   named the cause; rotation round 5 pre-registers the wave model against it.
+
+## 3. Still open from this session
+
+- **The 200-seed run itself.** 50 seeds is a quarter of the floor.
+- **The seed-offset noise floor** (`--seed-offset 1000`) -- PENDING, never
+  startable tonight.
+- **`provisional_fg` still reads True**: the round-4 B1 joblibs carry
+  `adopted: false` (written before s20.6 decided). The fg_make lane should
+  re-export; the engine reports the artifact's own flag rather than overriding.
+- **fg_make B1 is monotone 2/4 on the jumper and three ON THE ENGINE'S OWN
+  roster-slot population** (4/4 on the attempt-weighted design population).
+  Not a Decision-8 failure -- a different cell of the same model. New, logged.
+- **Rotation S1 is half-scope**: it reaches the scheduler, the Dirichlet
+  concentrations and the tilt tables; the as-of prior construction still uses
+  the static fit (`rotation_s1_scope`). Inputs-v3 item.
+- **Per-class fg_make serving** (s20.8 item 2): `FGA_rim`'s own winner is BR,
+  worth 64.6 floors, and the adapter resolves one round directory for all
+  three classes.
+- The run is **not reproducible from a commit** (uncommitted clock lane file in
+  the tree at launch): `results/engine_v0_F2_2025_s200_rewire1_code_provenance.json`.
+
+---
+---
+
+# (superseded) ENGINE v0 -- resume state (2026-09-10, evening session)
 
 Supersedes the 16:35 version. Architecture: `docs/models/engine/model.md`.
 Gate read: `docs/tests/engine_v0_F2_2026-09-10.md` (read the **ADDENDUM** at the
