@@ -2455,3 +2455,113 @@ exogenous pace variation for its models to respond to and the served slope is
 measured on a mixture that is 73% i.i.d. noise. Naming an owner before the
 latent ships would repeat the mis-attribution this section corrects. Round 5's
 closed loop should print the number and stop there.
+
+---
+
+## 19. AMENDMENT -- the clock lane's response to section 18, and what this session's closed loop can and cannot say (2026-09-11)
+
+Written and committed BEFORE the closed-loop numbers of section 20 were read,
+for the same reason section 16 was committed before any fit existed. Sections
+16, 17 and 18 are append-only and are NOT edited; this section amends by
+addition.
+
+### 19.1 Section 18's three asks, answered
+
+**(1) "Treat the shared per-game latent arm `v5_glat_shared` as a mandatory arm
+in round 5."** Already satisfied, and independently: section 16.2 pre-registered
+`A1 v5_glat_shared` -- one multiplicative log-normal pace realisation per
+(seed, game), `E[A] = 1`, both offences scaled by it -- at **28b5f17**, before
+`clock_v5.py` existed and before section 18 was written. Section 17 makes it the
+round's leading candidate. `sigma` is **fitted walk-forward by method of moments
+on the fold's TRAINING seasons only** (F2 {2022, 2023, 2024}: 0.047248; F1
+{2022, 2023}: 0.046959) and is **FROZEN at the fold-fitted value inside the
+engine** -- the adapter reads it from the bake-off report and never refits. That
+is section 18.2 item 1's requirement met exactly, and the reason is stated
+rather than assumed: a parameter refitted inside the loop would be fitted on the
+test season.
+
+**(2) "Add within-game `corr(possessions, eFG%)`, target 0.000 +/- 0.05, as a
+secondary closed-loop line."** ACCEPTED as a line, DECLINED as a gate for this
+session's run, on section 18's own reasoning. `scripts/grade_clk5_dispersion_loop.py`
+computes it exactly as `docs/tests/engine_v1_variance_ot_diag_2026-09-11.md`
+section 4 defines it -- possessions and pooled eFG demeaned BY GAME across
+seeds, then correlated, so only within-game covariation enters -- and reports
+it for every arm beside the possession-count SD. It is **REPORT-ONLY here**
+because section 18.2 item 4 requires a seed-offset floor for that correlation
+before any movement in it is called a finding, that floor has never been
+measured, and this session runs **5 seeds, not 25**: at 5 seeds the per-game
+demeaning removes 500 of 2,500 degrees of freedom and the estimate is far
+noisier than the engine lane's 50-seed read. **No verdict in this lane turns on
+it.**
+
+**(3) "Append an amendment rather than editing."** This section.
+
+### 19.2 The two lanes are one finding, and the attributions agree
+
+Section 18 reaches the clock's missing pace realisation from the EFFICIENCY
+side; section 17 reaches it from the DISPERSION side. They are independent
+measurements of one defect and they agree quantitatively:
+
+| | engine lane (section 18) | clock lane (section 17) |
+|---|---|---|
+| what is missing | exogenous within-game pace: 73% of the engine's pace variance is i.i.d. clock noise, 27% outcome composition, **0% tempo realisation** | a game-level duration level: `tau = 0.802 s`, **98.9%** of the per-game `Var(Dbar)` gap |
+| the composition channel (L34's `prev_end` mix) | 19.3% of the efficiency-slope gap, already owned upstream | **-0.3%** of the dispersion gap, WRONG SIGN |
+| the conditional/served law | fg_make's transition lift is **1.63x** its design's -- not short | the clock's conditional SD ratio is **0.9977**, every powered `prev_end` cell within 1% |
+| the named remedy | a shared per-game pace latent | `v5_glat_shared`, `sigma = 0.047248` |
+
+Both lanes independently exonerate the sub-model that was first suspected
+(fg_make there, the conditional duration family here -- arm A5, which failed on
+every line), and both land on the same missing object. **That is one round, and
+section 17's selection stands as its offline half.**
+
+### 19.3 What this session's closed loop is, and what it is not
+
+**It is NOT section 18.2's gate.** That gate is 500 games x **25 seeds** with a
+measured seed-offset floor for `corr(P, eFG%)` and a full G1-G9 read, and it
+remains OPEN and unrun. This session runs, under its own brief:
+
+- **500 games x 5 seeds**, the section 14.4 subset, paired by construction
+  through the `(seed, game_id, family)` streams, 6 workers;
+- arms **R `v3c_srfloor_P3_s1`** (the served reference) and **A1
+  `v5_glat_shared`** with `sigma` frozen at 0.047248;
+- every other sub-model pinned by explicit environment value and recorded in
+  `run_meta.json` (`ENGINE_EVENT=round2_s1`,
+  `ENGINE_FG_MAKE=round3_shooter_S_C_s1`, `ENGINE_FG3=decision8`,
+  `ENGINE_ROTATION=reference`);
+- lines read: G1 possessions per team-game mean and **within-game SD** on both
+  game sets, the G5-definition total and margin SD ratios, `corr(home, away)`,
+  and `corr(P, eFG%)` report-only.
+
+**No floor is measured for any of these lines at 5 seeds**, so section 20
+reports movement and says explicitly which lines are large enough to survive
+any plausible floor and which are not. **Nothing is adopted on the strength of
+it and the served default does not move.**
+
+### 19.4 The engine wiring, stated because it is a change to shared code
+
+`v5_glat_shared` needed one thing the engine did not have: a per-SIMULATION
+identity at the clock call site. The adapter's `draw(team, state, u, gidx)`
+receives no seed, so it could not draw a latent that varies across seeds.
+Added, additively:
+
+- `LatentClockAdapter` in `src/cbb_sim/engine/clock_adapter_v3.py`, which wraps
+  the round-4 reference adapter, reads `sigma` from the bake-off report and
+  applies `D = round(A*T)` with `A = exp(sigma*z - sigma^2/2)`;
+- the latent's uniform is drawn off the EXISTING `clock` stream at a reserved
+  ordinal `2**40`. **No new RNG family**, so no other sub-model's stream moves
+  and paired arms still difference game by game (`CLAUDE.md`'s RNG rule). The
+  possession counter advances once per possession and cannot reach that
+  ordinal;
+- `loop.py` passes `book.keys["clock"][act]` only when the adapter sets
+  `wants_sim_keys`, which **no existing adapter does**, so every other arm
+  keeps its exact call and its exact draws; `book.draw("clock", act)` is called
+  exactly once per step on both paths;
+- `adapters.py::_load_clock` gains one `v5_` prefix branch. **The DEFAULT is
+  untouched and stays `v3c_srfloor_P3_s1`.**
+
+Two limitations recorded rather than discovered later: `scripts/run_clk4_closed_loop.py`
+prints "0 dated artifacts routed per game" for a `v5_` arm because
+`manifest_for` resolves only `V3C_MODES` -- the printout is wrong and the
+ROUTING is not, since the wrapped adapter loads all six entries and dispatches
+per game itself; and arm `A2 v5_glat_team`'s per-offence latent is NOT wired,
+because it needs the offensive side at the call site, so A2 stays offline.

@@ -272,6 +272,11 @@ def simulate_chunk(inp: EngineInputs, ad: Adapters, game_index: np.ndarray,
     # own dated artifacts per game (round-3c/4 S1 arms) or is a single static
     # object (the incumbent).
     clock_gidx = bool(getattr(ad.clock, "wants_game_index", False))
+    # Round 5 (docs/models/clock/experiments.md section 16): a clock arm with a
+    # per-SIMULATION latent needs the only per-simulation identity the loop
+    # holds, the (seed, game_id, "clock") stream key. No existing adapter sets
+    # this, so every other arm keeps its exact call and its exact draws.
+    clock_keys = bool(getattr(ad.clock, "wants_sim_keys", False))
     diag: dict[str, int] = {}
 
     def bump(k: str, v: int = 1) -> None:
@@ -298,8 +303,13 @@ def simulate_chunk(inp: EngineInputs, ad: Adapters, game_index: np.ndarray,
         # monthly refit, exactly as `ad.event.predict` and `ad.fg.predict` do.
         # The incumbent static `ClockAdapter` declares no `wants_game_index`
         # and keeps its three-argument call unchanged.
-        dur = (ad.clock.draw(team_off, x, book.draw("clock", act), gidx)
-               if clock_gidx else ad.clock.draw(team_off, x, book.draw("clock", act)))
+        u_clock = book.draw("clock", act)
+        if clock_keys:
+            dur = ad.clock.draw(team_off, x, u_clock, gidx, book.keys["clock"][act])
+        elif clock_gidx:
+            dur = ad.clock.draw(team_off, x, u_clock, gidx)
+        else:
+            dur = ad.clock.draw(team_off, x, u_clock)
         left = st.seconds_remaining[act].astype(np.int64)
         censored = dur >= left
         bump("possessions_censored_by_period_end", int(censored.sum()))

@@ -607,3 +607,133 @@ def summarise_cells(snaps: list[dict]) -> pd.DataFrame:
     out["mean_intended"] = tot["sum_intended"][idx] / tot["n"][idx]
     out["sum_consumed"] = tot["sum_consumed"][idx]
     return out
+
+
+# ===========================================================================
+# ROUND 5 (experiments.md section 16): the within-game duration latent
+# ===========================================================================
+#: `ENGINE_CLOCK` value -> the round-4 reference arm it wraps and the fitted
+#: parameter it reads. NOT ADOPTED and NOT a default: `adapters.py` still
+#: serves `v3c_srfloor_P3_s1` and this lane does not change it.
+V5_MODES: dict[str, dict] = {
+    "v5_glat_shared": {"base_mode": "v3c_srfloor_P3_s1", "unit": "game",
+                       "param": "A1_sigma"},
+}
+
+#: The bake-off's fitted parameters, read rather than re-derived. Same rule as
+#: round 3c's "the fitted object is READ, never reimplemented": the engine draws
+#: from the object the offline grade scored, with no second implementation.
+V5_PARAMS = CK_DIR / "v5_bakeoff" / "v5_bakeoff_report.json"
+
+#: The ordinal the game latent is drawn at on the `clock` stream. The
+#: possession counter advances once per possession and never approaches 2^40,
+#: so the latent's uniform can never collide with a duration draw -- and no new
+#: RNG family is introduced, so every other sub-model's stream is untouched and
+#: a paired arm still differences game by game (CLAUDE.md's RNG rule).
+LATENT_ORDINAL: int = 1 << 40
+
+
+@dataclass
+class LatentClockAdapter:
+    """The served cell law, scale-mixed by ONE pace realisation per simulation.
+
+    `CLAUDE.md`: "One pace realisation per simulated game, both teams scaled by
+    it. Dispersion comes from the model's own variance function and is
+    validated against realised residual SD." The clock has never implemented
+    the first sentence -- `clock.sample_from_pmf` draws every possession
+    independently -- and the measurement
+    (`docs/tests/clock_duration_dispersion_2026-09-11.md`) prices that omission
+    at 98.9% of the per-game possession-SD gap.
+
+    `A = exp(sigma*z - sigma^2/2)` so `E[A] = 1` exactly: the conditional MEAN
+    of every possession is unchanged and this arm cannot move round 4's mean
+    gate in its own favour. `sigma` is fitted by method of moments on TRAINING
+    rows only (`scripts/exp_clk5_dispersion_bakeoff.py`) and read from the
+    bake-off report; it is a random-effects parameter, not a multiplier on
+    engine output (`docs/SIM_GUARDRAILS.md` section 5).
+
+    Only `unit="game"` (arm A1) is wired. Arm A2's per-offence latent needs the
+    offensive side at the call site, which `loop.py` does not pass, and A1 is
+    the arm the pre-registered simplicity order puts first among the arms that
+    landed the primary -- so the closed loop runs A1 and A2 stays offline.
+    """
+
+    inner: ClockAdapterV3
+    sigma: float
+    unit: str
+    mode: str
+    source: dict
+    eoh: EohAccumulator = field(default_factory=EohAccumulator)
+    wants_game_index: bool = True
+    #: `loop.py` reads this and passes the active rows' (seed, game_id, "clock")
+    #: stream keys, which is the only per-SIMULATION identity the adapter has.
+    wants_sim_keys: bool = True
+
+    @classmethod
+    def load(cls, inp: EngineInputs, mode: str, season: int = 2025) -> LatentClockAdapter:
+        if mode not in V5_MODES:
+            raise NotImplementedError(
+                f"ENGINE_CLOCK={mode!r} is not a round-5 arm; known arms are "
+                f"{sorted(V5_MODES)} (docs/models/clock/experiments.md section 16)")
+        spec = V5_MODES[mode]
+        if not V5_PARAMS.exists():
+            raise FileNotFoundError(
+                f"{V5_PARAMS} missing; run scripts/exp_clk5_dispersion_bakeoff.py")
+        rep = json.loads(V5_PARAMS.read_text(encoding="utf-8"))
+        sigma = float(rep["params"]["F2"][spec["param"]])
+        inner = ClockAdapterV3.load(inp, spec["base_mode"], season)
+        src = dict(inner.source)
+        src.update({
+            "round5_arm": mode, "latent_unit": spec["unit"],
+            "latent_sigma": sigma, "latent_sigma_source": str(V5_PARAMS),
+            "latent_sigma_fold": "F2 train {2022,2023,2024}, method of moments",
+            "adopted": False,
+            "note": ("round-5 closed-loop candidate (experiments.md section 16); "
+                     "E[A]=1 scale mixture on the served cell law, NOT a default"),
+        })
+        return cls(inner=inner, sigma=sigma, unit=str(spec["unit"]), mode=mode,
+                   source=src)
+
+    def __getattr__(self, name: str):
+        """Everything this wrapper does not override is the inner adapter's.
+
+        Only reached when normal attribute lookup fails, so the dataclass's own
+        fields always win and the delegation cannot shadow them."""
+        return getattr(self.__dict__["inner"], name)
+
+    def _latent(self, keys: np.ndarray) -> np.ndarray:
+        from scipy.special import ndtri
+
+        from cbb_sim.engine.rng import uniforms_at
+        k = np.asarray(keys, dtype=np.uint64)
+        u = uniforms_at(k, np.full(len(k), LATENT_ORDINAL, dtype=np.int64))
+        return np.exp(self.sigma * ndtri(u) - 0.5 * self.sigma ** 2)
+
+    def pmf(self, team: np.ndarray, state: np.ndarray,
+            gidx: np.ndarray | None = None) -> np.ndarray:
+        """The BASE conditional law. The latent is a joint-law object and does
+        not belong in a per-row pmf the engine never integrates over; the
+        offline marginal that IS integrated lives in
+        `cbb_sim.models.clock_v5.LatentArm.pmf` and is what the blind scorer
+        read."""
+        return self.inner.pmf(team, state, gidx)
+
+    def draw(self, team: np.ndarray, state: np.ndarray, u: np.ndarray,
+             gidx: np.ndarray | None = None,
+             keys: np.ndarray | None = None) -> np.ndarray:
+        if keys is None:
+            raise ValueError(
+                f"ENGINE_CLOCK={self.mode} needs the per-simulation stream keys; "
+                "loop.py passes them when the adapter sets wants_sim_keys. "
+                "Refusing to draw a game latent that is constant across seeds.")
+        t = np.asarray(self.inner.draw(team, state, u, gidx), dtype=np.float64)
+        d = np.clip(np.rint(self._latent(keys) * t), 0.0, float(CK.DURATION_CAP))
+        left = state[:, self.inner.state_idx["seconds_remaining"]].astype(np.int64)
+        self.eoh.add(state[:, self.inner.state_idx["period"]], left, d)
+        return d
+
+    def eoh_snapshot(self) -> dict:
+        return self.eoh.snapshot()
+
+    def eoh_drain(self) -> dict:
+        return self.eoh.drain()
