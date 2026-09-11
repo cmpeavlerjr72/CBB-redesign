@@ -111,8 +111,18 @@ def main() -> int:
     in_tag = f"{args.fold}_{args.season}"
     inp = EngineInputs.load(args.input_dir, in_tag)
     ad = Adapters.load(inp, args.fold, int(args.season))
-    flags = {k: ad.flags[k] for k in ("ENGINE_EVENT", "ENGINE_CLOCK", "ENGINE_ROTATION",
-                                      "ENGINE_FG3")}
+    # EVERY adapter-selecting flag is passed to the workers EXPLICITLY, as the
+    # value the parent actually resolved. Before 2026-09-11 only four were, and
+    # `ENGINE_FG_MAKE` reached the workers solely because Windows `spawn` copies
+    # the parent's environment block -- so a default changed in `adapters.py`
+    # rather than in the environment would have been recorded by the parent and
+    # silently re-defaulted by each worker on any platform that does not.
+    # `ENGINE_INPUTS_VERSION` is the version the parent LOADED, which pins the
+    # workers to the same arrays instead of letting them re-resolve.
+    flags = {k: ad.flags[k] for k in (
+        "ENGINE_EVENT", "ENGINE_CLOCK", "ENGINE_ROTATION", "ENGINE_FG3",
+        "ENGINE_FG_MAKE", "ENGINE_REBOUND", "ENGINE_FREE_THROW",
+        "ENGINE_ROTATION_SCHEME", "ENGINE_INPUTS_VERSION") if k in ad.flags}
     print(f"engine_v0 {args.fold}/{args.season}: {inp.n_games} games, "
           f"{args.seeds} seeds, {args.workers} workers")
     print("adapters: " + json.dumps({k: v for k, v in ad.flags.items() if k != "sources"}))
@@ -206,6 +216,13 @@ def main() -> int:
         "possessions_per_second": round(n_poss / max(elapsed, 1e-9), 1),
         "workers": int(args.workers),
         "ast_is_placeholder": True,
+        "inputs_version": str(inp.meta.get("inputs_version_loaded", "v1")),
+        "inputs_tag": str(inp.meta.get("inputs_tag_loaded", in_tag)),
+        "input_dir": str(args.input_dir),
+        # `adapter_flags["max_train_date"]` carries, per sub-model and per
+        # artifact, the training window the engine actually served, so a grader
+        # can assert `max_train_date < tipoff` on EVERY family rather than on
+        # the event model alone. Written by `Adapters._train_dates`.
         "adapter_flags": ad.flags,
         "engine_rules_from_data": inp.rules,
         "inputs_meta": inp.meta,
