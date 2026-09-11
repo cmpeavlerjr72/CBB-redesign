@@ -49,19 +49,29 @@ Run: .venv/Scripts/python.exe scripts/hf_sync_data.py pull
 import argparse
 import os
 import re
+import shutil
 import subprocess
 import sys
+import tempfile
 import time
 from datetime import datetime
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 DATA_DIR = ROOT / "data"
-RESULTS_DIR = ROOT / "results"
-ENGINE_INPUTS_DIR = DATA_DIR / "processed" / "models" / "engine"
-MODEL_ARTIFACTS_DIR = DATA_DIR / "processed" / "models"
 REPO_ID = "mvpeav/cbb-sim-data"
 BULK_DIRS = ["raw", "results", "engine_inputs", "model_artifacts"]
+
+# Path each bulk key resolves to, relative to whatever root it's rooted at
+# (the repo by default; see `_root_for`'s `dest_root` param). This is also
+# the HF repo prefix each key pushes under (`push()` uses `path_in_repo=d`),
+# which is why `_local_to_remote`/`_remote_to_local_rel` below key off the
+# same strings.
+_REL_ROOT = {
+    "results": Path("results"),
+    "engine_inputs": Path("data") / "processed" / "models" / "engine",
+    "model_artifacts": Path("data") / "processed" / "models",
+}
 
 # Single wave -- unlike CFB there is no multi-wave priority split here yet.
 PUSH_WAVES = [
@@ -114,14 +124,48 @@ def with_retry(label: str, fn, max_attempts: int = 0, base_sleep: int = 30) -> b
             time.sleep(sleep)
 
 
-def _root_for(d: str) -> Path:
-    if d == "results":
-        return RESULTS_DIR
-    if d == "engine_inputs":
-        return ENGINE_INPUTS_DIR
-    if d == "model_artifacts":
-        return MODEL_ARTIFACTS_DIR
-    return DATA_DIR / d
+def _root_for(d: str, dest_root: Path = ROOT) -> Path:
+    """Local directory a bulk key resolves to, rooted at `dest_root`.
+
+    `dest_root` defaults to the repo (`ROOT`) for normal push/pull/status
+    use. `pull()` accepts an override (`--dest-root` on the CLI) so a
+    verification pull can land in a scratch directory instead of the repo --
+    see docs/ops/aws_launch_chain.md section 12.
+    """
+    rel = _REL_ROOT.get(d, Path("data") / d)
+    return dest_root / rel
+
+
+# Real-repo-rooted paths, used by the git-ignore-based `model_artifacts`
+# scan below (which shells out to `git check-ignore` against ROOT and so is
+# only meaningful for the real repo, never a `--dest-root` scratch pull).
+RESULTS_DIR = _root_for("results")
+ENGINE_INPUTS_DIR = _root_for("engine_inputs")
+MODEL_ARTIFACTS_DIR = _root_for("model_artifacts")
+
+
+def _local_to_remote(d: str, rel_path: str) -> str:
+    """Map a POSIX path relative to `_root_for(d)` to its path in the HF
+    repo. `push()` uploads each bulk dir with `path_in_repo=d`
+    (`upload_folder(folder_path=root, path_in_repo=d, ...)`), so a file at
+    `root/<rel_path>` lives on HF at `<d>/<rel_path>`."""
+    rel_path = rel_path.strip("/")
+    return f"{d}/{rel_path}" if rel_path else d
+
+
+def _remote_to_local_rel(d: str, remote_path: str) -> str:
+    """Inverse of `_local_to_remote`: strip the `<d>/` prefix HF preserves
+    on disk, returning a path relative to `_root_for(d)`.
+
+    This is the mapping `pull()` used to skip: it passed `local_dir=root`
+    straight to `snapshot_download`, which mirrors each file's *full* repo
+    path (including the `<d>/` prefix) under `local_dir`, landing files at
+    `root/<d>/<rel_path>` instead of `root/<rel_path>` -- one directory too
+    deep (docs/ops/aws_launch_chain.md section 12)."""
+    prefix = f"{d}/"
+    if not remote_path.startswith(prefix):
+        raise ValueError(f"{remote_path!r} does not start with expected prefix {prefix!r}")
+    return remote_path[len(prefix):]
 
 
 def _gitignored_files(root: Path) -> list[Path]:
@@ -219,23 +263,56 @@ def push(dirs: list[str], token: str, max_attempts: int) -> None:
     status(token)
 
 
-def pull(dirs: list[str], token: str, max_attempts: int) -> None:
+def pull(dirs: list[str], token: str, max_attempts: int, dest_root: Path = ROOT) -> None:
+    """Download each bulk dir from HF into `_root_for(d, dest_root)`.
+
+    `snapshot_download(local_dir=...)` mirrors each file's full repo path
+    (including the `<d>/` prefix `push()` uploads under) beneath `local_dir`.
+    Passing `local_dir=root` directly therefore used to land files at
+    `root/<d>/<rel_path>` -- one directory too deep (confirmed on the
+    2026-09-11 AWS launch for `engine_inputs`/`model_artifacts`; `raw`/
+    `results` share the same `_root_for`/`path_in_repo` shape and were
+    reproduced as having the identical bug). Fixed by downloading into a
+    scratch staging dir first, then moving each file from
+    `staging/<d>/<rel_path>` to `root/<rel_path>` via `_remote_to_local_rel`
+    -- the exact inverse of the `_local_to_remote` mapping `local_files()`
+    uses to compute what a push would put on the remote, so push-layout and
+    pull-layout are now provably the same mapping applied in both
+    directions. See docs/ops/aws_launch_chain.md section 12.
+    """
     from huggingface_hub import snapshot_download
 
-    log(f"pull <- {REPO_ID}; dirs={dirs}")
+    log(f"pull <- {REPO_ID}; dirs={dirs}; dest_root={dest_root}")
     for d in dirs:
-        root = _root_for(d)
+        root = _root_for(d, dest_root)
         root.mkdir(parents=True, exist_ok=True)
-        with_retry(
-            f"pull-{d}",
-            lambda d=d, root=root: snapshot_download(
-                repo_id=REPO_ID, repo_type="dataset", local_dir=str(root),
-                allow_patterns=[f"{d}/**"], token=token, max_workers=8,
-            ),
-            max_attempts=max_attempts,
-        )
+        staging = Path(tempfile.mkdtemp(prefix=f".hf_pull_staging_{d}_", dir=str(root)))
+        moved = 0
+        try:
+            ok = with_retry(
+                f"pull-{d}",
+                lambda d=d, staging=staging: snapshot_download(
+                    repo_id=REPO_ID, repo_type="dataset", local_dir=str(staging),
+                    allow_patterns=[f"{d}/**"], token=token, max_workers=8,
+                ),
+                max_attempts=max_attempts,
+            )
+            if not ok:
+                log(f"pull-{d}: download did not complete; moving whatever was staged")
+            staged_root = staging / d
+            if staged_root.is_dir():
+                for f in staged_root.rglob("*"):
+                    if not f.is_file():
+                        continue
+                    rel = _remote_to_local_rel(d, f.relative_to(staging).as_posix())
+                    dest = root / rel
+                    dest.parent.mkdir(parents=True, exist_ok=True)
+                    shutil.move(str(f), str(dest))
+                    moved += 1
+        finally:
+            shutil.rmtree(staging, ignore_errors=True)
         n = sum(1 for f in root.rglob("*") if f.is_file()) if root.is_dir() else 0
-        log(f"  {d}: {n} files")
+        log(f"  {d}: {n} files ({moved} moved this run)")
 
 
 def remote_files(token: str) -> set:
@@ -257,7 +334,7 @@ def local_files(dirs: list[str]) -> set:
             files = _model_artifacts_files(root)
         else:
             files = [p for p in root.rglob("*") if p.is_file()]
-        out |= {f"{d}/{p.relative_to(root).as_posix()}" for p in files}
+        out |= {_local_to_remote(d, p.relative_to(root).as_posix()) for p in files}
     return out
 
 
@@ -289,6 +366,11 @@ def main() -> None:
                     help="subset of the bulk dirs (default: all three)")
     ap.add_argument("--max-attempts", type=int, default=0,
                     help="retries per wave; 0 = forever (default, for overnight runs)")
+    ap.add_argument("--dest-root", type=Path, default=None,
+                    help="pull only: local root the bulk dirs resolve under "
+                         "(default: the repo). Lets a verification pull land in a "
+                         "scratch directory instead of the repo, e.g. to check the "
+                         "local<->remote path mapping without touching real data.")
     args = ap.parse_args()
     token = resolve_token()
     if args.action == "status":
@@ -296,7 +378,8 @@ def main() -> None:
     elif args.action == "push":
         push(args.dirs, token, args.max_attempts)
     else:
-        pull(args.dirs, token, args.max_attempts)
+        dest_root = args.dest_root.resolve() if args.dest_root else ROOT
+        pull(args.dirs, token, args.max_attempts, dest_root=dest_root)
 
 
 if __name__ == "__main__":

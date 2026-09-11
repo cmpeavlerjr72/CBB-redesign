@@ -523,9 +523,26 @@ around by hand on the box (`cp -a .../model_artifacts/. ...models/; rm -rf
 .../model_artifacts`, similarly for `engine_inputs`) rather than patched, given
 the session's time-box; `raw`/`results` likely have the same defect (untested
 here -- `raw` was skipped entirely per section 1, "not needed for a sim run").
-**This needs a real fix in `hf_sync_data.py`'s `pull()` before the next cloud
-launch** (either pass `local_dir=root.parent` plus a post-move, or strip the
-`f"{d}/"` prefix from downloaded paths) -- PM/worker follow-up, not done here.
+~~This needs a real fix in `hf_sync_data.py`'s `pull()` before the next cloud
+launch~~ **FIXED (Sonnet worker, 2026-09-11).** `pull()` now downloads each
+bulk dir into a scratch staging directory first (`snapshot_download(local_dir=
+<staging>, ...)`, which still mirrors the `<d>/`-prefixed repo path under
+`local_dir`), then moves each file from `<staging>/<d>/<rel_path>` to
+`root/<rel_path>` via the new `_remote_to_local_rel(d, remote_path)` -- the
+exact inverse of `_local_to_remote(d, rel_path)`, which `local_files()` (and
+now `pull()`) both use as the single source of truth for the prefix mapping.
+Confirmed **all four** `BULK_DIRS` keys had the identical defect (not just
+`engine_inputs`/`model_artifacts` as first suspected here), since all four
+share the same `_root_for`/`path_in_repo=d` shape. Verified by: (1) a dry-run
+`snapshot_download(..., dry_run=True)` reproducing the pre-fix
+`.../engine_inputs/arrays_F2_2025.npz` nesting; (2) `tests/test_hf_sync_paths.py`
+(44 cases, no network) proving `_local_to_remote`/`_remote_to_local_rel` are
+exact inverses for all four keys, including under an arbitrary `--dest-root`
+override; (3) a real `pull --dirs engine_inputs --dest-root <scratch dir>`
+(new CLI flag, defaults to the repo) landing all 20 files at the correct
+unnested relative paths, byte-identical (`cmp`) to the corresponding files
+already on disk under `data/processed/models/engine/`. Push layout now
+provably equals pull layout for every key.
 Separately, an early pull attempt against the pinned `huggingface_hub==1.31.0`
 (before the py3.9 incompatibility was caught) and a stray inline
 `HF_TOKEN='...'` shell-variable prefix together caused the token to appear
