@@ -73,12 +73,86 @@ EXPECTED_TOTAL_SECONDS = 2400.0
 _NEG = -1e12
 
 
-def _dirichlet_rows(p: np.ndarray, alpha: float, u: np.ndarray) -> np.ndarray:
+# ===========================================================================
+# ROTATION ROUND 3b: S1 as the TRAINING SCHEME, served per game
+# ===========================================================================
+#: Rotation round 3b adopted **S1** as the L4 rotation model's training scheme
+#: (`docs/models/rotation/experiments.md` section 9.4): no gate cell regressed
+#: beyond its floor, six improved beyond theirs, and every improvement moved
+#: toward the actual. Its own practical note said what the engine needed:
+#:
+#:   "The engine's rotation adapter currently loads ONE fit for a whole run
+#:    (`ad.rot_fit`). Running S1 in the engine needs the adapter to select a fit
+#:    per game by month. Because every fitted object S1 varies (tilt tables,
+#:    Dirichlet concentrations, `p_play`, `fpm`, the scheduler parameters) is a
+#:    lookup table or a scalar, this is a gather, not a new decision rule."
+#:
+#: `FitSet` is that gather, and nothing else. The DECISION RULE in
+#: `init_batch` / `next_lineup` is unchanged line for line; every place that
+#: read one scalar off `rb.fit` now reads a per-ROW value that is that row's
+#: game's fit, and every place that indexed one tilt table now indexes that
+#: game's table. With a single fit the per-row arrays are constant and the
+#: arithmetic is identical, which is what keeps `ENGINE_ROTATION_SCHEME=static`
+#: bit-for-bit reproducible against every gate report before 2026-09-11.
+#:
+#: SCOPE, STATED: S1 reaches what `RotationBatch` consumes -- the Dirichlet
+#: concentrations, `min_share`, the scheduler parameters and the two tilt
+#: tables. It does NOT yet reach the as-of PRIOR construction (`k0`,
+#: `role_prior`, `p_play`, the fpm shrinkage, `tail_ratio`, `w_dnp`), which
+#: `scripts/build_engine_inputs.py` bakes into the input arrays once per run
+#: from the static fit. That half is recorded in `run_meta.json` as
+#: `rotation_s1_scope` rather than left for a reader to discover.
+
+_FIT_SCALARS = ("alpha", "alpha_family", "alpha_starters", "alpha_bench",
+                "min_share", "ema_horizon", "lam_deficit", "swap_threshold",
+                "foul_rate_scale")
+
+
+@dataclass
+class FitSet:
+    """K dated `RotationFit`s plus the per-row choice among them."""
+
+    fits: tuple[RotationFit, ...]
+    seg: np.ndarray                  # (2n,) int64, which fit each row's game uses
+    scalars: dict                    # name -> (2n,) float64
+    tilt_state: np.ndarray           # (K, R, T, M)
+    tilt_foul: np.ndarray            # (K, F, T)
+    provenance: dict
+
+    @classmethod
+    def build(cls, fits, seg: np.ndarray, provenance: dict | None = None) -> "FitSet":
+        fits = tuple(fits)
+        seg = np.asarray(seg, dtype=np.int64)
+        scal = {k: np.array([float(getattr(f, k)) for f in fits],
+                            dtype=np.float64)[seg] for k in _FIT_SCALARS}
+        st = np.stack([np.asarray(f.tilt.state, dtype=np.float64) for f in fits])
+        fo = np.stack([np.asarray(f.tilt.foul, dtype=np.float64) for f in fits])
+        return cls(fits=fits, seg=seg, scalars=scal, tilt_state=st, tilt_foul=fo,
+                   provenance=dict(provenance or {}))
+
+    @classmethod
+    def single(cls, fit: RotationFit, two_n: int) -> "FitSet":
+        """A static fit is a schedule of length one, the same way a static
+        artifact is a manifest of length one (`engine/manifest.py`)."""
+        return cls.build([fit], np.zeros(int(two_n), dtype=np.int64),
+                         {"scheme": "static", "n_fits": 1})
+
+    def col(self, name: str) -> np.ndarray:
+        return self.scalars[name]
+
+
+def _dirichlet_rows(p: np.ndarray, alpha, u: np.ndarray) -> np.ndarray:
     """Row-wise Dirichlet(alpha * p) by inverse-CDF Gamma, the construction
     `usage._gamma_ppf` / `rotation._dirichlet` use (`rng.gamma` there; the exact
     inverse CDF here so the draw is a function of a counter-based uniform).
-    Rows whose mass is zero are returned unchanged."""
-    a = np.maximum(np.asarray(p, dtype=np.float64) * float(alpha), 1e-6)
+    Rows whose mass is zero are returned unchanged.
+
+    `alpha` is a scalar or one value PER ROW (the S1 schedule); a scalar is the
+    per-row case with every row equal, so the two paths are the same code."""
+    al = np.asarray(alpha, dtype=np.float64)
+    if al.ndim == 1:
+        al = al[:, None]
+    a = np.maximum(np.asarray(p, dtype=np.float64) * al, 1e-6)
     g = special.gammaincinv(a, np.clip(u, 1e-12, 1.0 - 1e-12))
     s = g.sum(axis=1, keepdims=True)
     ok = s[:, 0] > 0
@@ -87,9 +161,13 @@ def _dirichlet_rows(p: np.ndarray, alpha: float, u: np.ndarray) -> np.ndarray:
     return out
 
 
-def _apply_min_target(s: np.ndarray, avail: np.ndarray, min_share: float) -> np.ndarray:
-    """`rotation.apply_min_target`, row-wise."""
-    out = np.where(avail, np.maximum(s, float(min_share)), 0.0)
+def _apply_min_target(s: np.ndarray, avail: np.ndarray, min_share) -> np.ndarray:
+    """`rotation.apply_min_target`, row-wise. `min_share` is a scalar or one
+    value per row (the S1 schedule)."""
+    ms = np.asarray(min_share, dtype=np.float64)
+    if ms.ndim == 1:
+        ms = ms[:, None]
+    out = np.where(avail, np.maximum(s, ms), 0.0)
     tot = out.sum(axis=1, keepdims=True)
     bad = tot[:, 0] <= 0
     out[bad] = s[bad]
@@ -118,6 +196,9 @@ class RotationBatch:
     started: np.ndarray         # (2n,) bool, has a possession been credited yet
     diag: dict
     freeze: bool = False        # ENGINE_ROTATION_FREEZE (Decision 10)
+    #: the S1 schedule: per-row scheduler scalars and per-row tilt tables.
+    #: A static run carries `FitSet.single`, which is the same arithmetic.
+    fitset: FitSet | None = None
 
     @property
     def n_slots(self) -> int:
@@ -126,17 +207,22 @@ class RotationBatch:
 
 def init_batch(fit: RotationFit, share: np.ndarray, srank: np.ndarray,
                fpm: np.ndarray, pavail: np.ndarray, book, rows: np.ndarray,
-               round4: dict | None = None):
+               round4: dict | None = None, fitset: FitSet | None = None):
     """Open the rotation for 2N team-simulations.
 
     `share`/`srank`/`fpm`/`pavail` are (2n, S) gathers of the per-(game, side)
     prior. `book` is the engine `StreamBook`; `rows` maps each of the 2n rows to
     its simulation index so home and away share the simulation's stream (as the
     offline sampler shares one Generator between the two teams).
+
+    `fitset` is the S1 schedule (one `RotationFit` per dated refit plus the
+    per-row choice). `None` means the static fit, which is built here as a
+    schedule of length one so there is exactly one code path.
     """
     if round4 is not None:
         return init_batch_round4(fit, share, srank, fpm, pavail, book, rows, round4)
     two_n, S = share.shape
+    fs = fitset if fitset is not None else FitSet.single(fit, two_n)
     u_av = book.draw_block("rotation", rows, S)
     avail = u_av < pavail
     # every team must field five: if the availability draw leaves fewer, the
@@ -164,19 +250,19 @@ def init_batch(fit: RotationFit, share: np.ndarray, srank: np.ndarray,
 
     out = np.zeros((two_n, S), dtype=np.float64)
     if (~hier).any():
-        out[~hier] = _dirichlet_rows(p[~hier], fit.alpha, u_dir[~hier])
+        out[~hier] = _dirichlet_rows(p[~hier], fs.col("alpha")[~hier], u_dir[~hier])
     if hier.any():
         tot = (p_start + p_bench)[hier]
         fam_p = np.column_stack([p_start[hier] / tot, p_bench[hier] / tot])
-        fam = _dirichlet_rows(fam_p, fit.alpha_family, u_fam[hier])
+        fam = _dirichlet_rows(fam_p, fs.col("alpha_family")[hier], u_fam[hier])
         ps_n = np.where(is_start[hier], p[hier], 0.0) / p_start[hier][:, None]
         pb_n = np.where(is_bench[hier], p[hier], 0.0) / p_bench[hier][:, None]
-        ds = _dirichlet_rows(ps_n, fit.alpha_starters, u_dir[hier])
-        db = _dirichlet_rows(pb_n, fit.alpha_bench, u_dir[hier])
+        ds = _dirichlet_rows(ps_n, fs.col("alpha_starters")[hier], u_dir[hier])
+        db = _dirichlet_rows(pb_n, fs.col("alpha_bench")[hier], u_dir[hier])
         blk = np.where(is_start[hier], fam[:, :1] * ds, 0.0) \
             + np.where(is_bench[hier], fam[:, 1:2] * db, 0.0)
         out[hier] = blk
-    out = _apply_min_target(out, avail, fit.min_share)
+    out = _apply_min_target(out, avail, fs.col("min_share"))
     targets = out * (5.0 * EXPECTED_TOTAL_SECONDS)
 
     # the opening five: the top of the start order among the available
@@ -194,7 +280,7 @@ def init_batch(fit: RotationFit, share: np.ndarray, srank: np.ndarray,
         prev_period=np.ones(two_n, dtype=np.int16),
         rankb=rank_bucket(srank.astype(np.int64)),
         started=np.zeros(two_n, dtype=bool), diag=diag,
-        freeze=freeze_enabled(),
+        freeze=freeze_enabled(), fitset=fs,
     )
 
 
@@ -227,13 +313,14 @@ def next_lineup(rb, period: np.ndarray, seconds_remaining: np.ndarray,
         d = last_duration.astype(np.float64)
         rb.path += (5.0 * d)[:, None] * rb.q_prev * credit[:, None]
         rb.played += d[:, None] * rb.prev_on * credit[:, None]
-        decay = np.exp(-d / max(rb.fit.ema_horizon, 1.0))
+        decay = np.exp(-d / np.maximum(_fs(rb).col("ema_horizon"), 1.0))
         dk = np.where(credit, decay, 1.0)[:, None]
         rb.ema = rb.ema * dk + (1.0 - dk) * rb.prev_on
         u_f = np.zeros((len(rb.avail), S))
         sel = np.flatnonzero(credit)
         u_f[sel] = book.draw_block("rotation_foul", rows[sel], S)
-        hit = (u_f < rb.fpm * (d[:, None] / 60.0) * rb.fit.foul_rate_scale) \
+        hit = (u_f < rb.fpm * (d[:, None] / 60.0)
+               * _fs(rb).col("foul_rate_scale")[:, None]) \
             & rb.prev_on & credit[:, None]
         fouls += hit.astype(fouls.dtype)
 
@@ -247,9 +334,14 @@ def next_lineup(rb, period: np.ndarray, seconds_remaining: np.ndarray,
         f_model = np.zeros_like(fouls)
     tb = time_bucket(period.astype(np.int64), seconds_remaining.astype(np.int64))
     mb = margin_bucket(margin.astype(np.int64))
-    tilt_state = rb.fit.tilt.state[rb.rankb, tb[:, None], mb[:, None]]
+    # S1: the tilt tables are indexed by the row's own game's refit as well as
+    # by (rank bucket, time bucket, margin bucket). With one fit `seg` is all
+    # zeros and this is the single-table lookup it replaces.
+    sch = _fs(rb)
+    seg = sch.seg[:, None]
+    tilt_state = sch.tilt_state[seg, rb.rankb, tb[:, None], mb[:, None]]
     fs = np.minimum(f_model, FOUL_OUT).astype(np.int64)
-    tilt_foul = rb.fit.tilt.foul[fs, np.broadcast_to(tb[:, None], fs.shape)]
+    tilt_foul = sch.tilt_foul[seg, fs, np.broadcast_to(tb[:, None], fs.shape)]
     w = rb.targets * tilt_state * tilt_foul
     out_of_fouls = fouls >= FOUL_OUT
     w = np.where(out_of_fouls, 0.0, w)
@@ -261,7 +353,8 @@ def next_lineup(rb, period: np.ndarray, seconds_remaining: np.ndarray,
     q = w / np.where(tot > 0, tot, 1.0)
 
     u = (5.0 * q - rb.ema
-         + rb.fit.lam_deficit * (rb.path - rb.played) / (5.0 * max(rb.fit.ema_horizon, 1.0)))
+         + sch.col("lam_deficit")[:, None] * (rb.path - rb.played)
+         / (5.0 * np.maximum(sch.col("ema_horizon"), 1.0)[:, None]))
     u = np.where(rb.avail, u, _NEG)
     u = np.where(out_of_fouls, _NEG, u)
 
@@ -295,7 +388,7 @@ def next_lineup(rb, period: np.ndarray, seconds_remaining: np.ndarray,
         ua = u[rows_idx, a]
         ub = u[rows_idx, b]
         keep_a = (fouls[rows_idx, a] < FOUL_OUT) & rb.avail[rows_idx, a]
-        brk = keep_a & ~((ub - ua) > rb.fit.swap_threshold)
+        brk = keep_a & ~((ub - ua) > sch.col("swap_threshold"))
         do = go & (j < n_bench) & ~brk
         if do.any():
             sel = np.flatnonzero(do)
@@ -317,6 +410,15 @@ def next_lineup(rb, period: np.ndarray, seconds_remaining: np.ndarray,
     rb.prev_on = np.where(live[:, None], rb.onmask, rb.prev_on)
     rb.started |= live
     return np.argsort(~rb.onmask, kind="stable")[:, :5].astype(np.int16)
+
+
+def _fs(rb) -> FitSet:
+    """The row's schedule. A batch opened before S1 existed (or a hand-built
+    one in a test) carries none, and a single fit IS a schedule of length one --
+    the same rule `engine/manifest.py` applies to artifacts."""
+    if rb.fitset is None:
+        rb.fitset = FitSet.single(rb.fit, len(rb.srank))
+    return rb.fitset
 
 
 def assert_max_candidates(n_slots: int) -> None:
@@ -588,6 +690,51 @@ def next_lineup_round4(rb: Round4Batch, period: np.ndarray,
     rb.prev_on = np.where(live[:, None], rb.onmask, rb.prev_on)
     rb.started |= live
     return np.argsort(~rb.onmask, kind="stable")[:, :5].astype(np.int16)
+
+
+# ===========================================================================
+# R2 under S1: the manifest, gathered per simulation row
+# ===========================================================================
+R2_S1_MANIFEST = Path("data/processed/models/engine/rotation_r2_s1_F2_2025.json")
+
+
+def rotation_scheme() -> str:
+    """`ENGINE_ROTATION_SCHEME`: `s1` (round 3b's adopted scheme, the default
+    since 2026-09-11) or `static` (the single `rotation_fit.json`, kept so every
+    gate report before that date reproduces)."""
+    return os.environ.get("ENGINE_ROTATION_SCHEME", "s1")
+
+
+def load_r2_s1(games, manifest_path: Path | None = None) -> dict:
+    """Load the R2 S1 schedule and return the fits plus the per-GAME choice.
+
+    Selection goes through `engine.manifest.ArtifactManifest`, so the
+    honest-backtest rule (`refit_date < tipoff` AND `max_train_date <
+    game_date`) is enforced in the one place every sub-model passes through --
+    not re-implemented here."""
+    from cbb_sim.engine.manifest import ArtifactManifest
+
+    p = Path(manifest_path or R2_S1_MANIFEST)
+    if not p.exists():
+        raise FileNotFoundError(
+            f"{p} missing; rotation round 3b adopted S1 as the scheme "
+            "(experiments.md s9.4) and the engine serves it from this manifest. "
+            "Set ENGINE_ROTATION_SCHEME=static to run the single rotation_fit.json.")
+    man = ArtifactManifest.from_json(p, games)
+    fits = tuple(RotationFit.from_json(e.path) for e in man.entries)
+    for f in fits:
+        if f.tilt is None:
+            raise ValueError("an R2 S1 fit carries no tilt tables; R2 is the "
+                             "hierarchical Dirichlet PLUS the fitted scheduler")
+    return {"manifest": man, "fits": fits, "seg_of_game": man.seg_of_game,
+            "provenance": man.provenance()}
+
+
+def r2_s1_fitset(r2: dict, game_rows: np.ndarray) -> FitSet:
+    """The (2N) `FitSet` for one chunk: home rows then away rows, each row
+    carrying its own game's refit."""
+    seg = r2["seg_of_game"][np.asarray(game_rows, dtype=np.int64)]
+    return FitSet.build(r2["fits"], seg, r2["provenance"])
 
 
 # ===========================================================================

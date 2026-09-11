@@ -208,11 +208,17 @@ def simulate_chunk(inp: EngineInputs, ad: Adapters, game_index: np.ndarray,
     # hierarchical Dirichlet + scheduler. The mode is read here rather than in
     # `adapters.py`, which another deliverable owns.
     r4 = RA.load_round4(inp.games) if RA.rotation_mode() == "round4" else None
+    # ENGINE_ROTATION_SCHEME=s1: R2's fitted objects are a SCHEDULE (rotation
+    # round 3b, experiments.md s9.4), so each of the 2N rows carries its own
+    # game's refit. `gg` is already the (2N,) game row index, home block then
+    # away block, which is exactly what the gather needs.
+    rot_s1 = getattr(ad, "rot_s1", None)
     rot = RA.init_batch(
         ad.rot_fit,
         inp.rot_share[gg, two], inp.rot_srank[gg, two], inp.rot_fpm[gg, two],
         inp.rot_pavail[gg, two], rot_book, rot_rows,
-        round4=None if r4 is None else RA.round4_rows(r4, gg))
+        round4=None if r4 is None else RA.round4_rows(r4, gg),
+        fitset=None if rot_s1 is None else RA.r2_s1_fitset(rot_s1, gg))
     # the rotation decides foul-outs off the same counters the box score reports,
     # so the (2n, S) block is the single source of truth until the game is over
     fouls2 = np.zeros((2 * n, inp.n_slots), dtype=np.int8)
@@ -418,7 +424,7 @@ def simulate_chunk(inp: EngineInputs, ad: Adapters, game_index: np.ndarray,
                                  ("three", "miss_three")):
                     xr[:, I[col]] = (mk == miss_type_index[key]).astype(np.float64)
                 xr[:, I["blocked_f"]] = 0.0
-                p3 = ad.reb.predict(inp.team_static[gidx[mr], off[mr]], xr)
+                p3 = ad.reb.predict(inp.team_static[gidx[mr], off[mr]], xr, gidx[mr])
                 # dead balls as the measured fixed share per miss type (L17),
                 # composed through the module's own function
                 p3 = RB.compose_binary_plus_fixed_dead(
@@ -564,7 +570,7 @@ def _shoot_trip(st: S.GameState, inp: EngineInputs, ad: Adapters, book: StreamBo
         sh = shooter[k]
         x = _state_block(st, r, n_state, st.off_score_diff(), st.in_bonus())
         p = ad.ft.predict(inp.team_static[gidx[k], side[k]],
-                          inp.slot_static[gidx[k], side[k], sh], x)
+                          inp.slot_static[gidx[k], side[k], sh], x, gidx[k])
         made = book.draw("free_throw", r) < p
         st.box["fta"][r, side[k]] += 1
         st.player_box["fta"][r, side[k], sh] += 1

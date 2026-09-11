@@ -92,6 +92,16 @@ PO_DIR = Path("data/processed/models/possession_outcome")
 CK_DIR = Path("data/processed/models/clock")
 FG_DIR = Path("data/processed/models/fg_make")
 ROT_FIT = Path("data/processed/models/rotation/rotation_fit.json")
+RB_DIR = Path("data/processed/models/rebound")
+FT_DIR = Path("data/processed/models/free_throw")
+
+#: rebound and free_throw both confirmed S1 as their training scheme
+#: (each model's `experiments.md` section 7). Their manifests are DATED
+#: schedules of the winning arm's own spec, so the engine stops refitting a
+#: single static object and starts selecting per game, exactly as
+#: possession_outcome and fg_make already do.
+RB_S1_MANIFEST = RB_DIR / "s1_confirm" / "S1_weekly" / "F2" / "manifest.json"
+FT_S1_MANIFEST = FT_DIR / "s1_confirm" / "S1_conf_aligned" / "F2" / "manifest.json"
 
 #: The state block: every feature that is a function of the live simulation.
 #: One matrix per step, shared by every adapter, so a state quantity is
@@ -595,9 +605,22 @@ class FreeThrowAdapter:
     source: dict
     provisional: bool
     bonus_thresholds: dict
+    #: `s1_conf_aligned` (the adopted scheme, default since 2026-09-11) or
+    #: `static` (the engine's own single refit).
+    mode: str = "static"
+    manifest: ArtifactManifest | None = None
+    models_by_seg: tuple = ()
 
     @classmethod
-    def load(cls, inp: EngineInputs, fold: str = "F2") -> FreeThrowAdapter:
+    def load(cls, inp: EngineInputs, fold: str = "F2",
+             mode: str | None = None) -> FreeThrowAdapter:
+        mode = mode or os.environ.get("ENGINE_FREE_THROW", "s1_conf_aligned")
+        if mode == "s1_conf_aligned":
+            return cls._load_dated(inp, fold, mode, FT_S1_MANIFEST)
+        if mode != "static":
+            raise NotImplementedError(
+                "ENGINE_FREE_THROW must be 's1_conf_aligned' (the adopted S1 schedule) "
+                f"or 'static' (the engine's own single refit); got {mode!r}")
         p = ENGINE_DIR / f"free_throw_{fold}.joblib"
         if not p.exists():
             raise FileNotFoundError(f"{p} missing; run scripts/build_engine_inputs.py")
@@ -610,10 +633,55 @@ class FreeThrowAdapter:
         plan = plan_features(FT.FT_FEATURES, inp.team_names,
                              _alias(inp.slot_names, FT_SLOT_ALIAS), STATE_INDEX)
         return cls(plan, model,
-                   {"path": str(p), "arm": d["arm"], "why": d["why"]}, False,
-                   FT.load_bonus_era())
+                   {"path": str(p), "arm": d["arm"], "why": d["why"],
+                    "scheme": "static"}, False,
+                   FT.load_bonus_era(), mode="static")
 
-    def predict(self, team: np.ndarray, slot: np.ndarray, state: np.ndarray) -> np.ndarray:
+    @classmethod
+    def _load_dated(cls, inp: EngineInputs, fold: str, mode: str,
+                    mpath: Path) -> FreeThrowAdapter:
+        if not mpath.exists():
+            raise FileNotFoundError(
+                f"{mpath} missing; the free-throw S1 confirmation writes it. Pass "
+                "ENGINE_FREE_THROW=static to run the engine's own single refit.")
+        obj = json.loads(mpath.read_text(encoding="utf-8"))
+        man = ArtifactManifest.from_obj(obj, mpath.parent, inp.games)
+        loaded = tuple(joblib.load(e.path) for e in man.entries)
+        feats = loaded[0]["features"]
+        for w in loaded:
+            if list(w["features"]) != list(feats):
+                raise ValueError("free_throw S1 artifacts disagree on feature order; "
+                                 "one plan cannot serve them")
+            try:
+                w["model"].clf_.set_params(n_jobs=1)
+            except Exception:                                   # noqa: BLE001
+                pass
+        plan = plan_features(feats, inp.team_names,
+                             _alias(inp.slot_names, FT_SLOT_ALIAS), STATE_INDEX)
+        return cls(plan, loaded[-1]["model"],
+                   {"path": str(mpath.parent), "arm": loaded[-1].get("arm", "lgbm"),
+                    "feature_set": obj.get("key"), "scheme": obj.get("scheme"),
+                    "why": "free-throw bake-off winner lgbm, served as the dated S1 "
+                           "schedule its own scheme confirmation adopted",
+                    "note": loaded[-1].get("note", ""), **man.provenance()},
+                   False, FT.load_bonus_era(), mode=mode, manifest=man,
+                   models_by_seg=tuple(w["model"] for w in loaded))
+
+    def predict(self, team: np.ndarray, slot: np.ndarray, state: np.ndarray,
+                gidx: np.ndarray | None = None) -> np.ndarray:
+        if self.manifest is not None:
+            if gidx is None:
+                raise ValueError(
+                    f"ENGINE_FREE_THROW={self.mode} serves a dated S1 schedule and "
+                    "needs the per-row game index to select each game's refit")
+            out = np.empty(len(team), dtype=np.float64)
+            segs = self.manifest.segments(gidx)
+            for k in np.unique(segs):
+                r = np.flatnonzero(segs == k)
+                m = _assemble(self.plan, team[r], slot[r], state[r])
+                out[r] = self.models_by_seg[k].predict_proba(
+                    np.ascontiguousarray(m, dtype=np.float32))[:, FT.CLASS_INDEX["MAKE"]]
+            return out
         m = _assemble(self.plan, team, slot, state)
         p = self.model.predict_proba(np.ascontiguousarray(m, dtype=np.float32))
         return p[:, FT.CLASS_INDEX["MAKE"]]
@@ -629,9 +697,22 @@ class ReboundAdapter:
     dead_share: dict[str, float]
     source: dict
     provisional: bool
+    #: `s1_weekly` (the adopted scheme, default since 2026-09-11) or `static`
+    #: (the engine's own single refit, kept so earlier gate reports reproduce).
+    mode: str = "static"
+    manifest: ArtifactManifest | None = None
+    models_by_seg: tuple = ()
 
     @classmethod
-    def load(cls, inp: EngineInputs, fold: str = "F2") -> ReboundAdapter:
+    def load(cls, inp: EngineInputs, fold: str = "F2",
+             mode: str | None = None) -> ReboundAdapter:
+        mode = mode or os.environ.get("ENGINE_REBOUND", "s1_weekly")
+        if mode == "s1_weekly":
+            return cls._load_dated(inp, fold, mode, RB_S1_MANIFEST)
+        if mode != "static":
+            raise NotImplementedError(
+                "ENGINE_REBOUND must be 's1_weekly' (the adopted S1 schedule) or "
+                f"'static' (the engine's own single refit); got {mode!r}")
         p = ENGINE_DIR / f"rebound_{fold}.joblib"
         if not p.exists():
             raise FileNotFoundError(f"{p} missing; run scripts/build_engine_inputs.py")
@@ -643,10 +724,58 @@ class ReboundAdapter:
             pass
         plan = plan_features(d["features"], inp.team_names, {}, STATE_INDEX)
         return cls(plan, model, dict(inp.rules["dead_share"]),
-                   {"path": str(p), "arm": d["arm"], "why": d["why"]}, False)
+                   {"path": str(p), "arm": d["arm"], "why": d["why"],
+                    "scheme": "static"}, False, mode="static")
 
-    def predict(self, team: np.ndarray, state: np.ndarray) -> np.ndarray:
-        """(n, 3) in `RB.CLASSES` order = (OREB, DREB, DEAD)."""
+    @classmethod
+    def _load_dated(cls, inp: EngineInputs, fold: str, mode: str,
+                    mpath: Path) -> ReboundAdapter:
+        if not mpath.exists():
+            raise FileNotFoundError(
+                f"{mpath} missing; the rebound S1 confirmation writes it. Pass "
+                "ENGINE_REBOUND=static to run the engine's own single refit.")
+        obj = json.loads(mpath.read_text(encoding="utf-8"))
+        man = ArtifactManifest.from_obj(obj, mpath.parent, inp.games)
+        loaded = tuple(joblib.load(e.path) for e in man.entries)
+        feats = loaded[0]["features"]
+        for w in loaded:
+            if list(w["features"]) != list(feats):
+                raise ValueError("rebound S1 artifacts disagree on feature order; "
+                                 "one plan cannot serve them")
+            try:
+                w["model"].clf_.set_params(n_jobs=1)
+            except Exception:                                   # noqa: BLE001
+                pass
+        plan = plan_features(feats, inp.team_names, {}, STATE_INDEX)
+        return cls(plan, loaded[-1]["model"], dict(inp.rules["dead_share"]),
+                   {"path": str(mpath.parent), "arm": loaded[-1].get("arm", "lgbm"),
+                    "feature_set": obj.get("key"), "scheme": obj.get("scheme"),
+                    "why": "rebound bake-off winner lgbm/C_plus_state, served as the "
+                           "dated S1 schedule its own scheme confirmation adopted",
+                    "note": loaded[-1].get("note", ""), **man.provenance()},
+                   False, mode=mode, manifest=man,
+                   models_by_seg=tuple(w["model"] for w in loaded))
+
+    def predict(self, team: np.ndarray, state: np.ndarray,
+                gidx: np.ndarray | None = None) -> np.ndarray:
+        """(n, 3) in `RB.CLASSES` order = (OREB, DREB, DEAD).
+
+        One batched predict, except under an S1 schedule, where it is one
+        batched predict per refit segment over disjoint row sets -- the same
+        total row count, and still no per-game model call."""
+        if self.manifest is not None:
+            if gidx is None:
+                raise ValueError(
+                    f"ENGINE_REBOUND={self.mode} serves a dated S1 schedule and needs "
+                    "the per-row game index to select each game's refit")
+            out = np.empty((len(team), len(RB.CLASSES)), dtype=np.float64)
+            segs = self.manifest.segments(gidx)
+            for k in np.unique(segs):
+                r = np.flatnonzero(segs == k)
+                m = _assemble(self.plan, team[r], None, state[r])
+                out[r] = self.models_by_seg[k].predict_proba(
+                    np.ascontiguousarray(m, dtype=np.float32))
+            return out
         m = _assemble(self.plan, team, None, state)
         return self.model.predict_proba(np.ascontiguousarray(m, dtype=np.float32))
 
@@ -686,6 +815,16 @@ def ROT_NORMALISE(r: np.ndarray) -> np.ndarray:          # noqa: N802
     return normalise(r)
 
 
+def RA_SCHEME() -> str:                                       # noqa: N802
+    from cbb_sim.engine.rotation_adapter import rotation_scheme
+    return rotation_scheme()
+
+
+def RA_MANIFEST() -> Path:                                    # noqa: N802
+    from cbb_sim.engine.rotation_adapter import R2_S1_MANIFEST
+    return R2_S1_MANIFEST
+
+
 def _load_clock(inp: EngineInputs, mode: str, season: int):
     """Round-3c clock arms live in `clock_adapter_v3`; everything else is
     unchanged. `docs/models/clock/experiments.md` section 12. The import is
@@ -696,7 +835,20 @@ def _load_clock(inp: EngineInputs, mode: str, season: int):
     return ClockAdapter.load(inp, mode, season)
 
 
-def _scheme_flags(event, clock, fg, ft, reb, usage) -> dict:
+def _manifests_of(ad) -> dict:
+    """Every `ArtifactManifest` an adapter is serving, keyed for run_meta.
+
+    An adapter exposes either `manifests` (a dict keyed by population or shot
+    class) or a single `manifest`; both are normalised here so the run_meta
+    writer has one shape to walk."""
+    mans = dict(getattr(ad, "manifests", None) or {})
+    one = getattr(ad, "manifest", None)
+    if one is not None:
+        mans.setdefault(one.key or "-", one)
+    return mans
+
+
+def _scheme_flags(event, clock, fg, ft, reb, usage, rotation_manifest=None) -> dict:
     """`scheme_static_<model>` per sub-model.
 
     An adapter that carries `ArtifactManifest`s reports False when any of them
@@ -705,10 +857,63 @@ def _scheme_flags(event, clock, fg, ft, reb, usage) -> dict:
     out = {}
     for name, ad in (("possession_outcome", event), ("clock", clock), ("fg_make", fg),
                      ("free_throw", ft), ("rebound", reb), ("usage", usage)):
-        mans = getattr(ad, "manifests", None) or {}
+        mans = _manifests_of(ad)
         out[f"scheme_static_{name}"] = (not mans) or all(m.is_static for m in mans.values())
-    # rotation is served from a single fitted json, never a schedule
-    out["scheme_static_rotation"] = True
+    out["scheme_static_rotation"] = (rotation_manifest is None
+                                     or bool(rotation_manifest.is_static))
+    return out
+
+
+def _train_dates(event, clock, fg, ft, reb, usage, rotation_manifest=None) -> dict:
+    """`max_train_date` PER ARTIFACT, per sub-model, for `run_meta.json`.
+
+    WHY THIS IS A FIRST-CLASS RUN_META FIELD. `CLAUDE.md`: "every backtest row
+    must satisfy `created_at < tipoff`, enforced in code". `manifest._select`
+    already asserts `max_train_date < game_date` for every game at LOAD time,
+    which is the binding check -- but until now only the event model's dates
+    reached the results directory, so a grader could re-assert the property for
+    one family and had to take the other six on trust. Every family that serves
+    a dated schedule now writes, per artifact, its `refit_date` and
+    `max_train_date`, plus the LATEST max_train_date over the artifacts this
+    run actually used (`max_train_date_overall`) -- which is the single number
+    `scripts/grade_market_games_v2.py` compares against the earliest tipoff in
+    the slate.
+
+    A STATIC model reports `max_train_date: null` and `scheme: "static"` rather
+    than a fabricated date: the engine's own refits (`rebound_F2.joblib`,
+    `free_throw_F2.joblib`, the Decision-8 FGA_3 model) were fitted on the
+    fold's TRAIN SEASONS, which is stated in `fold_train_seasons`, and inventing
+    a per-artifact date for them would be exactly the kind of manufactured
+    provenance the honest-backtest rule exists to stop."""
+    out: dict = {}
+    fams = [("possession_outcome", event), ("clock", clock), ("fg_make", fg),
+            ("free_throw", ft), ("rebound", reb), ("usage", usage)]
+    if rotation_manifest is not None:
+        fams.append(("rotation", type("_M", (), {"manifest": rotation_manifest})()))
+    for name, ad in fams:
+        mans = _manifests_of(ad)
+        if not mans:
+            out[name] = {"scheme": "static", "max_train_date": None,
+                         "n_artifacts": 1,
+                         "why": "a single fitted object; its training window is the "
+                                "fold's train seasons, reported in fold_train_seasons"}
+            continue
+        keys: dict = {}
+        latest = None
+        for key, man in mans.items():
+            ents = [{"refit_date": str(e.refit_date.date()),
+                     "max_train_date": (None if e.max_train_date is None
+                                        else str(e.max_train_date.date())),
+                     "path": Path(e.path).name} for e in man.entries]
+            for e in man.entries:
+                if e.max_train_date is not None:
+                    latest = e.max_train_date if latest is None else max(latest, e.max_train_date)
+            keys[str(key)] = {"scheme": man.scheme, "is_static": man.is_static,
+                              "n_artifacts": len(man.entries), "artifacts": ents}
+        out[name] = {"scheme": next(iter(mans.values())).scheme,
+                     "max_train_date": None if latest is None else str(latest.date()),
+                     "n_artifacts": sum(len(m.entries) for m in mans.values()),
+                     "keys": keys}
     return out
 
 
@@ -726,10 +931,21 @@ class Adapters:
     rot_fit: ROT.RotationFit
     rotation_mode: str
     flags: dict
+    #: `ENGINE_ROTATION_SCHEME=s1`: the round-3b S1 schedule of R2 fits plus the
+    #: per-game choice, gathered per chunk by `rotation_adapter.r2_s1_fitset`.
+    #: `None` under `static`, where `rot_fit` alone is the model.
+    rot_s1: dict | None = None
 
     @classmethod
     def load(cls, inp: EngineInputs, fold: str = "F2", season: int = 2025) -> Adapters:
-        ev_mode = os.environ.get("ENGINE_EVENT", "reference")
+        # DEFAULT, 2026-09-11: the possession-outcome ROUND-2 WINNERS (lgbm+S1
+        # on first chances, cascade+S1 on continuations), which round 2 ADOPTED
+        # on 2026-09-10. They have been wired behind this flag since that
+        # evening but the default was never moved, so every run since has
+        # silently served round 1's best-loss NOT-ADOPTED arms unless the caller
+        # remembered to export the variable. `reference` stays selectable and
+        # still sets provisional_event=True.
+        ev_mode = os.environ.get("ENGINE_EVENT", "round2_s1")
         # DEFAULT, 2026-09-11 (PM decision, L31 + change ledger): the best arm
         # the project has produced inside the engine,
         # `empirical_km3_srfloor|P3|S1`. It is NOT ADOPTED -- round 3c passed no
@@ -747,7 +963,20 @@ class Adapters:
         # assisted made field goals, so it is ineligible to be SERVED on data
         # integrity -- the same precedence round 2 applied to the leaked S-A.
         # `round2b_S_C_s1` stays selectable for reproduction.
-        fg_mode = os.environ.get("ENGINE_FG_MAKE", "round3_shooter_S_C_s1")
+        # DEFAULT, 2026-09-11 (fg_make round 4, experiments.md s20.6/s20.7):
+        # `B1 R4_B1_shrunk`, the round-4 WINNER. It is the only arm that passes
+        # calibration and Decision 8 on all three shot classes, it moves the
+        # shooter slope from 0.28-0.31 (no shooter block) to 0.84-1.04, and it
+        # holds the best closed-loop margin SD (13.757) and home/away
+        # correlation (+0.242) of any fg_make arm. s20.7 recorded exactly one
+        # blocker on making it the default -- `shooter_shrunk_dev_c` did not
+        # exist in the shared engine inputs -- and engine inputs v2 closes it.
+        # `round3_shooter_S_C_s1` (the interim) and every earlier value stay
+        # selectable and resolve to the same files as before.
+        fg_mode = os.environ.get("ENGINE_FG_MAKE", "round4_B1")
+        rb_mode = os.environ.get("ENGINE_REBOUND", "s1_weekly")
+        ft_mode = os.environ.get("ENGINE_FREE_THROW", "s1_conf_aligned")
+        rot_scheme = RA_SCHEME()
         if rot_mode != "reference":
             raise NotImplementedError(
                 "the rotation bake-off adopted nothing; ENGINE_ROTATION=reference "
@@ -755,14 +984,29 @@ class Adapters:
         event = EventAdapter.load(inp, ev_mode, fold, season)
         clock = _load_clock(inp, ck_mode, season)
         fg = FgMakeAdapter.load(inp, fold, fg3, fg_mode)
-        ft = FreeThrowAdapter.load(inp, fold)
-        reb = ReboundAdapter.load(inp, fold)
+        ft = FreeThrowAdapter.load(inp, fold, ft_mode)
+        reb = ReboundAdapter.load(inp, fold, rb_mode)
         usage = UsageAdapter.load(inp)
-        rot_fit = ROT.RotationFit.from_json(ROT_FIT)
+        # ROTATION, 2026-09-11: round 3b adopted S1 as the SCHEME (not an arm --
+        # no rotation arm has ever passed the state-dependence gate, so
+        # `provisional_rotation` stays True). The six dated R2 fits are selected
+        # per game by `engine.manifest`; `rot_fit` stays the LAST fit so any
+        # caller that still wants one object gets a real one rather than None.
+        rot_s1 = None
+        rot_man = None
+        if rot_mode == "reference" and rot_scheme == "s1":
+            from cbb_sim.engine import rotation_adapter as _RA
+            rot_s1 = _RA.load_r2_s1(inp.games)
+            rot_man = rot_s1["manifest"]
+            rot_fit = rot_s1["fits"][-1]
+        else:
+            rot_fit = ROT.RotationFit.from_json(ROT_FIT)
         flags = {
             "ENGINE_EVENT": ev_mode, "ENGINE_CLOCK": ck_mode,
             "ENGINE_ROTATION": rot_mode, "ENGINE_FG3": fg3,
-            "ENGINE_FG_MAKE": fg_mode,
+            "ENGINE_FG_MAKE": fg_mode, "ENGINE_REBOUND": rb_mode,
+            "ENGINE_FREE_THROW": ft_mode, "ENGINE_ROTATION_SCHEME": rot_scheme,
+            "ENGINE_INPUTS_VERSION": str(inp.meta.get("inputs_version_loaded", "v1")),
             "provisional_event": event.provisional,
             "provisional_clock": clock.provisional,
             "provisional_rotation": True,
@@ -778,17 +1022,39 @@ class Adapters:
             # a statement that this model has NOT yet been re-fit under it --
             # and it is the only way a reader can tell a deliberately static
             # model from one silently serving a stale S1 artifact.
-            **_scheme_flags(event, clock, fg, ft, reb, usage),
+            **_scheme_flags(event, clock, fg, ft, reb, usage, rot_man),
+            # Every family's artifact dates, so a grader can assert
+            # `max_train_date < tipoff` on ALL of them, not only the event model.
+            "max_train_date": _train_dates(event, clock, fg, ft, reb, usage, rot_man),
+            "fold_train_seasons": {"F1": [2022, 2023],
+                                   "F2": [2022, 2023, 2024]}.get(fold, []),
+            "rotation_s1_scope": (
+                "S1 reaches what RotationBatch consumes (Dirichlet concentrations, "
+                "min_share, the scheduler parameters, both tilt tables). The as-of "
+                "PRIOR construction (k0, role_prior, p_play, fpm shrinkage, "
+                "tail_ratio, w_dnp) is baked into the input arrays by "
+                "build_engine_inputs.py from the STATIC fit and is unchanged; closing "
+                "that half is an inputs-v3 item."
+                if rot_man is not None else "static: one fit for the whole run"),
             "sources": {
                 "event": event.source, "clock": clock.source, "fg_make": fg.source,
                 "free_throw": ft.source, "rebound": reb.source, "usage": usage.source,
-                "rotation": {"path": str(ROT_FIT), "arm": "R2_hier_dirichlet + scheduler",
-                             "adopted": False,
-                             "why": "no rotation arm passed the pre-registered "
-                                    "state-dependence gate in either round"},
+                "rotation": ({"path": str(RA_MANIFEST()), "adopted": False,
+                              "arm": "R2_hier_dirichlet + scheduler",
+                              "scheme": "S1 (rotation round 3b, experiments.md s9.4)",
+                              "why": "no rotation arm passed the pre-registered "
+                                     "state-dependence gate in any round; S1 is the "
+                                     "adopted SCHEME, not an adopted arm",
+                              **rot_s1["provenance"]}
+                             if rot_s1 is not None else
+                             {"path": str(ROT_FIT), "arm": "R2_hier_dirichlet + scheduler",
+                              "adopted": False, "scheme": "static",
+                              "why": "no rotation arm passed the pre-registered "
+                                     "state-dependence gate in either round"}),
             },
         }
-        return cls(event, clock, fg, ft, reb, usage, rot_fit, rot_mode, flags)
+        return cls(event, clock, fg, ft, reb, usage, rot_fit, rot_mode, flags,
+                   rot_s1=rot_s1)
 
     def describe(self) -> str:
         return json.dumps(self.flags, indent=1, default=str)
