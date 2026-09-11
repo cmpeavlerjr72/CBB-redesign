@@ -3651,3 +3651,145 @@ duration, so the SIGN of the gap survives and the magnitude does not.
 to the served cell grid outside that bake-off. `FEATURES_C` and the R2 bundles
 already define the column; the open question is whether it belongs in the
 served conditioning, and that is a pre-registered comparison, not a patch.
+
+---
+
+## 25. Run R12 -- the round-5c grid, PARTIAL (2026-09-11)
+
+`scripts/exp_clk5c_dispersion_function.py`. Pre-registration section 24
+committed **98f8db5** BEFORE this script and before any fitted round-5c
+parameter existed. Round 5's design loader, S1 schedule, `per_unit`, `var_sum`
+and `summarise`, and round 5b's `node_moments_loc`, `fit_b` and the `fit_b3`
+per-game latent estimator, are imported and NOT edited; only the three
+dispersion functions are new, and all four arms are graded through ONE code
+path. Universe unchanged: 270,530 possessions, 1,991 games, needed
+per-team-game possession SD 4.2795.
+
+**WHAT DID NOT RUN, STATED FIRST.** The session's wall clock ended before
+`CRPS_trunc` (N1) and the PIT cell table (N3) could be scored, and no closed
+loop was run, so **M1 and criterion 5 are unread. Under section 24.5 no arm can
+qualify and NOTHING IS ADOPTED**; `ENGINE_CLOCK` is untouched. What follows is
+the offline PRIMARY, the mean gate (N2/N4) and the responsiveness table, which
+is what the round was aimed at. C3 (round 5's per-offence latent under the B1
+location) was NOT fitted; round 5's A2 quintile row (1.039, 1.172, 1.070,
+0.999, 0.921) is A1's to 0.005 and section 24.1 predicted it addresses nothing.
+
+### 25.1 Fitted parameters, TRAINING rows only, F2 with F1 beside it
+
+| arm | F2 {2022,2023,2024} | F1 {2022,2023} |
+|---|---|---|
+| B1 | `sigma^2` 0.00221164 | 0.00218480 |
+| C1 | EB shrinkage `k` **122.88**, between-team `tau_b^2` 2.951e-07, within-team 3.626e-05, 364 teams | `k` 82.65, 4.434e-07, 3.665e-05, 361 teams |
+| C2 | `sigma^2 = 0.0031272 - 0.00026071 * asof_sd`, train coverage **0.323** | `0.0029849 - 0.00025474 * asof_sd`, coverage 0.290 |
+| C4 | `sigma^2 = 0.0020121 + 5.3916e-05*(t-68.814) + 2.6196e-05*(t-68.814)^2`, **minimum at tempo 67.79** | `0.0020230 + 6.5149e-05*(t-68.684) + 2.3930e-05*(...)^2`, minimum at **67.32** |
+
+F1 and F2 agree in sign and to the third decimal on B1 and on C4's curvature;
+C4's fitted minimum moves 0.47 possessions of tempo between folds. C2's slope is
+**NEGATIVE on both folds** -- a team with a WIDER historical possession-count SD
+gets a NARROWER latent -- which is the opposite of the arm's premise, and it is
+fitted on a feature present for only **32%** of training games (the other 68%
+imputed at the training mean, per 25.4).
+
+### 25.2 F2 offline -- the deciding table (PARTIAL: N1, N3, M1 unread)
+
+| id | arm | **P SD** | **ratio** | `E[min(T,R)]` | mean gap | poss delta | mean `sigma^2` | SD of `sigma^2` |
+|---|---|---:|---:|---:|---:|---:|---:|---:|
+| B1 | `v5b_glat_pmean` (served) | 4.3194 | **1.0093** | 17.5275 | -0.1251 | +0.4853 | 0.002212 | 0 |
+| C1 | `v5c_glat_team` | 4.3109 | **1.0074** | 17.5266 | -0.1260 | +0.4887 | 0.002220 | 0.000156 |
+| C2 | `v5c_glat_asofsd` | 4.2131 | **0.9845** | 17.5217 | -0.1310 | +0.5081 | 0.002040 | 0.000221 |
+| C4 | `v5c_glat_pace2` | 4.3223 | **1.0100** | 17.5267 | -0.1260 | +0.4886 | 0.002261 | 0.000391 |
+
+**N2 and N4 hold for every arm**: the mean gate moves at most 0.006 s and the
+implied possessions at most 0.023 per team-game against B1, both far inside
+round 4's floors -- as they must, since `E[1/A] = 1` holds row-wise under every
+arm. On the PRIMARY, C1 and C4 are inside the 0.0242 floor of B1 (0.0085 and
+0.0029 possessions); **C2 moves 0.106 possessions AWAY from the target**
+(|ratio-1| 0.0155 against B1's 0.0093).
+
+### 25.3 Responsiveness -- the line the round was aimed at
+
+`produced / needed` by pregame-tempo quintile, five powered quintiles of
+398-399 games, each with its game-block bootstrap SE (800 resamples, seed
+20260911) and its exceedance of the pre-registered [0.85, 1.15] band **in units
+of that SE**:
+
+| arm | Q1 | Q2 | Q3 | Q4 | Q5 | worst \|dev\| | Q2 exceedance |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| B1 (served) | 1.040 | **1.174** | 1.072 | 1.002 | 0.924 | 0.174 | **0.55 SE** |
+| C1 | 1.037 | **1.169** | 1.069 | 1.002 | 0.926 | 0.169 | 0.43 SE |
+| C2 | 1.022 | 1.148 | 1.046 | 0.976 | 0.893 | 0.148 | **0 (inside)** |
+| **C4** | 1.061 | **1.139** | 1.038 | 0.990 | 0.979 | **0.139** | **0 (inside)** |
+
+**C4 is the first arm in rounds 5, 5b and 5c whose every quintile is inside the
+band**, and it gets there while holding the primary at 1.0100 and the mean gate
+at B1's value. Its SEs are 0.029-0.039, so the Q2 pass (1.139 against 1.15) is
+itself a 0.26-SE margin: **a pass inside noise is no more measured than a
+failure inside noise, and it is reported as such.** The monotonicity half of
+criterion 4 is NOT adjudicated here: C4 rises Q1 -> Q2 and falls for the
+remaining three steps, the same 3-of-4 pattern B1 has, and section 16.5's
+wording ("must SLOPE with the quintile's own needed value") does not fix a
+counting rule. **This lane does not choose an interpretation that suits its own
+arm; the PM adjudicates.**
+
+The between-component, which is what the dispersion function acts on
+(needed `tau^2` is a property of the data and is identical across arms:
+0.6248, 0.3613, 0.5011, 0.6360, 0.8024):
+
+| arm | produced-between / needed-`tau^2`, Q1..Q5 | range |
+|---|---|---:|
+| B1 | 1.159, **2.008**, 1.316, 1.002, 0.754 | 1.25 |
+| C1 | 1.148, 1.976, 1.299, 1.001, 0.758 | 1.22 |
+| C2 | 1.085, 1.846, 1.195, 0.905, 0.659 | 1.19 |
+| **C4** | 1.246, **1.793**, 1.161, 0.958, 0.925 | **0.87** |
+
+**C4 closes 30% of the between-component's tempo spread** (1.25 -> 0.87) and is
+the only arm that raises the fast end (Q5 0.754 -> 0.925) rather than lowering
+everything. The within-game ratio is 1.005-1.008 for every arm in every
+quintile, unchanged: **no arm touches the conditional law, as designed.**
+
+### 25.4 The two pre-registered predictions, both confirmed
+
+- **C2 fails, as predicted in section 24.1 from T2's `corr = +0.0147`.** It is
+  not a responsiveness fix: its fitted slope is NEGATIVE on both folds, its
+  feature covers 32% of training games (68% imputed at the training mean, an
+  implementation choice recorded here because section 24 did not fix a
+  fallback), and what it actually does is lower the dispersion LEVEL by 8%
+  (`sigma^2` 0.00221 -> 0.00204), which slides every quintile down by about
+  0.026 and moves the primary away from 1. **An arm that passes a band by
+  shrinking everything has not become responsive, and it is not put forward.**
+- **C1's team effect is real and too small to matter after shrinkage**, which
+  section 23.4's caveat anticipated. The training-window variance components
+  give a between-team `tau_b^2` of 2.951e-07 against a within-team estimator
+  variance of 3.626e-05, i.e. `k = 123` games for half weight, so a typical
+  team's `sigma^2` is pulled 3/4 of the way back to the global and the per-game
+  `sigma^2` SD is 0.000156 on a mean of 0.002220 (7%). Quintile ratios move by
+  at most 0.006. **T1's permutation z = 6.50 established that a team component
+  EXISTS; the shrinkage estimate prices it at a quarter of the global SD and it
+  is nearly orthogonal to the tempo profile.** Both statements are true and the
+  second is the one that decides the arm.
+
+### 25.5 Verdict
+
+**NO ARM ADOPTED. `ENGINE_CLOCK` is untouched, `provisional_clock` is untouched,
+no default was changed by this lane, no criterion was softened or waived, and
+nothing was hand-tuned, capped, scaled, clipped or blended at any point.**
+N1, N3, M1 and criterion 5 are UNREAD, so the decision rule of section 24.5
+cannot be satisfied by construction.
+
+**C4 `v5c_glat_pace2` is the round's CANDIDATE and the first arm to satisfy the
+band verbatim in all five quintiles**, at the cost of one extra fitted
+coefficient over B1, with the primary (1.0100), the round-4 mean gate (-0.1260)
+and the implied possession mean (+0.4886) all within a fraction of a floor of
+B1. What it needs before it can be put forward: **CRPS_trunc and the PIT cell
+table offline, then the 25-seed paired closed loop against B1 on M1, the G5
+margin SD ratio, `corr(P, eFG%)` and the total bias.** Round 5b's 22.6 is the
+warning it has to clear: a dispersion change that moves the possession mean pays
+in points, and B1's own 1.2-floor margin-SD-ratio regression (22.3 item 6) is
+still open.
+
+**Read against section 23, the honest summary of this round is narrower than the
+table suggests**: the Q2 cell that C4 brings inside the band was never measured
+to be outside it by more than 0.55 SE, so C4's most defensible claim is not "it
+fixes Q2" but "it closes 30% of a 3.1-SE tempo slope in the between-game
+component, with a stable fitted minimum near tempo 67.5 on both folds, and it
+costs nothing on the primary or the mean".
