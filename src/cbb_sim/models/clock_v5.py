@@ -59,10 +59,47 @@ def gh_nodes(k: int = 9) -> tuple[np.ndarray, np.ndarray]:
     return z, w / w.sum()
 
 
-def latent_values(sigma: np.ndarray | float, z: np.ndarray) -> np.ndarray:
-    """`A = exp(sigma*z - sigma^2/2)`, so `E[A] = 1` exactly for every sigma."""
+def latent_values(sigma: np.ndarray | float, z: np.ndarray,
+                  m: np.ndarray | float | None = None) -> np.ndarray:
+    """`A = exp(sigma*z + m)`.
+
+    ROUND 5 (`m is None`, the DEFAULT): `m = -sigma^2/2`, so `E[A] = 1` exactly
+    and the conditional MEAN duration is unchanged. Every round-5 number is
+    reproduced bit for bit by this branch.
+
+    ROUND 5b (`m` given, `experiments.md` section 21): the LOCATION of the
+    latent is what round 5b varies. `E[A] = exp(m + sigma^2/2)` and
+    `E[1/A] = exp(-m + sigma^2/2)`, and the quantity every gate reads is the
+    possession COUNT `P = 1200/Dbar`, which is the RECIPROCAL of the duration
+    mean. `m = +sigma^2/2` therefore makes `E[1/A] = 1`, i.e. it is the
+    mean-preserving specification ON THE COUNT SCALE (arm B1); round 5's
+    `m = -sigma^2/2` is mean-preserving on the DURATION scale and raises
+    `E[P]` by `exp(sigma^2)` (section 20.3's Jensen term, section 21's
+    arithmetic). `m` is an analytic identity of the family (B1) or a method-of-
+    moments estimate on TRAINING rows (B2) -- never an adjustment to output."""
     s = np.atleast_1d(np.asarray(sigma, dtype=np.float64))
-    return np.exp(s[:, None] * z[None, :] - 0.5 * s[:, None] ** 2)
+    if m is None:
+        loc = -0.5 * s ** 2
+    else:
+        loc = np.broadcast_to(np.atleast_1d(np.asarray(m, dtype=np.float64)),
+                              s.shape)
+    return np.exp(s[:, None] * z[None, :] + loc[:, None])
+
+
+def loc_for(sigma: np.ndarray | float, kind: str,
+            log_c: float = 0.0) -> np.ndarray | float:
+    """The round-5b latent location `m` for one arm (section 21.2).
+
+    `minus_half` = round 5's A1 (E[A]=1); `plus_half` = B1 (E[1/A]=1);
+    `log_c` = B2, whose `E[A] = c` is a fitted training moment."""
+    s2 = np.asarray(sigma, dtype=np.float64) ** 2
+    if kind == "minus_half":
+        return -0.5 * s2
+    if kind == "plus_half":
+        return 0.5 * s2
+    if kind == "log_c":
+        return float(log_c) - 0.5 * s2
+    raise ValueError(f"unknown latent location kind {kind!r}")
 
 
 def transfer(a: float) -> np.ndarray:
@@ -94,6 +131,10 @@ class LatentArm:
     sigma: float | object
     k_nodes: int = 9
     sigma_buckets: int = 20
+    #: round-5b latent LOCATION (section 21.2): "minus_half" reproduces round 5
+    #: exactly, "plus_half" is B1, "log_c" is B2 with `log_c` fitted.
+    loc_kind: str = "minus_half"
+    log_c: float = 0.0
 
     def __post_init__(self) -> None:
         self._z, self._w = gh_nodes(self.k_nodes)
@@ -108,7 +149,8 @@ class LatentArm:
         s = self._sigma_rows(df)
         out = np.zeros_like(p)
         if np.ptp(s) < 1e-12:
-            a = latent_values(float(s[0]), self._z)[0]
+            a = latent_values(float(s[0]), self._z,
+                              loc_for(float(s[0]), self.loc_kind, self.log_c))[0]
             for j, wj in enumerate(self._w):
                 out += wj * (p @ transfer(float(a[j])))
             return out
@@ -120,7 +162,9 @@ class LatentArm:
                       0, self.sigma_buckets - 1)
         for b in np.unique(bid):
             r = np.flatnonzero(bid == b)
-            a = latent_values(float(s[r].mean()), self._z)[0]
+            sb = float(s[r].mean())
+            a = latent_values(sb, self._z,
+                              loc_for(sb, self.loc_kind, self.log_c))[0]
             for j, wj in enumerate(self._w):
                 out[r] += wj * (p[r] @ transfer(float(a[j])))
         return out

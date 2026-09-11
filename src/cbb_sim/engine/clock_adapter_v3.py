@@ -617,7 +617,19 @@ def summarise_cells(snaps: list[dict]) -> pd.DataFrame:
 #: serves `v3c_srfloor_P3_s1` and this lane does not change it.
 V5_MODES: dict[str, dict] = {
     "v5_glat_shared": {"base_mode": "v3c_srfloor_P3_s1", "unit": "game",
-                       "param": "A1_sigma"},
+                       "param": "A1_sigma", "loc": "minus_half",
+                       "params_file": "v5_bakeoff/v5_bakeoff_report.json"},
+    # Round 5b (experiments.md section 21): the SAME latent, moved so that the
+    # POSSESSION COUNT's expectation is preserved rather than the duration
+    # mean's. B1 is the analytic identity E[1/A]=1; B2 additionally re-estimates
+    # the law's mean level with the latent present, on TRAINING rows.
+    "v5b_glat_pmean": {"base_mode": "v3c_srfloor_P3_s1", "unit": "game",
+                       "param": "B1_sigma", "loc": "plus_half",
+                       "params_file": "v5b_bakeoff/v5b_bakeoff_report.json"},
+    "v5b_glat_joint": {"base_mode": "v3c_srfloor_P3_s1", "unit": "game",
+                       "param": "B2_sigma", "loc": "log_c",
+                       "log_c_param": "B2_log_c",
+                       "params_file": "v5b_bakeoff/v5b_bakeoff_report.json"},
 }
 
 #: The bake-off's fitted parameters, read rather than re-derived. Same rule as
@@ -668,6 +680,9 @@ class LatentClockAdapter:
     #: `loop.py` reads this and passes the active rows' (seed, game_id, "clock")
     #: stream keys, which is the only per-SIMULATION identity the adapter has.
     wants_sim_keys: bool = True
+    #: round-5b latent LOCATION (section 21.2). The default reproduces round 5.
+    loc_kind: str = "minus_half"
+    log_c: float = 0.0
 
     @classmethod
     def load(cls, inp: EngineInputs, mode: str, season: int = 2025) -> LatentClockAdapter:
@@ -679,20 +694,28 @@ class LatentClockAdapter:
         if not V5_PARAMS.exists():
             raise FileNotFoundError(
                 f"{V5_PARAMS} missing; run scripts/exp_clk5_dispersion_bakeoff.py")
-        rep = json.loads(V5_PARAMS.read_text(encoding="utf-8"))
+        pf = CK_DIR / spec.get("params_file", "v5_bakeoff/v5_bakeoff_report.json")
+        if not pf.exists():
+            raise FileNotFoundError(
+                f"{pf} missing; run the round-5/5b bake-off script")
+        rep = json.loads(pf.read_text(encoding="utf-8"))
         sigma = float(rep["params"]["F2"][spec["param"]])
+        log_c = float(rep["params"]["F2"].get(spec.get("log_c_param", ""), 0.0)
+                      ) if spec.get("log_c_param") else 0.0
+        loc_kind = str(spec.get("loc", "minus_half"))
         inner = ClockAdapterV3.load(inp, spec["base_mode"], season)
         src = dict(inner.source)
         src.update({
             "round5_arm": mode, "latent_unit": spec["unit"],
-            "latent_sigma": sigma, "latent_sigma_source": str(V5_PARAMS),
+            "latent_sigma": sigma, "latent_sigma_source": str(pf),
+            "latent_loc_kind": loc_kind, "latent_log_c": log_c,
             "latent_sigma_fold": "F2 train {2022,2023,2024}, method of moments",
             "adopted": False,
             "note": ("round-5 closed-loop candidate (experiments.md section 16); "
                      "E[A]=1 scale mixture on the served cell law, NOT a default"),
         })
         return cls(inner=inner, sigma=sigma, unit=str(spec["unit"]), mode=mode,
-                   source=src)
+                   source=src, loc_kind=loc_kind, log_c=log_c)
 
     def __getattr__(self, name: str):
         """Everything this wrapper does not override is the inner adapter's.
@@ -707,7 +730,9 @@ class LatentClockAdapter:
         from cbb_sim.engine.rng import uniforms_at
         k = np.asarray(keys, dtype=np.uint64)
         u = uniforms_at(k, np.full(len(k), LATENT_ORDINAL, dtype=np.int64))
-        return np.exp(self.sigma * ndtri(u) - 0.5 * self.sigma ** 2)
+        from cbb_sim.models.clock_v5 import loc_for
+        m = float(loc_for(self.sigma, self.loc_kind, self.log_c))
+        return np.exp(self.sigma * ndtri(u) + m)
 
     def pmf(self, team: np.ndarray, state: np.ndarray,
             gidx: np.ndarray | None = None) -> np.ndarray:

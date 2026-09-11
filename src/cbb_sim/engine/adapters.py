@@ -850,7 +850,7 @@ def _load_clock(inp: EngineInputs, mode: str, season: int):
     """Round-3c and round-4 clock arms live in `clock_adapter_v3`; everything
     else is unchanged. `docs/models/clock/experiments.md` sections 12 and 14.
     The import is deferred so this module has no new import-time dependency."""
-    if mode.startswith("v5_"):
+    if mode.startswith(("v5_", "v5b_")):
         # Round 5 (experiments.md section 16): a within-game duration latent
         # wrapped around the round-4 reference. NOT ADOPTED; reachable only by
         # an explicit ENGINE_CLOCK=v5_* and the DEFAULT below is unchanged.
