@@ -3829,3 +3829,150 @@ section 24.5 an arm that has not cleared M1 and criterion 5 cannot qualify:
 **the verdict of 25.5 stands unchanged -- NO ARM ADOPTED, no default changed,
 nothing hand-tuned, and C4 is a CANDIDATE whose closed loop is round 5c's
 remaining work.**
+
+
+## 26. Round 5d pre-registration -- C4 WIRED, the paired closed loop against the served B1 (2026-09-11)
+
+Appended VERBATIM BEFORE the engine mode `v5d_glat_pquad` existed, before any
+round-5d results directory existed and before any closed-loop number was read.
+Sections 8, 10, 12, 14, 16, 17, 18, 19, 20, 21, 22, 23, 24 and 25 are STATIC and
+are NOT edited. `experiments.md` is append-only.
+
+**PREMISE.** Section 25.6 records that C4 `v5c_glat_pace2` satisfies every
+OFFLINE line of section 24.5 -- primary 1.0100, N1 `CRPS_trunc` +0.000133
+against a 0.00684 floor, N2 mean gate -0.1260, N3 PIT worst-cell D 0.430395 (the
+best of the five arms) with 20 leaking cells exactly as R and B1, N4 +0.4886 --
+and the responsiveness band verbatim in all five tempo quintiles (worst |dev|
+0.139 against [0.85, 1.15]). It records equally plainly that **M1 and criterion
+5 are UNREAD** because the round ran out of wall clock before the engine wiring
+existed. Round 5d exists to read exactly those two, and nothing else. **It
+changes no default under any outcome; the PM switches the served arm or does
+not.**
+
+### 26.1 The arm, and what "wired" means here
+
+`ENGINE_CLOCK=v5d_glat_pquad`, **default-off**, a new branch of
+`clock_adapter_v3.LatentClockAdapter`. `adapters.py` DEFAULTS ARE NOT TOUCHED.
+
+    A = exp(sigma(t) * z + sigma(t)^2 / 2),
+    sigma(t)^2 = b0 + b1*(t - tbar) + b2*(t - tbar)^2
+
+with `(b0, b1, b2, tbar)` READ, not re-derived, from
+`data/processed/models/clock/v5c_bakeoff/v5c_params.json` key `F2` -- the same
+fitted object section 25's offline grade scored, under round 3c's standing rule
+"the fitted object is READ, never reimplemented". `t` is `tempo_prior_game`, a
+PREGAME feature the served round-3c design frame already carries in
+`TEAM_COLS`; it is verified game-level in the engine inputs (max absolute
+difference between a game's two team rows = 0.0 over all 5,710 games), so one
+draw of `A` is one pace realisation for the whole game and BOTH teams, which is
+the CLAUDE.md modeling rule the latent exists to honour. `sigma^2` is floored at
+1e-8 exactly as `exp_clk5c_dispersion_function.sigma2_rows` floors it offline;
+over the observed engine tempo range (58.6 to 79.5) the quadratic is strictly
+positive, so the floor is never active and is a guard, not a clip on output.
+
+**Pairing.** The latent's uniform is drawn from the SAME `clock` stream at the
+SAME ordinal `2**40` that B1 draws it at (`LATENT_ORDINAL`, section 16's
+construction). No new RNG family is introduced and no other sub-model's stream
+moves, so a C4 run and a B1 run differ game-by-game and seed-by-seed ONLY in the
+map from the shared uniform to `A`. This is pairing by construction, the same
+sense rounds 3c, 4, 5 and 5b used.
+
+**The served B1 path must be BIT-IDENTICAL after this change.** Pre-registered
+check, run before any C4 number is read: a 60-game x 5-seed smoke on the
+UNCHANGED default is digested by `scripts/digest_engine_run.py` against
+`results/engine_v0/smoke60x5_default_v5b`, the digest the PM's serving decision
+(change ledger, commit `e3ccce5`) was verified on. **A mismatch of any kind
+fails round 5d outright and the round reports a wiring defect, not a clock
+result.** `pytest tests/test_clock_adapter_v3.py tests/test_engine.py` must pass
+unchanged.
+
+### 26.2 The closed loop
+
+500 games of the section 14.4 subset (the F2 2025 slate sorted by `game_id`,
+every 11th row, first 500; 159 clock-complete), `scripts/run_clk4_closed_loop.py`
+unedited, every other sub-model pinned by that script's `PINNED_SUBMODELS`
+(`ENGINE_EVENT=round2_s1`, `ENGINE_FG_MAKE=round3_shooter_S_C_s1`,
+`ENGINE_FG3=decision8`, `ENGINE_ROTATION=reference`) and written into
+`run_meta.json`. New results directories `clk5d_*`; nothing existing is
+overwritten. Threads capped at 6, engine pool at 6 workers.
+
+**The B1 reference is `results/engine_v0/clk5b_B1_s25`, REUSED, not re-run**, on
+the same precedent section 22.3 used to reuse `clock4_R_s25`: it is the same
+arm, the same 500-game subset, the same seeds `0..24`, the same
+`PINNED_SUBMODELS`, and `src/cbb_sim/engine/loop.py` (`b94b947`) and
+`clock_adapter_v3.py` (`ce2cd94`) have not changed since it was produced. The
+bit-identity check of 26.1 is what licenses the reuse and it is run FIRST. If it
+fails, B1 is re-run and the reuse is withdrawn.
+
+Seed plan, wall-clock-bound and stated in advance: **25 paired seeds if the
+clock allows (the measured cost of `clk5b_B1_s25` is 348 s at 6 workers), 5
+paired seeds otherwise, with the 5-seed read labelled a DIRECTION and never a
+level** -- section 22.7's finding that a 5-seed within-game SD is biased low on
+both sides of its own ratio is binding here.
+
+### 26.3 The lines, with the floors MEASURED in round 5b
+
+Graders `scripts/grade_clk3c_closed_loop.py` and
+`scripts/grade_clk5_dispersion_loop.py`, both UNEDITED. Floors are section
+22.3's, measured at 25 seeds from the two seed-offset R runs, carried verbatim:
+
+| # | line | B1 (25 seeds, `clk5b_B1_s25`) | measured floor | actual |
+|---|---|---:|---:|---:|
+| L1 | G1 possessions/team-game mean, all 500 | +1.649 | **0.074** | 0.000 |
+| L2 | G1 possessions/team-game mean, clock-complete | +0.989 | **0.157** | 0.000 |
+| L3 | possession SD ratio, cc | 1.0320 | **0.0042** | 1.000 |
+| L4 | G5 total SD ratio | 0.8227 | **0.0165** | 1.000 |
+| L5 | `corr(home, away)` | +0.1005 | **0.0037** | 0.2374 |
+| L6 | `corr(P, eFG%)` within game | -0.1223 | **0.0231** | ~0.000 |
+| L7 | G5 margin SD ratio | 0.9563 | **0.0115** | 1.000 |
+| L8 | total bias | -1.061 | **0.377** | 0.000 |
+| L9 | G9 calibration slope (possessions by pregame-tempo quintile) | read from `grade_clk3c_closed_loop.py` | re-measured here from the two R runs | 1.000 |
+| L10 | margin SD (points) | 15.881 | 0.081 | 15.472 |
+| L11 | within-game possessions SD, cc | 4.8147 | 0.0857 | 4.6652 |
+
+**L12, THE RESPONSIVENESS LINE, now read CLOSED-LOOP and not offline:** the
+per-game possession SD ratio (engine within-game SD over the SD of
+`actual - sim mean`) **by pregame-tempo quintile**, five quintiles of the
+500-game subset, computed by a new grader `scripts/grade_clk5d_quintile_sd.py`
+that reuses `grade_clk5_dispersion_loop.score`'s definitions of the two SDs
+UNCHANGED and only cuts them by `tempo_prior_game` quintile. Quintile cells of
+100 games at 25 seeds are thinner than section 25.3's 398-399-game offline cells
+and the ratio is a ratio of two noisy SDs, so **each quintile is reported with
+the B1-vs-C4 difference beside it and no quintile is called a pass or a failure
+on a 5-seed run.** Cells under 50 games are UNDERPOWERED and are not read.
+
+### 26.4 Decision rule
+
+**C4 `v5d_glat_pquad` SUPERSEDES B1 as the arm this lane puts forward for
+serving only if BOTH:**
+
+1. **no line L1-L11 regresses beyond its measured floor** against B1 -- where
+   "regresses" means moves AWAY from the `actual` column by more than one floor;
+   and
+2. **the quintile line L12 IMPROVES beyond floor** -- the spread of the five
+   quintile ratios (max minus min) falls by more than the floor measured for
+   that spread from the two seed-offset R runs, and no quintile moves further
+   outside `[0.85, 1.15]` than B1's worst.
+
+If (1) holds and (2) does not, C4 is recorded as NEUTRAL and B1 stays the arm
+put forward. If (1) fails, C4 is REJECTED regardless of (2). **A failing line is
+not waived because the offline table is good, and the offline pass of section
+25.6 does not carry any weight against a closed-loop regression.** Round 5b's
+two open failures against B1 -- Q2 responsiveness and the 1.2-floor G5
+margin-SD-ratio regression -- are NOT transferred to C4 as a debt and NOT
+forgiven for it: C4 is measured against B1 as B1 now stands.
+
+**This lane does not change the served default under any outcome.** Whatever the
+table says, `adapters.py`'s `ENGINE_CLOCK` default stays `v5b_glat_pmean` and
+`provisional_clock` stays True until the PM moves it. Results go to section 27,
+the evidence to `docs/tests/clock_pquad_closed_loop_2026-09-11.md`, and a row to
+`docs/models/change_ledger.md` with the verdict whichever way it falls.
+
+### 26.5 What round 5d cannot say
+
+It cannot re-open the offline grade: nothing is refitted, no artifact is
+rewritten, and `v5c_params.json` is read as committed at `4107eb8`. It cannot
+adjudicate the monotonicity half of criterion 4, which section 25.3 handed to
+the PM and which no closed-loop number settles. It cannot price C4 on any game
+set other than the 500-game subset. And a NEUTRAL or PASSING verdict here is
+still only a CANDIDATE: adoption is the PM's, on the full section 24.5 list.
