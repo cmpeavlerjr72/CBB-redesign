@@ -1,0 +1,210 @@
+{
+  "overall": {
+    "rows": 62143,
+    "matched_rows": 62122,
+    "row_match_rate": 0.9996620697423684,
+    "on_floor_players": 14986,
+    "on_floor_matched": 14965,
+    "on_floor_player_match_rate": 0.9985986921126384,
+    "possession_weighted_match_rate": 0.9998675207427971,
+    "by_method": {
+      "source_id_verified": 58120,
+      "source_id_unverified": 3994,
+      "unmatched": 21,
+      "name_team_pbp": 8
+    }
+  },
+  "2022": {
+    "rows": 13489,
+    "matched_rows": 13489,
+    "row_match_rate": 1.0,
+    "on_floor_players": 0,
+    "on_floor_matched": 0,
+    "on_floor_player_match_rate": NaN,
+    "possession_weighted_match_rate": NaN,
+    "by_method": {
+      "source_id_verified": 12206,
+      "source_id_unverified": 1283
+    }
+  },
+  "2023": {
+    "rows": 13716,
+    "matched_rows": 13716,
+    "row_match_rate": 1.0,
+    "on_floor_players": 0,
+    "on_floor_matched": 0,
+    "on_floor_player_match_rate": NaN,
+    "possession_weighted_match_rate": NaN,
+    "by_method": {
+      "source_id_verified": 12539,
+      "source_id_unverified": 1177
+    }
+  },
+  "2024": {
+    "rows": 14056,
+    "matched_rows": 14056,
+    "row_match_rate": 1.0,
+    "on_floor_players": 4945,
+    "on_floor_matched": 4945,
+    "on_floor_player_match_rate": 1.0,
+    "possession_weighted_match_rate": 1.0,
+    "by_method": {
+      "source_id_verified": 12583,
+      "source_id_unverified": 1473
+    }
+  },
+  "2025": {
+    "rows": 15215,
+    "matched_rows": 15210,
+    "row_match_rate": 0.9996713769306605,
+    "on_floor_players": 5051,
+    "on_floor_matched": 5046,
+    "on_floor_player_match_rate": 0.9990100970104929,
+    "possession_weighted_match_rate": 0.9999907364798597,
+    "by_method": {
+      "source_id_verified": 15152,
+      "source_id_unverified": 58,
+      "unmatched": 5
+    }
+  },
+  "2026": {
+    "rows": 5667,
+    "matched_rows": 5651,
+    "row_match_rate": 0.9971766366684313,
+    "on_floor_players": 4990,
+    "on_floor_matched": 4974,
+    "on_floor_player_match_rate": 0.9967935871743487,
+    "possession_weighted_match_rate": 0.9996176823631496,
+    "by_method": {
+      "source_id_verified": 5640,
+      "unmatched": 16,
+      "name_team_pbp": 8,
+      "source_id_unverified": 3
+    }
+  },
+  "unmatched_on_floor_top20": [
+    {
+      "season": 2026,
+      "cbbd_player_id": 222900,
+      "name": NaN,
+      "on_floor_poss": 1071
+    },
+    {
+      "season": 2026,
+      "cbbd_player_id": 28054,
+      "name": NaN,
+      "on_floor_poss": 516
+    },
+    {
+      "season": 2026,
+      "cbbd_player_id": 222965,
+      "name": NaN,
+      "on_floor_poss": 494
+    },
+    {
+      "season": 2026,
+      "cbbd_player_id": 222984,
+      "name": NaN,
+      "on_floor_poss": 209
+    },
+    {
+      "season": 2026,
+      "cbbd_player_id": 6014,
+      "name": NaN,
+      "on_floor_poss": 190
+    },
+    {
+      "season": 2026,
+      "cbbd_player_id": 18362,
+      "name": NaN,
+      "on_floor_poss": 173
+    },
+    {
+      "season": 2026,
+      "cbbd_player_id": 7780,
+      "name": NaN,
+      "on_floor_poss": 103
+    },
+    {
+      "season": 2026,
+      "cbbd_player_id": 14454,
+      "name": NaN,
+      "on_floor_poss": 77
+    },
+    {
+      "season": 2026,
+      "cbbd_player_id": 201020,
+      "name": NaN,
+      "on_floor_poss": 59
+    },
+    {
+      "season": 2026,
+      "cbbd_player_id": 7817,
+      "name": NaN,
+      "on_floor_poss": 52
+    },
+    {
+      "season": 2025,
+      "cbbd_player_id": 197163,
+      "name": NaN,
+      "on_floor_poss": 41
+    },
+    {
+      "season": 2026,
+      "cbbd_player_id": 3356,
+      "name": NaN,
+      "on_floor_poss": 19
+    },
+    {
+      "season": 2025,
+      "cbbd_player_id": 197164,
+      "name": NaN,
+      "on_floor_poss": 17
+    },
+    {
+      "season": 2026,
+      "cbbd_player_id": 198038,
+      "name": NaN,
+      "on_floor_poss": 14
+    },
+    {
+      "season": 2025,
+      "cbbd_player_id": 197166,
+      "name": NaN,
+      "on_floor_poss": 8
+    },
+    {
+      "season": 2026,
+      "cbbd_player_id": 222985,
+      "name": NaN,
+      "on_floor_poss": 7
+    },
+    {
+      "season": 2026,
+      "cbbd_player_id": 5779,
+      "name": NaN,
+      "on_floor_poss": 5
+    },
+    {
+      "season": 2025,
+      "cbbd_player_id": 197167,
+      "name": NaN,
+      "on_floor_poss": 3
+    },
+    {
+      "season": 2025,
+      "cbbd_player_id": 21158,
+      "name": NaN,
+      "on_floor_poss": 2
+    },
+    {
+      "season": 2026,
+      "cbbd_player_id": 223011,
+      "name": NaN,
+      "on_floor_poss": 2
+    }
+  ],
+  "api_calls_used_this_run": 0,
+  "seasons_added_this_run": [],
+  "note": "Versioned sibling of data/processed/player_crosswalk.parquet (which stays 2024-2026, untouched). This file covers 2022-2026."
+}

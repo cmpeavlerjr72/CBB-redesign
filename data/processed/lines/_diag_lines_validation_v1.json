@@ -1,0 +1,288 @@
+{
+  "seasons": {
+    "2023": {
+      "n_d1_games": 5749,
+      "n_covered": 5740,
+      "pct_covered": 0.998434510349626,
+      "duplicates_gameId_provider": 0,
+      "spreadOpen_nonnull_pct": 0.0,
+      "overUnderOpen_nonnull_pct": 0.0,
+      "flip_check": {
+        "n": 5649,
+        "normal": 5649,
+        "swapped": 0,
+        "neither": 0
+      }
+    },
+    "2024": {
+      "n_d1_games": 5731,
+      "n_covered": 5306,
+      "pct_covered": 0.9258419124062118,
+      "duplicates_gameId_provider": 0,
+      "spreadOpen_nonnull_pct": 0.0,
+      "overUnderOpen_nonnull_pct": 0.0,
+      "flip_check": {
+        "n": 5228,
+        "normal": 5228,
+        "swapped": 0,
+        "neither": 0
+      }
+    },
+    "2025": {
+      "n_d1_games": 5769,
+      "n_covered": 5440,
+      "pct_covered": 0.9429710521754203,
+      "duplicates_gameId_provider": 0,
+      "spreadOpen_nonnull_pct": 0.3327205882352941,
+      "overUnderOpen_nonnull_pct": 0.32113970588235297,
+      "flip_check": {
+        "n": 5383,
+        "normal": 5380,
+        "swapped": 0,
+        "neither": 3
+      }
+    }
+  },
+  "primary_provider": "ESPN BET",
+  "n_games_espn_bet_with_finals": 16240,
+  "spread_implied_margin_mae": 8.809944581280789,
+  "spread_implied_margin_corr": 0.6279385726687541,
+  "total_bias_actual_minus_line": 0.7288741145768609,
+  "total_mae": 12.967720889772586,
+  "overround_stats": {
+    "count": 15860.0,
+    "mean": 0.04633379137015225,
+    "std": 0.011044061121366168,
+    "min": -0.004183516943243593,
+    "25%": 0.03837543971858004,
+    "50%": 0.043290043290043156,
+    "75%": 0.05516154452324673,
+    "max": 0.09250398724082931
+  },
+  "spread_vs_ml_model_corr": 0.9963356638307307,
+  "spread_vs_ml_model_mae": 0.019604179221882054,
+  "calibration_buckets": [
+    {
+      "n": 808,
+      "mean_implied": 0.16401874822589022,
+      "realized_win_rate": 0.15717821782178218
+    },
+    {
+      "n": 856,
+      "mean_implied": 0.2826535728819543,
+      "realized_win_rate": 0.2616822429906542
+    },
+    {
+      "n": 725,
+      "mean_implied": 0.3538932362254041,
+      "realized_win_rate": 0.32689655172413795
+    },
+    {
+      "n": 831,
+      "mean_implied": 0.407501627383014,
+      "realized_win_rate": 0.42839951865222625
+    },
+    {
+      "n": 812,
+      "mean_implied": 0.4520653031682755,
+      "realized_win_rate": 0.4445812807881773
+    },
+    {
+      "n": 860,
+      "mean_implied": 0.5010762153029111,
+      "realized_win_rate": 0.5267441860465116
+    },
+    {
+      "n": 726,
+      "mean_implied": 0.5410650979689348,
+      "realized_win_rate": 0.5413223140495868
+    },
+    {
+      "n": 737,
+      "mean_implied": 0.5707186726173824,
+      "realized_win_rate": 0.6173677069199457
+    },
+    {
+      "n": 947,
+      "mean_implied": 0.6011543282732144,
+      "realized_win_rate": 0.600844772967265
+    },
+    {
+      "n": 653,
+      "mean_implied": 0.6283365447254379,
+      "realized_win_rate": 0.655436447166922
+    },
+    {
+      "n": 768,
+      "mean_implied": 0.6534595816385093,
+      "realized_win_rate": 0.6640625
+    },
+    {
+      "n": 862,
+      "mean_implied": 0.6879004689649229,
+      "realized_win_rate": 0.7111368909512761
+    },
+    {
+      "n": 786,
+      "mean_implied": 0.7195772687137103,
+      "realized_win_rate": 0.7315521628498728
+    },
+    {
+      "n": 783,
+      "mean_implied": 0.7513828474214148,
+      "realized_win_rate": 0.7969348659003831
+    },
+    {
+      "n": 774,
+      "mean_implied": 0.78560904428771,
+      "realized_win_rate": 0.8255813953488372
+    },
+    {
+      "n": 812,
+      "mean_implied": 0.8226540852098374,
+      "realized_win_rate": 0.8460591133004927
+    },
+    {
+      "n": 776,
+      "mean_implied": 0.8589244461066098,
+      "realized_win_rate": 0.8865979381443299
+    },
+    {
+      "n": 798,
+      "mean_implied": 0.893812245826781,
+      "realized_win_rate": 0.9122807017543859
+    },
+    {
+      "n": 753,
+      "mean_implied": 0.9238859973512473,
+      "realized_win_rate": 0.9468791500664011
+    },
+    {
+      "n": 793,
+      "mean_implied": 0.9584869916940701,
+      "realized_win_rate": 0.9848675914249685
+    }
+  ],
+  "coverage_rows": [
+    [
+      2023,
+      5749,
+      5740,
+      0.998434510349626
+    ],
+    [
+      2024,
+      5731,
+      5306,
+      0.9258419124062118
+    ],
+    [
+      2025,
+      5769,
+      5440,
+      0.9429710521754203
+    ]
+  ],
+  "provider_rows": [
+    [
+      2023,
+      "ESPN BET",
+      5720
+    ],
+    [
+      2023,
+      "consensus",
+      5602
+    ],
+    [
+      2023,
+      "teamrankings",
+      5732
+    ],
+    [
+      2024,
+      "ESPN BET",
+      5306
+    ],
+    [
+      2025,
+      "ESPN BET",
+      5440
+    ]
+  ],
+  "conf_rows": [
+    [
+      2023,
+      false,
+      2137,
+      2134
+    ],
+    [
+      2023,
+      true,
+      3612,
+      3606
+    ],
+    [
+      2024,
+      false,
+      2166,
+      1993
+    ],
+    [
+      2024,
+      true,
+      3565,
+      3313
+    ],
+    [
+      2025,
+      false,
+      2119,
+      2118
+    ],
+    [
+      2025,
+      true,
+      3650,
+      3322
+    ]
+  ],
+  "dup_rows": [
+    [
+      2023,
+      0
+    ],
+    [
+      2024,
+      0
+    ],
+    [
+      2025,
+      0
+    ]
+  ],
+  "flip_rows": [
+    [
+      2023,
+      5649,
+      5649,
+      0,
+      0
+    ],
+    [
+      2024,
+      5228,
+      5228,
+      0,
+      0
+    ],
+    [
+      2025,
+      5383,
+      5380,
+      0,
+      3
+    ]
+  ]
+}

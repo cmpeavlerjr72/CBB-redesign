@@ -178,11 +178,25 @@ def load_team_crosswalk(path: Path = DEFAULT_TEAM_CROSSWALK) -> pd.DataFrame:
 
 def onfloor_player_weights(seasons, poss_dir: Path = DEFAULT_POSSESSIONS_DIR) -> pd.DataFrame:
     """(season, cbbd_player_id) -> possessions that player is on the floor for.
-    This is the weight the match rate that matters is computed under."""
+    This is the weight the match rate that matters is computed under.
+
+    Some early seasons' possession files (2022, 2023 as of 2026-09-10) predate
+    the on_floor_* columns being added to the possession builder and carry no
+    lineup information at all. Rather than crash, such a season contributes
+    zero weighted rows -- callers must report that season's on-floor match
+    rate as "not available" (an underpowered/missing cell), never as 0% (a
+    false absence-of-signal reading; see CLAUDE.md "multi-level evidence").
+    """
     rows = []
     for season in seasons:
         path = Path(poss_dir) / f"possessions_{season}.parquet"
-        p = pd.read_parquet(path, columns=ON_FLOOR_COLS)
+        try:
+            p = pd.read_parquet(path, columns=ON_FLOOR_COLS)
+        except (FileNotFoundError, ValueError, OSError):
+            rows.append(pd.DataFrame({"season": pd.Series([], dtype="int64"),
+                                      "cbbd_player_id": pd.Series([], dtype="int64"),
+                                      "on_floor_poss": pd.Series([], dtype="int64")}))
+            continue
         vals = p.to_numpy(dtype="float64").ravel()
         vals = vals[~np.isnan(vals)]
         ids, cnt = np.unique(vals.astype("int64"), return_counts=True)

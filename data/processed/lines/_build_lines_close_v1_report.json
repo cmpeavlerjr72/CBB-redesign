@@ -1,0 +1,45 @@
+{
+  "seasons": [
+    2023,
+    2024,
+    2025
+  ],
+  "raw_line_rows_2023_2025": 27918,
+  "joined_line_rows": 27918,
+  "join_rate": 1.0,
+  "unmatched_gameIds_sample": [],
+  "output_rows": 27918,
+  "output_path": "data\\processed\\lines\\lines_close_v1.parquet",
+  "rows_by_season_provider": [
+    {
+      "season": 2023,
+      "provider": "ESPN BET",
+      "rows": 5833
+    },
+    {
+      "season": 2023,
+      "provider": "consensus",
+      "rows": 5602
+    },
+    {
+      "season": 2023,
+      "provider": "teamrankings",
+      "rows": 5732
+    },
+    {
+      "season": 2024,
+      "provider": "ESPN BET",
+      "rows": 5311
+    },
+    {
+      "season": 2025,
+      "provider": "ESPN BET",
+      "rows": 5440
+    }
+  ],
+  "de_vig_methods": [
+    "proportional (primary)",
+    "power (reported alongside)"
+  ],
+  "close_line_caveat": "CBBD /lines carries no line-level timestamp; 'close' means the only/last value on file per docs/tests/lines_cbbd_validation_2026-09-10.md section 2, not a timestamp-verified pre-tipoff snapshot."
+}
