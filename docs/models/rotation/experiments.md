@@ -1124,3 +1124,315 @@ Practical consequences recorded for round 4 and for the engine:
    recorded so the next pre-registration budgets it.
 
 ---
+
+## 10. Round 4 pre-registration -- a new model family (PM-directed, worker-authored 2026-09-10)
+
+Written and committed BEFORE any round-4 arm was run. Evidence it is built on:
+`docs/tests/rotation_sub_hazard_audit_2026-09-10.md`, also written and committed
+before this section.
+
+### 10.1 Why round 4 changes family rather than knobs
+
+Three rounds cannot produce two structural facts of a real rotation (L25):
+
+* the second half opens at **0.90** starter share in every margin band over the
+  H2 20:00-16:00 window (and **0.95-0.97** at the tip possession itself); no arm
+  in three rounds exceeded 0.80 over the window and none was ever measured at
+  the tip;
+* starters are **kept** late in a close game (0.7491 in the final 8:00 at
+  \|margin\| <= 5); the best arm reaches 0.7281 and the override family's
+  reachable maximum over its whole 24-point knob grid is **0.6994**, with the
+  knob running the wrong way past scale 1.
+
+Rounds 1-3 were two families. (a) Dirichlet-share plus scheduler: draw each
+player's minutes BUDGET, then place it. (b) Donor resampling plus overrides:
+replay a real lineup sequence, then block or keep players on top of it. Both
+decide *how much* a player plays and infer *when*; a coach decides, at a
+stoppage, whom to take off and whom to bring on, and the minutes are the
+consequence. Round 4 models that decision directly, as **per-player
+discrete-time substitution hazards**.
+
+The PM's direction for round 4, not to be reopened: change family; carry the two
+structural facts as pre-registered gate cells; keep every round-3 gate unchanged.
+
+### 10.2 The family, and the one decision rule every arm shares
+
+At every possession boundary, for the five on the floor and for every eligible
+bench candidate:
+
+    p_out(i) = sigma(x_i . w_out)      i on the floor at the previous possession
+    p_in(j)  = sigma(x_j . w_in)       j eligible and off the floor
+
+Exits are independent Bernoulli draws. The five-on-the-floor constraint is then
+imposed by taking exactly `n_exit` entrants from the bench in an
+Efraimidis-Spirakis exponential race weighted by `p_in / (1 - p_in)` -- weighted
+sampling without replacement, expressible as one uniform per roster slot plus an
+argsort, which is why it is the same rule offline and in the engine adapter. A
+player with five fouls leaves before anyone else and can never enter.
+
+**Features (45, `rotation_v4.SUB_FEATURES`).** Player: `is_starter`, as-of
+`share` of the team's five on-floor slots, `fouls`, `foul_out`,
+`fouls x is_starter`, `state_min` (minutes in the current on/off state),
+`half_min` (minutes played so far in this half), `half_min_dev` (`half_min`
+minus `share x` elapsed half minutes). State: `sec_left_frac`, `is_ot`,
+`team_fouls_frac`, and four `prev_end` dummies (`period_boundary`,
+`dead_made_ft`, `dead_tov`, `dead_other`) which are the dead-ball opportunity.
+Cells: eight time-cell dummies (the nine audit cells, `H1 20:00-10:00` the
+reference) and two margin-band dummies. Interactions: `is_starter` with each
+time-cell dummy, each margin-band dummy, `period_boundary`, `sec_left_frac`,
+`is_close x late`, `is_blowout x late` and `abs_margin`; `share` with `late`,
+`mb>15` and `period_boundary`; `fouls x late`; `abs_margin`.
+
+**The design is deliberately saturated in (time cell x margin band x
+is_starter), and that is declared here rather than discovered later.** The audit
+shows a starter's exit hazard running 0.035 -> 0.020 -> 0.054 -> 0.027 -> 0.037
+across the nine cells (non-monotone), a bench player's exit hazard jumping to
+0.244 in H2 20:00-16:00, and the starter/bench ordering reversing sign in the
+final two minutes of a blowout. A linear time term cannot represent that shape.
+The gate reads OCCUPANCY in some of those cells, which is a different functional
+of the process -- an equilibrium the hazards must produce under the
+five-on-the-floor constraint, not a quantity fitted here -- and section 10.9's
+reachability numbers are what make that claim falsifiable rather than rhetorical.
+
+**Two features are measured in the audit and EXCLUDED, with the numbers.**
+(a) A timeout indicator multiplies every hazard by 3-4x (starter exit 0.031 ->
+0.136, starter entry 0.068 -> 0.243) and is excluded because the engine has no
+timeout model, so a hazard conditioned on it could not be evaluated in
+simulation -- the same class of exclusion as `is_transition` in `features.md`
+section 3. (b) Prior-season minutes share has a real gradient (P5 - P1: -0.9 pp
+on starter exit, +1.8 pp on starter entry) which is same-signed and about half
+the size of the as-of share already in the design, and it is not expressible in
+the engine without a new per-roster-slot input array, i.e. without rebuilding
+`arrays_F2_2025.npz` while other workers read it.
+
+### 10.3 Arms
+
+| arm | what it is | simplicity |
+|---|---|---:|
+| `R2_hier_dirichlet` (static) | the incumbent under rounds 1-3's scheme | 1 |
+| `R2_hier_dirichlet` (S1) | the incumbent under the adopted scheme; **the reference** | 1 |
+| `H1_sub_hazard` | logistic hazards + a HARD reset to the predicted starting five at the first possession of period 2 | 2 |
+| `H2_sub_hazard_noreset` | the same hazards, NO hard reset -- the reset must be EARNED by the `period_boundary` terms | 3 |
+| `H3_sub_hazard_lgbm` | H1 with a LightGBM hazard (300 rounds, 31 leaves, `min_data_in_leaf` 200) in place of the logistic | 4 |
+
+H1 and H2 differ in exactly one line of `run_sub_hazard`. H1 and H3 differ in
+exactly one fitted object. That is deliberate: each arm isolates one question,
+and H2 is the honest test of whether a fitted hazard produces a structural fact
+without being told it.
+
+The hard reset uses the model's own predicted starting five among the eligible,
+at the first possession of period 2 only; overtime is left to the hazards.
+
+### 10.4 Scheme and folds
+
+**Scheme: S1 for every arm, with the static column reported alongside**, per
+round 3b's decision (section 9.4). Windows are the calendar months of the
+2024-25 season; a game uses the parameter set whose window closed before its
+tipoff; the first window's training data is 2024 alone, which IS the static fit.
+
+**Folds.** As in round 3 (section 6.2) and for the same reason: CBBD carries no
+on-floor data at all before 2023-24 (0.0000 of possessions in 2022 and 2023,
+L13), so `CLAUDE.md`'s fold 1 has no training season and fold 2 is the only fold
+that exists. Round 4 runs **F1 = train 2024, test 2025**, which *is* the standing
+fold 2. **This is the selection fold and the only one.** Within-2025
+walk-forward is the robustness check and is reported only if an arm is otherwise
+adoptable; it is not a selection metric. 2026 stays sealed
+(`seal.assert_not_sealed` guards the trainer).
+
+**Base fits are reused, not refitted.** `rotation_fit_v3.json` and the six
+`rotation_fit_v3_S1_{YYYYMM}.json` written by round 3b are the base parameter
+sets (role prior, shrinkage, availability, foul rate, the tilt tables and the
+scheduler grid R2 needs). Round 4 fits ONLY the two hazards, per window, on that
+window's own training data. Consequence, stated so it cannot be read as a
+coincidence: the round-4 `R2 S1` column will be round 3b's `R2 S1` column, and
+the round-4 `R2 static` column will be rounds 1-3's, so a difference between
+rounds cannot be a difference in R2's fit. Nothing is written to any of those
+files.
+
+Hazard training rows come from `rotation_v4.build_sub_training` over the **as-of
+candidate pool**, with the training game's own `PersonalFoul` events supplying
+the foul state -- legitimate at fit time, where the label is that same game's
+substitution, and never at simulation time (the rule established by section 5).
+800 team-games are sampled per window (fit seed 11), giving roughly 550k out
+rows and 1.09M in rows.
+
+### 10.5 Test universe and grading path
+
+The **same** 1,600-game subset of 2025 rounds 2, 3 and 3b used (numpy
+RandomState seed 2025), 3 seeds per arm under S1 and 3 static, one blind grading
+path: `train_rotation_v1.build_row` / `verdict` / `rotation.aggregate_stats`,
+extended by `train_rotation_v4.extra_cells` for the two new cells and by
+`train_rotation_v4.minutes_mae` for the primary metric. Sim and actual go
+through the identical functions. Any cell with n < 300 player-games or
+possessions is labelled UNDERPOWERED.
+
+### 10.6 Gates -- every round-3 gate unchanged, plus two new cells
+
+**G8 cells (report, not veto), unchanged:** minutes mean +/- 2.0; minutes SD
+ratio pooled and within-player 0.9-1.1; top-5 and top-8 share of team minutes
++/- 2 pp; players with > 0 minutes +/- 1.0.
+
+**State-dependence cells (the veto), the four from round 3:** starters' share of
+on-floor slots in the final 8:00 at \|m\| <= 5 / 6-15 / > 15, and starters' share
+while carrying >= 4 fouls, each **+/- 3 pp**. The "at exactly 4 fouls" diagnostic
+is reported alongside, because section 5 showed the >= 4 cell can pass for the
+wrong reason.
+
+**Two NEW state cells, same +/- 3 pp tolerance, same veto status:**
+
+| new cell | definition | why |
+|---|---|---|
+| `h2tip_starter_share_b{0,1,2}` | starters' share of the five at the **first possession of period 2**, by margin band | the audit's largest conditional probability (0.90 at a period boundary) and the fact three rounds could not produce; measured at the tip, not over the four-minute window, because the audit shows it is a point event that decays |
+| `opentip_starter_share_close` | starters' share of on-floor slots over **H1 20:00-10:00 at \|m\| <= 5** | R2 is -17.0 pp here (round-3 audit section 7.3) and no gate saw it |
+
+So the veto is **eight** state cells in total: the 4 from round 3, the 3
+second-half-tip bands, and the opening tip. **An arm missing ANY of the eight is
+ineligible regardless of G8 or of MAE.**
+
+**Lineup concentration (report):** top-1 / top-3 / top-5 five-man lineup share,
+distinct lineups per team-game, K-S D of the top-1 lineup share distribution,
+K-S D of per-player minutes, substitution rate at a possession boundary.
+
+**Decision 8 slope check (a condition on adoption):** team-games bucketed into
+quintiles of the pregame as-of share of team minutes going to the predicted
+starting five; the close-and-late cell reported per quintile for ACTUAL and every
+arm, with the fitted slope and Q5 - Q1. An arm whose profile is flat, or whose
+slope sign disagrees with actual, is reported as not matchup-specific whatever
+its pooled cells say. The audit's whole-season reading is slope **+0.494**,
+Q5 - Q1 **+14.0 pp**, monotone 4 of 4.
+
+### 10.7 Primary metric
+
+**Per-player minutes MAE**: outer join of simulated and actual minutes on
+(game_id, team_id, pid) over the as-of rotation set (players with as-of
+`mpg >= 10`), so a player the arm never plays and a player the arm invents both
+count their full minutes as error; computed per seed and averaged over seeds.
+Reported for every arm; used by the decision rule in 10.8.
+
+### 10.8 Noise floor and the decision rule
+
+**Floor A, seed-varied sim runs:** 20 seeds x 150 games per arm, the SD of every
+gate cell and of the MAE (the round-3 configuration, so the two rounds' floors
+are comparable).
+
+**Floor B, spec-identical refit under a second seed:** the whole of 10.4 re-run
+with a different training-game sample (fit seed 101 vs 11), a different logistic
+`random_state` and a different sim seed (23 vs 7), graded on the same 150-game
+universe. An arm counts as beating the reference on a cell only if its
+improvement exceeds the refit-to-refit spread on that cell. This is run on the
+**new family's reference arm (H1)**, because H1 is the object round 4 adds; R2's
+own floor is round 3's noise floor A, already on record and unchanged by a run
+that does not refit it.
+
+**Decision rule.** Adopt the **simplest** arm that
+
+1. passes **every** one of the eight state cells at +/- 3 pp, AND
+2. beats `R2_S1` on per-player minutes MAE by more than the floor (the incumbent
+   is exempt from this clause, being the reference), AND
+3. satisfies the Decision 8 slope check, AND
+4. passes the Decision 10 closed-loop check of 10.10.
+
+Ties go to the simpler model in the order **R2 < H1 < H2 < H3**. An arm whose
+improvement on the cell it was built to fix does not clear floor B is not
+adopted on that cell. **If no arm is eligible, adopt nothing**, report which cell
+fails and by how much, and name the diagnosis. No gate is relaxed to produce a
+winner and no cell is dropped after seeing a result.
+
+### 10.9 The L25 reachability check, computed BEFORE this section was written
+
+L25: *"before fitting any knob, compute the fitted log-odds separation between
+the classes the knob must move apart in the target state and report the target
+cell's reachable range over the whole grid; if the target is outside it, the
+family is wrong and no fitting will find it."*
+
+The hazard family's analogue of "the whole grid" is its **saturated cell form**:
+hazards indexed by (is_starter x time cell x margin band x period-boundary flag),
+the most any per-player hazard conditioned on those variables can know. Fitted on
+2024 and run forward on 400 random 2025 games under the five-on-the-floor
+constraint with the same race selection rule
+(`scripts/diag_rotation_sub_hazard.py --mode reach`; audit section 8):
+
+| target cell | actual, same 400 games | family on paper | miss |
+|---|---:|---:|---:|
+| H2 tip, \|m\| <= 5 | 0.9732 | 0.9758 | +0.3 pp |
+| H2 tip, \|m\| 6-15 | 0.9574 | 0.9670 | +1.0 pp |
+| H2 tip, \|m\| > 15 | 0.9508 | 0.9525 | +0.2 pp |
+| final 8:00, \|m\| <= 5 | 0.7388 | 0.7393 | +0.05 pp |
+| final 8:00, \|m\| 6-15 | 0.7135 | 0.7031 | -1.0 pp |
+| final 8:00, \|m\| > 15 | 0.5120 | 0.5201 | +0.8 pp |
+| H1 20:00-10:00, \|m\| <= 5 | 0.7722 | 0.7741 | +0.2 pp |
+
+Against the override family's reachable maximum of 0.6994 on the close band
+(section 7.9). The starter-vs-bench separation in the close-and-late state is
+**0.98** in log odds on the exit risk set and **1.30** on the entry risk set --
+two separations acting in opposite directions on two different risk sets, whose
+equilibrium sets the cell, rather than R7's single 1.0 separation with one scale
+knob.
+
+**What the probe does not establish, and it is a real caveat:** it uses the real
+starting five and the real participant pool. A bake-off arm's starter set
+overlaps the real one on 4.58 of 5, and round 3 measured the cost -- the actual
+sequence re-graded with the model's as-of starter set puts the close-late
+benchmark at 0.7215, 2.8 pp below the 0.7491 the gate scores against. The family
+is reachable on paper and the arms must still find 2-3 pp the as-of starter set
+does not have. The gate is scored as pre-registered, against each side's own
+starting five.
+
+### 10.10 Decision 10: the closed-loop check
+
+Every round-4 arm consumes `margin` and `fouls`, both of which the engine itself
+produces, so Decision 10 applies in full. `R2` consumes them too, through
+`TiltTables.state` and `TiltTables.foul`, and **has never had a closed-loop
+gate** (L25), so one is run for it as well.
+
+`ENGINE_ROTATION_FREEZE=1` is added to `engine/rotation_adapter.py` and
+`engine/loop.py`. It holds, **for the rotation model only**, the margin at its
+pregame value (0) and the personal-foul and team-foul counts at theirs (0), while
+leaving the foul accrual, the foul-out eviction rule and the box-score foul
+counters live -- a player with five fouls still leaves the floor, because that is
+a rule of the game and not a model feature. Nothing else in the engine changes.
+
+The check is a paired-stream run of **5 seeds over a fixed 500-game subset** of
+the F2 2025 universe, live vs frozen, reporting margin SD ratio, home/away score
+correlation, possessions per game and per-player minutes MAE. Sub-model flags are
+pinned on every run so all arms share the same cascade regardless of when they
+ran: `ENGINE_EVENT=round2_s1`, `ENGINE_FG_MAKE=round2b_S_C_s1`, and both are
+recorded in the results. A winner that moves margin SD ratio, home/away
+correlation or possessions outside the G1/G2 tolerances between live and frozen
+is not adopted.
+
+### 10.11 Engine expressibility (a condition on adoption)
+
+Every feature above is computable from state the possession loop already carries
+at a boundary: `period`, `seconds_remaining`, `home_score_diff`, `prev_end` (the
+six `PREV_END_LEVELS` codes, which are exactly the possessions table's
+`start_reason`), `team_fouls`, the (2N, S) personal-foul block, and rotation
+state the adapter owns. `rotation_v4.design()` is written over (M, S) arrays and
+is called with M = 1 offline and M = 2N in the engine, so the offline sampler and
+the adapter cannot drift apart. The winner ships behind `ENGINE_ROTATION=round4`
+with S1 artifacts persisted per month and a manifest in the
+`engine/manifest.py` format (`refit_date`, `path`, `max_train_date`). The two
+stated RNG divergences of `docs/models/engine/model.md` section 4.5 apply
+unchanged; the race draw is one uniform per roster slot and becomes a third such
+stream. **A LightGBM hazard (H3) is a live model call in the sim loop, which
+`CLAUDE.md` bans**; if H3 wins, the adapter cost is a lookup-table discretisation
+of the booster and that is reported as a condition of adoption rather than
+waived.
+
+### 10.12 Disclosures
+
+1. A **60-game, 1-seed development smoke run** (`--smoke`, artifacts named
+   `rotation_F1_round4_SMOKE_*`) was executed before this section was written, to
+   verify the code path end to end. It printed gate cells on 2025. Its numbers
+   are not evidence, are not cited anywhere, and **no model specification was
+   changed after seeing them** -- the 45-feature design was fixed from the 2024
+   hazard tables and its faithfulness was checked on the 2024 training rows only
+   (that calibration table is reported with the results).
+2. The audit reports 2024 and 2025 hazard tables side by side. Feature choices
+   were taken from the **2024** tables; the 2025 columns exist for the
+   season-agreement check that round 3's audit section 7.5 also ran, and no
+   fitted object sees 2025 data outside its own S1 window.
+3. Base fits are reused from round 3b rather than refitted (10.4), which is a
+   deviation from "refit everything per window" and is stated as one.
+
+---
