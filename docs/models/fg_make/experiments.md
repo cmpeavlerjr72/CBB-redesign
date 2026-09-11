@@ -562,3 +562,199 @@ computes either on demand. Six tests in `tests/test_fg_make.py` pin the gate:
 the flat arm is rejected, the over-steep arm is rejected, the band edges are
 inclusive, the 4-of-4 rule survives on a high-span driver, the two readings
 differ only on a sub-2 pp driver, and an unknown reading raises.
+
+---
+
+## 13. ROUND 2 PRE-REGISTRATION: state parametrisation (written 2026-09-10, BEFORE any round-2 modelling)
+
+Owner: Opus cascade worker. Authority: `ARCHITECTURE_DECISIONS.md` **Decision
+10** (closed-loop gate for every engine-produced state feature) and
+**Decision 8** (responsiveness gate). Trigger: `docs/LEARNINGS.md` **L23**.
+Evidence this spec is built on, committed in the same commit and BEFORE the
+round runs: **`docs/tests/fg_make_state_confound_2026-09-10.md`**
+(`scripts/diag_fg_make_state_confound.py`,
+`data/processed/models/fg_make/state_confound.json`).
+
+Nothing in this section may be edited after the round starts. Results append
+below it; a status change goes to `docs/models/change_ledger.md` in the same
+commit.
+
+### 13.0 What the step-1 evidence established, and what it changes about this round
+
+1. **The round-1 `score_diff` is POST-OUTCOME.** It is read off
+   `homeScore`/`awayScore` on the attempt's own row, and that column is the
+   score AFTER the play: a made three already carries its own three points.
+   Proved three independent ways off the raw feed (evidence doc section 0);
+   94.5 / 94.3 / 93.6 / 93.6% of made field goals move their own team's score
+   by exactly the shot's value on their own row, against 99.5% of misses moving
+   it by zero. It is the same defect class as `blocked` and `and_one`, which
+   this model already bans by name.
+2. The leak manufactures **62.0% (rim), 83.3% (jumper), 83.5% (three)** of the
+   apparent margin effect. Pregame team strength accounts for a further
+   19.1 / 4.1 / 12.0 percentage-points of share. The genuine state effect is
+   **3.80 / 2.03 / 0.97 pp** of adjusted make probability across the whole
+   +/-20 margin range.
+3. The genuine effect is **not** monotone in the margin (U-shaped at the rim,
+   minimum at tied) and is **concentrated in the last two minutes and
+   overtime**: adjusted span 0.98-3.07 pp in every mid-game minute bucket,
+   9.33 pp in H2 2:00-0:00, 14.34 pp in OT.
+4. It is **not** a lineup effect: adding the defensive five's as-of allowed
+   rates moves the span by at most 0.10 pp on 1,202,616 lineup-complete
+   attempts.
+5. Two indicators carry it, and both are **flat in their thresholds** across a
+   3 x 3 (garbage) and 7-cell (end-game) grid, which is what makes fixing the
+   thresholds here a reading of the evidence and not a tuning step.
+
+**Consequence for the arm list.** The round-1 winner is not merely
+mis-parametrised, it is trained on a post-outcome column. Round 2 therefore
+introduces the corrected feature `score_diff_pre` (the margin BEFORE the
+attempt: `score_diff` minus the attempt's own points when it went in; a miss is
+unchanged by construction, so the correction can only remove outcome
+information, never add it) and every state arm is built on it. The round-1 arm
+is kept as arm **S-A** and re-scored so the size of the leak's log-loss
+advantage is on the record, but it is **declared INELIGIBLE to win here and
+now, before the round runs**, on the data-integrity ground above and not on any
+number this round will produce.
+
+**The engine already feeds the correct quantity.** `engine/loop._state_block`
+writes `st.off_score_diff()`, the live margin before the shot resolves. So
+round 1 shipped a train/serve skew as well as a leak.
+
+### 13.1 What is FIXED and not up for selection
+
+- **Model class: LightGBM per shot class.** Round 1 decided it (33.7 / 32.4
+  noise floors; Decision 8 for `FGA_3`). This round does not re-open it.
+- **Parameters:** the F1-only frozen ladder winner per class from round 1
+  (`lgbm_ladder_v2.json`, rung 1: `num_leaves` 31, `min_child_samples` 200, 400
+  trees, learning rate 0.06). **No new parameter search.** F1 is not touched
+  for tuning.
+- **Training scheme: STATIC**, exactly as round 1, so the arms differ ONLY in
+  the state block. L21's in-season refit (S1) is the standing default and is a
+  SEPARATE round for this model; mixing it in here would confound the two
+  changes.
+- **Possessions version v2**, L16 rim override, same universe (D-I,
+  non-truncated, `pbp_complete`), same shooter key, same banned features.
+- **Folds:** F1 = train {2022, 2023} test 2024 (reported, selects nothing);
+  **F2 = train {2022, 2023, 2024} test 2025 = SELECTION**. 2026 sealed
+  (`assert_not_sealed` on every slice).
+
+### 13.2 The arms (state parametrisations only)
+
+Every arm is `B_plus_shooter` (team block + shooter block, unchanged from round
+1) plus the state block named below.
+
+| arm | state block | why it is in |
+|---|---|---|
+| **S-A** `R2_A_round1_leaked` | round 1's `C_plus_state`: `period`, `seconds_remaining`, **`score_diff` (post-shot, LEAKED)**, `in_bonus`, `chance_number`, `chance_elapsed_s`, `is_transition_f` | Reference. MUST reproduce round 1's F2 log loss per class. **INELIGIBLE** (13.0) |
+| **S-B** `R2_B_no_state` | none (identical to `B_plus_shooter`) | The no-engine-produced-state floor, and the closed-loop REFERENCE condition |
+| **S-C** `R2_C_safe_state` | `period`, `seconds_remaining`, `in_bonus`, `chance_number`, `chance_elapsed_s`, `is_transition_f` | Engine-safe state only. Every column is pre-shot by construction and none is a function of the score |
+| **S-D** `R2_D_safe_plus_indicators` | S-C + `gt_flag`, `eg_trail`, `eg_lead` (13.3) | The margin enters ONLY through saturating indicators the sim cannot run away with |
+| **S-E** `R2_E_safe_plus_continuous` | S-C + `score_diff_pre` (continuous, corrected) | The honest counterpart of S-A: is the corrected continuous margin still unsafe in closed loop? |
+
+`D_plus_lineup` is NOT an arm this round: round 1 answered TEAM-LEVEL on its
+own fold (gains 0.3x / -0.01x / 0.03x the floor) and the step-1 evidence adds
+that the five on the floor explain at most 0.10 pp of the margin span.
+Re-opening it would need its own pre-registration and an engine block that does
+not exist.
+
+Simplicity order for tie-breaking: **S-B < S-C < S-D < S-E < S-A**.
+
+### 13.3 The S-D indicators, with their thresholds FIXED HERE from the step-1 evidence
+
+`gsr` = seconds left in REGULATION (`seconds_remaining + 1200` in period 1,
+`seconds_remaining` in period 2). All three indicators are 0 in overtime.
+
+| indicator | definition | step-1 effect at M3 (rim / jumper / three), pp | attempts behind it |
+|---|---|---|---|
+| `gt_flag` | `abs(score_diff_pre) >= 15` AND `gsr <= 480` AND `period <= 2` | **+4.79 / +1.74 / +0.53** | 27,907 / 16,297 / 28,942 |
+| `eg_trail` | `-9 <= score_diff_pre <= -1` AND `gsr <= 120` AND `period <= 2` | **+0.96 / -0.51 / -7.78** | 14,234 / 6,582 / 19,811 |
+| `eg_lead` | `+1 <= score_diff_pre <= +9` AND `gsr <= 120` AND `period <= 2` | **+2.75 / -2.99 / -3.28** | 7,632 / 4,469 / 4,627 |
+
+Thresholds are read off the evidence doc's tables (its section 2 nine-cell
+garbage grid, its section 3 seven-cell end-game grid) and are **not** re-tuned
+after any round-2 number is seen. The mid-cell of each grid is taken because
+the effect is flat across the grid, not because it is the largest.
+
+Why indicators are the engine-safe form: each is bounded in {0, 1} and
+**saturates**. Once a simulated lead passes 15 with under 8:00 left the flag is
+already 1 and a further point of lead adds nothing, so the feedback path has no
+gain. A continuous term (S-A, S-E) has constant gain at every margin, which is
+the mechanism L23 measured.
+
+### 13.4 Offline metrics and gates (unchanged from round 1, same `FG.score()`)
+
+Per shot class, on F2:
+
+- **Primary:** attempt-level log loss. Brier reported.
+- **Calibration:** worst gated decile gap <= 2.00 pp (the `CALIB_MIN_SHARE`
+  gating unchanged), with the level/shape split reported.
+- **Responsiveness: `ARCHITECTURE_DECISIONS.md` Decision 8** as implemented in
+  `fg_make.decision8_verdict` with the adopted `low_span_exempt` reading, on
+  both pre-registered drivers (`shooter_make_c`, `def_allow_c`).
+- **By-chance-number calibration gap** reported for first and continuation.
+- **G4**, implied team eFG% by as-of tercile on the test season's own shot mix,
+  for the adopted trio, +/- 1.0 pp.
+- **Noise floor, per class:** the LARGER of (i) round 1's game-block bootstrap
+  SE (rim 0.000539, jumper 0.000578, three 0.000849) and (ii) the SD of five
+  seed-varied refits of **S-A** on F2, computed this round. "Beyond the floor"
+  means a log-loss gain strictly greater than one floor.
+
+### 13.5 The Decision-10 CLOSED-LOOP gate
+
+Each arm is refit on F2 train and exported to
+`data/processed/models/fg_make/round2/<arm>/fg_make_<class>_F2.joblib`. Nothing
+under `data/processed/models/engine/` and no `winner_FGA_*.joblib` is
+overwritten. The engine selects an arm with a new environment flag
+**`ENGINE_FG_MAKE`**, whose default value `winner` reproduces today's behaviour
+exactly; the round-2 values are `round2_S_A` ... `round2_S_E`.
+
+Run, per arm: `scripts/run_engine.py --fold F2 --season 2025 --seeds 5
+--max-games 500`, the same fixed first 500 game rows and the same five seeds
+for every arm, so the RNG streams are paired by construction (seeds are on
+`(seed, game_id, family)`). Read with `scripts/diag_engine_multilevel.py`.
+Reported per arm: margin SD, home/away score correlation, possessions/game,
+PPP, total bias, margin bias, per-team-quintile slope ratio.
+
+**S-B is the reference condition** (no margin anywhere in fg_make, so no loop
+by construction). The gate is stated RELATIVE to it because Decision 10's own
+risk paragraph says a closed-loop number can fail for another sub-model's
+reasons -- the clock's own `score_diff` owns the entire +4.24 possession miss
+(L23) and is not fixed yet, so an ABSOLUTE margin-SD gate is unattainable this
+round for every arm including the correct one. Absolute values against the
+verified 2025 finals are reported next to every relative number.
+
+| check | tolerance | source |
+|---|---|---|
+| **CL1** margin SD | `abs(SD(arm) - SD(S-B)) <= 1.00` point | L23, "must not move margin SD" |
+| **CL2** home/away score correlation | `abs(corr(arm) - corr(S-B)) <= 0.05` | `docs/gates.yaml` `g5_corr` |
+| **CL3** possessions/game | `abs(poss(arm) - poss(S-B)) <= 1.00` | `docs/gates.yaml` `g1_mean` |
+| **CL4** total bias | `abs(bias(arm) - bias(S-B)) <= 1.00` point | `docs/gates.yaml` `g9_total_bias` |
+
+An arm fails the closed-loop gate if ANY of CL1-CL4 fails. S-B passes by
+construction and is the fallback if every state arm fails.
+
+### 13.6 Decision rule
+
+Per shot class, in this order:
+
+1. Discard S-A (ineligible, 13.0) and any arm failing calibration or the
+   Decision-8 responsiveness gate on F2.
+2. Discard any arm failing the closed-loop gate of 13.5.
+3. Among the survivors, the winner is the **lowest F2 log loss**, and it must
+   beat the next-best surviving arm by **more than one noise floor**.
+4. If the gap to a simpler arm is inside the floor, the **simpler** arm wins
+   (order S-B < S-C < S-D < S-E).
+5. If no arm survives steps 1-2 for a class, adopt **S-B** for that class and
+   say so.
+
+Because the closed-loop gate is run once per arm and not per class, an arm that
+fails it is unavailable to every class.
+
+### 13.7 What would falsify the whole round
+
+If S-B, S-C, S-D and S-E all land within one noise floor of each other on log
+loss, the honest reading is that the state block was never worth anything once
+the leak was removed, and S-B is adopted. That outcome is pre-committed here so
+it cannot later be presented as a disappointment.
+
+<!-- RESULTS FOR ROUND 2 APPEND BELOW THIS LINE -->
