@@ -65,7 +65,7 @@ The objective is profitability against lines. Until a free lines source is valid
 - Primary source: sportsdataverse/hoopR-mbb-data (CC BY 4.0). Embedded ESPN market columns in pbp are stripped from features.
 - Do not scrape sports-reference.com (terms ban ML use), barttorvik.com or masseyratings.com (robots disallow AI crawlers), PrizePicks, Underdog, DraftKings.
 - KenPom snapshots from last year stay on disk and are one bake-off arm; our own ratings from hoopR box data are the other and the compliant fallback.
-- Bulk data (`data/raw`, `results`) is gitignored and synced to the private HF dataset `mvpeav/cbb-sim-data` via `scripts/hf_sync_data.py`. `data/processed` and `data/reference` are tracked.
+- Bulk data (`data/raw`, `results`) is gitignored and synced to the private HF dataset `mvpeav/cbb-sim-data` via `scripts/hf_sync_data.py`. `data/processed` and `data/reference` are tracked, EXCEPT model-artifact directories over 20 MB (S1 monthly artifact sets, per-round model dumps): those are gitignored and synced with an `hf_sync_data.py` bulk key like `engine_inputs`. The clock round-3 dumps (167 MB, committed 2026-09-10 before this rule) stay in history; do not add more.
 
 ## Git practice
 
