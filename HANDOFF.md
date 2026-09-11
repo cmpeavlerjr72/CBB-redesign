@@ -138,3 +138,14 @@ Plan-vs-actual (PM fills the "actual" column as reports land):
 | 03:00-04:00 | PROJECT_STATUS.md and this file updated; all results committed and pushed; HF synced; instance terminated; summary for the user at the top of this file | Done by 03:23: summary at the top of this file (gate table filled), PROJECT_STATUS updated (542054a), tree clean, remote verified, HF fully mirrored (raw 919, results 239, engine_inputs 25, model_artifacts 768; 0 missing), no EC2 instance running, memory updated. Large S1 artifact dirs (rebound 524 MB, free throw 175 MB) gitignored and on HF, not in git. |
 
 Not to be done without the user: unseal 2026; reopen Decisions 1-10; paid data; scraping; history rewrites; killing others' processes.
+
+## SESSION 2026-09-11 MORNING, 09:53 -> 13:30 EDT (PM, user present; hard stop 13:30)
+
+Launched 09:58 EDT, five workers, reports due 12:45, each capped at 6 threads / 6 engine workers, commits own files only:
+1. Rotation round 6 (Opus): composition conditioned on who left (L33); pre-registers section 12, offline + closed-loop (Decision 10) paired with rot5 seeds.
+2. Possession-outcome round 4 (Opus): early-season shrinkage of as-of rates (L35) plus the two alignment cells round 3 did not run; bearing on Decision 9 reported, not decided.
+3. Engine v1 paired re-read (Opus): served stack with ENGINE_CLOCK=v3c on the first 20 seeds of F2_2025_s200_rewire1 -> results/engine_v0/F2_2025_s20_rewire1_clockv3c; variance decomposition (possessions vs PPP vs covariance, home/away) and OT tie-rate diagnostic on the 50-seed run; diagnose only.
+4. Usage Decision-10 gate (Sonnet): own-row delta test on every state feature of the usage tree; closed-loop arms U1 / tree live / tree frozen / tree refit-without-state.
+5. AWS 200-seed read + seed-offset noise floor (Sonnet): proper throughput measurement first; runs A/B to results/engine_v0/F2_2025_sN_v1_clockv3c_{A,B}; terminate by 12:45 regardless; budget guard $25.
+
+Not launched: rebound early-conference calibration (waits on lane 2's shrinkage result); HF token rotation (user action; token appeared in a worker's process listing last night).
