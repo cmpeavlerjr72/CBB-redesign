@@ -1,0 +1,24 @@
+{
+ "model": "rotation",
+ "scheme": "S1",
+ "fold": "F2",
+ "season": 2025,
+ "key": "R2",
+ "arm": "R2_hier_dirichlet + fitted scheduler",
+ "why": "rotation round 3b adopted S1 as the L4 rotation model's TRAINING SCHEME (experiments.md section 9.4). The ARM is still not adopted (no arm passed the state-dependence gate in any round), so provisional_rotation stays True. Window YYYYMM was fitted by scripts/train_rotation_v3b_s1.py on season 2024 plus every 2025 game with game_date < YYYY-MM-01; window 202411 reuses the static fit by construction and is byte-identical to rotation_fit_v3.json. rotation_fit_v3.json differs from the engine's previous rotation_fit.json ONLY in hazard_exit/hazard_enter (R5's override hazards, which R2 never reads) and in notes: tilt.state, tilt.foul and every R2 scalar are bit-identical, verified numerically.",
+ "artifacts": [
+  {"refit_date": "2024-11-01", "path": "../rotation/rotation_fit_v3_S1_202411.json",
+   "max_train_date": "2024-04-08",
+   "note": "prior season alone = the static fit; byte-identical to rotation_fit_v3.json"},
+  {"refit_date": "2024-12-01", "path": "../rotation/rotation_fit_v3_S1_202412.json",
+   "max_train_date": "2024-11-30"},
+  {"refit_date": "2025-01-01", "path": "../rotation/rotation_fit_v3_S1_202501.json",
+   "max_train_date": "2024-12-31"},
+  {"refit_date": "2025-02-01", "path": "../rotation/rotation_fit_v3_S1_202502.json",
+   "max_train_date": "2025-01-31"},
+  {"refit_date": "2025-03-01", "path": "../rotation/rotation_fit_v3_S1_202503.json",
+   "max_train_date": "2025-02-28"},
+  {"refit_date": "2025-04-01", "path": "../rotation/rotation_fit_v3_S1_202504.json",
+   "max_train_date": "2025-03-31"}
+ ]
+}

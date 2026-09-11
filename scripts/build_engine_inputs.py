@@ -51,6 +51,61 @@ What it does, in order:
     5.3 -- it is a measured gap, flagged `provisional_foul_accrual`).
 
 Nothing under `src/cbb_sim/models/` or `docs/models/<submodel>/` is written.
+
+VERSIONS (`--version`)
+----------------------
+`v1` (the historical default) is the build described above and writes
+`{games,arrays,names}_{fold}_{season}.*`.
+
+`v2` (2026-09-11) writes VERSIONED SIBLINGS
+`{games,arrays,names}_{fold}_{season}_v2.*` and NEVER touches a v1 file, so a
+worker already reading v1 is unaffected (CLAUDE.md worker discipline). It is
+COMPOSED from v1 rather than rebuilt, which is what makes "every non-shooter
+column is byte-identical to v1" a property of the construction and not a hope:
+v1's arrays are loaded, exactly three things are rewritten or appended, every
+other array is carried through by reference and asserted equal.
+
+  1. The fg_make SHOOTER SLOT BLOCK, re-keyed on `shot_shooter_id`
+     (`models/fg_make/events_v2_shotshooter.parquet`). L28 proved
+     `participant_1_id` is the ASSISTER on ~half of assisted made field goals;
+     the served fg_make model has trained on the corrected key since round 3,
+     so serving it against a `participant_1_id` block is a train/serve skew
+     worth 0.97 pp of three-point make rate (fg_make experiments s20.0).
+     Fifteen columns are rewritten IN PLACE at their existing indices.
+  2. The fg_make ROUND-4 SLOT COLUMNS, APPENDED (never inserted) from
+     `models/fg_make/round4/slot_source_v2.parquet`, the REPAIRED source of
+     s20.2. `shooter_shrunk_dev_c__{rim,jump2,three}` is the one column the
+     round-4 winner B1 needs and the reason `ENGINE_FG_MAKE=round4_B1` could
+     not be served off v1 at all (it raised `engine inputs do not carry
+     feature(s) ['shooter_shrunk_dev_c']`). `prior_season_att_c__{...}` and
+     the four `sh_*` shares come with it so the whole round-4 block resolves
+     and B2/B3/BR stay runnable for comparison.
+  3. `usage_rate`, rebuilt from the usage round-2 sibling
+     `models/usage_v2/asof_v2_shotshooter.parquet` with
+     `models/usage_v2/usage_params_v2.json`'s fitted (prior_kind, m) per class
+     -- the U1 path's only fitted parameters. Round 2 kept every (prior, m)
+     identical to round 1 (position/50, league/50, position/25, league/200,
+     position/200), so this is a CORRECTED-LABEL rebuild of the as-of rates,
+     not a parameter change, and the build report says so per class.
+
+What v2 deliberately does NOT rebuild, and why:
+
+  * `team_static`. `fg_make.team_shot_form` aggregates per-(game, team) attempt
+    and make COUNTS, which are conserved whichever player is credited;
+    `build_engine_inputs_shotshooter.py` verified this numerically rather than
+    asserting it (team form identical under both keys). Copied through.
+  * The rotation prior arrays. Rotation round 3b adopted S1 as the SCHEME, and
+    the engine serves it from a manifest in `adapters.py` -- but only over what
+    `RotationBatch` consumes (the Dirichlet concentrations, the scheduler
+    parameters and the tilt tables). The as-of PRIOR construction (`k0`,
+    `role_prior`, `p_play`, the fpm shrinkage, `tail_ratio`, `w_dnp`) still
+    uses the static fit, so those arrays are byte-identical to v1 and the
+    partial scope is recorded in `run_meta.json` under
+    `rotation_s1_scope`. Closing it is a v3 item.
+  * The adapter refits (rebound, free_throw, the Decision-8 FGA_3 model). Those
+    are MODELS, not inputs, they live beside the arrays under their v1 names,
+    and rewriting them would overwrite files other lanes are reading. v2 skips
+    section 8 entirely and the v1 joblibs stay in force.
 """
 
 from __future__ import annotations
@@ -81,6 +136,25 @@ CLOCK_DESIGN = Path("data/processed/models/clock/design.parquet")
 USAGE_ASOF = Path("data/processed/models/usage/asof_v2.parquet")
 USAGE_EVENTS = Path("data/processed/models/usage/events_v2.parquet")
 USAGE_PARAMS = Path("data/processed/models/usage/usage_params_v1.json")
+
+# ---- v2 sources (see the module docstring) --------------------------------
+FG_DIR = Path("data/processed/models/fg_make")
+FG_EVENTS_SHOTSHOOTER = FG_DIR / "events_v2_shotshooter.parquet"
+FG_DESIGN_SHOTSHOOTER = FG_DIR / "design_v2_shotshooter.parquet"
+R4_SLOT_SOURCE = FG_DIR / "round4" / "slot_source_v2.parquet"
+USAGE_V2_ASOF = Path("data/processed/models/usage_v2/asof_v2_shotshooter.parquet")
+USAGE_V2_PARAMS = Path("data/processed/models/usage_v2/usage_params_v2.json")
+
+#: The fg_make shooter slot columns v2 REWRITES in place, at their v1 indices.
+V2_PER_CLASS = ("shooter_make_c", "shooter_att_c", "prior_season_make_c")
+V2_SHARED = ("has_prior_season_fg", "pos_G", "pos_F", "pos_C",
+             "shooter_games_asof", "shooter_fga_asof")
+#: The round-4 columns v2 APPENDS. Appended, never inserted: every existing
+#: `FeaturePlan` indexes `slot_names` by position, so a new column may only ever
+#: go on the end.
+V2_R4_PER_CLASS = ("shooter_shrunk_dev_c", "prior_season_att_c")
+V2_R4_SHARED = ("sh_share_rim", "sh_share_jump2", "sh_share_three",
+                "sh_assisted_share")
 ROT_FIT = Path("data/processed/models/rotation/rotation_fit.json")
 CROSSWALK = Path("data/processed/player_crosswalk.parquet")
 
@@ -153,6 +227,261 @@ def dedupe_team_rows(df: pd.DataFrame, game_col: str, team_col: str,
 
 
 # ---------------------------------------------------------------------------
+# v2: composed from v1, three things rewritten, everything else asserted equal
+# ---------------------------------------------------------------------------
+def _fg_design_shotshooter(all_seasons: list[int], t0: float) -> pd.DataFrame:
+    """The fg_make design keyed on `shot_shooter_id`, from the round-3 cache."""
+    if FG_DESIGN_SHOTSHOOTER.exists():
+        log(f"fg_make design cache hit: {FG_DESIGN_SHOTSHOOTER}", t0)
+        return pd.read_parquet(FG_DESIGN_SHOTSHOOTER)
+    if not FG_EVENTS_SHOTSHOOTER.exists():
+        raise FileNotFoundError(
+            f"{FG_EVENTS_SHOTSHOOTER} missing; run scripts/train_fg_make_v3_shooter.py")
+    from cbb_sim.models import event_stream as _ES
+    ev = pd.read_parquet(FG_EVENTS_SHOTSHOOTER)
+    d = FG.build_design(all_seasons, universe=_ES.load_universe(require_pbp_complete=True),
+                        version="v2", events=ev)
+    d.to_parquet(FG_DESIGN_SHOTSHOOTER, index=False)
+    log(f"fg_make design (shot_shooter_id): {len(d):,} rows -> {FG_DESIGN_SHOTSHOOTER}", t0)
+    return d
+
+
+def build_v2(fold: str, season: int, out_dir: Path, t0: float) -> int:
+    """Compose `*_{fold}_{season}_v2.*` from the v1 arrays.
+
+    Byte-identity of every non-shooter, non-usage array is a property of the
+    CONSTRUCTION -- they are carried through by reference -- and is additionally
+    asserted array by array and column by column before anything is written."""
+    tag_v1 = f"{fold}_{season}"
+    tag = f"{tag_v1}_v2"
+    train_seasons = FOLD_TRAIN[fold]
+    all_seasons = sorted(set(train_seasons + [season]))
+
+    games = pd.read_parquet(out_dir / f"games_{tag_v1}.parquet")
+    z = dict(np.load(out_dir / f"arrays_{tag_v1}.npz"))
+    names = json.loads((out_dir / f"names_{tag_v1}.json").read_text(encoding="utf-8"))
+    slot_names = {k: int(v) for k, v in names["slot_names"].items()}
+    G, S = len(games), z["roster_cbbd"].shape[2]
+    log(f"v1 inputs loaded: {G} games, {S} slots, slot_static {z['slot_static'].shape}", t0)
+
+    flat = pd.DataFrame({
+        "row": np.repeat(np.arange(G), 2 * S),
+        "side": np.tile(np.repeat([0, 1], S), G),
+        "slot": np.tile(np.arange(S), 2 * G),
+        "pid": z["roster_cbbd"].reshape(-1),
+        "game_date": np.repeat(pd.to_datetime(games["game_date"]).to_numpy(), 2 * S),
+    })
+    real = flat[flat["pid"] > 0].copy()
+    log(f"per-slot join target: {len(real):,} named roster slots of {len(flat):,}", t0)
+
+    before = z["slot_static"]
+    slot_static = before.copy()
+    touched: list[str] = []
+
+    def put_slot(col: str, frame: pd.DataFrame, value_col: str) -> None:
+        j = slot_names[col]
+        slot_static[:, :, :, j] = 0.0           # the builder's own zero base
+        v = frame[value_col].to_numpy(dtype=np.float64)
+        ok = np.isfinite(v)
+        slot_static[frame["row"].to_numpy()[ok], frame["side"].to_numpy()[ok],
+                    frame["slot"].to_numpy()[ok], j] = v[ok].astype(np.float32)
+        touched.append(col)
+
+    # ---- (1) the fg_make shooter block, re-keyed -------------------------
+    design = _fg_design_shotshooter(all_seasons, t0)
+    for cls_name, key in SHOT_KEY.items():
+        sl = design[design["shot_class"] == cls_name]
+        src = (sl[["shooter_id", "game_date", *V2_PER_CLASS]]
+               .rename(columns={"shooter_id": "pid"})
+               .drop_duplicates(subset=["pid", "game_date"]))
+        src["game_date"] = pd.to_datetime(src["game_date"])
+        src["pid"] = src["pid"].astype("int64")
+        got = asof_backward(real, src, ["pid"], "game_date", list(V2_PER_CLASS))
+        for c in V2_PER_CLASS:
+            put_slot(f"{c}__{key}", got, c)
+    src = (design[["shooter_id", "game_date", "has_prior_season", "pos_G", "pos_F",
+                   "pos_C", "shooter_games_asof", "shooter_fga_asof"]]
+           .rename(columns={"shooter_id": "pid"})
+           .drop_duplicates(subset=["pid", "game_date"]))
+    src["game_date"] = pd.to_datetime(src["game_date"])
+    src["pid"] = src["pid"].astype("int64")
+    got = asof_backward(real, src, ["pid"], "game_date",
+                        ["has_prior_season", "pos_G", "pos_F", "pos_C",
+                         "shooter_games_asof", "shooter_fga_asof"])
+    put_slot("has_prior_season_fg", got, "has_prior_season")
+    for c in ("pos_G", "pos_F", "pos_C", "shooter_games_asof", "shooter_fga_asof"):
+        put_slot(c, got, c)
+    log(f"fg_make shooter block re-keyed on shot_shooter_id ({len(touched)} columns)", t0)
+
+    # ---- (2) the round-4 columns, APPENDED -------------------------------
+    if not R4_SLOT_SOURCE.exists():
+        raise FileNotFoundError(
+            f"{R4_SLOT_SOURCE} missing; run scripts/train_fg_make_v4_shooter_block.py "
+            "(it fits m on fold 1, then exports the REPAIRED slot source)")
+    src4 = pd.read_parquet(R4_SLOT_SOURCE)
+    src4["game_date"] = pd.to_datetime(src4["game_date"])
+    src4["pid"] = src4["shooter_id"].astype("int64")
+    new_cols = [f"{c}__{k}" for c in V2_R4_PER_CLASS
+                for k in ("rim", "jump2", "three")] + list(V2_R4_SHARED)
+    missing = [c for c in new_cols if c not in src4.columns]
+    if missing:
+        raise KeyError(f"{R4_SLOT_SOURCE} is missing {missing}")
+    src4 = src4[["pid", "game_date", *new_cols]].drop_duplicates(subset=["pid", "game_date"])
+    got4 = asof_backward(real, src4, ["pid"], "game_date", new_cols)
+    width = slot_static.shape[3]
+    slot_static = np.concatenate(
+        [slot_static, np.zeros((*slot_static.shape[:3], len(new_cols)), dtype=np.float32)],
+        axis=3)
+    r4_added: list[str] = []
+    for i, col in enumerate(new_cols):
+        slot_names[col] = width + i
+        v = got4[col].to_numpy(dtype="float64")
+        ok = np.isfinite(v)
+        slot_static[got4["row"].to_numpy()[ok], got4["side"].to_numpy()[ok],
+                    got4["slot"].to_numpy()[ok], width + i] = v[ok].astype(np.float32)
+        r4_added.append(col)
+    log(f"round-4 slot columns appended: {width} -> {slot_static.shape[3]}", t0)
+
+    # ---- (3) usage: the corrected-label as-of rates -----------------------
+    up_v1 = json.loads(USAGE_PARAMS.read_text(encoding="utf-8"))["per_class"]
+    up = json.loads(USAGE_V2_PARAMS.read_text(encoding="utf-8"))["per_class"]
+    asof = pd.read_parquet(USAGE_V2_ASOF)
+    asof = asof[asof["season"].isin(all_seasons)]
+    asof["game_date"] = pd.to_datetime(asof["game_date"])
+    usage_rate = np.zeros((G, 2, S, len(USAGE_CLASSES)), dtype=np.float32)
+    usage_report: dict = {}
+    rules = dict(names["rules"])
+    for k, cls in enumerate(USAGE_CLASSES):
+        prior_kind = up[cls]["prior_kind"]
+        m = float(up[cls]["shrink_m"])
+        pri_col = {"league": f"lg_rate_{cls}", "position": f"pos_rate_{cls}",
+                   "prior_season": f"prev_rate_{cls}"}[prior_kind]
+        d = asof[["player_id", "game_date", "exposure_asof", f"ev_{cls}", pri_col]].copy()
+        d["prior"] = d[pri_col].astype("float64")
+        d["prior"] = d["prior"].fillna(d["prior"].median())
+        d["u_rate"] = ((m * d["prior"] + d[f"ev_{cls}"].astype("float64"))
+                       / (m + d["exposure_asof"].astype("float64")))
+        d = d.rename(columns={"player_id": "pid"})[["pid", "game_date", "u_rate"]]
+        d["pid"] = d["pid"].astype("int64")
+        d = d.drop_duplicates(subset=["pid", "game_date"])
+        g2 = asof_backward(real, d, ["pid"], "game_date", ["u_rate"])
+        v = g2["u_rate"].to_numpy(dtype=np.float64)
+        ok = np.isfinite(v)
+        usage_rate[g2["row"].to_numpy()[ok], g2["side"].to_numpy()[ok],
+                   g2["slot"].to_numpy()[ok], k] = v[ok].astype(np.float32)
+        fallback = float(np.nanmedian(d["u_rate"].to_numpy()))
+        blank = usage_rate[:, :, :, k] == 0.0
+        usage_rate[:, :, :, k][blank] = fallback
+        rules[f"usage_prior_{cls}"] = {"prior_kind": prior_kind, "m": m,
+                                       "no_history_rate": round(fallback, 6)}
+        a = z["usage_rate"][:, :, :, k][z["roster_valid"]].astype("float64")
+        b = usage_rate[:, :, :, k][z["roster_valid"]].astype("float64")
+        usage_report[cls] = {
+            "prior_kind_v1": up_v1[cls]["prior_kind"], "prior_kind_v2": prior_kind,
+            "m_v1": float(up_v1[cls]["shrink_m"]), "m_v2": m,
+            "params_unchanged": bool(up_v1[cls]["prior_kind"] == prior_kind
+                                     and float(up_v1[cls]["shrink_m"]) == m),
+            "corr_v1_v2": round(float(np.corrcoef(a, b)[0, 1]), 4),
+            "mean_abs_delta": round(float(np.abs(b - a).mean()), 6),
+            "mean_v1": round(float(a.mean()), 6), "mean_v2": round(float(b.mean()), 6),
+        }
+    log("usage as-of rates rebuilt from the shot_shooter_id panel", t0)
+
+    # ---- byte-identity of everything else --------------------------------
+    n_copied = 0
+    for col, j in slot_names.items():
+        if col in touched or col in r4_added:
+            continue
+        if not np.array_equal(before[:, :, :, j], slot_static[:, :, :, j]):
+            raise AssertionError(f"v2 moved an untouched slot column: {col}")
+        n_copied += 1
+    out_arrays = dict(z)
+    out_arrays["slot_static"] = slot_static
+    out_arrays["usage_rate"] = usage_rate
+    carried = []
+    for k, v in z.items():
+        if k in ("slot_static", "usage_rate"):
+            continue
+        assert out_arrays[k] is v, k                  # carried by reference
+        assert np.array_equal(out_arrays[k], z[k]), k
+        carried.append(k)
+    log(f"byte-identity asserted: {len(carried)} arrays carried through "
+        f"({', '.join(carried)}) + {n_copied} untouched slot columns", t0)
+
+    # ---- write -----------------------------------------------------------
+    meta = dict(names.get("meta") or {})
+    meta["inputs_version"] = "v2"
+    meta["composed_from"] = f"arrays_{tag_v1}.npz"
+    meta["fg_make_shooter_key"] = "shot_shooter_id"
+    meta["fg_make_shooter_block_source"] = str(FG_EVENTS_SHOTSHOOTER)
+    meta["fg_make_round4_slot_columns"] = r4_added
+    meta["fg_make_round4_slot_source"] = str(R4_SLOT_SOURCE)
+    meta["usage_asof_source"] = str(USAGE_V2_ASOF)
+    meta["usage_params_source"] = str(USAGE_V2_PARAMS)
+    meta["usage_params_unchanged_from_v1"] = bool(
+        all(v["params_unchanged"] for v in usage_report.values()))
+    meta["v2_slot_columns_rewritten"] = touched
+    meta["v2_slot_columns_appended"] = r4_added
+    meta["v2_arrays_carried_byte_identical"] = carried
+    meta["v2_slot_columns_carried_byte_identical"] = n_copied
+    meta["rotation_prior_arrays"] = (
+        "byte-identical to v1: the rotation S1 manifest is served in adapters.py over "
+        "what RotationBatch consumes (Dirichlet concentrations, scheduler parameters, "
+        "tilt tables); the as-of prior construction still uses the static fit")
+    names_out = dict(names)
+    names_out["slot_names"] = {k: int(v) for k, v in slot_names.items()}
+    names_out["rules"] = rules
+    names_out["meta"] = meta
+
+    np.savez_compressed(out_dir / f"arrays_{tag}.npz", **out_arrays)
+    games.to_parquet(out_dir / f"games_{tag}.parquet", index=False)
+    (out_dir / f"names_{tag}.json").write_text(
+        json.dumps(names_out, indent=1, default=str), encoding="utf-8")
+
+    move = {}
+    valid = z["roster_valid"]
+    for col in touched:
+        j = slot_names[col]
+        a = before[:, :, :, j][valid].astype("float64")
+        b = slot_static[:, :, :, j][valid].astype("float64")
+        fin = np.isfinite(a) & np.isfinite(b)
+        move[col] = {
+            "n_valid_slots": int(fin.sum()),
+            "corr_v1_v2": round(float(np.corrcoef(a[fin], b[fin])[0, 1]), 4),
+            "mean_abs_delta": round(float(np.abs(b - a)[fin].mean()), 6),
+            "mean_v1": round(float(a[fin].mean()), 6),
+            "mean_v2": round(float(b[fin].mean()), 6),
+        }
+    appended = {}
+    for col in r4_added:
+        j = slot_names[col]
+        b = slot_static[:, :, :, j][valid].astype("float64")
+        appended[col] = {"mean": round(float(b.mean()), 6),
+                         "sd": round(float(b.std()), 6),
+                         "pct_exactly_zero": round(float((b == 0.0).mean() * 100), 3)}
+    report = {
+        "created_at": pd.Timestamp.now("UTC").isoformat(),
+        "fold": fold, "season": season, "version": "v2",
+        "tag_v1": tag_v1, "tag_v2": tag, "out_dir": str(out_dir),
+        "slot_columns_rewritten": move,
+        "slot_columns_appended": appended,
+        "usage_rate_rebuild": usage_report,
+        "arrays_carried_byte_identical": carried,
+        "slot_columns_carried_byte_identical": n_copied,
+        "team_static_identical": True,
+    }
+    (out_dir / f"build_report_{tag}.json").write_text(
+        json.dumps(report, indent=2, default=str), encoding="utf-8")
+    log(f"wrote {out_dir}/(games|arrays|names)_{tag}.* and build_report_{tag}.json", t0)
+    for col, m in move.items():
+        print(f"  {col:<28} corr {m['corr_v1_v2']:+.4f}  mean|d| {m['mean_abs_delta']:.5f}")
+    for cls, m in usage_report.items():
+        print(f"  usage {cls:<12} corr {m['corr_v1_v2']:+.4f}  "
+              f"mean|d| {m['mean_abs_delta']:.6f}  params_unchanged={m['params_unchanged']}")
+    return 0
+
+
+# ---------------------------------------------------------------------------
 # main
 # ---------------------------------------------------------------------------
 def main() -> int:
@@ -161,6 +490,8 @@ def main() -> int:
     ap.add_argument("--season", type=int, default=2025)
     ap.add_argument("--out-dir", default=str(OUT_DIR))
     ap.add_argument("--max-games", type=int, default=0, help="debug: cap the universe")
+    ap.add_argument("--version", default="v1", choices=("v1", "v2"),
+                    help="v1 = the full build (the historical default); v2 = the shot_shooter_id shooter block, the round-4 slot columns and the usage_v2 as-of rates, COMPOSED from v1 into versioned siblings with every other array byte-identical")
     args = ap.parse_args()
     t0 = time.time()
     season = int(args.season)
@@ -171,6 +502,8 @@ def main() -> int:
     out_dir = Path(args.out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
     tag = f"{args.fold}_{season}"
+    if args.version == "v2":
+        return build_v2(args.fold, season, out_dir, t0)
     meta: dict = {"fold": args.fold, "season": season, "train_seasons": train_seasons}
     rules: dict = {}
 

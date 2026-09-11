@@ -29,6 +29,7 @@ state columns, then hand ONE contiguous matrix to ONE batched predict.
 from __future__ import annotations
 
 import json
+import os
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -36,6 +37,48 @@ import numpy as np
 import pandas as pd
 
 DEFAULT_DIR = Path("data/processed/models/engine")
+
+#: The inputs BUILD the engine loads, selected by `ENGINE_INPUTS_VERSION`.
+#: `v1` is the original build; `v2` (2026-09-11) is the same arrays with the
+#: fg_make shooter block re-keyed on `shot_shooter_id`, the fg_make round-4 slot
+#: columns appended and `usage_rate` rebuilt off the usage round-2 panel
+#: (`scripts/build_engine_inputs.py --version v2`). `v2` is the DEFAULT because
+#: `ENGINE_FG_MAKE=round4_B1` cannot resolve `shooter_shrunk_dev_c` without it,
+#: and because serving the round-3/4 models against a `participant_1_id` block
+#: is the train/serve skew L32 priced at 0.97 pp of three-point make rate.
+DEFAULT_INPUTS_VERSION = "v2"
+INPUTS_VERSION_ENV = "ENGINE_INPUTS_VERSION"
+
+
+def resolve_tag(in_dir: Path | str, tag: str, version: str | None = None) -> tuple[str, str]:
+    """(`tag on disk`, `version actually loaded`).
+
+    `v1` means the bare tag; any other version means `{tag}_{version}`.
+
+    If the caller (or the environment) names a version EXPLICITLY, that version
+    must exist or this raises -- a run must never silently get different inputs
+    from the ones it asked for. If nothing is named, the default is preferred
+    and the bare tag is used when the default's files are absent, which is what
+    lets a directory built before versioning existed (e.g.
+    `data/processed/models/engine_fgm4/`) keep loading unchanged. The version
+    that was actually loaded is recorded in `meta["inputs_version_loaded"]` and
+    printed, so the fallback is never silent."""
+    d = Path(in_dir)
+    asked = version if version is not None else os.environ.get(INPUTS_VERSION_ENV)
+    explicit = asked is not None and asked != ""
+    v = asked if explicit else DEFAULT_INPUTS_VERSION
+    if v in ("v1", "base"):
+        return tag, "v1"
+    vt = f"{tag}_{v}"
+    if (d / f"arrays_{vt}.npz").exists():
+        return vt, v
+    if explicit:
+        raise FileNotFoundError(
+            f"{d}/arrays_{vt}.npz missing, but inputs version {v!r} was asked for "
+            f"explicitly. Build it (scripts/build_engine_inputs.py --version {v}) or "
+            f"set {INPUTS_VERSION_ENV}=v1 deliberately; the engine will not quietly "
+            "serve a different build from the one the run declared.")
+    return tag, "v1"
 
 #: Roster slots carried per team. `rotation.MAX_CANDIDATES` is 15 and a
 #: TeamPrior is extended to `fit.n_profile` (15) slots, so 15 is exact rather
@@ -150,11 +193,16 @@ class EngineInputs:
         return out
 
     @classmethod
-    def load(cls, in_dir: Path | str, tag: str) -> EngineInputs:
+    def load(cls, in_dir: Path | str, tag: str, version: str | None = None) -> EngineInputs:
         d = Path(in_dir)
-        games = pd.read_parquet(d / f"games_{tag}.parquet")
-        z = np.load(d / f"arrays_{tag}.npz")
-        names = json.loads((d / f"names_{tag}.json").read_text(encoding="utf-8"))
+        disk_tag, loaded = resolve_tag(d, tag, version)
+        games = pd.read_parquet(d / f"games_{disk_tag}.parquet")
+        z = np.load(d / f"arrays_{disk_tag}.npz")
+        names = json.loads((d / f"names_{disk_tag}.json").read_text(encoding="utf-8"))
+        names.setdefault("meta", {})
+        names["meta"]["inputs_version_loaded"] = loaded
+        names["meta"]["inputs_tag_loaded"] = disk_tag
+        tag = disk_tag
         return cls(
             games=games,
             team_static=z["team_static"], team_names={k: int(v) for k, v in names["team_names"].items()},

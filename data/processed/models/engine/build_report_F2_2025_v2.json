@@ -1,0 +1,239 @@
+{
+  "created_at": "2026-09-11T04:29:43.585079+00:00",
+  "fold": "F2",
+  "season": 2025,
+  "version": "v2",
+  "tag_v1": "F2_2025",
+  "tag_v2": "F2_2025_v2",
+  "out_dir": "data\\processed\\models\\engine",
+  "slot_columns_rewritten": {
+    "shooter_make_c__rim": {
+      "n_valid_slots": 171300,
+      "corr_v1_v2": 0.7133,
+      "mean_abs_delta": 0.065907,
+      "mean_v1": -0.018239,
+      "mean_v2": -0.010134
+    },
+    "shooter_att_c__rim": {
+      "n_valid_slots": 171300,
+      "corr_v1_v2": 0.9648,
+      "mean_abs_delta": 3.676451,
+      "mean_v1": 19.877998,
+      "mean_v2": 19.857367
+    },
+    "prior_season_make_c__rim": {
+      "n_valid_slots": 171300,
+      "corr_v1_v2": 0.7043,
+      "mean_abs_delta": 0.040899,
+      "mean_v1": -0.009321,
+      "mean_v2": -0.008713
+    },
+    "shooter_make_c__jump2": {
+      "n_valid_slots": 171300,
+      "corr_v1_v2": 0.8135,
+      "mean_abs_delta": 0.043384,
+      "mean_v1": -0.017022,
+      "mean_v2": -0.01583
+    },
+    "shooter_att_c__jump2": {
+      "n_valid_slots": 171300,
+      "corr_v1_v2": 0.9928,
+      "mean_abs_delta": 1.052125,
+      "mean_v1": 12.494402,
+      "mean_v2": 12.46
+    },
+    "prior_season_make_c__jump2": {
+      "n_valid_slots": 171300,
+      "corr_v1_v2": 0.7842,
+      "mean_abs_delta": 0.028633,
+      "mean_v1": -0.008677,
+      "mean_v2": -0.011465
+    },
+    "shooter_make_c__three": {
+      "n_valid_slots": 171300,
+      "corr_v1_v2": 0.3315,
+      "mean_abs_delta": 0.115488,
+      "mean_v1": -0.004334,
+      "mean_v2": -0.019124
+    },
+    "shooter_att_c__three": {
+      "n_valid_slots": 171300,
+      "corr_v1_v2": 0.967,
+      "mean_abs_delta": 4.248768,
+      "mean_v1": 20.954623,
+      "mean_v2": 20.991097
+    },
+    "prior_season_make_c__three": {
+      "n_valid_slots": 171300,
+      "corr_v1_v2": 0.2354,
+      "mean_abs_delta": 0.082406,
+      "mean_v1": 0.010894,
+      "mean_v2": -0.014499
+    },
+    "has_prior_season_fg": {
+      "n_valid_slots": 171300,
+      "corr_v1_v2": 0.9858,
+      "mean_abs_delta": 0.007087,
+      "mean_v1": 0.472925,
+      "mean_v2": 0.473754
+    },
+    "pos_G": {
+      "n_valid_slots": 171300,
+      "corr_v1_v2": 0.9957,
+      "mean_abs_delta": 0.002113,
+      "mean_v1": 0.449761,
+      "mean_v2": 0.450601
+    },
+    "pos_F": {
+      "n_valid_slots": 171300,
+      "corr_v1_v2": 0.9951,
+      "mean_abs_delta": 0.001926,
+      "mean_v1": 0.269183,
+      "mean_v2": 0.270093
+    },
+    "pos_C": {
+      "n_valid_slots": 171300,
+      "corr_v1_v2": 0.9947,
+      "mean_abs_delta": 0.000432,
+      "mean_v1": 0.042148,
+      "mean_v2": 0.042277
+    },
+    "shooter_games_asof": {
+      "n_valid_slots": 171300,
+      "corr_v1_v2": 0.9961,
+      "mean_abs_delta": 0.223117,
+      "mean_v1": 8.08045,
+      "mean_v2": 8.158079
+    },
+    "shooter_fga_asof": {
+      "n_valid_slots": 171300,
+      "corr_v1_v2": 0.9789,
+      "mean_abs_delta": 7.892388,
+      "mean_v1": 53.48373,
+      "mean_v2": 53.440006
+    }
+  },
+  "slot_columns_appended": {
+    "shooter_shrunk_dev_c__rim": {
+      "mean": 0.000116,
+      "sd": 0.020087,
+      "pct_exactly_zero": 49.152
+    },
+    "shooter_shrunk_dev_c__jump2": {
+      "mean": 0.000117,
+      "sd": 0.006363,
+      "pct_exactly_zero": 61.684
+    },
+    "shooter_shrunk_dev_c__three": {
+      "mean": 0.000139,
+      "sd": 0.005599,
+      "pct_exactly_zero": 51.997
+    },
+    "prior_season_att_c__rim": {
+      "mean": 22.108179,
+      "sd": 41.5412,
+      "pct_exactly_zero": 63.531
+    },
+    "prior_season_att_c__jump2": {
+      "mean": 12.507647,
+      "sd": 28.786245,
+      "pct_exactly_zero": 71.599
+    },
+    "prior_season_att_c__three": {
+      "mean": 22.784285,
+      "sd": 45.43996,
+      "pct_exactly_zero": 65.86
+    },
+    "sh_share_rim": {
+      "mean": 0.22868,
+      "sd": 0.277216,
+      "pct_exactly_zero": 49.102
+    },
+    "sh_share_jump2": {
+      "mean": 0.11812,
+      "sd": 0.157187,
+      "pct_exactly_zero": 51.395
+    },
+    "sh_share_three": {
+      "mean": 0.177549,
+      "sd": 0.243958,
+      "pct_exactly_zero": 55.234
+    },
+    "sh_assisted_share": {
+      "mean": 0.18691,
+      "sd": 0.22893,
+      "pct_exactly_zero": 50.802
+    }
+  },
+  "usage_rate_rebuild": {
+    "FGA_rim": {
+      "prior_kind_v1": "position",
+      "prior_kind_v2": "position",
+      "m_v1": 50.0,
+      "m_v2": 50.0,
+      "params_unchanged": true,
+      "corr_v1_v2": 0.8784,
+      "mean_abs_delta": 0.00629,
+      "mean_v1": 0.051067,
+      "mean_v2": 0.051877
+    },
+    "FGA_jump2": {
+      "prior_kind_v1": "league",
+      "prior_kind_v2": "league",
+      "m_v1": 50.0,
+      "m_v2": 50.0,
+      "params_unchanged": true,
+      "corr_v1_v2": 0.9775,
+      "mean_abs_delta": 0.001536,
+      "mean_v1": 0.031363,
+      "mean_v2": 0.031405
+    },
+    "FGA_3": {
+      "prior_kind_v1": "position",
+      "prior_kind_v2": "position",
+      "m_v1": 25.0,
+      "m_v2": 25.0,
+      "params_unchanged": true,
+      "corr_v1_v2": 0.9249,
+      "mean_abs_delta": 0.006966,
+      "mean_v1": 0.053464,
+      "mean_v2": 0.053826
+    },
+    "TOV": {
+      "prior_kind_v1": "league",
+      "prior_kind_v2": "league",
+      "m_v1": 200.0,
+      "m_v2": 200.0,
+      "params_unchanged": true,
+      "corr_v1_v2": 1.0,
+      "mean_abs_delta": 2.5e-05,
+      "mean_v1": 0.028427,
+      "mean_v2": 0.02845
+    },
+    "FT_trip": {
+      "prior_kind_v1": "position",
+      "prior_kind_v2": "position",
+      "m_v1": 200.0,
+      "m_v2": 200.0,
+      "params_unchanged": true,
+      "corr_v1_v2": 1.0,
+      "mean_abs_delta": 2.3e-05,
+      "mean_v1": 0.025501,
+      "mean_v2": 0.025522
+    }
+  },
+  "arrays_carried_byte_identical": [
+    "team_static",
+    "roster_cbbd",
+    "roster_espn",
+    "roster_valid",
+    "rot_share",
+    "rot_srank",
+    "rot_start",
+    "rot_fpm",
+    "rot_pavail",
+    "reb_rate"
+  ],
+  "slot_columns_carried_byte_identical": 4,
+  "team_static_identical": true
+}
