@@ -1877,3 +1877,278 @@ capped, scaled or blended at any point.
   target that trends monotonically within a season a recency weight moves the
   prediction the wrong way. That is a general result for every sub-model whose
   target drifts through a season, not a clock curiosity.
+
+---
+
+## 16. Round 5 pre-registration -- within-game possession-duration DISPERSION (2026-09-11)
+
+Appended VERBATIM BEFORE any round-5 arm was fitted or scored, and committed on
+its own together with the measurement it is written against. Sections 8, 10, 12
+and 14 (the round-3, 3b, 3c and 4 pre-registrations) are STATIC and are NOT
+edited. `experiments.md` is append-only.
+
+**A NEW TARGET.** Rounds 3, 3b, 3c and 4 were all about the conditional MEAN
+duration (and through it the possession COUNT mean). Round 4 closed that line:
+section 15.6 records that the clock's own share of the mean overshoot is about
+0.28 possessions per team-game and that the remaining +1.0 to +1.7 is the
+upstream `prev_end` mix, so "round 5 for the CLOCK has no target left that is
+worth a round". That sentence was written about the MEAN. It is wrong about the
+VARIANCE, and this round exists because a different diagnostic found the
+variance target three hours later.
+
+Diagnosis this round is written against:
+`docs/tests/engine_v1_variance_ot_diag_2026-09-11.md` (engine lane, commit
+`4ea6237`), sections 2, 3.3 and 3.5:
+
+- the engine's per-team-game possession SD is **3.743 produced against 4.972
+  needed**, 25% short in SD and 43% short in variance;
+- the shortfall is **WITHIN-game, not between-game**: the slope of actual
+  possessions on the sim's per-game mean is 0.857, so the between-game pace
+  draw is if anything 17% OVER-spread and widening it would make calibration
+  worse;
+- the possession channel carries **29.8% of the TOTAL's within-game variance**
+  and 0.2% of the margin's, so G5's margin PASS is structurally blind to this
+  and only the total line sees it;
+- widening the possession draw to its own residual alone closes **40.8%** of
+  the G5 total-SD gap (0.7985 -> 0.8862) and moves `corr(home, away)` from
+  +0.027 to +0.111.
+
+Measurement this round is written against (own lane, this session):
+`scripts/diag_clk5_dispersion.py`, report
+`data/processed/models/clock/v5_diag/v5_dispersion_report.json`, written up in
+`docs/tests/clock_duration_dispersion_2026-09-11.md`. It fits nothing and scores
+no arm. Its result is stated here because the arms are chosen against it:
+
+| channel | share of the Var(Dbar) gap | measured |
+|---|---:|---|
+| (a) conditional law too narrow | **1.1%** | served-arm conditional SD 8.873 s against an actual residual SD 8.894 s, ratio **0.9977** |
+| (b) missing within-game correlation | **98.9%** | per-game mean-residual variance 1.2349 s2 against an iid sampling floor of 0.5914 s2; game latent tau = **0.802 s**, CV **4.54%** |
+| (c) `prev_end` composition (L34) | **-0.3%** | L34's engine mix shifts the marginal mixture variance by -0.258 s2, i.e. the WRONG WAY and negligibly |
+
+and the bridge that converts them, an exact identity plus one delta-method step
+checked at ratio 0.995 against the realised counts:
+
+    P = 1200 / Dbar  on a clock-complete regulation game
+    SD(P) ~= (Pbar / mu) * SD(Dbar) = 3.851 * SD(Dbar)
+
+    produced 2.943   needed 4.279   ratio 0.688   (offline, 1,991 games)
+    (the engine's own 3.743 / 4.972 = 0.753 on the same defect; the offline
+    "produced" excludes the engine's across-seed state-composition feedback and
+    is therefore a lower bound on it)
+
+### 16.1 What round 5 decides, and what it does not
+
+DECIDES: whether adding a WITHIN-GAME duration dependence -- as a random effect,
+as an autoregressive residual, or as a wider conditional family -- closes the
+per-game possession-count SD gap without moving the conditional mean or losing
+the round-4 mean gate.
+
+DOES NOT DECIDE, and is explicitly out of scope: the conditional mean and the
+possession-count MEAN (round 4, closed); the `prev_end` composition term
+(upstream, logged for the event / fg_make lane); the family, censoring, state
+parametrisation and refit scheme (rounds 1-4, settled: cell-based,
+`empirical_km3_srfloor`, `P3`, `S1`).
+
+STATED IN ADVANCE, because it is arithmetic and it pre-commits the round to a
+prediction that can fail:
+
+1. **The implied average within-game pairwise residual correlation is 0.00807.**
+   `Var(Dbar) = (sigma2/M)(1 + (M-1) rho_bar)`; needed/floor = 2.0883 at
+   M = 135.88, so `rho_bar = 1.0883/134.88 = 0.00807`. A tiny per-pair number
+   that is worth 45% of an SD in aggregate.
+2. **An AR(1) residual CANNOT deliver it.** For AR(1) with lag-1 rho the
+   variance of the mean inflates by about `(1+rho)/(1-rho)`; reaching 2.0883
+   needs `rho ~= 0.35`. The measured lag-1 residual autocorrelation is
+   **-0.0195** and the measured lag-2 is **+0.0350**. Arm A4 is therefore
+   pre-registered with the PREDICTION THAT IT FAILS, and it is run anyway
+   because the prediction is worth testing and because the alternative is
+   asserting it.
+3. **The measured autocorrelation does not decay like an AR process.** Even
+   lags (the same offence's next possession) read +0.0350, +0.0326, +0.0317,
+   +0.0304, +0.0274, +0.0193, +0.0114 at lags 2, 4, 6, 8, 12, 20, 40; odd lags
+   (the opponent's next possession) read -0.0195, -0.0072. A near-flat positive
+   floor at every even lag out to 40 possessions is the signature of a LEVEL,
+   not of an autoregression.
+4. **The level is the OFFENCE's, not the game's, and the two offences in a game
+   are NEGATIVELY coupled.** The two offences' mean residuals inside one game
+   correlate **-0.172** (covariance -0.514 s2); each offence's own latent
+   variance is 2.361 (home) and 2.297 (away) s2. Netting to the game level,
+   `(2.361 + 2.297)/4 - 0.514 = 0.651 s2`, which reproduces the measured
+   tau2 = 0.651 exactly. So a SHARED per-game latent and an INDEPENDENT
+   per-offence latent are observationally equivalent for the possession COUNT
+   (which depends only on the average of the two) and are NOT equivalent for
+   the per-offence duration structure. Both are run, and the bivariate arm that
+   carries both parameters is run alongside them.
+5. **CRPS and PIT are nearly blind to the winning mechanism.** A latent with
+   CV 4.5% widens the marginal per-possession SD from 8.873 s to about 8.91 s,
+   under 0.5%. Any round that selected on CRPS alone would select nothing. The
+   primary metric is therefore the per-game possession-count SD, and
+   CRPS_trunc / PIT are NO-REGRESSION lines. This is stated before any arm is
+   scored precisely so that the metric cannot be chosen after the fact.
+
+### 16.2 Arms
+
+All arms: the round-4 reference artifact set (`empirical_km3_srfloor`, `P3`,
+`S1` monthly walk-forward, censoring flag and Kaplan-Meier tail rule exactly as
+round 3 section 8.3) unless the row says otherwise. They differ ONLY in the
+dependence structure imposed on the draws, and in A5 in the conditional family.
+
+| id | name | what it is |
+|---|---|---|
+| R | `v3c_srfloor_P3_s1` | **THE REFERENCE**, the arm served today: independent inverse-CDF draws, `clock.sample_from_pmf`, no within-game dependence of any kind |
+| A1 | `v5_glat_shared` | ONE multiplicative log-normal pace realisation `A ~ LogN(-s2/2, s2)` per (seed, game), `E[A] = 1`, applied to BOTH offences' durations: `D = round(A * T)`. This is `CLAUDE.md`'s "one pace realisation per simulated game, both teams scaled by it", which the clock does not currently implement. `s` fitted walk-forward |
+| A2 | `v5_glat_team` | the same latent drawn per (seed, game, offence team), the two offences INDEPENDENT. `s` fitted walk-forward |
+| A3 | `v5_glat_biv` | the per-offence latent with a fitted CORRELATION `rho_t` between the two offences of a game (bivariate Gaussian copula on the two log-latents). Two fitted parameters; the only arm that can carry both the per-offence dispersion and the negative coupling |
+| A4 | `v5_ar1` | Gaussian-copula AR(1) on the duration residual within (game, offence): `z_i = rho z_{i-1} + sqrt(1-rho2) e_i`, `u_i = Phi(z_i)`, then the SAME inverse-CDF draw. Marginals are preserved exactly, so CRPS and PIT are identical to R by construction. `rho` fitted walk-forward. PRE-REGISTERED PREDICTION: fails item 2 above |
+| A5 | `v5_gamma_P3_s1` | round 3c's already-fitted `gamma_aft` under `P3` + `S1` -- a parametric, heavier-tailed conditional family in place of the empirical cell pmf, with NO within-game dependence. Prices channel (a) directly: if the conditional family is the defect, this arm moves and the latent arms are unnecessary |
+| A6 | `v5_glat_tempo` | A1's shared latent with `s` a fitted linear function of the game's PREGAME tempo (`tempo_prior_game`, both teams), i.e. a dispersion function of state rather than a constant. Measured motivation: the latent CV rises 4.11 / 3.36 / 3.98 / 4.58 / 5.40 % across pregame-tempo quintiles Q1..Q5 |
+
+**No arm contains a post-hoc multiplier, cap, clip, offset or blend.** A1, A2,
+A3 and A6 are scale-mixture random-effects models with `E[A] = 1` by
+construction, so the CONDITIONAL MEAN of every possession is unchanged and no
+arm can move the round-4 mean gate in its own favour; A4 is a copula that
+preserves every marginal exactly; A5 is a different fitted family. Every fitted
+parameter (`s`, `rho_t`, `rho`, A6's two coefficients) is estimated on training
+rows only, under the same `max_train_date < game_date` rule the artifacts
+already pass, and is a MODEL PARAMETER, not an adjustment to engine output.
+`docs/SIM_GUARDRAILS.md` core principle and section 5, and the standing
+no-hand-tuning rule, are the tests this paragraph is written against.
+
+**Fitting rule, fixed here.** Method of moments on the fold's TRAINING seasons
+only, per S1 refit `k`, using only rows with `game_date <= max_train_date_k` and
+artifact `k`'s own predictions:
+
+    s2   solves   mean_g[ V_iid(g)(1 + s2) + s2 * mbar_g^2 ] = Var_g(rbar)      (A1)
+    s2   solves   the same with the latent variance halved by averaging two
+                  independent offences                                          (A2)
+    (s2, rho_t)   match the per-offence latent variance AND the offence-pair
+                  covariance                                                     (A3)
+    rho           the lag-1 within-(game, offence) residual autocorrelation      (A4)
+    A6            s2(tempo) = a + b * tempo_prior_game, by weighted least
+                  squares of the per-game latent estimate on tempo
+
+Nothing in the fitting touches the test fold. F1's fitted values are recorded
+before F2 is touched and are reported as robustness.
+
+### 16.3 Decision 10
+
+No round-5 arm introduces a SIMULATION-PRODUCED state feature. A pace latent is
+drawn from the `(seed, game_id, family)` stream before the game starts and is a
+constant of the game; an AR(1) residual depends on the model's own previous
+DRAW, not on any other sub-model's output, so no other sub-model can feed it.
+A "frozen" arm and its "refit-without" counterpart are therefore the same
+object and the Decision-10 pair is VACUOUS, exactly as in round 4. Stated rather
+than silently skipped. The margin question Decision 10 exists for was decided in
+round 3c (P3) and every round-5 arm inherits that answer.
+
+### 16.4 Universe, folds, seal, subset, seeds, pairing
+
+Unchanged from rounds 3, 3c and 4. D-I, hoopR not truncated, CBBD
+points-complete, `DURATION_CAP = 90`. **F1 trains {2022, 2023} and tests 2024;
+F2 trains {2022, 2023, 2024} and tests 2025 and is the SELECTION fold. The
+2026 season is SEALED.** Offline universe: the 2025 clock-complete regulation
+possessions, 270,530 rows over 1,991 games, the same set round 4 section 15.2
+read `E[min(T,R)]` on. Closed loop, if it runs: the F2 2025 slate sorted by
+`game_id` ascending, every 11th row, first 500 games (159 clock-complete),
+5 seeds screening, paired by construction through the
+`(seed, game_id, family)` streams, with every other sub-model pinned by explicit
+environment value on EVERY run and written into `run_meta.json`
+(`ENGINE_EVENT=round2_s1`, `ENGINE_FG_MAKE=round3_shooter_S_C_s1`,
+`ENGINE_FG3=decision8`, `ENGINE_ROTATION=reference`).
+
+### 16.5 Metrics
+
+**PRIMARY (offline, F2):** the per-game possession-count SD the arm produces,
+through the bridge of section 16, against the 4.279 the same games need:
+
+    P_sd_produced(arm) = 3.851 * sqrt( Var_arm(Dbar) )
+    ratio              = P_sd_produced / 4.279          target 1.00
+
+reported as `|ratio - 1|`. `Var_arm(Dbar)` is computed from the arm's own law by
+the closed form each arm admits, and is CROSS-CHECKED for the winning arm by a
+direct Monte-Carlo resample of the real 2025 state sequences.
+
+**NO-REGRESSION LINES (offline, F2), each with its own floor:**
+
+| id | metric | round-4 reference value | rule |
+|---|---|---:|---|
+| N1 | `CRPS_trunc` on uncensored test possessions, pmf renormalised onto the reachable durations (round 3's PRIMARY offline metric, section 8.4) | R = 4.89946 | must not worsen by more than 1 floor (round 4's floor 0.00684) |
+| N2 | `E[min(T,R)]` on all 270,530 clock-complete 2025 regulation possessions, against an actual 17.6526 s -- **THE ROUND-4 MEAN GATE** | R = 17.4965, gap -0.1561 | the gap must not worsen by more than 1 floor |
+| N3 | PIT worst-cell K-S D and the count of leaking cells | R = 0.1553, 16 cells | reported; must not worsen materially |
+| N4 | possessions per team-game MEAN implied by `E[min(T,R)]` | R = +0.606 | must not worsen by more than 1 floor |
+
+**SECONDARY / STRUCTURAL (offline, F2), the discriminators between A1, A2 and
+A3, all of which hit the primary by construction:**
+
+| id | metric | actual |
+|---|---|---:|
+| S1 | per-offence mean-residual variance | 2.361 (home), 2.297 (away) s2 |
+| S2 | correlation between the two offences' mean residuals in a game | -0.172 |
+| S3 | within-(game, offence) residual autocorrelation at lags 2, 4, 8, 20, 40 | +0.0350, +0.0326, +0.0304, +0.0193, +0.0114 |
+
+**MULTI-LEVEL EVIDENCE (the standing rule), reported for every arm:** overall;
+by `prev_end` cell; by round-2 clock bucket; by period; by pregame-tempo
+quintile (the responsiveness check -- the produced/needed SD ratio must SLOPE
+with the quintile's own needed value, not sit flat); and the per-game
+distribution of the mean residual. Cells with fewer than 300 possessions are
+labelled UNDERPOWERED and are not read.
+
+**CLOSED LOOP, if it runs (5 seeds, 500 games, paired):** G1 possessions per
+team-game mean and SD on both game sets, G5 total SD ratio, `corr(home, away)`,
+and the round-4 mean lines. A new `ENGINE_CLOCK` value behind the existing
+dispatch; **the served default is NOT changed by this lane under any outcome.**
+
+### 16.6 Noise floor
+
+Offline, the arms are deterministic given the fitting window, so the floor is a
+SPEC-IDENTICAL REFIT under a second seed: the fitting window is resampled by
+GAME-BLOCK bootstrap (games drawn with replacement, all of a game's possessions
+moving together) under `seed = 20260911` and again under `seed = 20260912`, each
+refit is graded by the same blind path, and the larger absolute delta per metric
+is that metric's floor. CRPS_trunc additionally carries round 4's measured
+game-block bootstrap SE, 0.00684. Closed loop, if it runs: the same arm re-run
+with `--seed-offset 1000`, round 4's measured floors carried as the prior
+expectation (G1 cc 0.180, G1 all 0.074, margin SD 0.101, corr 0.013) and
+RE-MEASURED, never assumed.
+
+### 16.7 Decision rule
+
+Adopt the SIMPLEST arm satisfying ALL of:
+
+1. **PRIMARY**: `|P_sd_produced / 4.279 - 1| <= 0.10` on F2, and the improvement
+   over R exceeds the measured floor;
+2. **N1, N2, N4**: no no-regression line worse than R by more than 1 floor;
+3. **responsiveness**: the produced/needed SD ratio slopes with the
+   pregame-tempo quintile (monotone in at least 4 of 5, and no quintile outside
+   [0.85, 1.15]);
+4. **S1 and S2 reported for every arm**; where two arms tie on the primary
+   inside the floor, the arm closer to the measured S1/S2 structure wins.
+
+Simplicity order, fixed here: `R` (no dependence at all) < `A5` (a different
+single family, no dependence) < `A4` (one fitted scalar) < `A1` (one fitted
+scalar, one latent) < `A2` (one fitted scalar, two latents) < `A6` (two fitted
+coefficients) < `A3` (two fitted parameters, a bivariate latent). A tie is a gap
+inside the measured floor and goes to the simpler arm.
+
+If NO arm qualifies, adopt nothing, report the decomposition, and do not soften
+a gate. **An offline winner is a CANDIDATE, not an adoption**: `CLAUDE.md`
+requires a paired-seed sim run showing no gate regressed before anything ships,
+and this lane does not change the served default in any case -- the PM switches
+it.
+
+### 16.8 Execution and artifacts
+
+New module `src/cbb_sim/models/clock_v5.py` (the latent / copula wrappers,
+importing everything shared from `clock.py`; no round-3 or round-4 object or
+pickle changes); new fitter+grader `scripts/exp_clk5_dispersion_bakeoff.py`,
+which fits every arm and scores every arm through ONE code path so no arm gets
+a bespoke scorer. Measurement script `scripts/diag_clk5_dispersion.py`
+(committed with this pre-registration; it fits nothing). Artifacts take a `v5_`
+prefix under `data/processed/models/clock/` and are gitignored and HF-synced.
+Engine modes, if the closed loop runs, are added to the mode table in
+`src/cbb_sim/engine/clock_adapter_v3.py`; `adapters.py` DEFAULTS ARE NOT
+TOUCHED. Threads capped at 6 and the engine pool at 6 workers; four other lanes
+share the machine. Results and the decision are appended to this file as
+section 17, the evidence goes to
+`docs/tests/clock_duration_dispersion_2026-09-11.md`, and a row goes to
+`docs/models/change_ledger.md` only if something is adopted.
