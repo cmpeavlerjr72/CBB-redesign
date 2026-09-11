@@ -153,3 +153,52 @@ reachability probe is what makes the claim falsifiable.
 | timeout at this stoppage (CBBD `OfficialTVTimeOut` / `ShortTimeOut` / `RegularTimeOut`) | multiplies every hazard 3–4× (starter exit 0.031 → 0.136, starter entry 0.068 → 0.243, n = 4.0M / 162k) | the engine has no timeout model, so a hazard conditioned on it could be fitted offline and could never be evaluated in simulation — the same exclusion class as `is_transition`. Its cost is visible: the arms' substitutions are more uniform in time than real ones, which shows up in the substitution rate and distinct-lineup counts |
 | prior-season minutes share (hoopR `player_box` of season − 1 through the crosswalk) | a real gradient, same sign as the as-of share and about half its size (P5 − P1: −0.9 pp on starter exit, +1.8 pp on starter entry, against −1.3 / +2.8 for the as-of share) | a near-duplicate of a feature already in the design, and not expressible in the engine without a new per-roster-slot input array, i.e. without rebuilding `arrays_F2_2025.npz` while other workers read it |
 | the R1/R2 scheduler's `minutes played so far vs target` and EMA on-floor rate | — | superseded: `half_min_dev` carries the budget deviation and `state_min` carries the stint, both as hazard covariates rather than as a scheduler utility |
+
+---
+
+## 5. Round 5: the wave cell (`rotation_v5.wave_cell`)
+
+Round 5 changed the DRAW, not the family (L30, `experiments.md` §12). Round 4's
+45 hazard features of §4 are reused **byte for byte** as the composition rule —
+nothing in §4 is refitted, re-specified or re-ordered — and round 5 adds exactly
+one new object: a cell index over which a per-(team, boundary) wave probability
+and a wave-size distribution are tabulated.
+
+**The cell: 324 = 6 × 9 × 3 × 2.** Every component is already in §4's table, so
+round 5 adds no new *source* and no new join.
+
+| component | levels | source at fit time | source in the engine |
+|---|---|---|---|
+| `prev_end` | 6 (`period_start`, `DREB`, `TOV`, `made_FG`, `made_FT`, `other`) | possessions `start_reason` | `st.prev_end` |
+| time cell | 9 (`rotation_v4.time_cell`, the audit's nine cells) | `period`, `start_clock` | `st.period`, `st.seconds_remaining` |
+| margin band | 3 (`rotation.margin_bucket`) | `start_score_diff` re-signed | `st.home_score_diff()` re-signed |
+| foul state | 2: any player ON THE FLOOR carrying ≥ 4 personal fouls | the training game's own `PersonalFoul` events | the (2N, S) `GameState.player_fouls` block, **simulated** |
+
+**The two tabulated objects.** `p_wave[cell]` (a Bernoulli) and
+`p_size[cell, 1..5]` (a categorical), both fitted by two-level shrinkage —
+cell → (`prev_end` × time cell) → `prev_end` → root — with the shrinkage
+constant fixed at `k = 300`, the project's UNDERPOWERED threshold, declared in
+the pre-registration and never tuned. Each parent is a marginalisation of the
+same counts, so every level is the maximum-likelihood estimate of its own
+coarser model. Both are lookup tables by construction: the sim loop makes no
+model call.
+
+**One fitted scalar beyond the tables.** `rho`, the probability that the two
+teams of a game share the dead-ball uniform at a boundary, fitted by moment
+matching on the training window's joint counts. It changes no team's marginal.
+
+**Why the foul state is a team-level indicator and not a per-player count.** The
+per-player foul count is already in §4's design and reaches the composition
+step, where it belongs (it decides *who* moves). The cell decides *whether the
+bench moves at all*, which the audit measures as a team-level event: P(wave) is
+0.1504 with no 4-foul player on the floor and 0.1707 with one
+(`docs/tests/rotation_wave_audit_2026-09-11.md` §1.2). A per-player count in the
+cell would multiply the table by five for a 2 pp effect already carried once.
+
+### 5.1 Round-5 rejected features (measured, then excluded)
+
+| Feature | Measured effect | Why not |
+|---|---|---|
+| timeout at this stoppage | P(wave) **0.1371 → 0.4967**, and P(size ≥ 2 \| wave) 0.3165 → 0.4146; timeouts carry **13.3%** of all waves (audit §2) | unchanged from §4.1: the engine has no timeout model. Round 5 is the test of whether the wave draw makes it unnecessary — the bunching a timeout produces is now in the draw itself rather than left to five independent coins |
+| own team fouls (the bonus state) as a cell axis | P(wave) 0.1214 → 0.1898 across 0-2 → 12+ (audit §1.2) | mostly the same information seen twice: team fouls buy free throws and `made_FT` is already the high-wave `prev_end` level (0.393 against 0.108 at `made_FG`). It stays where round 4 put it, as one linear term inside the composition hazards |
+| a per-`prev_end` size distribution finer than the cell | the period boundary IS a different distribution (0.41 / 0.41 / 0.15 against 0.68 / 0.25 / 0.06), and waves shrink through the game (0.595 single swaps in H1 20:00–10:00 → 0.773 in the last two minutes → 0.884 in OT) | already carried: the size categorical is indexed by the SAME cell as the wave probability, so both facts are in the table without a second object |

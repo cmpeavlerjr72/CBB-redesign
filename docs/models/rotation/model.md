@@ -310,6 +310,50 @@ Decision 8 is satisfied by all four arms (slope +0.629 / +0.628 / +0.672 /
 
 ---
 
+### 5.6 Round 5 (same 1,600 games, 3 seeds under S1; `experiments.md` §12-13)
+
+Round 5 changed the **draw**, not the family. Round 4's fitted per-player
+hazards are reused byte for byte as the composition rule and round 5 adds one
+object: a 324-cell table (`prev_end` × time cell × margin band × foul state)
+carrying a per-(team, boundary) **wave probability** and a **wave size**, plus
+one fitted coupling scalar `rho`. Five arms, the four knob-free members of the
+composition grid (rank or draw, on each of the exit and entry sides) plus a
+coupled variant of the first.
+
+| | ACTUAL | R2 | H1 (round 4) | W1 rank/rank | W2 draw/draw | W4 rank/draw | W5 draw/rank | W3 coupled |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|
+| **substitutions per boundary** | 0.1509 | 0.1437 | **0.2058** | 0.1570 | 0.1571 | 0.1570 | 0.1575 | 0.1568 |
+| **distinct lineups / team-game** | 14.84 | 15.51 | 19.73 | 11.52 | 16.96 | **14.47** | **14.41** | 11.50 |
+| per-player minutes MAE | 0.0 | 9.794 | **8.819** | 9.124 | 8.965 | 8.928 | 9.035 | 9.135 |
+| final 8:00, \|m\| ≤ 5 | 0.7491 | 0.7254 | 0.6692 | **0.7281** | 0.6494 | 0.7135 | 0.6767 | **0.7288** |
+| final 8:00, \|m\| 6-15 | 0.7240 | 0.6914 | 0.6518 | **0.7149** | 0.6301 | 0.6914 | 0.6628 | **0.7118** |
+| H2 tip, \|m\| ≤ 5 | 0.9678 | 0.7892 | 0.9390 | 0.9367 | 0.9377 | **0.9402** | 0.9319 | 0.9367 |
+| H1 20:00-10:00, \|m\| ≤ 5 | 0.7822 | 0.5988 | 0.7434 | 0.7444 | 0.7286 | 0.7332 | 0.7441 | 0.7430 |
+| state cells passed (of 8) | | 2 | 5 | 5 | 3 | 4 | 3 | 5 |
+| new cells passed (of 2) | | 2 | **0** | 1 | 1 | **2** | **2** | 1 |
+
+**No arm adopted** — no arm passes all eight state cells and both new cells.
+Three readings the round does establish:
+
+1. **The joint draw removes round 4's over-substitution outright.** Every arm
+   sits at 0.1568-0.1575 per boundary against a real 0.1509 (+4%) and a floor of
+   0.0011-0.0020, where round 4's arms were +36%. It costs nothing on the
+   primary metric: every wave arm still beats R2 by 45-56 noise floors on
+   per-player minutes MAE. The timeout feature excluded for engine
+   expressibility since round 4 is **not** needed to make substitutions bunch.
+2. **The close-and-late cell is fixed for the first time in the hazard family.**
+   W1 −2.1 pp and W3 −2.0 pp against R2's −2.4 and H1's −8.0; the \|m\| 6-15
+   band, which no arm in five rounds had passed, passes at −0.9 and −1.2 pp.
+3. **The failure moved from WHETHER to WHO.** A ranked entry rule makes the
+   floor sticky and concentrates the rotation too far (8.08 players against
+   9.64, top-5 minutes 0.800 against 0.747, 11.5 distinct lineups against 14.8);
+   a drawn entry rule gets the breadth exactly right (14.47 / 14.41 distinct
+   lineups, the best per-player-minutes K-S D of any arm in five rounds) and
+   gives back 3-4 pp of late stickiness. The truth is between a zero-temperature
+   race and a unit-temperature one, and no knob-free rule can express it.
+
+---
+
 ## 6. Garbage time: how each arm produces it, from data rather than a rule
 
 The measured target is a collapse of the starters' share of on-floor slots in the
@@ -459,6 +503,36 @@ events of the game being simulated would be a leak of exactly the kind
     which is why both pass by two orders of magnitude against L23's `fg_make`
     loop.
 
+19. **Round 5 changes the DRAW, not the family, and fits only the wave.** The
+    round-4 hazards and the round-3b base fits are reused byte for byte; round 5
+    fits `p_wave`, `p_size` and `rho` per S1 window and nothing else, so any
+    difference between a round-5 arm and H1 is a difference in the draw alone.
+    The shrinkage constant `k = 300` is the project's UNDERPOWERED threshold,
+    declared in the pre-registration and never tuned, and each shrinkage parent
+    is a marginalisation of the same counts.
+20. **The composition grid is enumerable, and it was enumerated before it was
+    fitted.** Rank or draw, on each of the two sides, is four knob-free rules;
+    the L25 probe in `docs/tests/rotation_wave_audit_2026-09-11.md` §6 ran all
+    four on paper and predicted that the uniform rules would bracket the target
+    and the mixed rules would land on it. The bake-off reproduced the ordering
+    on every cell and the distinct-lineup level to within 0.67 / 0.58 / 0.02 /
+    0.05. An L25 probe is a **ranking** instrument: it was uniformly optimistic
+    on the close-late band by 4.0-5.4 pp, which the as-of starter set (−2.8 pp,
+    measured in round 3) and the real foul sequence account for.
+21. **The timeout stays excluded and round 5 is the evidence that it can.** A
+    timeout triples the wave probability (0.1371 → 0.4967) and carries 13.3% of
+    all waves, and the engine has no timeout model. Round 4's arms paid for the
+    exclusion with a 36-43% excess substitution rate; round 5's pay 4%, because
+    the bunching a timeout produces is now in the wave draw rather than left to
+    five independent coins.
+22. **Decision 8 separated arms for the first time, and it penalised the
+    coupling.** `rho = 0.39` is real (residual lift 2.53 after conditioning on
+    the shared cell) and identified across six windows (0.386-0.391), and the
+    coupled arm's close-late slope ratio is 0.74 against the actual, outside the
+    [0.8, 1.2] band, as is W5's 0.75. A shared dead-ball draw moves both benches
+    on a common rhythm and flattens the team-to-team spread the cell exists to
+    show. Recorded against any future coupling arm.
+
 ---
 
 ## 8. Consumption from the sim
@@ -532,6 +606,13 @@ Notes for the caller:
 | `data/processed/models/rotation/rotation_fit_v3_S1_{YYYYMM}.json` | round 3b: one parameter set per S1 window, named by the window's **start** month, so a game selects the largest `YYYYMM` at or before its own month. The first window's file is byte-identical to `rotation_fit_v3.json` |
 | `data/processed/models/rotation/rotation_F1_round3b_S1_results.json` | round 3b, the S1-vs-static scheme confirmation |
 | `data/processed/models/rotation/close_game_audit_2026-09-10.json` | the round-3 evidence audit's raw cells (`docs/tests/rotation_close_game_audit_2026-09-10.md`) |
+
+| `data/processed/models/rotation/round5/rotation_v5_wave_{YYYYMM}.json` | round 5: the wave Bernoulli, the wave-size categorical, `rho`, and a COPY of that window's round-4 hazard coefficients so an artifact is self-contained. Six windows plus `rotation_v5_manifest.json` in the `engine/manifest.py` format. Gitignored (`data/processed/models/*/round*/`), HF-synced |
+| `data/processed/models/rotation/round5/rotation_v5_wave_seed2_*.json` | round 5 noise floor B: the spec-identical refit under fit seed 101 |
+| `data/processed/models/rotation/round5/rotation_v5_wave_nostate_*.json` | round 5 Decision 10 / L31: the refit WITHOUT margin or foul state — the wave table marginalised over both axes and the round-4 hazards refitted with all 14 margin/foul columns dropped (`scripts/train_rotation_v5_nostate.py`). Its `n_boundaries` field reads ~4.96M because the collapsed counts are broadcast back over the six margin × foul cells; the real boundary count is the same 822k-826k as the live fit |
+| `data/processed/models/rotation/rotation_F1_round5_{results.json,table.csv}` | round-5 results, verdicts, both noise floors, the reproduction check, the slope table and the decision |
+| `data/processed/models/rotation/wave_audit_2026-09-11.json` | the round-5 wave audit's raw cells (`docs/tests/rotation_wave_audit_2026-09-11.md`) |
+| `data/processed/models/rotation/wave_reachability_2026-09-11.json` | the L25 on-paper probe over all four composition rules, computed before the pre-registration |
 
 ---
 

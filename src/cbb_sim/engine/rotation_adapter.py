@@ -56,6 +56,7 @@ import numpy as np
 from scipy import special
 
 from cbb_sim.models import rotation_v4 as V4
+from cbb_sim.models import rotation_v5 as V5
 from cbb_sim.models.rotation import (
     FOUL_OUT,
     MAX_CANDIDATES,
@@ -207,7 +208,8 @@ class RotationBatch:
 
 def init_batch(fit: RotationFit, share: np.ndarray, srank: np.ndarray,
                fpm: np.ndarray, pavail: np.ndarray, book, rows: np.ndarray,
-               round4: dict | None = None, fitset: FitSet | None = None):
+               round4: dict | None = None, fitset: FitSet | None = None,
+               round5: dict | None = None):
     """Open the rotation for 2N team-simulations.
 
     `share`/`srank`/`fpm`/`pavail` are (2n, S) gathers of the per-(game, side)
@@ -219,6 +221,8 @@ def init_batch(fit: RotationFit, share: np.ndarray, srank: np.ndarray,
     per-row choice). `None` means the static fit, which is built here as a
     schedule of length one so there is exactly one code path.
     """
+    if round5 is not None:
+        return init_batch_round5(fit, share, srank, fpm, pavail, book, rows, round5)
     if round4 is not None:
         return init_batch_round4(fit, share, srank, fpm, pavail, book, rows, round4)
     two_n, S = share.shape
@@ -288,7 +292,8 @@ def next_lineup(rb, period: np.ndarray, seconds_remaining: np.ndarray,
                 home_score_diff: np.ndarray, last_duration: np.ndarray,
                 fouls: np.ndarray, book, rows: np.ndarray,
                 live: np.ndarray, prev_end: np.ndarray | None = None,
-                team_fouls: np.ndarray | None = None) -> np.ndarray:
+                team_fouls: np.ndarray | None = None,
+                shared: np.ndarray | None = None) -> np.ndarray:
     """Advance the rotation one possession. Returns the (2n, 5) on-floor slots.
 
     `period`, `seconds_remaining`, `home_score_diff` and `last_duration` are
@@ -297,6 +302,13 @@ def next_lineup(rb, period: np.ndarray, seconds_remaining: np.ndarray,
     foul-out rule the scheduler enforces and the foul-out the box score reports
     are the same number. `live` selects the rows whose game is still running.
     """
+    if isinstance(rb, Round5Batch):
+        if prev_end is None or team_fouls is None:
+            raise ValueError("ENGINE_ROTATION=round5 needs `prev_end` and "
+                             "`team_fouls`; the loop carries both")
+        return next_lineup_round5(rb, period, seconds_remaining, home_score_diff,
+                                  last_duration, fouls, book, rows, live,
+                                  prev_end, team_fouls, shared)
     if isinstance(rb, Round4Batch):
         if prev_end is None or team_fouls is None:
             raise ValueError("ENGINE_ROTATION=round4 needs `prev_end` and "
@@ -782,3 +794,339 @@ def round4_rows(r4: dict, game_rows: np.ndarray) -> dict:
     return {"w_out": r4["W_out"][seg], "b_out": r4["B_out"][seg],
             "w_in": r4["W_in"][seg], "b_in": r4["B_in"][seg],
             "hard_reset": r4["hard_reset"]}
+
+
+# ===========================================================================
+# ENGINE_ROTATION=round5 -- the JOINT substitution wave
+# ===========================================================================
+#: `rotation_v5.run_wave` re-expressed over (2N, S) arrays. The DECISION RULE is
+#: identical line for line:
+#:
+#:   * one Bernoulli per (team, boundary) against `p_wave[cell]`, where the cell
+#:     is `rotation_v5.wave_cell(prev_end, period, sec_left, margin, foul_state)`
+#:     -- the SAME function the offline sampler calls, with M = 2N here and
+#:     M = 1 there;
+#:   * a wave SIZE by inverse CDF on the gathered `p_size[cell]` row, raised to
+#:     the number of fouled-out players on the floor and capped at the bench;
+#:   * a COMPOSITION over round 4's own hazards: the `size` largest `p_out`
+#:     leave and the `size` largest `p_in` enter (rank), or an
+#:     Efraimidis-Spirakis race weighted by `p/(1-p)` (draw), per side;
+#:   * the hard second-half reset to the predicted starting five;
+#:   * `state_min` resets for every slot whose on/off state changed, `half_min`
+#:     resets at the half.
+#:
+#: W3 additionally takes a uniform SHARED by the two team-rows of a simulation,
+#: used in place of the row's own wave uniform with probability `rho`. The
+#: marginal is unchanged, because a uniform shared with the other team is still
+#: a uniform.
+#:
+#: STATED RNG DIVERGENCES beyond `docs/models/engine/model.md` section 4.5:
+#:   3. one uniform per roster slot for each race, against the offline
+#:      sampler's `len(bench)` sequential uniforms -- same rule, different
+#:      stream positions (round 4's divergence, unchanged);
+#:   4. `team_fouls` carries into overtime in the engine (NCAA rule) while the
+#:      possessions table the tables were fitted on resets it every period. It
+#:      reaches the round-5 wave draw only through round 4's hazards, never
+#:      through the cell, which does not use team fouls;
+#:   5. the shared coupling uniform is a fifth family, `rotation_wave`, keyed on
+#:      (seed, game_id) WITHOUT the side fold, which is what makes it shared.
+
+
+@dataclass
+class Round5Batch:
+    """Rotation state for 2N team-simulations under the round-5 wave family."""
+
+    fit: RotationFit
+    n: int
+    srank: np.ndarray           # (2n, S) int16
+    share: np.ndarray           # (2n, S) float64
+    fpm: np.ndarray             # (2n, S) float64
+    avail: np.ndarray           # (2n, S) bool
+    is_starter: np.ndarray      # (2n, S) float64
+    played: np.ndarray          # (2n, S) float64 seconds
+    half_min: np.ndarray        # (2n, S) float64
+    state_min: np.ndarray       # (2n, S) float64
+    onmask: np.ndarray          # (2n, S) bool
+    prev_on: np.ndarray         # (2n, S) bool
+    prev_period: np.ndarray     # (2n,) int16
+    prev_half: np.ndarray       # (2n,) int8
+    w_out: np.ndarray           # (2n, F) float64
+    b_out: np.ndarray           # (2n,) float64
+    w_in: np.ndarray            # (2n, F) float64
+    b_in: np.ndarray            # (2n,) float64
+    seg: np.ndarray             # (2n,) int64, artifact segment per row
+    p_wave: np.ndarray          # (n_seg, N_CELL)
+    size_cdf: np.ndarray        # (n_seg, N_CELL, MAX_WAVE) cumulative
+    rho: np.ndarray             # (n_seg,)
+    draw_exit: bool
+    draw_entry: bool
+    coupled: bool
+    hard_reset: bool
+    started: np.ndarray         # (2n,) bool
+    freeze: bool
+    diag: dict
+
+    @property
+    def n_slots(self) -> int:
+        return self.srank.shape[1]
+
+
+def init_batch_round5(fit: RotationFit, share: np.ndarray, srank: np.ndarray,
+                      fpm: np.ndarray, pavail: np.ndarray, book, rows: np.ndarray,
+                      coefs: dict) -> Round5Batch:
+    """Open the round-5 rotation for 2N team-simulations.
+
+    Availability, the share normalisation and the opening five are drawn by the
+    SAME rule as round 4, so the two families differ only in the wave draw."""
+    two_n, S = share.shape
+    u_av = book.draw_block("rotation", rows, S)
+    avail = u_av < pavail
+    short = avail.sum(axis=1) < 5
+    diag = {"rotation_availability_forced": int(short.sum())}
+    if short.any():
+        order = np.argsort(-share[short], kind="stable")[:, :5]
+        fix = np.zeros_like(avail[short])
+        np.put_along_axis(fix, order, True, axis=1)
+        avail[short] |= fix
+
+    sh = share.astype(np.float64)
+    tot = sh.sum(axis=1, keepdims=True)
+    sh = sh / np.where(tot > 0, tot, 1.0) * 5.0
+
+    key = np.where(avail, srank.astype(np.float64), 1e9)
+    pick = np.argsort(key, kind="stable")[:, :5]
+    onmask = np.zeros((two_n, S), dtype=bool)
+    np.put_along_axis(onmask, pick, True, axis=1)
+
+    return Round5Batch(
+        fit=fit, n=two_n // 2, srank=srank.astype(np.int16), share=sh,
+        fpm=fpm.astype(np.float64), avail=avail,
+        is_starter=(srank <= 5).astype(np.float64),
+        played=np.zeros((two_n, S)), half_min=np.zeros((two_n, S)),
+        state_min=np.zeros((two_n, S)), onmask=onmask, prev_on=onmask.copy(),
+        prev_period=np.ones(two_n, dtype=np.int16),
+        prev_half=np.zeros(two_n, dtype=np.int8),
+        w_out=coefs["w_out"], b_out=coefs["b_out"],
+        w_in=coefs["w_in"], b_in=coefs["b_in"],
+        seg=np.asarray(coefs["seg"], dtype=np.int64),
+        p_wave=coefs["p_wave"], size_cdf=coefs["size_cdf"], rho=coefs["rho"],
+        draw_exit=bool(coefs["draw_exit"]), draw_entry=bool(coefs["draw_entry"]),
+        coupled=bool(coefs["coupled"]), hard_reset=bool(coefs.get("hard_reset", True)),
+        started=np.zeros(two_n, dtype=bool),
+        freeze=freeze_enabled(), diag=diag)
+
+
+def _pick_k(mask: np.ndarray, key: np.ndarray, k: np.ndarray) -> np.ndarray:
+    """The `k[i]` smallest keys of row i, restricted to `mask`. One argsort."""
+    two_n, S = mask.shape
+    order = np.argsort(np.where(mask, key, np.inf), kind="stable")
+    rank = np.empty_like(order)
+    np.put_along_axis(rank, order, np.arange(S)[None, :].repeat(two_n, 0), axis=1)
+    return mask & (rank < k[:, None])
+
+
+def next_lineup_round5(rb: Round5Batch, period: np.ndarray,
+                       seconds_remaining: np.ndarray, home_score_diff: np.ndarray,
+                       last_duration: np.ndarray, fouls: np.ndarray, book,
+                       rows: np.ndarray, live: np.ndarray, prev_end: np.ndarray,
+                       team_fouls: np.ndarray, shared: np.ndarray | None = None
+                       ) -> np.ndarray:
+    S = rb.n_slots
+    half = rb.n
+    two_n = 2 * half
+
+    # ---- credit the possession just played ------------------------------
+    credit = live & rb.started
+    if credit.any():
+        d = last_duration.astype(np.float64)
+        c = credit[:, None]
+        rb.played += d[:, None] * rb.prev_on * c
+        rb.half_min += (d[:, None] / 60.0) * rb.prev_on * c
+        rb.state_min += (d[:, None] / 60.0) * c
+        u_f = np.zeros((two_n, S))
+        sel = np.flatnonzero(credit)
+        u_f[sel] = book.draw_block("rotation_foul", rows[sel], S)
+        hit = (u_f < rb.fpm * (d[:, None] / 60.0) * rb.fit.foul_rate_scale) \
+            & rb.prev_on & c
+        fouls += hit.astype(fouls.dtype)
+
+    # ---- the half boundary resets minutes-in-half ------------------------
+    cur_half = (period >= 2).astype(np.int8)
+    newhalf = live & (cur_half != rb.prev_half)
+    if newhalf.any():
+        rb.half_min[newhalf] = 0.0
+    rb.prev_half = np.where(live, cur_half, rb.prev_half)
+
+    # ---- the state the rotation model sees -------------------------------
+    margin = np.concatenate([home_score_diff[:half], -home_score_diff[half:]])
+    f_model = fouls.astype(np.float64)
+    tf_model = np.asarray(team_fouls, dtype=np.float64)
+    if rb.freeze:                       # Decision 10
+        margin = np.zeros_like(margin)
+        f_model = np.zeros_like(f_model)
+        tf_model = np.zeros_like(tf_model)
+
+    out_of_fouls = fouls >= FOUL_OUT
+    eligible = rb.avail & ~out_of_fouls
+    n_elig = eligible.sum(axis=1)
+    on = rb.onmask
+    bench_ok = ~on & eligible
+    n_bench = bench_ok.sum(axis=1)
+
+    # ---- the wave draw ---------------------------------------------------
+    foul_state = ((f_model >= 4.0) & on).any(axis=1).astype(np.int64)
+    cell = V5.wave_cell(prev_end, period, seconds_remaining, margin, foul_state)
+    pw = rb.p_wave[rb.seg, cell]                       # (2n,)
+    cdf = rb.size_cdf[rb.seg, cell]                    # (2n, MAX_WAVE)
+
+    u = book.draw_block("rotation_sub", rows, 2 * S + 3)
+    u_exit, u_race = u[:, :S], u[:, S:2 * S]
+    u_wave, u_size, u_coup = u[:, 2 * S], u[:, 2 * S + 1], u[:, 2 * S + 2]
+    if rb.coupled and shared is not None:
+        take = u_coup < rb.rho[rb.seg]
+        u_wave = np.where(take, np.asarray(shared, dtype=np.float64), u_wave)
+
+    forced = (on & out_of_fouls).sum(axis=1)
+    wave = (u_wave < pw) | (forced > 0)
+    size = (u_size[:, None] > cdf).sum(axis=1) + 1
+    size = np.maximum(size, forced)
+    size = np.minimum(np.minimum(size, n_bench), 5)
+    size = np.where(wave, size, 0)
+
+    # ---- the composition, over round 4's own hazards ---------------------
+    X = V4.design(rb.is_starter, rb.share, f_model, rb.state_min, rb.half_min,
+                  period, seconds_remaining, margin, prev_end, tf_model)
+    p_out = _sigmoid(np.einsum("msf,mf->ms", X, rb.w_out) + rb.b_out[:, None])
+    p_in = _sigmoid(np.einsum("msf,mf->ms", X, rb.w_in) + rb.b_in[:, None])
+
+    if rb.draw_exit:
+        w = np.clip(p_out, 1e-9, 1.0 - 1e-9)
+        w = np.where(out_of_fouls, 1e12, w / (1.0 - w))
+        k_out = -np.log(np.clip(u_exit, 1e-12, 1.0)) / np.maximum(w, 1e-12)
+    else:
+        k_out = np.where(out_of_fouls, -1e12, -p_out)
+    leaving = _pick_k(on, k_out, size)
+
+    if rb.draw_entry:
+        w = np.clip(p_in, 1e-9, 1.0 - 1e-9)
+        w = w / (1.0 - w)
+        k_in = -np.log(np.clip(u_race, 1e-12, 1.0)) / np.maximum(w, 1e-12)
+    else:
+        k_in = -p_in
+    entering = _pick_k(bench_ok, k_in, size)
+
+    act = live & (on.sum(axis=1) == 5) & (size > 0)
+    if act.any():
+        a = act[:, None]
+        rb.onmask = np.where(a, (rb.onmask & ~leaving) | entering, rb.onmask)
+
+    # ---- the hard second-half reset --------------------------------------
+    if rb.hard_reset:
+        newper = live & (period.astype(np.int16) == 2) & (rb.prev_period == 1) \
+            & (n_elig >= 5)
+        if newper.any():
+            k = np.where(eligible[newper], rb.srank[newper].astype(np.float64), 1e9)
+            pick = np.argsort(k, kind="stable")[:, :5]
+            nm = np.zeros_like(rb.onmask[newper])
+            np.put_along_axis(nm, pick, True, axis=1)
+            rb.onmask[newper] = nm
+    rb.prev_period = np.where(live, period.astype(np.int16), rb.prev_period)
+
+    # ---- the five-on-the-floor invariant and the foul-out rule -----------
+    cnt = rb.onmask.sum(axis=1)
+    bad = live & (cnt != 5)
+    if bad.any():
+        rb.diag["rotation_five_repaired"] = rb.diag.get("rotation_five_repaired", 0) \
+            + int(bad.sum())
+        score = np.where(eligible[bad], rb.share[bad], _NEG) \
+            + 10.0 * rb.onmask[bad].astype(np.float64)
+        pick = np.argsort(-score, kind="stable")[:, :5]
+        nm = np.zeros_like(rb.onmask[bad])
+        np.put_along_axis(nm, pick, True, axis=1)
+        rb.onmask[bad] = nm
+
+    stuck = rb.onmask & out_of_fouls
+    if stuck.any():
+        for _ in range(2):
+            rowsel = np.flatnonzero(stuck.any(axis=1) & live)
+            if not len(rowsel):
+                break
+            for r in rowsel:
+                bad_slots = np.flatnonzero(stuck[r])
+                pool = np.flatnonzero(~rb.onmask[r] & eligible[r])
+                pool = pool[np.argsort(-rb.share[r][pool], kind="stable")]
+                for aa, bb in zip(bad_slots, pool):
+                    rb.onmask[r, aa] = False
+                    rb.onmask[r, bb] = True
+            stuck = rb.onmask & out_of_fouls
+
+    changed = rb.onmask != rb.prev_on
+    rb.state_min = np.where(changed & live[:, None], 0.0, rb.state_min)
+    rb.prev_on = np.where(live[:, None], rb.onmask, rb.prev_on)
+    rb.started |= live
+    return np.argsort(~rb.onmask, kind="stable")[:, :5].astype(np.int16)
+
+
+# ===========================================================================
+# round-5 artifacts: the S1 manifest, gathered per simulation row
+# ===========================================================================
+ROUND5_DIR = ROUND4_DIR / "round5"
+ROUND5_MANIFEST = ROUND5_DIR / "rotation_v5_manifest.json"
+
+#: (draw_exit, draw_entry, coupled) per pre-registered arm
+ROUND5_ARMS = {
+    "W1": (False, False, False),
+    "W2": (True, True, False),
+    "W4": (False, True, False),
+    "W5": (True, False, False),
+    "W3": (False, False, True),
+}
+
+
+def round5_arm() -> str:
+    a = os.environ.get("ENGINE_ROTATION_ARM", "W1")
+    return a if a in ROUND5_ARMS else "W1"
+
+
+def load_round5(games, arm: str | None = None,
+                manifest_path: Path | None = None) -> dict:
+    """Load the round-5 S1 wave schedule and return per-GAME tables.
+
+    Selection is `engine.manifest.ArtifactManifest`, so the honest-backtest rule
+    (`refit_date < tipoff` AND `max_train_date < game_date`) is enforced in the
+    one place every sub-model passes through. Each artifact carries its own copy
+    of round 4's hazard coefficients, so the composition rule and the wave
+    tables can never come from different windows."""
+    from cbb_sim.engine.manifest import ArtifactManifest
+
+    if manifest_path is None and os.environ.get("ENGINE_ROTATION_MANIFEST") == "nostate":
+        # the L31 refit-WITHOUT-state schedule (`train_rotation_v5_nostate.py`)
+        manifest_path = ROUND5_DIR / "rotation_v5_manifest_nostate.json"
+    p = Path(manifest_path or ROUND5_MANIFEST)
+    man = ArtifactManifest.from_json(p, games)
+    fits = [V5.WaveFit.from_json(e.path) for e in man.entries]
+    nm = arm or round5_arm()
+    de, den, cp = ROUND5_ARMS[nm]
+    ps = np.stack([f.ps for f in fits])                       # (n_seg, CELL, 5)
+    return {"manifest": man, "seg_of_game": man.seg_of_game,
+            "W_out": np.array([f.out_coef for f in fits], dtype=np.float64),
+            "B_out": np.array([f.out_intercept for f in fits], dtype=np.float64),
+            "W_in": np.array([f.in_coef for f in fits], dtype=np.float64),
+            "B_in": np.array([f.in_intercept for f in fits], dtype=np.float64),
+            "P_WAVE": np.stack([f.pw for f in fits]),
+            "SIZE_CDF": np.cumsum(ps, axis=2),
+            "RHO": np.array([f.rho for f in fits], dtype=np.float64),
+            "arm": nm, "draw_exit": de, "draw_entry": den, "coupled": cp,
+            "hazard_sources": [f.hazard_source for f in fits],
+            "provenance": man.provenance()}
+
+
+def round5_rows(r5: dict, game_rows: np.ndarray) -> dict:
+    """Gather the per-row (2N) block for one chunk."""
+    seg = r5["seg_of_game"][np.asarray(game_rows, dtype=np.int64)]
+    return {"w_out": r5["W_out"][seg], "b_out": r5["B_out"][seg],
+            "w_in": r5["W_in"][seg], "b_in": r5["B_in"][seg],
+            "seg": seg, "p_wave": r5["P_WAVE"], "size_cdf": r5["SIZE_CDF"],
+            "rho": r5["RHO"], "draw_exit": r5["draw_exit"],
+            "draw_entry": r5["draw_entry"], "coupled": r5["coupled"],
+            "hard_reset": True}

@@ -208,6 +208,15 @@ def simulate_chunk(inp: EngineInputs, ad: Adapters, game_index: np.ndarray,
     # hierarchical Dirichlet + scheduler. The mode is read here rather than in
     # `adapters.py`, which another deliverable owns.
     r4 = RA.load_round4(inp.games) if RA.rotation_mode() == "round4" else None
+    # ENGINE_ROTATION=round5 serves the JOINT substitution wave
+    # (`models/rotation_v5.py`, experiments.md section 12): the same round-4
+    # hazards as the composition rule, with a wave Bernoulli and a wave size
+    # drawn per (team, boundary) from a cell lookup. W3 also needs one uniform
+    # per (game, boundary) SHARED by the two team rows, so it is keyed on
+    # (seed, game_id) WITHOUT the side fold that `rot_book` carries.
+    r5 = RA.load_round5(inp.games) if RA.rotation_mode() == "round5" else None
+    wave_book = (StreamBook(seeds, gids, families=("rotation_wave",))
+                 if (r5 is not None and r5["coupled"]) else None)
     # ENGINE_ROTATION_SCHEME=s1: R2's fitted objects are a SCHEDULE (rotation
     # round 3b, experiments.md s9.4), so each of the 2N rows carries its own
     # game's refit. `gg` is already the (2N,) game row index, home block then
@@ -218,6 +227,7 @@ def simulate_chunk(inp: EngineInputs, ad: Adapters, game_index: np.ndarray,
         inp.rot_share[gg, two], inp.rot_srank[gg, two], inp.rot_fpm[gg, two],
         inp.rot_pavail[gg, two], rot_book, rot_rows,
         round4=None if r4 is None else RA.round4_rows(r4, gg),
+        round5=None if r5 is None else RA.round5_rows(r5, gg),
         fitset=None if rot_s1 is None else RA.r2_s1_fitset(rot_s1, gg))
     # the rotation decides foul-outs off the same counters the box score reports,
     # so the (2n, S) block is the single source of truth until the game is over
@@ -227,6 +237,13 @@ def simulate_chunk(inp: EngineInputs, ad: Adapters, game_index: np.ndarray,
         # `prev_end` is the possession's own start reason -- the dead-ball
         # opportunity the round-4 hazards condition on -- and is exactly the
         # possessions table's `start_reason`. `team_fouls` is each side's own.
+        shared = None
+        if wave_book is not None:
+            shared = np.zeros(n, dtype=np.float64)
+            sel = np.flatnonzero(st.active)
+            if len(sel):
+                shared[sel] = wave_book.draw("rotation_wave", sel)
+            shared = np.concatenate([shared, shared])
         five = RA.next_lineup(
             rot,
             np.concatenate([st.period, st.period]),
@@ -236,7 +253,8 @@ def simulate_chunk(inp: EngineInputs, ad: Adapters, game_index: np.ndarray,
             fouls2, rot_book, rot_rows,
             np.concatenate([st.active, st.active]),
             prev_end=np.concatenate([st.prev_end, st.prev_end]),
-            team_fouls=np.concatenate([st.team_fouls[:, 0], st.team_fouls[:, 1]]))
+            team_fouls=np.concatenate([st.team_fouls[:, 0], st.team_fouls[:, 1]]),
+            shared=shared)
         st.on_floor[:, 0, :] = five[:n]
         st.on_floor[:, 1, :] = five[n:]
 
