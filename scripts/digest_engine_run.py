@@ -65,7 +65,7 @@ ROOT = Path(__file__).resolve().parents[1]
 # run_meta fields that describe WHAT was computed (hashed) vs HOW FAST / WHEN
 # (metadata only, never hashed -- a faster box must not fail the gate).
 META_HASHED_KEYS = ("fold", "season", "n_games", "adapter_flags", "engine_rules_from_data")
-DIGEST_VERSION = 2
+DIGEST_VERSION = 3
 
 # Every ENGINE_* switch pulled out of run_meta.json's `adapter_flags` into its
 # own top-level `flags` block (digest_version 2). `adapter_flags` already
@@ -94,6 +94,32 @@ def _rows(df: pd.DataFrame, sort_cols: list[str]) -> list[dict]:
     for rec in df.itertuples(index=False, name=None):
         out.append({c: _round(v) for c, v in zip(cols, rec)})
     return out
+
+
+def _posix(obj):
+    """Normalize embedded OS-native path strings to POSIX before hashing.
+
+    `digest_version` 3 (2026-09-11, AWS launch chain section 12/13): the first
+    two cross-platform parity runs (v2 and v3 references) each reported the
+    SAME cosmetic mismatch -- `meta.adapter_flags` differs as a whole because
+    a `sources`/`manifest` provenance string was built with `str(Path(...))`,
+    which is OS-native (`data\\processed\\...` on Windows,
+    `data/processed/...` on Linux). Zero simulated value ever differed on
+    either occasion. Per this script's own design (`created_at`, `runtime_s`,
+    `workers` etc. are provenance/performance and already excluded from the
+    hash), a path SEPARATOR is exactly that kind of provenance detail, not a
+    computed value -- so it is normalized here rather than left to keep
+    failing the gate on every future box. This only rewrites backslashes to
+    forward slashes inside string leaves of the HASHED metadata block (never
+    touches `games`/`players` row data, and never touches any adapter default
+    or simulated output)."""
+    if isinstance(obj, str):
+        return obj.replace("\\", "/")
+    if isinstance(obj, dict):
+        return {k: _posix(v) for k, v in obj.items()}
+    if isinstance(obj, list):
+        return [_posix(v) for v in obj]
+    return obj
 
 
 def _git_sha() -> str:
@@ -135,7 +161,7 @@ def build_digest(results_dir: Path) -> dict:
     else:
         player_rows = []
 
-    hashed_meta = {k: meta.get(k) for k in META_HASHED_KEYS if k in meta}
+    hashed_meta = _posix({k: meta.get(k) for k in META_HASHED_KEYS if k in meta})
     adapter_flags = meta.get("adapter_flags", {}) or {}
     flags = {k: v for k, v in adapter_flags.items() if k.startswith("ENGINE_")}
 

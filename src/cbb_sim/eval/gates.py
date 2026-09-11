@@ -667,9 +667,15 @@ def gate_g8(players: pd.DataFrame | None, tol: dict, min_cell_n: int = DEFAULT_M
         minutes=("minutes", "sum"), fga=("fga", "sum"),
     )
     rotation = per_player[per_player["minutes"] > 0]
-    starter_cut = rotation.groupby(["game_id", "seed", "team_id"])["minutes"].transform(
-        lambda x: x.rank(ascending=False) <= 5
-    )
+    # Vectorized groupby-rank, NOT `.transform(lambda x: x.rank(...))`: the lambda form makes
+    # pandas fall back to a per-group Python callback, which is fine at 5-50 seeds but is
+    # ~O(n_groups) Python overhead that made a 200-seed run (2.28M (game,seed,team) groups)
+    # balloon past 10GB and run for 20+ minutes without finishing (found live grading engine v1
+    # F2_2025_s200_v1_clockv3c, 2026-09-11). `groupby(...)["minutes"].rank(ascending=False)`
+    # calls pandas' own cythonized rank and is exactly equivalent (verified: identical boolean
+    # mask on a synthetic tie-including test) -- same default tie-break method ("average"),
+    # just computed without the Python-level per-group call.
+    starter_cut = rotation.groupby(["game_id", "seed", "team_id"])["minutes"].rank(ascending=False) <= 5
     minutes_mean = float(rotation.loc[starter_cut, "minutes"].mean())
     minutes_sd = float(rotation.loc[starter_cut, "minutes"].std())
     team_fga = per_player.groupby(["game_id", "seed", "team_id"])["fga"].transform("sum")
@@ -707,9 +713,8 @@ def gate_g8(players: pd.DataFrame | None, tol: dict, min_cell_n: int = DEFAULT_M
     t = truth[truth["game_id"].isin(sim_game_ids)].copy()
     t["minutes"] = t["minutes"].fillna(0)
     t_rotation = t[t["minutes"] > 0]
-    t_starter_cut = t_rotation.groupby(["game_id", "team_id"])["minutes"].transform(
-        lambda x: x.rank(ascending=False) <= 5
-    )
+    # Same vectorized-rank fix as the sim side above.
+    t_starter_cut = t_rotation.groupby(["game_id", "team_id"])["minutes"].rank(ascending=False) <= 5
     act_minutes_mean = float(t_rotation.loc[t_starter_cut, "minutes"].mean())
     act_minutes_sd = float(t_rotation.loc[t_starter_cut, "minutes"].std())
     t_team_fga = t.groupby(["game_id", "team_id"])["fga"].transform("sum")

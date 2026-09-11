@@ -1,0 +1,42 @@
+{
+  "engine_tag": "engine_v0/F2_2025_s200_v1_clockv3c_A",
+  "results": "results/engine_v0/F2_2025_s200_v1_clockv3c_A",
+  "season": 2025,
+  "n_seeds": 200,
+  "gate_provisional": false,
+  "calibration_ok": true,
+  "roi_ok": false,
+  "gate_min_seeds": 200,
+  "roi_brier_min_seeds": 2000,
+  "honesty_note": "backtest: run created post hoc by construction; artifact `max_train_date < tipoff` asserted on possession_outcome.first: 5710/5710 rows pass; possession_outcome.cont: 5710/5710 rows pass; clock.clock: 5710/5710 rows pass; fg_make.FGA_rim: 5710/5710 rows pass; fg_make.FGA_jump2: 5710/5710 rows pass; fg_make.FGA_3: 5710/5710 rows pass; free_throw.FT2_lgbm: 5710/5710 rows pass; rebound.C_plus_state: 5710/5710 rows pass; rotation.R2: 5710/5710 rows pass. **artifact dates not recorded** for 1 other sub-model artifact path(s) (usage (static, no per-artifact dates)) -- not checked, not fabricated, not assumed to pass.",
+  "run_meta_backtest": true,
+  "run_meta_created_at": "2026-09-11T14:44:17.681842+00:00",
+  "artifact_families_with_max_train_date": [
+    "possession_outcome.first",
+    "possession_outcome.cont",
+    "clock.clock",
+    "fg_make.FGA_rim",
+    "fg_make.FGA_jump2",
+    "fg_make.FGA_3",
+    "free_throw.FT2_lgbm",
+    "rebound.C_plus_state",
+    "rotation.R2"
+  ],
+  "artifact_families_without_max_train_date": [
+    "usage (static, no per-artifact dates)"
+  ],
+  "lines_path": "data\\processed\\lines\\lines_close_v1.parquet",
+  "provider": "ESPN BET",
+  "n_dup_lines_dropped": 0,
+  "truth_counts": {
+    "n_schedule_games": 5710,
+    "n_no_finals_row": 0,
+    "n_unresolved_excluded": 0,
+    "n_truth_games": 5710,
+    "finals_source_counts": {
+      "hoopr": 5709,
+      "cbbd": 1
+    }
+  },
+  "n_games_graded": 5383
+}

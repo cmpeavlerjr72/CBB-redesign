@@ -612,3 +612,83 @@ everything above describes and the one the box actually ran.
 
 **Termination confirmed:** `describe-instances` returned `terminated` for
 `i-02092cafa1d72fdde` at `2026-09-11T04:22:2x Z`, ~2h18m after launch.
+
+---
+
+## 13. SECOND LAUNCH, 2026-09-11 morning: full 200-seed A/B, parity gate fixed for real, a grading-scale bug found and fixed
+
+**Instance.** `i-091914a0a5285b681`, spot `c7a.48xlarge`, `us-east-2b`. Launched
+`2026-09-11T14:00:45Z` (10:00:45 ET), terminated (verified via `describe-instances`)
+`2026-09-11T14:47:51Z` (10:47:51 ET), ~47m6s wall, spot rate $2.2976/h, **~$1.80**. Engine
+commit `c824711b67e9bd82b2fc32ef1bd4d506bbb592d2`. Full account, gate table and market
+scorecard: `docs/tests/engine_v1_gates_F2_2025_s200_aws_2026-09-11.md`. This section is the
+ops/timeline record; that doc is the evidence record.
+
+**Setup was fast**: 6m14s to host-setup-done (docker/git install, clone, `hf_sync_data.py pull
+--dirs engine_inputs model_artifacts` -- both already fully mirrored on HF, 0 missing, so no
+push was needed this time), 1m43s to `docker build`. The section 12 pull-path bug (fixed
+2026-09-11 by a Sonnet worker, `230e302`) held up cleanly on both bulk keys.
+
+**Parity gate failed once, on a KNOWN defect, and was fixed for real this time.** The v3
+reference (`493a818eeb`) was stale (four engine-path files had moved since, all from
+"NO ARM ADOPTED" clock/rotation experiments). A fresh local re-emit at `c824711b` (v4) hashed
+byte-identical to v3, confirming those commits changed nothing about the served config's
+output. The box's first gate attempt against v4 still FAILED, on the exact same cosmetic
+`meta.adapter_flags` mismatch section 12 already diagnosed and left unfixed
+(`sources`/`manifest` provenance paths rendered with Windows backslashes vs POSIX) --
+recurring now on the v1 served stack's dated S1 manifests (clock/fg_make/free_throw/rebound/
+rotation all carry this). **Fixed this time**: `scripts/digest_engine_run.py` `digest_version`
+2 -> 3, recursively posix-normalizes string leaves of the hashed metadata block before hashing.
+Zero engine files touched, zero simulated values affected. Re-emitted as
+`docs/ops/parity_reference_windows_v5.json` (sha `e4d4e3a76b...`, pinned `c824711b`), mounted
+over the already-built image (no rebuild needed) for a second gate attempt: **PASS,
+bit-identical.** `docs/ops/parity_reference_windows.json` (v1) and `..._v2.json`/`..._v3.json`
+are untouched; v5 is the one to use for any future box on this served config until it changes
+again.
+
+**Throughput: the instructed 200-game x 4-seed test at 192 workers measured 25.4 and 15.7
+poss/s/core** (two block shapes tried), both severely startup/IPC-overhead-dominated by
+construction (200 games x 4 seeds cannot spread past ~1 block/worker at 192 workers no matter
+the block size) -- the same failure mode section 12 already flagged for this exact test
+shape, now reproduced and shown to be ~45-75x off. **Cross-checked against the real sweep's own
+block shape** (`--games-per-block 30 --seeds-per-block 4`): a 12-seed pilot pair measured
+1,033.6 / 1,022.7 poss/s/core at 96 workers; the real 200-seed A/B runs sustained 1,196.1 /
+1,197.3 poss/s/core at 96 workers -- consistent with (better than) the ~817-880 poss/s/core home
+box figure this project has used for cost tables. **Anyone costing a future sweep off a small
+game x seed-count throughput probe should use the production block shape for that probe, not
+`--games-per-block 1`** -- this is now the second time the small-probe number has undershot the
+real number by more than an order of magnitude.
+
+**Seed count: 200/200 for both A and B, not cut down.** The cross-checked throughput put a
+paired 200/200 run at ~23 minutes wall (both ran concurrently, 96 workers each), well inside the
+12:00 ET checkpoint, so no reduction was needed. Both launched 10:21:07/09 ET, both completed
+naturally (not via the `--time-budget-s 3000` safety net, armed but never triggered) at
+10:44:17/18 ET, `partial=False`, `seeds_dropped_incomplete=0` on both. Run A: seeds 0-199,
+`F2_2025_s200_v1_clockv3c_A`. Run B (noise floor): seeds 1000-1199,
+`F2_2025_s200_v1_clockv3c_B`. Pulled to the local machine via `scp` (206 MB each), pushed to
+`mvpeav/cbb-sim-data` under `results` (`hf_sync_data.py push --dirs results`: `push-results: OK`)
+before termination.
+
+**A grading-scale defect was found and fixed while producing the gate table, not before.**
+`src/cbb_sim/eval/gates.py`'s G8 used `.groupby([...]).transform(lambda x: x.rank(...) <= 5)`
+twice; that lambda form forces a per-group Python callback in pandas, invisible at 5-50 seeds
+but O(n_groups) at 200 (2.28M `(game, seed, team)` groups over ~29M player rows) -- it grew past
+10 GB resident memory and ran 20+ minutes without finishing on the shared local grading box,
+risking an OOM that would have cost every concurrently-running lane's work, not just this one.
+Killed (a process this worker started) before that happened, fixed with the vectorized
+`.groupby([...]).rank(...) <= 5` (verified bit-for-bit identical output on a tie-including
+synthetic case and on an existing small local results dir, before and after), after which
+`eval_gates.py` on the full 200-seed run completed in under a minute. Report-tool performance
+fix only; no engine default, adapter, or simulated value changed.
+
+**Instance termination:** `aws ec2 terminate-instances --instance-ids i-091914a0a5285b681`,
+confirmed via `aws ec2 describe-instances ... --query State.Name` -> `terminated` at
+`2026-09-11T14:47:51Z`, ~9s after the terminate call (`shutting-down` at :27 and :39, `terminated`
+at :51 on three successive 10s-spaced polls).
+
+**Files this session**: `scripts/digest_engine_run.py` (digest_version 3, posix fix),
+`docs/ops/parity_reference_windows_v5.json` (new), `src/cbb_sim/eval/gates.py` (G8 vectorized
+rank), `scripts/diag_gate_noise_band.py` (new -- paired-run G1-G9 noise-band table), this
+section. `docs/ops/parity_reference_windows.json`/`..._v2.json`/`..._v3.json`/`..._v4.json`
+untouched (v4 was a same-session intermediate, superseded by v5's posix fix; not separately
+committed).
