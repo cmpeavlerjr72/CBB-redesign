@@ -17,7 +17,7 @@ Written by the PM at 03:05 EDT (draft; the 03:47 wrap-up fills the PENDING items
 | Engine contract | FGM by class and FTM added; the eFG% gate reads (smoke: 0.474 vs 0.509 actual under the leaked fg_make; 0.500 after r2) | commit 827503f |
 | Lines source | CBBD ESPN BET 2023-2025 ACCEPTED: coverage 93-100%, overround 4.6%, spread MAE 8.81 vs an honest KenPom approximation at 9.00 on the same 16,076 games (corr 0.966), close beats open by 0.06. No line-level timestamps: CLV is open-to-close only, 2025 only. The old 10-11 pt MAE band was wrong for CBB | `docs/tests/lines_cbbd_validation_2026-09-10.md`; commits 4306c50, b369936 |
 | Market scorecard v2 | Built and guarded: calibration at >= 200 seeds, ROI/Brier refused below ~2,000, per-row artifact `max_train_date < tipoff` on every family, open-to-close leak check | `docs/tests/market_scorecard_pipeline_2026-09-10.md`; commit ad92ef9 |
-| Engine rewiring v1 | Inputs v2 (shooter block on `shot_shooter_id`, shrunk shooter column), run_meta with per-family `max_train_date` and `engine_commit`, parity digest v3; rotation R2 under S1, rebound/FT manifests. The 200-seed read launched 00:57 locally with a time budget; expected ~40-55 complete seeds (PROVISIONAL vs the 200 floor). Gate table PENDING | commits 493a818, 3f0b7d9, 4503c52, 0cfd68a; `results/engine_v0/F2_2025_s200_rewire1` |
+| Engine rewiring v1 | Inputs v2 (shooter block on `shot_shooter_id`, shrunk shooter column), run_meta with per-family `max_train_date` and `engine_commit`, parity digest v3; rotation R2 under S1, rebound/FT manifests. The 200-seed read ran 00:57-03:08 locally: 50 complete seeds (PROVISIONAL vs the 200 floor); gate table below; noise floor PENDING | commits 493a818, 3f0b7d9, 4503c52, 0cfd68a; `results/engine_v0/F2_2025_s200_rewire1` |
 | AWS | Spot c7a.48xlarge launched 22:04, Linux parity PASS on every simulated value, terminated 00:22, ~2h18m, ~$5-6. The throughput read was unreliable (short run); the hf pull path bug found there is fixed (230e302). Recommend rotating the HF token (it appeared in a worker's process listing) | `docs/ops/aws_launch_chain.md` section 12; commits bfe807a, 230e302 |
 
 ## Rules and learnings added
@@ -28,9 +28,31 @@ Decision 9 (opponent adjustment, conference flag, refit cadence and alignment as
 
 At 23:50 EDT the worker models' weekly limit terminated five workers mid-run; it reset at midnight and every lane was resumed from its on-disk state. Cost: about 30 minutes and one restarted engine run.
 
-## Engine gate table
+## Engine gate table (engine v1, F2 2025, 5,710 games, 50 complete seeds of 200; PROVISIONAL against the 200-seed floor; noise floor PENDING)
 
-PENDING at 03:05; filled at 03:47.
+Run `F2_2025_s200_rewire1`, 00:57-03:08 local, 12 workers contended (447 poss/s/core; a full 200-seed slate needs ~8 h here, ~1 h on the box once its throughput is measured properly). Served sub-models: event round2_s1, fg_make round4_B1 on inputs v2, rebound S1_weekly, free throw S1_conf_aligned, rotation R2 under S1, clock reference (the run predates the v3c default). `docs/tests/engine_v1_gates_F2_2025_s200_2026-09-11.md`, commit b14d039.
+
+| gate line | engine v1 (50 seeds) | engine v0 (5 seeds, yesterday) | Control | actual / tolerance | v1 |
+|---|---|---|---|---|---|
+| G1 possessions per game | 69.88 (+2.00) | 72.12 (+4.24) | 68.27 | 67.88, +/-1.0 | FAIL |
+| G1 possession SD | 4.57 | 4.76 | 5.70 | 5.47, +/-0.75 | FAIL |
+| G2 PPP cells passing | 2 of 9 | 1 of 9 | 3 of 9 | 9 of 9 | FAIL |
+| G3 3PA / rim / FTA-FGA shares | .387 / .372 / .317 | n/a | n/a | .391 / .373 / .330 | PASS |
+| G4 eFG% / TOV% / OREB% / FTr | .497 / .176 / .283 / .317 | n/a | n/a | .509 / .174 / .298 / .330 | FAIL |
+| G5 margin SD ratio | 1.027 | 1.598 | 1.678 | 0.95-1.05 | PASS |
+| G5 total SD ratio | 0.793 | 0.726 | 1.318 | 0.95-1.05 | FAIL |
+| G5 home/away score corr | +0.03 | -0.62 | +0.08 | +0.25, +/-0.05 | FAIL |
+| G5 PIT K-S p | 0.008 | ~0 | ~0 | > 0.1 | FAIL |
+| G6 home margin, non-neutral / neutral | +5.67 / +2.11 | +3.91 / +1.54 | +6.06 / +2.23 | +5.74 / +3.29 | PASS / FAIL |
+| G7 OT rate | 3.0% | 1.2% | 1.8% | 5.6% | FAIL |
+| G8 minutes mean / SD ratio / players used | 30.6 / 1.23 / 8.8 | 29.9 / n/a / 8.8 | n/a | 29.8 / 1.0 / 9.8 | PASS / FAIL / FAIL |
+| G9 margin bias | -0.21 | -1.82 | +0.15 | 0, +/-0.5 | PASS |
+| G9 total bias | -0.89 | +0.01 | -2.83 | 0, +/-1.0 | PASS on cancelling errors, read as FAIL |
+| G9 calibration slope | 0.89 | 0.18 | 0.96 | 0.95-1.05 | FAIL |
+| Market: sim margin MAE / corr vs close | 9.29 / 0.908 | 16.03 / 0.329 | n/a | close itself 8.74 | n/a |
+
+Reading: gate-level PASS 0 / FAIL 8 / needs-instrumentation 1 (v0: 0 / 6 / 3; worse only because G4 and G8 went from unmeasured to measured). Line-level, v1 passes seven lines v0 failed: margin variance is fixed (the fg_make leak), home/away correlation is no longer negative, margin bias is inside tolerance, the team-quintile slope is 0.84 (v0 0.56), and the sim now tracks the close at 0.91 correlation. Still open, in order: possessions +2.0 (clock composition from upstream make rates, L34; the served clock arm was not in this run), OREB% -1.6 pp and FTA/FGA -1.2 pp (upstream of the total), total SD ratio 0.79 (too little total variance, consistent with the same two), OT rate 3.0 vs 5.6%, home/away correlation +0.03 vs +0.25, rotation minutes spread and players used (rotation round 6). ROI and Brier are refused by the grader at 50 seeds. New open item: round4_B1's shooter slope is monotone 2 of 4 on the engine's roster-slot population vs 4 of 4 on the attempt-weighted design population.
+
 
 ## Open items and the recommended next step
 
@@ -39,7 +61,7 @@ PENDING at 03:05; filled at 03:47.
 3. fg_make: serve `round4_B1` once inputs v2 are the default; per-class serving is open (BR wins the rim class by 65 floors).
 4. Usage: a Decision-10 gate before wiring the tree; audit its `score_diff` with the own-row delta test.
 5. Decision 9 stays pending: possession-outcome found adjustment and alignment inside the floor, free throw found conference-aligned refit wins on calibration. Next PO round: shrinkage of as-of style rates in the thin-sample early season, plus the two alignment cells not run.
-6. 200-seed and 2,000-seed reads on AWS after a proper throughput measurement (runbook ready, parity proven).
+6. Full 200-seed read plus the seed-offset noise floor, on AWS after a proper throughput measurement (runbook ready, parity proven, hf pull fixed); then the market scorecard's calibration section at 200 and ROI at 2,000.
 7. Rebound: early-conference calibration fails under every scheme; the Decision-9 arms are the candidate fix.
 8. Rotate the HF token.
 
