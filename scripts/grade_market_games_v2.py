@@ -144,14 +144,52 @@ def _dig(d: dict, path: tuple[str, ...]):
     return cur
 
 
+#: The per-family artifact-date block `run_engine.py` has written since
+#: 2026-09-11 (`Adapters._train_dates`). It is the PREFERRED source because it
+#: covers EVERY family the engine served -- including rotation, and including
+#: families whose `sources` entry never carried dates -- with one entry per
+#: artifact, so the per-row assignment below needs no guessing.
+TRAIN_DATE_BLOCK = ("adapter_flags", "max_train_date")
+
+
 def collect_family_max_train_dates(run_meta: dict) -> tuple[dict, list[str]]:
-    """Walk the known sub-model manifest paths under `run_meta["adapter_flags"]["sources"]`
-    and split them into families that DO carry a recorded `max_train_date` (+ `refit_dates`
-    if present, for the S1 monthly-walk-forward case) and families that do NOT. Never
-    fabricates a date for a family that lacks one -- that family is reported, by name, as
-    missing."""
+    """Split the run's sub-models into those that DO carry recorded artifact
+    training-window ends and those that do NOT.
+
+    Preferred source: `adapter_flags["max_train_date"]`, which carries every
+    family the engine served, keyed by population / shot class, with a
+    `refit_date` and a `max_train_date` per artifact. Older runs did not write
+    it, so the historical walk over `adapter_flags["sources"]` stays as the
+    fallback and any family missing from BOTH is reported by name.
+
+    A family recorded as `scheme: "static"` with a null `max_train_date` is NOT
+    silently passed and NOT fabricated a date: it is reported as missing, which
+    is the honest reading -- a single fitted object's training window is the
+    fold's train seasons and the engine says so in `fold_train_seasons`, but
+    that is not a per-artifact date this check can assert against a tipoff."""
     with_dates: dict = {}
     without_dates: list[str] = []
+    block = _dig(run_meta, TRAIN_DATE_BLOCK)
+    if isinstance(block, dict) and block:
+        for fam, node in block.items():
+            if not isinstance(node, dict):
+                continue
+            keys = node.get("keys")
+            if not keys:
+                without_dates.append(f"{fam} ({node.get('scheme', '?')}, no per-artifact dates)")
+                continue
+            for key, kn in keys.items():
+                arts = [a for a in (kn.get("artifacts") or []) if a.get("max_train_date")]
+                name = fam if str(key) in ("-", "", "None") else f"{fam}.{key}"
+                if not arts:
+                    without_dates.append(name)
+                    continue
+                with_dates[name] = {
+                    "max_train_date": [a["max_train_date"] for a in arts],
+                    "refit_dates": [a["refit_date"] for a in arts],
+                }
+        return with_dates, without_dates
+
     for name, path in CANDIDATE_ARTIFACT_PATHS:
         node = _dig(run_meta, path)
         if not isinstance(node, dict) or not node.get("max_train_date"):
