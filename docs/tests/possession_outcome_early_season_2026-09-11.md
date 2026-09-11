@@ -275,3 +275,70 @@ $env:CBB_THREADS="1"
     --ckpt ckpt_render.json --merge "ckpt_a.json,ckpt_b.json,ckpt_b2.json"
 .venv/Scripts/python.exe scripts/diag_po_r4_report.py
 ```
+
+---
+
+## ADDENDUM 2, 12:13 ET: `G4` landed, the tree ladder is four arms, and `G4` is the only arm that costs nothing anywhere
+
+Process A finished `first | F2 | lgbm | G4 | S1_monthly` at 12:13 and then exited on its own
+pre-registered stop without starting another cell, writing `G2`, `G3` and the second-seed floor to
+NOT RUN. This section supersedes every earlier statement that `G4` on the tree is NOT RUN. `G3` and
+the second-seed floor cell remain NOT RUN.
+
+### The `first` feature ladder, complete except `G3` and the floor cell
+
+| arm | rank | log loss | gain vs ref | overall gap | **weeks 0-3** | non-conf | worst quintile slope | gates | beats ref beyond floor |
+|---|---|---|---|---|---|---|---|---|---|
+| `G0` reference | 0 | 1.515428 | 0.0 | **0.980** | 3.832 | 2.492 | 0.9473 | PASS | -- |
+| `G1` shrink to league mean | 1 | 1.515519 | -0.000091 | 1.456 | **2.766 (+1.066)** | 2.351 (+0.141) | **0.9745** | PASS | **YES** |
+| `G4` reliability counters | 1 | 1.515626 | -0.000198 | 1.108 | 3.467 (+0.365) | 2.430 (+0.062) | 0.9537 | PASS | **YES** |
+| `G2` shrink to prior season | 2 | **1.514837** | +0.000591 | 1.318 | 3.359 (+0.473) | 2.500 (-0.008) | 0.9156 | PASS | **YES** |
+| `G3`, floor seed 1 | 3 / -- | NOT RUN | | | | | | | |
+
+**Three of the four measured arms beat the reference on the pre-registered weeks-0-3 cell, and none
+of them separates on the primary metric**: the whole log-loss spread across the ladder, -0.000198 to
++0.000591, is 0.98 of one noise floor. This is a segment result end to end, which is what the round
+was designed to test.
+
+**The winner is unchanged and it is `G1`, by the tie-break this round fixed in advance.** Best beater
+by log loss is `G2` (1.514837); the floor band is 1.515641; `G1` (1.515519) and `G4` (1.515626) both
+sit inside it; among those the simplest wins, `G1` and `G4` are tied at rank 1, and 8.1 fixed
+before the run that "`G1` wins the tie as the arm that adds no columns at all". `G1` it is.
+
+### Per week of season, all four arms -- and why the tie-break and the evidence now point apart
+
+| week | n | `G0` | `G1` | `G4` | `G2` |
+|---|---|---|---|---|---|
+| 0 | 36,499 | 6.418 | **4.867** | 6.183 | 4.950 |
+| 1 | 40,718 | 5.216 | **4.054** | 5.038 | 4.166 |
+| 2 | 43,658 | 3.313 | 2.942 | **2.660** | 2.956 |
+| 3 | 43,562 | **2.751** | 2.398 | 3.005 | 3.247 |
+| 4-7 | 111,232 | **1.369** | 2.692 | 1.410 | 1.956 |
+| 8+ | 466,356 | 0.939 | 1.141 | **0.868** | 0.902 |
+
+`G4` is the **only arm in the round that improves the pre-registered segment without paying for it
+anywhere else**: weeks 4-7 move 1.369 -> 1.410 (+0.041, inside any floor this round has), week 8+
+improves 0.939 -> 0.868, and the overall gated gap rises only 0.980 -> 1.108 against `G1`'s 1.456.
+Its weeks-0-3 gain is a third of `G1`'s, but `G1` buys that gain by pushing weeks 4-7 across the
+2.0 pp gate and `G4` does not.
+
+That is the shape of the real finding. **Telling the tree how reliable the rate is (`G4`) is weaker
+and safer than making the rate reliable (`G1`).** `G1` changes the feature's scale across the season
+and the monthly refit sees a different column in November than in February; `G4` leaves every
+existing column bit-identical and adds two counters, so nothing the model already knew is disturbed.
+
+### Recommendation, updated
+
+1. `G1` is the winner of the pre-registered bake-off and this worker does not overrule a tie-break
+   it fixed before the run. It stays **VALIDATED-PENDING-SHIP-ACTION**, not shipped, for the
+   weeks-4-7 reason in section 4.
+2. **On the multi-level evidence the arm to ship is `G4`, not `G1`**, and that is a PM call, not a
+   worker's: it is the only arm with no measured cost in any week bucket, it passes every gate, its
+   quintile slope improves on the reference (0.947 -> 0.954), and it is the cheapest cell in the
+   round (1,866 s against `G1`'s 4,883 s) because it adds two columns and rewrites none. The caveat
+   on record: `G4` is the ONLY arm in the round to FAIL a gate on the other population --
+   `cont` calibration 2.010 pp against a 2.0 gate -- so a `G4` ship would be `first`-only until
+   `cont` is re-read.
+3. `G3` -- the two-level prior, the one arm no population has rejected, and the winner of `cont`'s
+   log loss and weeks-0-3 cell -- is still NOT RUN on the tree and is the next cell either way.
+4. Nothing here touches the alignment cells or Decision 9.
