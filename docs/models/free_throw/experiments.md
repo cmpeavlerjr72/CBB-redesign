@@ -131,3 +131,102 @@ The natural experiment L15 used: players whose modal team changed since the prio
 The tree arm beats the best simpler PASSING arm by 0.004033 log loss = 3.62x the noise floor, so the pre-registered "a tree must beat the simpler arm by more than the floor" clause is satisfied and the simplicity tie-break does not fire.
 
 **WINNER: lgbm**, F2 log loss 0.575281.
+
+---
+
+## 7. S1 scheme confirmation: refit cadence (2026-09-10, written and COMMITTED before this round's modelling)
+
+Authority: `ARCHITECTURE_DECISIONS.md` Decision 9c; `docs/models/README.md` "Standing result"; `docs/LEARNINGS.md`
+L21. As with the rebound S1 confirmation (`docs/models/rebound/experiments.md` section 7, same date), the
+possession-outcome round-3 pre-registration is in flight on the same question for its own model and is not a
+verdict this section borrows -- only its refit-calendar CODE PATH is (section 7.1), so "weekly" and
+"conference-aligned" mean the same objects in every sub-model that tests them.
+
+Model class and feature bundle are HELD FIXED at round 1's FT-2 winner, **`lgbm` on `FT_FEATURES`** (section
+6). FT-1 (trip structure) is a rule, not a fit, and is untouched by this section. Nothing about the arm, the
+event layer, the universe, or the folds is reopened -- only the CALENDAR on which FT-2 refits.
+
+### 7.1 The four schemes
+
+| scheme | refit calendar | object count (F2, 2025) | complexity rank |
+|---|---|---|---|
+| `S0` | one static fit on the fold's whole train slice, as round 1 scored it. **The reference; must reproduce round 1's recorded F2 log loss (0.575281) exactly** | 1 | 0 |
+| `S1_monthly` | `cbb_sim.models.possession_outcome.month_boundaries` on the test season's attempt dates -- the L21 default | 6 | 1 |
+| `S1_conf_aligned` | `cbb_sim.features.conference.union_boundaries(monthly, conference_boundary_dates(...))` | 29 | 2 |
+| `S1_weekly` | `cbb_sim.features.conference.union_boundaries(weekly_boundaries(...), monthly[:1])` | 24 | 3 |
+
+Identical construction and identical measured object counts to the rebound section (same schedule, same
+`scripts/train_possession_outcome_v3.refit_dates` code path, imported not reimplemented): monthly 6,
+conference-aligned union 29, weekly union 24, in both the 2024 and 2025 test seasons. Every S1 scheme keeps
+the standing contract: each refit uses attempts STRICTLY BEFORE its own date (all prior seasons plus the
+test season to date), each test attempt is scored by the most recent refit at or before its own date.
+
+### 7.2 Folds
+
+F2 (train 2022+2023+2024, test 2025) selects, scored for all four schemes. F1 (train 2022+2023, test 2024)
+is reported for `S0` and `S1_monthly` only. `S0`'s F1 number is READ from section 4's existing F1 row for
+`lgbm` (log loss 0.578489), not refit, for the same reason as the rebound section: it is already the
+identical model class, feature bundle and fold code path. `S1_conf_aligned` and `S1_weekly` are not run on
+F1, for the same budget and prior-evidence reasons as the rebound section (Decision 9's own diagnostic makes
+alignment the least likely dimension to pay); this is stated in advance, not discovered at the wall clock.
+
+### 7.3 Metrics
+
+Unchanged via `FT.score()` -- log loss, Brier, `calib_pass`/`calib_worst_gap_pp`, `resp_pass`/`resp_min_steps`
+(this model's 3-of-4 reading), the bonus/shooting segment gap. Additions, computed outside `score()`:
+
+1. **`conf4_gap_pp`**: the worst gated decile-calibration gap restricted to attempts by a shooter on the
+   shooting TEAM's own first four weeks of conference play -- `(game_date - first_conf_date).days / 7 in
+   [0, 4)` joined on `(season, team_id)` via `cbb_sim.features.conference.first_conference_game_dates`,
+   read the same way the rebound section and `train_possession_outcome_v3.conf_window_calibration` read it.
+   Segments under **1,000** attempts are `underpowered: true` and never a pass/fail, same convention and
+   same stated judgement call as the rebound section (this model's F2 test population, 211,760 attempts, is
+   the same order of magnitude as rebound's, so one shared floor is used rather than two).
+2. **Decision 8 slope**, from `FT.score()`'s own responsiveness block: `slope_ratio` for
+   `shooter_ft_asof->MAKE`, band `[0.8, 1.2]`. `ARCHITECTURE_DECISIONS.md` Decision 8 already records this
+   winner's slope as 0.977, inside the band, with a realised quintile span well above the 2 pp exemption
+   threshold, so the driver is not exempt.
+3. **FT-specific segment (L24), a REPORTED number, never a gate**: the share of training-pool attempts
+   (2022-2024, the F2 train seasons) that are (a) technical free throws -- already excluded from every FT-2
+   arm's universe, section 2 -- or (b) sit in an `ft_trip_ambiguous`-equivalent trip, defined here as a
+   two-attempt trip whose context-derived `foul_class` is `bonus_one_and_one` or `double_bonus` (section
+   3.3's own "ambiguous mass" definition: the feed cannot separate a genuine two-shot shooting foul from a
+   bonus trip once the bonus is in force). For each scheme's F2 test predictions, calibration is ALSO read
+   on the complementary "clean trips only" subset (technical and ambiguous rows both excluded) and reported
+   next to the overall number -- L24 already showed this ambiguity is label noise uncorrelated with count
+   disagreement and not a matchup defect, so it is evidence about how much of the overall calibration gap
+   this noise floors, not a criterion the decision rule reads.
+
+### 7.4 Noise floor and wall-clock budget
+
+**Noise floor.** `S0` refit under `seed=1` on F2. Primary-metric floor = `|log_loss(seed=0) -
+log_loss(seed=1)|`. `conf4_gap_pp` decision threshold is the same fixed **0.25 pp** carried from the
+possession-outcome round-3 convention (rebound section 7.4); the seed spread is measured and reported as
+context, not as the threshold.
+
+**Wall clock.** Measured 2026-09-10 at the 3-thread cap: one `lgbm` fit on the F2 train slice (589,265
+attempts) costs **51.0 s** and reproduces the adopted F2 log loss to six decimal places (0.575281). Projected
+full-stage cost (S0 F2 + seed1 + `S1_monthly` F2 + F1 + `S1_conf_aligned` F2 (29 fits) + `S1_weekly` F2 (24
+fits), padded for growing train slices) is **~65 min**. Hard wall clock: **2.0 h**, checked before each cell
+starts. Drop order if tight, most complex first: `S1_weekly` F2 before `S1_conf_aligned` F2. Anything not
+reached is written to the results as NOT RUN.
+
+### 7.5 Decision rule
+
+Identical in form to the rebound section: `S0` is the reference. A candidate scheme beats it if, on F2,
+EITHER its log loss improves on `S0`'s by more than the primary-metric floor, OR its `conf4_gap_pp` improves
+on `S0`'s by more than 0.25 pp, while continuing to pass `FT.score()`'s gates unchanged. Where more than one
+scheme beats the reference, the simplest whose log loss is within the floor of the best beater's wins. If
+nothing beats the reference, `S0` stands and cadence remains PENDING EVIDENCE for this sub-model, an
+explicitly legitimate outcome.
+
+### 7.6 Artifacts
+
+Trainer: `scripts/train_free_throw_v2_s1.py`. Every scheme's dated joblib artifacts and a
+`manifest.py`-format manifest (JSON: `refit_date`, `path`, `max_train_date` required) are written to
+`data/processed/models/free_throw/s1_confirm/<scheme>/<fold>/` (gitignored; HF-synced, never `git add`ed).
+`train_free_throw_v1.py`'s own artifacts (`attempts_v1_era.parquet`, `trips_v1_era.parquet`, `bonus_era.json`,
+round-1 `run_report.json`) are read back, never rebuilt or overwritten -- in particular `bonus_era.json`,
+which the engine already reads into GameState, is not touched by anything in this section.
+
+<!-- ROUND-2 (S1 SCHEME CONFIRMATION) RESULTS APPENDED BELOW BY scripts/train_free_throw_v2_s1.py -->
