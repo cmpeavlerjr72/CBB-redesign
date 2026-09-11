@@ -1,0 +1,48 @@
+# Build context for the CBB engine sweep image (Dockerfile.cbb).
+#
+# Rule: the image must contain everything the ENGINE opens at sim time
+# (traced by reading scripts/run_engine.py + src/cbb_sim/engine/{inputs,
+# adapters}.py -- see docs/ops/aws_launch_chain.md section 1) and nothing
+# that could change what it computes or that leaks a secret.
+
+# --- Secrets. Never, under any circumstance, in the image. ----------------
+.env
+.env.local
+*.key
+*.pem
+
+# --- Host-specific / rebuildable ------------------------------------------
+.venv/
+venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+node_modules/
+.ipynb_checkpoints/
+logs/
+
+# --- Gitignored bulk data NOT needed at sim time. The engine's own inputs
+# under data/processed/models/engine/ (including the gitignored
+# event_round2_s1_F2_2025/ S1 artifact tree) are intentionally NOT excluded
+# here -- they must be present on disk when `docker build` runs.
+data/raw/
+data/hoopr/
+
+# --- Prior results: never bake sweep OUTPUT into the image. Outputs live on
+# the mounted /out volume; a baked-in results/ would risk being mistaken for
+# a resumed/completed run. (CBB's run_engine.py does not itself resume from
+# a partial results dir the way cfb's build_sweep_dist_v10.py does, but the
+# principle -- outputs are not inputs -- still holds.)
+results/**
+
+# --- Rebuildable large intermediates the engine never reads at sim time ----
+data/processed/possessions/
+data/processed/possessions_v2/
+data/processed/models/**/design.parquet
+data/processed/models/**/*_design.parquet
+
+# --- Nothing here is read by the engine -----------------------------------
+out.md
+*.bat

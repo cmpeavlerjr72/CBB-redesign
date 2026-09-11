@@ -1,0 +1,118 @@
+# AWS sweep box for the CBB engine's seed sweeps (200 seeds for a gate read,
+# ~2,000 before any ROI number -- docs/tests/engine_seed_count_2026-09-10.md).
+#
+# Adapted from cfb-props-sim's Dockerfile (C:\Users\devuser\cfb-props-sim,
+# docs/ops/cloud_sweep_runbook.md): same base image, same thread-pin policy,
+# same "COPY the tracked repo, fail the build if a required data file is
+# missing" discipline. The one structural difference: this project's engine
+# S1 artifact tree (`data/processed/models/engine/event_round2_s1_*/`) is
+# gitignored and NOT YET reachable by `scripts/hf_sync_data.py` (that script's
+# --dirs is locked to raw|results; see docs/ops/aws_launch_chain.md section 4).
+# So unlike cfb's "git clone is a complete sim input set", a CBB image build
+# needs that ~45 MB directory staged into the build context BEFORE `docker
+# build` runs (manual scp/rsync -- see the ops doc). The build fails loudly
+# (missing `test -d`) if it is absent, rather than silently shipping an image
+# that can only run ENGINE_EVENT=reference.
+#
+# NO SECRETS ARE BAKED IN. .env is excluded by .dockerignore; HF_TOKEN arrives
+# at RUN time as an environment variable:
+#
+#   docker build -f Dockerfile.cbb -t cbb-sweep .
+#   docker run --rm -e HF_TOKEN="$HF_TOKEN" -v "$PWD/out:/out" cbb-sweep \
+#       --tag F2_2025_s200_r2event --seeds 200 --workers 96
+#
+# Full procedure, parity gate, cost table: docs/ops/aws_launch_chain.md
+FROM python:3.12-slim
+
+# libgomp1: LightGBM's OpenMP runtime -- import fails without it on slim.
+# git: only so the entrypoint/digest can stamp the commit sha into run output.
+# ca-certificates: HTTPS to huggingface.co for the results push and bootstrap.
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends libgomp1 git ca-certificates \
+ && rm -rf /var/lib/apt/lists/*
+
+# Determinism + parallelism policy, set once for every process in the image.
+#
+# run_engine.py parallelises with a ProcessPoolExecutor (one process per
+# --workers), and its own worker initializer pins OMP_NUM_THREADS,
+# OPENBLAS_NUM_THREADS, MKL_NUM_THREADS, NUMEXPR_NUM_THREADS and
+# LIGHTGBM_NUM_THREADS to "1" before importing the adapters. These ENV lines
+# are belt-and-suspenders for anything imported before that point (and for
+# `digest_engine_run.py`, which runs outside run_engine.py's worker init).
+#
+# The frozen-num_threads footgun cfb-props-sim hit (LightGBM predict() uses
+# the num_threads FROZEN AT TRAIN TIME on the booster pickle, so N workers
+# each spawn a full-width OpenMP team regardless of these env vars) is ALREADY
+# guarded in this repo's own code: every CBB adapter that loads a fitted
+# booster calls `.set_params(n_jobs=1)` on it at load time
+# (src/cbb_sim/engine/adapters.py -- EventAdapter, ClockAdapter,
+# FgMakeAdapter, FreeThrowAdapter, ReboundAdapter all do this). OMP_THREAD_LIMIT
+# is kept anyway as the same hard ceiling insurance cfb's Dockerfile uses, in
+# case a future adapter is added without that call.
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONIOENCODING=utf-8 \
+    PYTHONHASHSEED=0 \
+    OMP_NUM_THREADS=1 \
+    MKL_NUM_THREADS=1 \
+    OPENBLAS_NUM_THREADS=1 \
+    NUMEXPR_NUM_THREADS=1 \
+    LIGHTGBM_NUM_THREADS=1 \
+    POLARS_MAX_THREADS=1 \
+    RAYON_NUM_THREADS=1 \
+    OMP_THREAD_LIMIT=1 \
+    HF_HUB_DISABLE_TELEMETRY=1 \
+    GIT_CONFIG_NOSYSTEM=1
+
+WORKDIR /app
+
+# Pins first, in their own layer: the repo copy below changes on every
+# commit, the wheel set almost never does.
+COPY requirements-cloud.txt /app/requirements-cloud.txt
+RUN pip install --no-cache-dir -r /app/requirements-cloud.txt
+RUN python -c "import numpy, pandas, lightgbm, sklearn, joblib, scipy, pyarrow; \
+print('numpy', numpy.__version__, '| lightgbm', lightgbm.__version__, \
+'| pandas', pandas.__version__, '| sklearn', sklearn.__version__, \
+'| joblib', joblib.__version__, '| scipy', scipy.__version__, \
+'| pyarrow', pyarrow.__version__)"
+
+# The repo. .dockerignore keeps .env, the venv, and gitignored bulk data
+# (data/raw, results/**) out of the context. It deliberately does NOT exclude
+# data/processed/models/engine/event_round2_s1_F2_2025/ -- that directory is
+# gitignored (rebuildable via scripts/build_engine_event_round2.py) but IS
+# required in the build context; stage it manually before `docker build`
+# (docs/ops/aws_launch_chain.md section 2/4).
+COPY . /app
+
+# git's "dubious ownership" guard otherwise makes `git rev-parse HEAD` fail
+# inside the container, blanking provenance stamps in run_meta.json / the
+# parity digest.
+RUN git config --global --add safe.directory /app
+
+RUN chmod +x /app/scripts/run_aws_sweep.sh \
+ && test -f /app/data/processed/models/engine/games_F2_2025.parquet \
+ && test -f /app/data/processed/models/engine/arrays_F2_2025.npz \
+ && test -f /app/data/processed/models/engine/names_F2_2025.json \
+ && test -f /app/data/processed/models/engine/rebound_F2.joblib \
+ && test -f /app/data/processed/models/engine/free_throw_F2.joblib \
+ && test -f /app/data/processed/models/engine/fg_make_FGA_3_decision8_F2.joblib \
+ && test -f /app/data/processed/models/free_throw/bonus_era.json \
+ && test -f /app/data/processed/models/fg_make/winner_FGA_rim.joblib \
+ && test -f /app/data/processed/models/fg_make/winner_FGA_jump2.joblib \
+ && test -f /app/data/processed/models/fg_make/winner_FGA_3.joblib \
+ && test -f /app/data/processed/models/clock/reference_not_adopted_lgbm_quantile.pkl \
+ && test -f /app/data/processed/models/rotation/rotation_fit.json \
+ && test -d /app/data/processed/models/engine/event_round2_s1_F2_2025 \
+ && test -f /app/data/processed/models/engine/event_round2_s1_F2_2025/index.json \
+ && test -f /app/data/processed/models/engine/event_round2_s1_F2_2025/team_block.npz \
+ || (echo "BUILD FAILED: a required engine input is missing from the build" \
+          "context. If it is event_round2_s1_F2_2025/, that directory is" \
+          "gitignored and not yet on HF (docs/ops/aws_launch_chain.md section 4)" \
+          "-- stage it manually into data/processed/models/engine/ before" \
+          "docker build. Do not relax this check." >&2; exit 1)
+
+# Sweep outputs (results/engine_v0/<tag>/) and the run log land here; bind-
+# mount a host dir so a spot interruption does not lose completed blocks.
+VOLUME ["/out"]
+
+ENTRYPOINT ["/app/scripts/run_aws_sweep.sh"]
+CMD ["--help"]
