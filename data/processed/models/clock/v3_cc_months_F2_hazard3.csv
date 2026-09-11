@@ -1,0 +1,7 @@
+month,n_games,powered,sim_mean,actual_mean,mean_delta,sd_delta,pass
+1,520,True,70.041,67.408,2.634,-0.102,False
+2,440,True,69.812,67.233,2.58,0.158,False
+3,305,True,69.038,67.392,1.646,-0.064,False
+4,7,False,71.857,70.857,1.0,-1.371,False
+11,395,True,70.861,68.996,1.865,-0.687,False
+12,324,True,70.452,68.909,1.543,-0.91,False

@@ -1,0 +1,36 @@
+{
+  "n_cells": 1080,
+  "n_empty_cells": 187,
+  "cell_dims": [
+    "prev_end_code",
+    "r2_bucket_code",
+    "r2_period_type",
+    "r2_score_state",
+    "tempo_tercile"
+  ],
+  "cell_sizes": [
+    6,
+    10,
+    2,
+    3,
+    3
+  ],
+  "train_rows_binned": 1875988,
+  "source_arm": "lgbm_quantile",
+  "build_seconds": 129.9,
+  "lookup_rows_per_s": 183550.0,
+  "live_rows_per_s": 13728.2,
+  "tv_mean": 0.1031818606370184,
+  "tv_max": 0.9251704596880002,
+  "n_rows": 731204,
+  "live_crps_trunc": 4.838582377520811,
+  "lookup_crps_trunc": 4.907260618940497,
+  "d_crps_trunc": 0.06867824141968626,
+  "lookup_cc_mean_delta": 2.686,
+  "lookup_cc_sd_delta": -0.985,
+  "live_cc_mean_delta": 2.227,
+  "live_cc_sd_delta": -0.604,
+  "d_cc_mean": 0.4590000000000001,
+  "lookup_cc_eoh_duration_gap": -5.7846,
+  "adopted": false
+}

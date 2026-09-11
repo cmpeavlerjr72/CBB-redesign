@@ -1,0 +1,9 @@
+{
+  "design_source": "data\\processed\\models\\clock\\design_v2.parquet",
+  "rows": 2607192,
+  "censored_old_pct": 0.2148,
+  "censored_horn_pct": 0.6751,
+  "old_and_not_horn": 36,
+  "horn_and_not_old": 12037,
+  "censored_rows_not_consuming_clock": 0
+}

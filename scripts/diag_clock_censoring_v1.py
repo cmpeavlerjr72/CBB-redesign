@@ -323,6 +323,10 @@ def main() -> None:
     gflag = gflag.merge(pts_complete, on="game_id", how="left")
 
     uni_v2 = uni.merge(gflag, on="game_id", how="left")
+    # A game whose season was never loaded (2026 is SEALED) or which has no
+    # possession rows has no flag. It must not read as "not clock-complete":
+    # `clock_flags_evaluated` says whether the flags mean anything for that row.
+    uni_v2["clock_flags_evaluated"] = uni_v2["clock_complete_reg"].notna()
     for c in ("clock_complete_reg", "clock_complete_all_periods", "points_complete"):
         uni_v2[c] = uni_v2[c].fillna(False).astype(bool)
     uni_v2.to_parquet(UNIVERSE_V2, index=False)
@@ -330,8 +334,9 @@ def main() -> None:
         "path": str(UNIVERSE_V2.relative_to(ROOT)).replace("\\", "/"),
         "rows": int(len(uni_v2)),
         "added_columns": ["clock_complete_reg", "clock_complete_all_periods",
-                          "points_complete", "n_periods_logged", "n_horn_poss",
-                          "unaccounted_s_total"],
+                          "points_complete", "clock_flags_evaluated",
+                          "n_periods_logged", "n_horn_poss", "unaccounted_s_total"],
+        "rows_with_flags_evaluated": int(uni_v2["clock_flags_evaluated"].sum()),
         "note": "versioned sibling; data/processed/games_universe.parquet untouched",
     }
 
@@ -529,10 +534,16 @@ is what has to close the gap.
 
 | path | what | how it avoids clobbering another worker |
 |---|---|---|
-| `data/processed/games_universe_v2.parquet` | `games_universe` plus `clock_complete_reg`, `clock_complete_all_periods`, `points_complete`, `n_periods_logged`, `n_horn_poss`, `unaccounted_s_total` | VERSIONED SIBLING. `games_universe.parquet` is read-only here, so the engine worker's reader is untouched |
+| `data/processed/games_universe_v2.parquet` | `games_universe` plus `clock_complete_reg`, `clock_complete_all_periods`, `points_complete`, `clock_flags_evaluated`, `n_periods_logged`, `n_horn_poss`, `unaccounted_s_total` | VERSIONED SIBLING. `games_universe.parquet` is read-only here, so the engine worker's reader is untouched |
 | `data/processed/clock_censoring/half_clock_completeness_v1.parquet` | one row per (game_id, period): the three components and the flag | new directory, new file |
 | `data/processed/clock_censoring/censoring_v1_{{season}}.parquet` | one row per (game_id, period, poss_index): `censored_horn` and the tolerance variants | SIDE TABLE. `data/processed/possessions/` and `data/processed/possessions_v2/` are read-only here |
 | `data/processed/clock_censoring/censoring_audit_v1.json` | every table above, machine-readable | new file |
+
+**`clock_flags_evaluated` matters.** Season 2026 is SEALED and is never loaded
+here, so its rows carry `clock_complete_reg = False` only because the flag was
+not computed. Any consumer must filter on `clock_flags_evaluated` before reading
+a completeness flag, or it will silently treat every sealed-season game as
+incomplete.
 
 `possessions_v2` carries byte-identical `duration_s`, `start_clock` and
 `end_clock` to `possessions` (checked on 2025: 0 of 768,834 rows differ), so the

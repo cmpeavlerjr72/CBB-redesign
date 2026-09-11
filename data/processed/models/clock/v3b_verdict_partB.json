@@ -1,0 +1,86 @@
+{
+  "round": "3b-B",
+  "base_arm": "gamma_aft",
+  "parametrisation": "P3",
+  "floor": 0.006376068383219856,
+  "n_fits_S1": 6,
+  "S0": {
+    "crps_trunc": 4.932682191336173,
+    "censored_loglik": -3.5649102679227203,
+    "cc_mean_delta": 0.903,
+    "cc_sd_delta": -0.277,
+    "cc_eoh_share_gap": -0.01368,
+    "cc_eoh_duration_gap": -1.5086,
+    "pit_leak_failures": 30
+  },
+  "S1": {
+    "crps_trunc": 4.931928139501642,
+    "censored_loglik": -3.5647486388630534,
+    "cc_mean_delta": 0.885,
+    "cc_sd_delta": -0.269,
+    "cc_eoh_share_gap": -0.01294,
+    "cc_eoh_duration_gap": -1.4756,
+    "pit_leak_failures": 30
+  },
+  "d_crps_trunc": -0.0007540518345310332,
+  "d_crps_in_floors": -0.11826282110077431,
+  "regressions": [],
+  "scheme_adopted": "S1",
+  "s1_schedule": [
+    {
+      "refit_date": "2024-11-01",
+      "valid_from": "2024-11-01",
+      "valid_to": "2024-11-30",
+      "n_train": 1875988,
+      "n_train_from_test_season": 0,
+      "n_scored": 157468,
+      "max_train_date": "2024-04-08"
+    },
+    {
+      "refit_date": "2024-12-01",
+      "valid_from": "2024-12-01",
+      "valid_to": "2024-12-31",
+      "n_train": 2033456,
+      "n_train_from_test_season": 157468,
+      "n_scored": 122055,
+      "max_train_date": "2024-11-30"
+    },
+    {
+      "refit_date": "2025-01-01",
+      "valid_from": "2025-01-01",
+      "valid_to": "2025-01-31",
+      "n_train": 2155511,
+      "n_train_from_test_season": 279523,
+      "n_scored": 185679,
+      "max_train_date": "2024-12-31"
+    },
+    {
+      "refit_date": "2025-02-01",
+      "valid_from": "2025-02-01",
+      "valid_to": "2025-02-28",
+      "n_train": 2341190,
+      "n_train_from_test_season": 465202,
+      "n_scored": 163497,
+      "max_train_date": "2025-01-31"
+    },
+    {
+      "refit_date": "2025-03-01",
+      "valid_from": "2025-03-01",
+      "valid_to": "2025-03-31",
+      "n_train": 2504687,
+      "n_train_from_test_season": 628699,
+      "n_scored": 100253,
+      "max_train_date": "2025-02-28"
+    },
+    {
+      "refit_date": "2025-04-01",
+      "valid_from": "2025-04-01",
+      "valid_to": null,
+      "n_train": 2604940,
+      "n_train_from_test_season": 728952,
+      "n_scored": 2252,
+      "max_train_date": "2025-03-31"
+    }
+  ],
+  "finished_at": "2026-09-11T01:24:55.031033+00:00"
+}

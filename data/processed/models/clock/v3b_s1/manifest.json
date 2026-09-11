@@ -1,0 +1,120 @@
+{
+  "base_arm": "gamma_aft",
+  "parametrisation": "P3",
+  "scheme": "S1",
+  "season": 2025,
+  "selection_rule": "pick the row whose [valid_from, valid_to] contains the game's own date; equivalently the latest refit_date at or before it. valid_to null means the last month of the season.",
+  "naming": "{arm}_S1_{season}_{YYYY-MM}.pkl and lookup_{arm}_S1_{season}_{YYYY-MM}.npz, relative to data/processed/models/clock/",
+  "lookup_grid": {
+    "dims": [
+      "prev_end_code",
+      "r2_bucket_code",
+      "r2_period_type",
+      "r2_score_state",
+      "tempo_tercile"
+    ],
+    "sizes": [
+      6,
+      10,
+      2,
+      3,
+      3
+    ],
+    "durations": 91
+  },
+  "adopted_scheme": "S1",
+  "arm_adopted": false,
+  "note": "Adopting S1 as the SCHEME does not adopt the arm; round 3 adopted nothing and the Decision-10 closed-loop gate has not run.",
+  "months": [
+    {
+      "refit_date": "2024-11-01",
+      "valid_from": "2024-11-01",
+      "valid_to": "2024-11-30",
+      "n_train": 1875988,
+      "n_train_from_test_season": 0,
+      "n_scored": 157468,
+      "max_train_date": "2024-04-08",
+      "season": 2025,
+      "month": "2024-11",
+      "model_file": "v3b_s1/gamma_aft_P3_S1_2025_2024-11.pkl",
+      "lookup_file": "v3b_s1/lookup_gamma_aft_P3_S1_2025_2024-11.npz",
+      "lookup_empty_cells": 187,
+      "lookup_cells": 1080
+    },
+    {
+      "refit_date": "2024-12-01",
+      "valid_from": "2024-12-01",
+      "valid_to": "2024-12-31",
+      "n_train": 2033456,
+      "n_train_from_test_season": 157468,
+      "n_scored": 122055,
+      "max_train_date": "2024-11-30",
+      "season": 2025,
+      "month": "2024-12",
+      "model_file": "v3b_s1/gamma_aft_P3_S1_2025_2024-12.pkl",
+      "lookup_file": "v3b_s1/lookup_gamma_aft_P3_S1_2025_2024-12.npz",
+      "lookup_empty_cells": 184,
+      "lookup_cells": 1080
+    },
+    {
+      "refit_date": "2025-01-01",
+      "valid_from": "2025-01-01",
+      "valid_to": "2025-01-31",
+      "n_train": 2155511,
+      "n_train_from_test_season": 279523,
+      "n_scored": 185679,
+      "max_train_date": "2024-12-31",
+      "season": 2025,
+      "month": "2025-01",
+      "model_file": "v3b_s1/gamma_aft_P3_S1_2025_2025-01.pkl",
+      "lookup_file": "v3b_s1/lookup_gamma_aft_P3_S1_2025_2025-01.npz",
+      "lookup_empty_cells": 184,
+      "lookup_cells": 1080
+    },
+    {
+      "refit_date": "2025-02-01",
+      "valid_from": "2025-02-01",
+      "valid_to": "2025-02-28",
+      "n_train": 2341190,
+      "n_train_from_test_season": 465202,
+      "n_scored": 163497,
+      "max_train_date": "2025-01-31",
+      "season": 2025,
+      "month": "2025-02",
+      "model_file": "v3b_s1/gamma_aft_P3_S1_2025_2025-02.pkl",
+      "lookup_file": "v3b_s1/lookup_gamma_aft_P3_S1_2025_2025-02.npz",
+      "lookup_empty_cells": 184,
+      "lookup_cells": 1080
+    },
+    {
+      "refit_date": "2025-03-01",
+      "valid_from": "2025-03-01",
+      "valid_to": "2025-03-31",
+      "n_train": 2504687,
+      "n_train_from_test_season": 628699,
+      "n_scored": 100253,
+      "max_train_date": "2025-02-28",
+      "season": 2025,
+      "month": "2025-03",
+      "model_file": "v3b_s1/gamma_aft_P3_S1_2025_2025-03.pkl",
+      "lookup_file": "v3b_s1/lookup_gamma_aft_P3_S1_2025_2025-03.npz",
+      "lookup_empty_cells": 180,
+      "lookup_cells": 1080
+    },
+    {
+      "refit_date": "2025-04-01",
+      "valid_from": "2025-04-01",
+      "valid_to": null,
+      "n_train": 2604940,
+      "n_train_from_test_season": 728952,
+      "n_scored": 2252,
+      "max_train_date": "2025-03-31",
+      "season": 2025,
+      "month": "2025-04",
+      "model_file": "v3b_s1/gamma_aft_P3_S1_2025_2025-04.pkl",
+      "lookup_file": "v3b_s1/lookup_gamma_aft_P3_S1_2025_2025-04.npz",
+      "lookup_empty_cells": 179,
+      "lookup_cells": 1080
+    }
+  ]
+}

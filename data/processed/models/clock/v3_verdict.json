@@ -1,0 +1,74 @@
+{
+  "round": 3,
+  "seed": 20260910,
+  "selection_fold": "F2",
+  "floor": 0.006376068383219856,
+  "floors_by_arm": {
+    "empirical_km3": {
+      "kind": "block_bootstrap_se",
+      "value": 0.006139499314030921
+    },
+    "empirical_km3_srfloor": {
+      "kind": "block_bootstrap_se",
+      "value": 0.006156593737754956
+    },
+    "gamma_aft": {
+      "kind": "block_bootstrap_se",
+      "value": 0.006025784995555446
+    },
+    "lognormal_aft": {
+      "kind": "block_bootstrap_se",
+      "value": 0.0058673848884284886
+    },
+    "hazard3": {
+      "kind": "block_bootstrap_se",
+      "value": 0.005947731678064617
+    },
+    "xgb_aft": {
+      "kind": "seed_refit",
+      "value": 0.0005226142166323555
+    },
+    "lgbm_quantile_r2": {
+      "kind": "seed_refit",
+      "value": 2.073219663945025e-05
+    },
+    "empirical_r2": {
+      "kind": "block_bootstrap_se",
+      "value": 0.006376068383219856
+    },
+    "gamma_r2": {
+      "kind": "block_bootstrap_se",
+      "value": 0.00625731265467296
+    }
+  },
+  "end_of_half_floor": {
+    "share": 0.005756463971823765,
+    "duration": 0.2537743774655367,
+    "k": 2.0,
+    "sim_seed_sd_share": 0.0018997190107438357,
+    "sim_seed_sd_duration": 0.04567575449004249,
+    "actual_block_bootstrap_se_share": 0.0028782319859118827,
+    "actual_block_bootstrap_se_duration": 0.12688718873276836,
+    "seeds": [
+      20260910,
+      20260911,
+      20260912,
+      20260913,
+      20260914
+    ],
+    "n_cc_halves": 6177
+  },
+  "xgb_dist_chosen": "extreme",
+  "n_arms": 9,
+  "n_pass_g1": 0,
+  "n_pit_clean": 0,
+  "n_pass_eoh": 0,
+  "n_eligible": 0,
+  "best_crps_arm": "lgbm_quantile_r2",
+  "best_crps": 4.838582377520811,
+  "created_at": "2026-09-10T23:02:08.539031+00:00",
+  "finished_at": "2026-09-11T00:21:20.726295+00:00",
+  "winner": null,
+  "verdict": "NO ARM ADOPTED",
+  "reason": "no arm passed all three pre-registered round-3 gates on F2 (emergent G1 on clock-complete games, PIT, end-of-half)"
+}

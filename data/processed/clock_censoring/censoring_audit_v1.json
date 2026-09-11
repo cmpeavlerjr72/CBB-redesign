@@ -1,0 +1,746 @@
+{
+  "seasons": [
+    2022,
+    2023,
+    2024,
+    2025
+  ],
+  "horn_tol": 0,
+  "clock_complete_def": {
+    "tail_tol": 2,
+    "head_tol": 2,
+    "sum_tol": 4
+  },
+  "ladder": {
+    "rows_all": 3029695,
+    "games_all": 21969,
+    "rows_d1_untruncated": 3029695,
+    "games_d1_untruncated": 21969,
+    "games_points_complete": 18902,
+    "rows_points_complete": 2607355
+  },
+  "flag_confusion": {
+    "end_period=False|horn=False": 2589555,
+    "end_period=False|horn=True": 12037,
+    "end_period=True|horn=False": 36,
+    "end_period=True|horn=True": 5564
+  },
+  "flag_rates": {
+    "old_flag_pct": 0.2148,
+    "new_flag_pct": 0.6751,
+    "ratio": 3.143
+  },
+  "games_universe_v2": {
+    "path": "data/processed/games_universe_v2.parquet",
+    "rows": 31103,
+    "added_columns": [
+      "clock_complete_reg",
+      "clock_complete_all_periods",
+      "points_complete",
+      "clock_flags_evaluated",
+      "n_periods_logged",
+      "n_horn_poss",
+      "unaccounted_s_total"
+    ],
+    "rows_with_flags_evaluated": 18902,
+    "note": "versioned sibling; data/processed/games_universe.parquet untouched"
+  },
+  "tables": {
+    "by_season_period": [
+      {
+        "season": 2022,
+        "period_type": "H1",
+        "n_poss": 282169,
+        "n_horn": 2270,
+        "n_horn_tol1": 3079,
+        "n_horn_tol2": 3656,
+        "n_flag_end_period": 707,
+        "n_periods": 4162,
+        "horn_pct": 0.8044824201099341,
+        "horn_per_period": 0.545410860163383,
+        "old_flag_pct": 0.25055906212234513
+      },
+      {
+        "season": 2022,
+        "period_type": "H2",
+        "n_poss": 287762,
+        "n_horn": 1259,
+        "n_horn_tol1": 1816,
+        "n_horn_tol2": 2241,
+        "n_flag_end_period": 423,
+        "n_periods": 4162,
+        "horn_pct": 0.4375143347627553,
+        "horn_per_period": 0.30249879865449303,
+        "old_flag_pct": 0.14699647625468268
+      },
+      {
+        "season": 2022,
+        "period_type": "OT",
+        "n_poss": 5066,
+        "n_horn": 122,
+        "n_horn_tol1": 182,
+        "n_horn_tol2": 235,
+        "n_flag_end_period": 43,
+        "n_periods": 284,
+        "horn_pct": 2.408211606790367,
+        "horn_per_period": 0.4295774647887324,
+        "old_flag_pct": 0.8487958941966048
+      },
+      {
+        "season": 2023,
+        "period_type": "H1",
+        "n_poss": 295551,
+        "n_horn": 2477,
+        "n_horn_tol1": 3257,
+        "n_horn_tol2": 3829,
+        "n_flag_end_period": 728,
+        "n_periods": 4384,
+        "horn_pct": 0.8380956247821865,
+        "horn_per_period": 0.5650091240875912,
+        "old_flag_pct": 0.24631958612895913
+      },
+      {
+        "season": 2023,
+        "period_type": "H2",
+        "n_poss": 302400,
+        "n_horn": 1371,
+        "n_horn_tol1": 1963,
+        "n_horn_tol2": 2375,
+        "n_flag_end_period": 467,
+        "n_periods": 4384,
+        "horn_pct": 0.45337301587301587,
+        "horn_per_period": 0.31272810218978103,
+        "old_flag_pct": 0.15443121693121692
+      },
+      {
+        "season": 2023,
+        "period_type": "OT",
+        "n_poss": 5193,
+        "n_horn": 156,
+        "n_horn_tol1": 214,
+        "n_horn_tol2": 259,
+        "n_flag_end_period": 55,
+        "n_periods": 289,
+        "horn_pct": 3.0040439052570767,
+        "horn_per_period": 0.5397923875432526,
+        "old_flag_pct": 1.0591180435201233
+      },
+      {
+        "season": 2024,
+        "period_type": "H1",
+        "n_poss": 342519,
+        "n_horn": 2926,
+        "n_horn_tol1": 3817,
+        "n_horn_tol2": 4472,
+        "n_flag_end_period": 907,
+        "n_periods": 5037,
+        "horn_pct": 0.8542591797827274,
+        "horn_per_period": 0.5809013301568394,
+        "old_flag_pct": 0.2648028284562316
+      },
+      {
+        "season": 2024,
+        "period_type": "H2",
+        "n_poss": 349315,
+        "n_horn": 1532,
+        "n_horn_tol1": 2142,
+        "n_horn_tol2": 2683,
+        "n_flag_end_period": 510,
+        "n_periods": 5037,
+        "horn_pct": 0.43857263501424215,
+        "horn_per_period": 0.304149295215406,
+        "old_flag_pct": 0.1460000286274566
+      },
+      {
+        "season": 2024,
+        "period_type": "OT",
+        "n_poss": 6099,
+        "n_horn": 213,
+        "n_horn_tol1": 304,
+        "n_horn_tol2": 357,
+        "n_flag_end_period": 64,
+        "n_periods": 338,
+        "horn_pct": 3.4923757993113624,
+        "horn_per_period": 0.6301775147928994,
+        "old_flag_pct": 1.0493523528447286
+      },
+      {
+        "season": 2025,
+        "period_type": "H1",
+        "n_poss": 358457,
+        "n_horn": 3256,
+        "n_horn_tol1": 4202,
+        "n_horn_tol2": 4835,
+        "n_flag_end_period": 1045,
+        "n_periods": 5319,
+        "horn_pct": 0.9083376806702059,
+        "horn_per_period": 0.6121451400639218,
+        "old_flag_pct": 0.29152729616104583
+      },
+      {
+        "season": 2025,
+        "period_type": "H2",
+        "n_poss": 366421,
+        "n_horn": 1830,
+        "n_horn_tol1": 2510,
+        "n_horn_tol2": 3093,
+        "n_flag_end_period": 592,
+        "n_periods": 5319,
+        "horn_pct": 0.49942552419211783,
+        "horn_per_period": 0.34404963338973493,
+        "old_flag_pct": 0.16156279252553757
+      },
+      {
+        "season": 2025,
+        "period_type": "OT",
+        "n_poss": 6403,
+        "n_horn": 202,
+        "n_horn_tol1": 289,
+        "n_horn_tol2": 350,
+        "n_flag_end_period": 72,
+        "n_periods": 356,
+        "horn_pct": 3.1547712009995315,
+        "horn_per_period": 0.5674157303370787,
+        "old_flag_pct": 1.1244729033265657
+      }
+    ],
+    "by_season": [
+      {
+        "season": 2022,
+        "n_poss": 574997,
+        "n_horn": 3651,
+        "n_flag": 1173,
+        "n_games": 4162,
+        "horn_pct": 0.6349598345730499,
+        "horn_per_game": 0.8772224891878905,
+        "old_flag_per_game": 0.2818356559346468
+      },
+      {
+        "season": 2023,
+        "n_poss": 603144,
+        "n_horn": 4004,
+        "n_flag": 1250,
+        "n_games": 4384,
+        "horn_pct": 0.6638547345244253,
+        "horn_per_game": 0.9133211678832117,
+        "old_flag_per_game": 0.2851277372262774
+      },
+      {
+        "season": 2024,
+        "n_poss": 697933,
+        "n_horn": 4671,
+        "n_flag": 1481,
+        "n_games": 5037,
+        "horn_pct": 0.6692619492128901,
+        "horn_per_game": 0.9273377010125075,
+        "old_flag_per_game": 0.29402422076632917
+      },
+      {
+        "season": 2025,
+        "n_poss": 731281,
+        "n_horn": 5288,
+        "n_flag": 1709,
+        "n_games": 5319,
+        "horn_pct": 0.7231146440287659,
+        "horn_per_game": 0.9941718368114307,
+        "old_flag_per_game": 0.3213009964279
+      }
+    ],
+    "completeness_by_season_period": [
+      {
+        "season": 2022,
+        "period_type": "H1",
+        "n_periods": 4162,
+        "c1_tail": 0.7787121576165306,
+        "c2_head": 1.0,
+        "c3_sum": 0.8942815953868333,
+        "complete": 0.7787121576165306,
+        "mean_unaccounted_s": 1.7856799615569439,
+        "p90_unaccounted_s": 5.0
+      },
+      {
+        "season": 2022,
+        "period_type": "H2",
+        "n_periods": 4162,
+        "c1_tail": 0.4382508409418549,
+        "c2_head": 1.0,
+        "c3_sum": 0.5324363286881307,
+        "complete": 0.4382508409418549,
+        "mean_unaccounted_s": 7.784238346948582,
+        "p90_unaccounted_s": 23.0
+      },
+      {
+        "season": 2022,
+        "period_type": "OT",
+        "n_periods": 284,
+        "c1_tail": 0.6619718309859155,
+        "c2_head": 1.0,
+        "c3_sum": 0.7676056338028169,
+        "complete": 0.6619718309859155,
+        "mean_unaccounted_s": 3.242957746478873,
+        "p90_unaccounted_s": 9.700000000000017
+      },
+      {
+        "season": 2023,
+        "period_type": "H1",
+        "n_periods": 4384,
+        "c1_tail": 0.7693886861313869,
+        "c2_head": 1.0,
+        "c3_sum": 0.8905109489051095,
+        "complete": 0.7693886861313869,
+        "mean_unaccounted_s": 1.8494525547445255,
+        "p90_unaccounted_s": 5.0
+      },
+      {
+        "season": 2023,
+        "period_type": "H2",
+        "n_periods": 4384,
+        "c1_tail": 0.44229014598540145,
+        "c2_head": 1.0,
+        "c3_sum": 0.5298813868613139,
+        "complete": 0.44229014598540145,
+        "mean_unaccounted_s": 7.775091240875913,
+        "p90_unaccounted_s": 23.0
+      },
+      {
+        "season": 2023,
+        "period_type": "OT",
+        "n_periods": 289,
+        "c1_tail": 0.7197231833910035,
+        "c2_head": 1.0,
+        "c3_sum": 0.8304498269896193,
+        "complete": 0.7197231833910035,
+        "mean_unaccounted_s": 2.8027681660899653,
+        "p90_unaccounted_s": 9.0
+      },
+      {
+        "season": 2024,
+        "period_type": "H1",
+        "n_periods": 5037,
+        "c1_tail": 0.7917411157434981,
+        "c2_head": 1.0,
+        "c3_sum": 0.9080802064721064,
+        "complete": 0.7917411157434981,
+        "mean_unaccounted_s": 1.6986301369863013,
+        "p90_unaccounted_s": 4.0
+      },
+      {
+        "season": 2024,
+        "period_type": "H2",
+        "n_periods": 5037,
+        "c1_tail": 0.43458407782410163,
+        "c2_head": 1.0,
+        "c3_sum": 0.5227317847925352,
+        "complete": 0.43458407782410163,
+        "mean_unaccounted_s": 8.080206472106413,
+        "p90_unaccounted_s": 23.0
+      },
+      {
+        "season": 2024,
+        "period_type": "OT",
+        "n_periods": 338,
+        "c1_tail": 0.7840236686390533,
+        "c2_head": 1.0,
+        "c3_sum": 0.863905325443787,
+        "complete": 0.7840236686390533,
+        "mean_unaccounted_s": 2.0207100591715976,
+        "p90_unaccounted_s": 6.0
+      },
+      {
+        "season": 2025,
+        "period_type": "H1",
+        "n_periods": 5319,
+        "c1_tail": 0.8025944726452341,
+        "c2_head": 1.0,
+        "c3_sum": 0.9091934574168077,
+        "complete": 0.8018424515886445,
+        "mean_unaccounted_s": 0.6901673246850912,
+        "p90_unaccounted_s": 4.0
+      },
+      {
+        "season": 2025,
+        "period_type": "H2",
+        "n_periods": 5319,
+        "c1_tail": 0.46512502350065804,
+        "c2_head": 1.0,
+        "c3_sum": 0.5454032712915962,
+        "complete": 0.4624929498025945,
+        "mean_unaccounted_s": 0.8176348937770258,
+        "p90_unaccounted_s": 23.0
+      },
+      {
+        "season": 2025,
+        "period_type": "OT",
+        "n_periods": 356,
+        "c1_tail": 0.7640449438202247,
+        "c2_head": 1.0,
+        "c3_sum": 0.8595505617977528,
+        "complete": 0.7640449438202247,
+        "mean_unaccounted_s": 2.2668539325842696,
+        "p90_unaccounted_s": 7.0
+      }
+    ],
+    "completeness_by_season_game": [
+      {
+        "season": 2022,
+        "n_games": 4162,
+        "share_reg_halves_complete": 0.3486304661220567,
+        "share_all_periods_complete": 0.3327727054300817
+      },
+      {
+        "season": 2023,
+        "n_games": 4384,
+        "share_reg_halves_complete": 0.34534671532846717,
+        "share_all_periods_complete": 0.33371350364963503
+      },
+      {
+        "season": 2024,
+        "n_games": 5037,
+        "share_reg_halves_complete": 0.3490172721858249,
+        "share_all_periods_complete": 0.33889219773674806
+      },
+      {
+        "season": 2025,
+        "n_games": 5319,
+        "share_reg_halves_complete": 0.37431848091746567,
+        "share_all_periods_complete": 0.3636021808610641
+      }
+    ],
+    "last_possession_by_season_period": [
+      {
+        "season": 2022,
+        "period_type": "H1",
+        "n_periods": 4162,
+        "last_poss_at_horn": 0.7787121576165306,
+        "last_start_under_35": 0.9038923594425757,
+        "mean_last_duration": 16.803219605958674
+      },
+      {
+        "season": 2022,
+        "period_type": "H2",
+        "n_periods": 4162,
+        "last_poss_at_horn": 0.4382508409418549,
+        "last_start_under_35": 0.8587217683805862,
+        "mean_last_duration": 10.691254204709274
+      },
+      {
+        "season": 2022,
+        "period_type": "OT",
+        "n_periods": 284,
+        "last_poss_at_horn": 0.6619718309859155,
+        "last_start_under_35": 0.9894366197183099,
+        "mean_last_duration": 7.76056338028169
+      },
+      {
+        "season": 2023,
+        "period_type": "H1",
+        "n_periods": 4384,
+        "last_poss_at_horn": 0.7693886861313869,
+        "last_start_under_35": 0.9039689781021898,
+        "mean_last_duration": 16.568886861313867
+      },
+      {
+        "season": 2023,
+        "period_type": "H2",
+        "n_periods": 4384,
+        "last_poss_at_horn": 0.44229014598540145,
+        "last_start_under_35": 0.874771897810219,
+        "mean_last_duration": 10.330063868613138
+      },
+      {
+        "season": 2023,
+        "period_type": "OT",
+        "n_periods": 289,
+        "last_poss_at_horn": 0.7197231833910035,
+        "last_start_under_35": 0.9619377162629758,
+        "mean_last_duration": 8.044982698961938
+      },
+      {
+        "season": 2024,
+        "period_type": "H1",
+        "n_periods": 5037,
+        "last_poss_at_horn": 0.7917411157434981,
+        "last_start_under_35": 0.9023228111971412,
+        "mean_last_duration": 16.767520349414333
+      },
+      {
+        "season": 2024,
+        "period_type": "H2",
+        "n_periods": 5037,
+        "last_poss_at_horn": 0.43458407782410163,
+        "last_start_under_35": 0.8552709946396665,
+        "mean_last_duration": 10.808417708953742
+      },
+      {
+        "season": 2024,
+        "period_type": "OT",
+        "n_periods": 338,
+        "last_poss_at_horn": 0.7840236686390533,
+        "last_start_under_35": 0.9940828402366864,
+        "mean_last_duration": 7.6923076923076925
+      },
+      {
+        "season": 2025,
+        "period_type": "H1",
+        "n_periods": 5319,
+        "last_poss_at_horn": 0.8025944726452341,
+        "last_start_under_35": 0.904117315284828,
+        "mean_last_duration": 17.18067305884565
+      },
+      {
+        "season": 2025,
+        "period_type": "H2",
+        "n_periods": 5319,
+        "last_poss_at_horn": 0.46512502350065804,
+        "last_start_under_35": 0.8565519834555367,
+        "mean_last_duration": 16.354389922917843
+      },
+      {
+        "season": 2025,
+        "period_type": "OT",
+        "n_periods": 356,
+        "last_poss_at_horn": 0.7640449438202247,
+        "last_start_under_35": 0.9775280898876404,
+        "mean_last_duration": 7.935393258426966
+      }
+    ],
+    "duration_horn_vs_not": [
+      {
+        "group": "horn-ending",
+        "n": 17601,
+        "mean": 13.08181353332197,
+        "sd": 11.259345079532865,
+        "q10": 1.0,
+        "q25": 4.0,
+        "q50": 9.0,
+        "q75": 21.0,
+        "q90": 30.0,
+        "q99": 43.0
+      },
+      {
+        "group": "not horn-ending",
+        "n": 2589591,
+        "mean": 17.500279387748876,
+        "sd": 9.748591976671168,
+        "q10": 5.0,
+        "q25": 10.0,
+        "q50": 17.0,
+        "q75": 24.0,
+        "q90": 30.0,
+        "q99": 44.0
+      }
+    ],
+    "by_clock_band": [
+      {
+        "band": "[0, 5)",
+        "n": 8140,
+        "horn_rate": 0.611056511056511,
+        "old_flag_rate": 0.21105651105651105,
+        "mean_dur_all": 1.5522113022113022,
+        "mean_dur_uncensored": 0.8856601389766267
+      },
+      {
+        "band": "[5, 10)",
+        "n": 10887,
+        "horn_rate": 0.36382841921557824,
+        "old_flag_rate": 0.11545880407825847,
+        "mean_dur_all": 4.44144392394599,
+        "mean_dur_uncensored": 3.1407738954663587
+      },
+      {
+        "band": "[10, 20)",
+        "n": 21336,
+        "horn_rate": 0.17285339332583427,
+        "old_flag_rate": 0.05450881139857518,
+        "mean_dur_all": 7.613751406074241,
+        "mean_dur_uncensored": 6.25
+      },
+      {
+        "band": "[20, 30)",
+        "n": 23714,
+        "horn_rate": 0.13135700430125663,
+        "old_flag_rate": 0.03567512861600742,
+        "mean_dur_all": 12.089693851733154,
+        "mean_dur_uncensored": 10.217534831787951
+      },
+      {
+        "band": "[30, 45)",
+        "n": 41753,
+        "horn_rate": 0.041458098819246524,
+        "old_flag_rate": 0.012813450530500802,
+        "mean_dur_all": 15.34943596867291,
+        "mean_dur_uncensored": 14.548023587027135
+      },
+      {
+        "band": "[45, 60)",
+        "n": 38914,
+        "horn_rate": 0.002980932312278357,
+        "old_flag_rate": 0.001747443079611451,
+        "mean_dur_all": 14.588991108598448,
+        "mean_dur_uncensored": 14.485205422959947
+      },
+      {
+        "band": "[60, 90)",
+        "n": 69657,
+        "horn_rate": 0.0002296969435950443,
+        "old_flag_rate": 0.00014356058974690267,
+        "mean_dur_all": 16.54550152892028,
+        "mean_dur_uncensored": 16.533694231846184
+      },
+      {
+        "band": "[90, 1201)",
+        "n": 2392791,
+        "horn_rate": 0.0,
+        "old_flag_rate": 1.2537659996213626e-06,
+        "mean_dur_all": 17.83589832960756,
+        "mean_dur_uncensored": 17.83589832960756
+      }
+    ],
+    "by_terminal_event": [
+      {
+        "terminal_event": "FGA_3",
+        "n": 674100,
+        "horn_rate": 0.008340008900756564,
+        "n_horn": 5622
+      },
+      {
+        "terminal_event": "FGA_jump2",
+        "n": 475984,
+        "horn_rate": 0.004739655114457629,
+        "n_horn": 2256
+      },
+      {
+        "terminal_event": "FGA_rim",
+        "n": 653963,
+        "horn_rate": 0.00302310681185327,
+        "n_horn": 1977
+      },
+      {
+        "terminal_event": "FT_trip_bonus",
+        "n": 142800,
+        "horn_rate": 0.004180672268907563,
+        "n_horn": 597
+      },
+      {
+        "terminal_event": "FT_trip_shooting",
+        "n": 172764,
+        "horn_rate": 0.001823296520108356,
+        "n_horn": 315
+      },
+      {
+        "terminal_event": "TOV",
+        "n": 458531,
+        "horn_rate": 0.0021110895446545598,
+        "n_horn": 968
+      },
+      {
+        "terminal_event": "end_period",
+        "n": 5600,
+        "horn_rate": 0.9935714285714285,
+        "n_horn": 5564
+      },
+      {
+        "terminal_event": "unknown",
+        "n": 23450,
+        "horn_rate": 0.012878464818763325,
+        "n_horn": 302
+      }
+    ],
+    "g1_target_shift": [
+      {
+        "season": 2022,
+        "n_games": 4162,
+        "mean_all": 68.46840461316674,
+        "sd_all": 5.234987466759438,
+        "n_cc_games": 1451,
+        "mean_cc": 68.34631288766369,
+        "sd_cc": 5.161276758238919,
+        "mean_shift": -0.12209172550305425,
+        "cc_share": 0.3486304661220567
+      },
+      {
+        "season": 2023,
+        "n_games": 4384,
+        "mean_all": 68.19696624087591,
+        "sd_all": 5.231382897526684,
+        "n_cc_games": 1514,
+        "mean_cc": 68.1902245706737,
+        "sd_cc": 5.125923599245768,
+        "mean_shift": -0.006741670202202954,
+        "cc_share": 0.34534671532846717
+      },
+      {
+        "season": 2024,
+        "n_games": 5037,
+        "mean_all": 68.67520349414333,
+        "sd_all": 5.1794856566341805,
+        "n_cc_games": 1758,
+        "mean_cc": 68.48720136518772,
+        "sd_cc": 5.158553910411622,
+        "mean_shift": -0.18800212895561685,
+        "cc_share": 0.3490172721858249
+      },
+      {
+        "season": 2025,
+        "n_games": 5319,
+        "mean_all": 68.1404399323181,
+        "sd_all": 5.089211490354981,
+        "n_cc_games": 1991,
+        "mean_cc": 67.9409844299347,
+        "sd_cc": 5.1422389034309255,
+        "mean_shift": -0.19945550238340104,
+        "cc_share": 0.37431848091746567
+      }
+    ],
+    "g1_target_shift_2025_by_month": [
+      {
+        "month": 1,
+        "n_games": 1358,
+        "mean_all": 67.65500736377025,
+        "n_cc": 520,
+        "mean_cc": 67.40961538461538,
+        "mean_shift": -0.2453919791548742
+      },
+      {
+        "month": 2,
+        "n_games": 1203,
+        "mean_all": 67.35827098919368,
+        "n_cc": 440,
+        "mean_cc": 67.23636363636363,
+        "mean_shift": -0.12190735283004983
+      },
+      {
+        "month": 3,
+        "n_games": 734,
+        "mean_all": 67.59400544959128,
+        "n_cc": 305,
+        "mean_cc": 67.39180327868853,
+        "mean_shift": -0.20220217090275128
+      },
+      {
+        "month": 4,
+        "n_games": 16,
+        "mean_all": 69.0625,
+        "n_cc": 7,
+        "mean_cc": 70.85714285714286,
+        "mean_shift": 1.7946428571428612
+      },
+      {
+        "month": 11,
+        "n_games": 1125,
+        "mean_all": 69.49066666666667,
+        "n_cc": 395,
+        "mean_cc": 69.00379746835443,
+        "mean_shift": -0.48686919831223463
+      },
+      {
+        "month": 12,
+        "n_games": 883,
+        "mean_all": 68.66987542468856,
+        "n_cc": 324,
+        "mean_cc": 68.90895061728395,
+        "mean_shift": 0.23907519259539356
+      }
+    ]
+  }
+}

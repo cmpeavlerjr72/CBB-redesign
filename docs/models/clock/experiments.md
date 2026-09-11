@@ -668,3 +668,505 @@ importing everything shared from `clock.py`, so no round-1/round-2 object or
 pickle changes. Artifacts take a `v3_` prefix in `data/processed/models/clock/`.
 Threads capped at 4 (`OMP_NUM_THREADS=4`, `n_jobs=4`); four other workers share
 the machine. One blind grading path scores every arm.
+
+---
+
+## 9. Run R4 -- the round-3 grid (2026-09-10)
+
+`scripts/train_clock_v3.py`, seed 20260910, module `src/cbb_sim/models/clock_v3.py`. Artifacts are `v3_*` in `data/processed/models/clock/`; rounds 1 and 2 files are untouched. Every number below is written by that script or by `scripts/diag_clock_v3_report.py` reading its output; none is typed by hand.
+
+### 9.1 The censoring flag, as it lands on the design
+
+| design rows | censored, rounds 1-2 flag (%) | censored, horn flag (%) | horn and not old | old and not horn | censored rows not consuming their clock |
+|---|---|---|---|---|---|
+| 2607192 | 0.2148 | 0.6751 | 12037 | 36 | 0 |
+
+`old and not horn` are the handful of `end_period` rows whose feed stops a second or two before 0:00; they are reported, not reclassified.
+
+### 9.2 Choices made on F1 only
+
+| dist | scale | f1_censored_loglik | f1_crps_trunc | fit_seconds |
+|---|---|---|---|---|
+| normal | 0.69859 | -3.75829 | 5.05251 | 147.90000 |
+| logistic | 0.34901 | -3.66928 | 5.03722 | 187.50000 |
+| extreme | 0.52926 | -3.57625 | 4.89741 | 249.50000 |
+
+**Chosen AFT error distribution: `extreme`** (highest F1 censored log-likelihood).
+
+End-of-half noise floor, F1, on clock-complete halves: sim 5-seed re-chain SD share 0.00190 / duration 0.0457 s; actual game-block bootstrap SE share 0.00288 / duration 0.1269 s; k = 2.0. **Floor: share +/- 0.00576, duration +/- 0.2538 s** on 6,177 clock-complete halves.
+
+### 9.3 F2 (selection fold) -- primary metric and the three gates
+
+| id | arm | flag | crps_trunc | censored_loglik | crps_r2def | pred_mean_duration | pit_leak_failures | pit_worst_D | cc_mean_delta | cc_sd_delta | cc_months_pass | cc_n_powered_months | g1_pass | cc_eoh_share_gap | cc_eoh_duration_gap | eoh_pass | pit_pass | all_gates_pass |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| B1 | lgbm_quantile_r2 | old | 4.8386 | -5.1171 | 4.8039 | 17.3333 | 24 | 0.5266 | 2.2270 | -0.6040 | 0 | 5 | FAIL | 0.0401 | -6.3054 | FAIL | FAIL | FAIL |
+| A1 | empirical_km3 | horn | 4.8785 | -3.5164 | 4.8794 | 17.5949 | 15 | 0.0949 | 1.3570 | -0.8280 | 0 | 5 | FAIL | 0.0227 | -3.4444 | FAIL | FAIL | FAIL |
+| A2 | empirical_km3_srfloor | horn | 4.8880 | -3.5178 | 4.9171 | 17.6113 | 14 | 0.1665 | 0.8860 | -0.8840 | 1 | 5 | FAIL | 0.0281 | -1.4615 | FAIL | FAIL | FAIL |
+| B2 | empirical_r2 | old | 4.8982 | -3.5245 | 4.8652 | 17.5343 | 20 | 0.5235 | 1.8050 | -0.7950 | 0 | 5 | FAIL | 0.0329 | -5.2798 | FAIL | FAIL | FAIL |
+| A3 | gamma_aft | horn | 4.9128 | -3.5597 | 4.9069 | 17.5763 | 29 | 0.2349 | 1.1300 | -0.2960 | 1 | 5 | FAIL | -0.0155 | -1.8487 | FAIL | FAIL | FAIL |
+| B3 | gamma_r2 | old | 4.9370 | -3.5693 | 4.8997 | 17.5341 | 35 | 0.5227 | 1.5310 | -0.2500 | 0 | 5 | FAIL | -0.0092 | -3.5129 | FAIL | FAIL | FAIL |
+| A6 | xgb_aft | horn | 4.9484 | -3.5831 | 4.9374 | 17.3969 | 37 | 0.5637 | 1.2120 | -0.5550 | 1 | 5 | FAIL | 0.0055 | -2.2397 | FAIL | FAIL | FAIL |
+| A5 | hazard3 | horn | 4.9572 | -3.5425 | 4.9522 | 17.3158 | 33 | 0.3164 | 2.1350 | -0.3200 | 0 | 5 | FAIL | -0.0024 | -2.9063 | FAIL | FAIL | FAIL |
+| A4 | lognormal_aft | horn | 5.0685 | -3.6676 | 5.0675 | 18.3463 | 39 | 0.2108 | -1.7310 | 0.1820 | 0 | 5 | FAIL | -0.0714 | -1.1013 | FAIL | FAIL | FAIL |
+
+`crps_trunc` is the primary metric (pre-registration 8.4): CRPS of the predictive law RENORMALISED onto {0..R-1}, on uncensored test rows only. `crps_r2def` is round 2's definition (all rows, censored rows scored as complete) and is a labelled bridge, not a decision metric. `cc_*` are read on CLOCK-COMPLETE games/halves, which is the round-3 gate universe.
+
+### 9.4 The mechanism: predicted INTENDED duration by clock band
+
+| band | n | horn_rate | actual_mean_observed | A1 | A2 | A3 | A4 | A5 | A6 | B1 | B2 | B3 |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| [0, 5) | 2430 | 0.632 | 1.565 | 8.804 | 12.574 | 4.440 | 7.806 | 5.247 | 3.916 | 1.528 | 1.730 | 1.902 |
+| [5, 10) | 3030 | 0.387 | 4.441 | 8.466 | 12.442 | 6.154 | 8.181 | 6.128 | 6.374 | 4.212 | 4.574 | 4.702 |
+| [10, 20) | 5995 | 0.184 | 7.685 | 8.730 | 12.122 | 9.000 | 10.448 | 8.542 | 9.078 | 7.415 | 7.579 | 7.902 |
+| [20, 30) | 6630 | 0.142 | 12.309 | 12.602 | 12.830 | 13.659 | 14.546 | 13.440 | 13.496 | 11.820 | 11.858 | 12.277 |
+| [30, 45) | 11649 | 0.042 | 15.457 | 15.432 | 13.480 | 15.784 | 16.310 | 16.522 | 15.844 | 15.112 | 15.177 | 15.449 |
+| [45, 60) | 10839 | 0.003 | 14.733 | 14.527 | 13.756 | 14.597 | 15.287 | 15.009 | 14.992 | 14.595 | 14.486 | 14.590 |
+| [60, 90) | 19430 | 0.000 | 16.693 | 16.509 | 16.509 | 16.580 | 17.294 | 16.714 | 16.541 | 16.407 | 16.507 | 16.578 |
+| [90, 1201) | 671201 | 0.000 | 17.894 | 17.915 | 17.915 | 17.899 | 18.654 | 17.595 | 17.699 | 17.702 | 17.915 | 17.898 |
+
+This is where the fix has to show up and the one table round 2 could not produce. `actual_mean_observed` is the TRUNCATED mean the feed records; the arms trained on the corrected flag predict the INTENDED duration, which is longer wherever `horn_rate` is non-trivial, and the chain truncates it back at the horn. An arm whose column tracks `actual_mean_observed` inside the last 10 seconds has not changed.
+
+### 9.5 Segment breakdowns (pre-registration 8.6)
+
+
+**CRPS_trunc by half**
+
+| level | n | A1 | A2 | A3 | A4 | A5 | A6 | B1 | B2 | B3 |
+|---|---|---|---|---|---|---|---|---|---|---|
+| H1 | 358430 | 4.8404 | 4.8506 | 4.8664 | 5.0083 | 4.9262 | 4.9426 | 4.8245 | 4.8563 | 4.8920 |
+| H2 | 366371 | 4.9203 | 4.9291 | 4.9630 | 5.1318 | 4.9929 | 4.9610 | 4.8580 | 4.9420 | 4.9844 |
+| OT | 6403 | 4.6101 | 4.6191 | 4.6266 | 4.8017 | 4.6345 | 4.5374 | 4.5115 | 4.7369 | 4.7441 |
+
+**CRPS_trunc by score_bucket**
+
+| level | n | A1 | A2 | A3 | A4 | A5 | A6 | B1 | B2 | B3 |
+|---|---|---|---|---|---|---|---|---|---|---|
+| -15..-6 | 148128 | 4.6704 | 4.6740 | 4.6888 | 4.8268 | 4.7640 | 4.7659 | 4.6488 | 4.6841 | 4.7082 |
+| -5..5 | 346077 | 4.8811 | 4.8882 | 4.9227 | 5.0796 | 4.9633 | 4.9580 | 4.8469 | 4.9076 | 4.9523 |
+| 6..15 | 130535 | 5.1152 | 5.1201 | 5.1710 | 5.3357 | 5.2009 | 5.1757 | 5.0669 | 5.1275 | 5.1893 |
+| <=-16 | 57265 | 4.5938 | 4.6009 | 4.6011 | 4.7447 | 4.6722 | 4.6776 | 4.5624 | 4.6054 | 4.6177 |
+| >=16 | 49199 | 5.1895 | 5.2482 | 5.1948 | 5.3845 | 5.1797 | 5.1406 | 5.0668 | 5.2090 | 5.2200 |
+
+The shot-clock era is 30 s in every NCAA men's season 2022-2025, so that pre-registered segment is degenerate over this fold window and season stands in its place (`v3_segments_F2_*.csv`, `segment = season`), reported rather than silently dropped.
+
+
+### 9.6 Responsiveness (CLAUDE.md standing rule)
+
+| id | arm | span_sim | span_actual | slope_ratio | steps_agreeing | q1_delta | q5_delta |
+|---|---|---|---|---|---|---|---|
+| A1 | empirical_km3 | 6.4408 | 8.2909 | 0.7769 | 4 | 2.3661 | 0.5160 |
+| A2 | empirical_km3_srfloor | 6.4215 | 8.2909 | 0.7745 | 4 | 1.9248 | 0.0555 |
+| A3 | gamma_aft | 8.5056 | 8.2909 | 1.0259 | 4 | 1.1006 | 1.3153 |
+| A4 | lognormal_aft | 7.7538 | 8.2909 | 0.9352 | 4 | -1.3825 | -1.9196 |
+| A5 | hazard3 | 8.2138 | 8.2909 | 0.9907 | 4 | 2.2523 | 2.1753 |
+| A6 | xgb_aft | 7.5822 | 8.2909 | 0.9145 | 4 | 1.9572 | 1.2486 |
+| B1 | lgbm_quantile_r2 | 8.7195 | 8.2909 | 1.0517 | 4 | 2.3924 | 2.8210 |
+| B2 | empirical_r2 | 6.4521 | 8.2909 | 0.7782 | 4 | 2.8134 | 0.9746 |
+| B3 | gamma_r2 | 8.5672 | 8.2909 | 1.0333 | 4 | 1.4831 | 1.7594 |
+
+Per-quintile tables: `v3_responsiveness_F2_{arm}.csv`.
+
+
+### 9.7 By-month G1 on clock-complete games, for the arms that pass overall
+
+| month | n_cc_games | A1 | A2 | A3 | A4 | A5 | A6 | B1 | B2 | B3 |
+|---|---|---|---|---|---|---|---|---|---|---|
+| 1 | 520 | 1.717 | 1.249 | 1.556 | -1.251 | 2.634 | 1.656 | 2.630 | 2.158 | 1.986 |
+| 2 | 440 | 1.638 | 1.175 | 1.540 | -1.201 | 2.580 | 1.755 | 2.661 | 2.110 | 1.957 |
+| 3 | 305 | 1.126 | 0.636 | 0.675 | -2.289 | 1.646 | 0.997 | 1.793 | 1.562 | 1.054 |
+| 11 | 395 | 1.306 | 0.806 | 1.004 | -1.910 | 1.865 | 0.784 | 2.108 | 1.724 | 1.359 |
+| 12 | 324 | 0.705 | 0.284 | 0.508 | -2.466 | 1.543 | 0.508 | 1.610 | 1.194 | 0.920 |
+
+Powered months only (>= 100 clock-complete games). Tolerance +/- 1.0.
+
+
+### 9.8 F1 (robustness only)
+
+| id | arm | flag | crps_trunc | censored_loglik | crps_r2def | pit_leak_failures | pit_worst_D |
+|---|---|---|---|---|---|---|---|
+| B1 | lgbm_quantile_r2 | old | 4.7932 | -5.0973 | 4.7622 | 21 | 0.4763 |
+| A1 | empirical_km3 | horn | 4.8354 | -3.5190 | 4.8372 | 12 | 0.1669 |
+| A2 | empirical_km3_srfloor | horn | 4.8459 | -3.5207 | 4.8744 | 16 | 0.1577 |
+| B2 | empirical_r2 | old | 4.8543 | -3.5259 | 4.8248 | 17 | 0.4735 |
+| A3 | gamma_aft | horn | 4.8744 | -3.5566 | 4.8694 | 29 | 0.2921 |
+| B3 | gamma_r2 | old | 4.8972 | -3.5653 | 4.8629 | 33 | 0.4735 |
+| A6 | xgb_aft | horn | 4.8974 | -3.5763 | 4.8880 | 36 | 0.6256 |
+| A5 | hazard3 | horn | 4.9110 | -3.5357 | 4.9070 | 35 | 0.3942 |
+| A4 | lognormal_aft | horn | 5.0370 | -3.6674 | 5.0362 | 39 | 0.3016 |
+
+### 9.9 Noise floor
+
+| id | arm | kind | value |
+|---|---|---|---|
+| A1 | empirical_km3 | block_bootstrap_se | 0.006139 |
+| A2 | empirical_km3_srfloor | block_bootstrap_se | 0.006157 |
+| A3 | gamma_aft | block_bootstrap_se | 0.006026 |
+| A4 | lognormal_aft | block_bootstrap_se | 0.005867 |
+| A5 | hazard3 | block_bootstrap_se | 0.005948 |
+| A6 | xgb_aft | seed_refit | 0.000523 |
+| B1 | lgbm_quantile_r2 | seed_refit | 0.000021 |
+| B2 | empirical_r2 | block_bootstrap_se | 0.006376 |
+| B3 | gamma_r2 | block_bootstrap_se | 0.006257 |
+
+Floor used by the decision rule: **0.006376** (the maximum).
+
+
+### 9.10 Lookup-table export (deliverable, pre-registration 8.9)
+
+| source arm | adopted | cells | empty cells | live CRPS_trunc | binned CRPS_trunc | dCRPS | TV mean | TV max | live G1-CC dmean | binned G1-CC dmean | dG1 | live rows/s | binned rows/s |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| lgbm_quantile | FAIL | 1080 | 187 | 4.838582 | 4.907261 | 0.068678 | 0.103182 | 0.925170 | 2.227000 | 2.686000 | 0.459000 | 13728.200000 | 183550.000000 |
+
+Grid: prev_end_code 6 x r2_bucket_code 10 x r2_period_type 2 x r2_score_state 3 x tempo_tercile 3 = 1080 cells x 91 durations. Table at `v3_lookup_table.npz`.
+
+
+### 9.11 Verdict
+
+```json
+{
+  "round": 3,
+  "seed": 20260910,
+  "selection_fold": "F2",
+  "floor": 0.006376068383219856,
+  "end_of_half_floor": {
+    "share": 0.005756463971823765,
+    "duration": 0.2537743774655367,
+    "k": 2.0,
+    "sim_seed_sd_share": 0.0018997190107438357,
+    "sim_seed_sd_duration": 0.04567575449004249,
+    "actual_block_bootstrap_se_share": 0.0028782319859118827,
+    "actual_block_bootstrap_se_duration": 0.12688718873276836,
+    "seeds": [
+      20260910,
+      20260911,
+      20260912,
+      20260913,
+      20260914
+    ],
+    "n_cc_halves": 6177
+  },
+  "xgb_dist_chosen": "extreme",
+  "n_arms": 9,
+  "n_pass_g1": 0,
+  "n_pit_clean": 0,
+  "n_pass_eoh": 0,
+  "n_eligible": 0,
+  "best_crps_arm": "lgbm_quantile_r2",
+  "best_crps": 4.838582377520811,
+  "created_at": "2026-09-10T23:02:08.539031+00:00",
+  "finished_at": "2026-09-11T00:21:20.726295+00:00",
+  "winner": null,
+  "verdict": "NO ARM ADOPTED",
+  "reason": "no arm passed all three pre-registered round-3 gates on F2 (emergent G1 on clock-complete games, PIT, end-of-half)"
+}
+```
+
+---
+
+## 9.12 Reading of the round-3 grid (2026-09-10)
+
+Appended after the numbers. Interpretation in full: `model.md` section 11.
+
+**Verdict: NO ARM ADOPTED.** 0 of 9 arms pass the emergent G1 on clock-complete
+games, 0 are PIT-clean, 0 pass the end-of-half gate. `v3_winner.pkl` was not
+written; the best-CRPS arm is persisted as
+`v3_reference_not_adopted_lgbm_quantile_r2.pkl`.
+
+1. **The censoring fix is real, measured, and in the right direction — and it is
+   not big enough.** The pre-registered paired controls isolate it, because A1
+   vs B2 and A3 vs B3 differ ONLY in the censoring flag and the tail rule:
+
+   | pair | old flag (B) | horn flag (A) | change |
+   |---|---:|---:|---:|
+   | empirical: G1-CC mean delta | +1.805 | +1.357 | **-0.448** |
+   | empirical: EOH-CC duration gap | -5.280 s | -3.444 s | **+1.836 s** |
+   | gamma: G1-CC mean delta | +1.531 | +1.130 | **-0.401** |
+   | gamma: EOH-CC duration gap | -3.513 s | -1.849 s | **+1.664 s** |
+
+   Both moves are 60-70x the 0.0064 CRPS floor in effect size terms and far
+   outside the 0.254 s end-of-half duration floor, so they are not noise. L20 is
+   CONFIRMED as a real defect and the fix is CONFIRMED as a real improvement.
+   It closes roughly a quarter of the possession overshoot and a third of the
+   end-of-half duration gap. It does not close either one.
+
+2. **The mechanism does exactly what it was designed to do.** Section 9.4: in
+   the 0-5 s band (63.2% horn-ending) the round-2 arms predict a 1.7-1.9 s
+   INTENDED duration — i.e. they reproduce the truncated observed mean of 1.57 s
+   — while the corrected arms predict 8.8 s (`empirical_km3`), 12.6 s
+   (`empirical_km3_srfloor`) and 4.4 s (`gamma_aft`). The engine then truncates
+   that at the horn instead of subdividing the remaining seconds. This is the
+   one table round 2 could not produce, and it is the direct evidence that the
+   censoring flag changed the conditional law and not merely the fit.
+
+3. **The single best G1 reading in three rounds is A2,
+   `empirical_km3_srfloor`, at +0.886** — the first arm in any round to land
+   INSIDE the +/- 1.0 mean tolerance on the gate universe. It fails on three
+   other clauses: SD -0.884 against +/- 0.75, only 1 of 5 powered months, and an
+   end-of-half duration gap of -1.46 s against a 0.254 s floor. A2 is the arm
+   that throws away the most clock information (every row under 45 s is served
+   the 45-59 s law), which says the remaining overshoot lives in how the model
+   treats the last 45 seconds, not in the last 10.
+
+4. **PIT is now the cleanest it has ever been on the corrected arms, and still
+   fails.** Worst powered K-S D: `empirical_km3` 0.095, `empirical_km3_srfloor`
+   0.166, `gamma_aft` 0.235 — against 0.52-0.56 for every old-flag arm
+   (`empirical_r2` 0.524, `gamma_r2` 0.523, `lgbm_quantile_r2` 0.527). That gap
+   is the truncation-aware metric working: scoring the old arms against the
+   correctly TRUNCATED predictive law exposes a mis-specification the round-2
+   metric could not see. But 14-39 leak-sized cells of 27-30 powered remain
+   everywhere, so no arm is PIT-clean.
+
+5. **The censored log-likelihood refutes the tree reference outright.**
+   `lgbm_quantile_r2` scores -5.117 against -3.516 for `empirical_km3`: it wins
+   CRPS_trunc (4.8386, the lowest in the grid) and is the worst arm in the grid
+   on the only metric the censored rows enter, because 206 test rows get zero
+   predictive mass below their own remaining clock and every censored row gets
+   almost none above it. Its G1-CC is +2.227 and its EOH duration gap -6.31 s,
+   both the worst in the grid. A model that cannot represent the censored tail
+   cannot be the clock model, whatever its CRPS says — which is why the
+   pre-registration gates before it ranks.
+
+6. **`xgb_aft` is a genuinely censoring-aware tree and it does not rescue the
+   tree class.** The F1-chosen error distribution is `extreme` (Weibull AFT),
+   chosen on censored log-likelihood -3.576 against -3.669 (logistic) and -3.758
+   (normal), with the scale fitted by profile likelihood at 0.5293. On F2 it
+   lands CRPS_trunc 4.9484, G1-CC +1.212, EOH -2.24 s, PIT 37 failures: better
+   than the quantile reference on every gate and worse on CRPS. The tree class
+   is not where the remaining error is.
+
+7. **Responsiveness still passes on every arm** (4 of 4 monotone quintile steps;
+   slope ratios 0.775-1.052), and the SD story is unchanged from round 2: the
+   parametric arms hold SD inside tolerance (`gamma_aft` -0.296, `hazard3`
+   -0.320, `lognormal_aft` +0.182) while the empirical arms sit at -0.83 to
+   -0.88. Matchup signal and dispersion are not the blocker; the conditional
+   mean near a period boundary still is.
+
+8. **What is now known that was not known before this round.** The horn
+   censoring defect was one cause of the emergent overshoot, worth about 0.45
+   possessions per team-game, and it is now fixed. Roughly +0.9 to +1.4
+   possessions remain on the corrected arms. That residual is the size of the
+   effect the engine worker independently attributed to `score_diff` feedback
+   inside the clock model (L23 / Decision 10: freezing `score_diff` moves the
+   engine's count from 71.6 to 67.84 against 67.88 actual). The two hypotheses
+   are not competitors, they are additive, and round 3b tests the second with
+   the first already in place.
+
+Nothing is adopted. No multiplier, cap, clip or calibration is fitted to close
+the remaining gap (`docs/SIM_GUARDRAILS.md` core principle).
+
+---
+
+## 10. Round 3b pre-registration (2026-09-10)
+
+Appended AFTER round 3's verdict and BEFORE any round-3b code ran. Section 8
+(the round-3 pre-registration) is STATIC-ONLY and is NOT edited; this is a
+separate question asked separately, and it asks two of them.
+
+Two independent findings arrived while round 3 was running:
+
+- **L23 / Decision 10** (engine worker, commit db72e0d): a paired-stream
+  ablation inside the engine shows that FREEZING the clock model's `score_diff`
+  state feature moves simulated possessions per game from 71.6 to 67.84 against
+  67.88 actual, while ablating `fg_make` or the event model leaves the count
+  +3.6. `score_diff` is produced BY the simulation, so conditioning the clock on
+  it closes a feedback loop that offline scoring cannot see.
+- **L21**: S1 (in-season monthly walk-forward refit) is the project's default
+  training scheme. Round 3 fitted statically.
+
+Round 3 established that horn censoring is real and worth about 0.45
+possessions. Round 3b asks whether the remaining +0.9 to +1.4 is the
+`score_diff` loop, and whether S1 moves anything, with the censoring fix held in
+place throughout.
+
+### 10.1 Part A -- state parametrisation crossed with censoring
+
+Base arms: the two round-3 arms that carried the fix furthest,
+`empirical_km3` (A1) and `gamma_aft` (A3). Each is run under three state
+parametrisations, all with the CORRECTED horn censoring flag:
+
+| id | parametrisation | definition |
+|---|---|---|
+| P1 | as designed | round-2 state verbatim: `score_diff`, `x_score_diff__seconds_remaining`, and the fine-bucket x period-type x **score-state** cross |
+| P2 | `score_diff` removed | all three dropped; the cross collapses to fine bucket x period type. The model then sees no simulation-produced score information at all |
+| P3 | engine-safe end-game variables | `score_diff` replaced by three mutually exclusive indicators that are non-zero ONLY inside the last `ENDGAME_WINDOW_S = 120` seconds of the second half or an OT period: `eg_trailing_big` (offence down 4+, the intentional-foul regime), `eg_leading_big` (offence up 4+, the run-out-the-clock regime), `eg_close` (within 3). Outside the window the model sees no score. The margin still enters through a coarse bucket, so P3 is *safer*, not *safe*; the closed-loop gate in 10.3 is what decides whether it is safe enough |
+
+Six arms (2 base x 3 parametrisations). The round-3 P1 rows are reused verbatim
+as the P1 column rather than refitted, so the comparison is paired by
+construction.
+
+### 10.2 Part B -- S1 scheme confirmation
+
+Whichever Part-A arm reads best on the closed-loop gate, refit under S1: a
+refit at every month boundary of the test season on all prior seasons plus the
+season to date, strictly before the refit date
+(`possession_outcome.month_boundaries` REUSED, not re-implemented). S0 (static)
+is the reference, refit inside the same harness so one code path scores both.
+**S1 is adopted as the scheme unless a pre-registered gate regresses beyond the
+round-3 floor.** Adopting S1 as a SCHEME does not adopt the underlying arm;
+round 3's verdict governs that.
+
+### 10.3 Gates
+
+The three round-3 gates are carried over UNCHANGED (CRPS_trunc primary on
+uncensored rows with the truncation renormalisation; PIT K-S D <= 0.05 in every
+powered cell; emergent G1 on clock-complete games at mean +/- 1.0, SD +/- 0.75,
+all powered months; end-of-half on clock-complete halves within the F1-derived
+floor share +/- 0.005756, duration +/- 0.2538 s). The round-3 CRPS floor
+0.006376 is carried over.
+
+ADDED, and this is the point of round 3b -- **the Decision-10 closed-loop
+gate**: each Part-A arm is run INSIDE the engine by
+`scripts/diag_engine_multilevel.py` as a paired-stream ablation, 5 seeds, and
+must (i) hold possessions per game inside the G1 tolerance against the same
+games' actual, and (ii) not move margin SD beyond the paired-seed noise band.
+An arm that passes the offline gates and fails the closed-loop gate is REFUTED,
+because that is exactly the failure L23 was written about: offline scoring
+cannot see a feedback loop.
+
+### 10.4 Decision rule
+
+Within Part A, the winner is the arm with the lowest CRPS_trunc among those
+passing ALL FOUR gates (three offline + closed-loop); ties inside the floor go
+to the simpler parametrisation, ordered P2 < P3 < P1 (fewer simulation-produced
+inputs is simpler and safer), then to the simpler model class (empirical <
+parametric). If no arm passes, adopt nothing, report the diagnosis, and do not
+soften a gate. No multiplier, cap, clip, offset or calibration is fitted at any
+point.
+
+### 10.5 Artifacts and naming (engine-selectable, documented)
+
+Offline artifacts take a `v3b_` prefix in `data/processed/models/clock/`. The
+S1 schedule is persisted as per-month files the engine selects by game date:
+
+    data/processed/models/clock/v3b_s1/
+        {arm}_S1_{season}_{YYYY-MM}.pkl          the fit made at that month's boundary
+        lookup_{arm}_S1_{season}_{YYYY-MM}.npz   its binned lookup table
+        manifest.json                            refit_date / valid_from / valid_to /
+                                                 model_file / lookup_file / n_train /
+                                                 n_train_from_test_season / max_train_date
+
+The engine picks the row whose [valid_from, valid_to] contains the game's own
+date -- equivalently the latest refit_date at or before it -- so a game is never
+served by a fit that has seen it. The binned lookup grid is round 3's: previous
+end type 6 x fine clock bucket 10 x period type 2 x score state 3 x tempo
+tercile 3 = 1,080 cells x 91 durations (P2 and P3 collapse or replace the score
+dimension and their grids are reported with their own sizes).
+
+New trainer `scripts/train_clock_v3b.py`; rounds 1-3 scripts and artifacts are
+never overwritten. Threads capped at 4.
+
+---
+
+## 11. Run R5 -- the round-3b grid (2026-09-10)
+
+`scripts/train_clock_v3b.py`, seed 20260910, arms in
+`src/cbb_sim/models/clock_v3.py` section 8. Artifacts are `v3b_*`; rounds 1-3
+files are untouched. Every number is written by that script.
+
+### 11.1 Part A -- state parametrisation crossed with censoring (F2)
+
+All six arms carry the round-3 horn censoring flag. P1 rows are round 3's,
+reused verbatim, so the contrast is paired.
+
+| arm | P | CRPS_trunc | censored loglik | PIT fails | PIT worst D | G1-CC dmean | G1-CC dSD | months | EOH d-share | EOH d-dur | gates |
+|---|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---|
+| empirical_km3 | P1 | 4.8785 | -3.5164 | 15 | 0.0949 | +1.357 | -0.828 | 0/5 | +0.02275 | -3.444 | FAIL |
+| empirical_km3 | P3 | 4.8880 | -3.5087 | 13 | 0.1090 | **+1.131** | -0.754 | 1/5 | +0.01978 | -3.398 | FAIL |
+| empirical_km3 | P2 | 4.9058 | -3.5085 | 13 | 0.1270 | +1.276 | -0.806 | 0/5 | +0.01918 | -3.421 | FAIL |
+| gamma_aft | P1 | 4.9128 | -3.5597 | 29 | 0.2349 | +1.130 | -0.296 | 1/5 | -0.01546 | -1.849 | FAIL |
+| gamma_aft | P3 | 4.9327 | -3.5649 | 30 | 0.2290 | **+0.903** | **-0.277** | 2/5 | -0.01368 | -1.509 | FAIL |
+| gamma_aft | P2 | 4.9435 | -3.5675 | 30 | 0.2289 | +1.092 | -0.287 | 1/5 | -0.01725 | -1.969 | FAIL |
+
+CRPS block-bootstrap SEs 0.00602-0.00614; the round-3 floor 0.006376 is carried
+over.
+
+**Verdict on Part A: NO ARM ADOPTED offline.** 0 of 6 pass G1-CC, 0 are
+PIT-clean, 0 pass end-of-half.
+
+### 11.2 The result that matters, and it is a negative one
+
+**P2 -- deleting `score_diff` outright -- does NOT reproduce the engine
+worker's finding offline.** On both base arms it lands between P1 and P3 and
+nowhere near the engine's 71.6 -> 67.84:
+
+| base | P1 (as designed) | P2 (score removed) | P3 (engine-safe end-game) |
+|---|---:|---:|---:|
+| empirical_km3 G1-CC dmean | +1.357 | +1.276 | +1.131 |
+| gamma_aft G1-CC dmean | +1.130 | +1.092 | +0.903 |
+
+This is the expected answer once it is stated, and it is worth stating
+precisely, because it is the difference between the two harnesses:
+**`chain_halves` feeds the model the REAL score sequence.** The offline chain
+overrides only the clock-derived columns; `score_diff` on every row is the score
+the actual game had at that point. There is therefore NO feedback loop for P2 to
+break offline -- the loop only exists when the score itself is simulated. The
+offline grid can measure how much *information* `score_diff` carries (a little:
+0.08-0.23 possessions) and is structurally incapable of measuring the *loop*
+(which the engine measures at ~3.8 possessions).
+
+That is precisely the failure mode Decision 10 exists for, and it is why the
+closed-loop gate is not optional here: **Part A cannot decide between P1, P2 and
+P3.** It can only say that none of them fixes G1 offline, and that P3 is the
+best of the three on the emergent count on both base arms.
+
+### 11.3 The best G1 reading the project has produced
+
+`gamma_aft|P3`: G1-CC mean **+0.903** and SD **-0.277**, the first arm in any
+round with BOTH inside the +/- 1.0 / +/- 0.75 tolerances. It fails the gate on
+the all-powered-months clause (2 of 5) and fails end-of-half duration
+(-1.51 s against the 0.254 s floor) and PIT (30 leak-sized cells of 30 powered).
+
+Trajectory of the emergent overshoot on clock-complete games, one line per
+decided change:
+
+| state | best G1-CC mean delta | what changed |
+|---|---:|---|
+| round 2 (old flag, static) | +1.516 (gamma) | -- |
+| round 3 (horn censoring) | +1.130 (gamma_aft) | L20 fix, -0.39 |
+| round 3b P3 (engine-safe end-game state) | +0.903 | -0.23 |
+| round 3b P3 + S1 | **+0.885** | -0.02 |
+
+Cumulative: **+1.516 -> +0.885**, 58% of the round-2 overshoot removed by two
+pre-registered, separately-evidenced changes and no tuning. The gate still
+fails, on months and on end-of-half duration.
+
+### 11.4 Part B -- S1 scheme confirmation on `gamma_aft|P3`
+
+Six monthly refits over the 2025 test season, each on all prior seasons plus the
+season to date, strictly before the refit date
+(`possession_outcome.month_boundaries` reused).
+
+| | CRPS_trunc | censored loglik | G1-CC dmean | G1-CC dSD | EOH d-share | EOH d-dur | PIT fails |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| S0 static | 4.932682 | -3.56491 | +0.903 | -0.277 | -0.01368 | -1.5086 | 30 |
+| S1 monthly | 4.931928 | -3.56475 | +0.885 | -0.269 | -0.01294 | -1.4756 | 30 |
+| delta | **-0.000754** | +0.00016 | -0.018 | +0.008 | +0.00074 | +0.033 | 0 |
+
+The CRPS gain is **0.12 of the floor** -- a wash, exactly as L21 predicts ("S1 is
+a calibration fix, not a log-loss fix"). **No pre-registered gate regresses**,
+so by the section-10.2 rule the scheme adopted is **S1**. Every gate moves in
+the right direction, all inside the floor.
+
+Adopting S1 as the SCHEME does not adopt the arm. Round 3 adopted nothing, Part
+A adopted nothing, and the closed-loop gate has not run.
+
+Per-month artifacts are persisted for engine selection by game date:
+`data/processed/models/clock/v3b_s1/gamma_aft_P3_S1_2025_{YYYY-MM}.pkl`, the
+matching `lookup_*.npz`, and `manifest.json` carrying refit_date / valid_from /
+valid_to / model_file / lookup_file / n_train / n_train_from_test_season /
+max_train_date. The engine picks the row whose [valid_from, valid_to] contains
+the game's own date, so no game is served by a fit that has seen it.
+
+### 11.5 The closed-loop gate has NOT run -- and nothing is adopted until it does
+
+`scripts/diag_engine_multilevel.py` grades an existing engine results directory;
+it does not run the engine with a swapped clock model. The Decision-10 gate
+therefore needs an engine run with the round-3b arm wired in
+(`ENGINE_CLOCK` pointing at `v3b_arm_gamma_aft_P3.pkl` or the S1 manifest),
+which is the engine worker's harness and adapter. It is left as a handoff rather
+than forced from here, per the worker-discipline rule about another worker's
+files.
+
+**Until that gate runs, round 3b adopts nothing.** The offline stage cannot
+distinguish P1 from P2 from P3 on the question that matters (11.2), so the
+closed-loop run is the deciding evidence, not a confirmation.

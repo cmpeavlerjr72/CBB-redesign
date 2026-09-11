@@ -1,0 +1,43 @@
+{
+  "xgb_dist_search": [
+    {
+      "dist": "normal",
+      "scale": 0.6985861355882885,
+      "f1_censored_loglik": -3.758285309321794,
+      "f1_crps_trunc": 5.052506678394212,
+      "fit_seconds": 147.9
+    },
+    {
+      "dist": "logistic",
+      "scale": 0.3490104207782033,
+      "f1_censored_loglik": -3.669276396477694,
+      "f1_crps_trunc": 5.037224812381694,
+      "fit_seconds": 187.5
+    },
+    {
+      "dist": "extreme",
+      "scale": 0.529257882698591,
+      "f1_censored_loglik": -3.5762527344761774,
+      "f1_crps_trunc": 4.897412138075658,
+      "fit_seconds": 249.5
+    }
+  ],
+  "xgb_dist_chosen": "extreme",
+  "end_of_half_floor": {
+    "share": 0.005756463971823765,
+    "duration": 0.2537743774655367,
+    "k": 2.0,
+    "sim_seed_sd_share": 0.0018997190107438357,
+    "sim_seed_sd_duration": 0.04567575449004249,
+    "actual_block_bootstrap_se_share": 0.0028782319859118827,
+    "actual_block_bootstrap_se_duration": 0.12688718873276836,
+    "seeds": [
+      20260910,
+      20260911,
+      20260912,
+      20260913,
+      20260914
+    ],
+    "n_cc_halves": 6177
+  }
+}

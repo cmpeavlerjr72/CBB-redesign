@@ -116,6 +116,31 @@ is reported in section 4.5.
 
 ## 4. Winner
 
+**STATUS after rounds 3 and 3b (2026-09-10): still none.** Every round has
+adopted nothing; section 11 is the current state and section 4 below is round
+1's reading, kept as written.
+
+Round 3 CONFIRMED L20 -- horn censoring is a real defect worth about 0.45
+possessions per team-game and a third of the end-of-half duration gap -- and
+still failed every gate. Round 3b (`experiments.md` sections 10-11) then crossed
+that fix with three state parametrisations and found that the best arm the
+project has produced is `gamma_aft|P3` (engine-safe end-game state, S1 scheme):
+emergent G1 on clock-complete games **+0.885 mean / -0.269 SD**, the first arm
+with both inside tolerance, still failing the all-powered-months clause (2 of 5),
+end-of-half duration (-1.48 s vs a 0.254 s floor) and PIT (30 leak-sized cells).
+
+Cumulative on the emergent count: **+1.516 (round 2) -> +0.885**, 58% of the
+overshoot removed by two pre-registered, separately-evidenced changes and no
+tuning.
+
+Two things are now blocking, and only one is a modelling problem:
+1. **The Decision-10 closed-loop gate has not run.** Section 11.2 shows the
+   offline chain CANNOT decide between P1, P2 and P3, because `chain_halves`
+   feeds the model the real score sequence and so contains no feedback loop to
+   break. Adoption waits on an engine paired-stream run.
+2. **End-of-half duration and the by-month clause** are what still fail offline
+   once the count is inside tolerance.
+
 **There is none.** `n_eligible = 0` of 20. The pre-registered rule eliminates
 every arm before CRPS is consulted, and the standing rule ("no hand tuning on
 engine output") forbids closing the gap with a correction.
@@ -614,3 +639,131 @@ blocker.
 5. **Fix the grading truth before re-reading the end-of-half gate**: a
    CBBD-side clock-completeness flag belongs in `games_universe` so the actual
    statistic is computed on halves that reach 0:00.
+
+## 11. Round 3 (2026-09-10) -- horn censoring
+
+Pre-registration: `experiments.md` section 8, committed (0c7cc21) BEFORE any
+round-3 code existed. Evidence for the direction: `docs/LEARNINGS.md` L20 and
+`docs/tests/clock_censoring_audit_2026-09-10.md`. Module:
+`src/cbb_sim/models/clock_v3.py` (new; `clock.py` untouched so rounds 1-2
+pickles still load). Trainer: `scripts/train_clock_v3.py`. Reporter:
+`scripts/diag_clock_v3_report.py`. Artifacts are `v3_*`.
+
+### 11.1 What changed
+
+1. **The censoring flag.** Rounds 1-2 flagged `terminal_event == "end_period"`,
+   0.2148% of rows. The correct statement is "the possession consumed every
+   second that was left", `end_clock <= 0`, **0.6751%** -- 3.1x as many, and
+   **63.2%** of possessions that start with under 5 seconds left. The flag lives
+   in a SIDE TABLE (`data/processed/clock_censoring/censoring_v1_{season}.parquet`);
+   no possession table was rewritten.
+2. **The Kaplan-Meier tail rule.** Round 2 dropped the unresolved survival and
+   renormalised, which in a 63%-censored cell hands that mass back to the SHORT
+   durations and silently rebuilds the truncated law. Round 3 distributes it
+   over t > t* in proportion to the PARENT cell's pmf, recursing outward from
+   the global cell (`kaplan_meier_pmf_v3`).
+3. **The metric.** A test row is uncensored iff T < R, so it is drawn from
+   T | T < R. Every arm's pmf is renormalised onto {0..R-1} before CRPS is taken
+   (`crps_trunc`), and a censored log-likelihood is added as the only metric the
+   censored rows enter.
+4. **The gate universe.** G1 and the end-of-half check moved to CLOCK-COMPLETE
+   games/halves under a three-part definition (tail, head, summed durations).
+   The audit measured this as worth 0.00 to **-0.20** possessions per team-game:
+   it makes the round-2 arms look very slightly WORSE, so it is a grading-truth
+   fix and cannot be mistaken for a gap-closing one.
+5. **One new arm class:** `xgb_aft`, XGBoost `survival:aft` -- a censoring-aware
+   TREE loss, which LightGBM's quantile objective has no form of.
+
+### 11.2 Verdict
+
+**NO ARM ADOPTED.** 0 of 9 pass the emergent G1 on clock-complete games, 0 are
+PIT-clean, 0 pass the end-of-half gate. CRPS floor **0.006376**. F1-only
+choices: AFT error distribution **extreme** (Weibull; censored log-likelihood
+-3.576 vs -3.669 logistic, -3.758 normal) with scale 0.5293 fitted by profile
+likelihood; end-of-half floor share +/- 0.005756, duration +/- 0.2538 s on 6,177
+clock-complete F1 halves.
+
+### 11.3 The censoring fix is real and is not big enough
+
+The pre-registered paired controls isolate it -- A1 vs B2 and A3 vs B3 differ
+ONLY in the flag and the tail rule:
+
+| pair | old flag | horn flag | change |
+|---|---:|---:|---:|
+| empirical, G1-CC mean | +1.805 | +1.357 | **-0.448** |
+| empirical, EOH-CC duration | -5.280 s | -3.444 s | **+1.836 s** |
+| gamma, G1-CC mean | +1.531 | +1.130 | **-0.401** |
+| gamma, EOH-CC duration | -3.513 s | -1.849 s | **+1.664 s** |
+
+L20 is CONFIRMED as a real defect and the fix as a real improvement worth about
+0.45 possessions per team-game and a third of the end-of-half duration gap.
+Roughly +0.9 to +1.4 possessions remain.
+
+### 11.4 The mechanism, in one table
+
+Predicted INTENDED duration by the seconds-remaining band the possession started
+in, F2 (`v3_band_means_F2_*.csv`):
+
+| band | n | horn rate | actual observed | `empirical_km3` | `empirical_km3_srfloor` | `gamma_aft` | `empirical_r2` (old) | `lgbm_quantile_r2` (old) |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|
+| 0-4 | 2,430 | 0.632 | 1.565 | **8.804** | **12.574** | 4.440 | 1.730 | 1.528 |
+| 5-9 | 3,030 | 0.387 | 4.441 | 8.466 | 12.442 | 6.154 | 4.574 | 4.212 |
+| 10-19 | 5,995 | 0.184 | 7.685 | 8.730 | 12.122 | 9.000 | 7.579 | 7.415 |
+| 20-29 | 6,630 | 0.142 | 12.309 | 12.602 | 12.830 | 13.659 | 11.858 | 11.820 |
+| 30-44 | 11,649 | 0.042 | 15.457 | 15.432 | 13.480 | 15.784 | 15.177 | 15.112 |
+| 90+ | 671,201 | 0.000 | 17.894 | 17.915 | 17.915 | 17.899 | 17.915 | 17.702 |
+
+The old-flag arms reproduce the TRUNCATED observed mean (1.7-1.9 s at 0-4 s);
+the corrected arms predict an intended 4.4-12.6 s and let the engine truncate.
+Above 90 s every arm agrees to 0.2 s, so the change is confined to exactly the
+band the censoring defect lives in.
+
+### 11.5 What still fails, and what it points at
+
+- **A2 `empirical_km3_srfloor` gives the best G1 reading in three rounds,
+  +0.886** -- the first arm ever inside the +/- 1.0 mean tolerance -- and fails
+  on SD (-0.884 vs +/- 0.75), months (1 of 5 powered) and end-of-half duration
+  (-1.46 s vs 0.254 s). A2 discards the most clock information, which says the
+  residual lives in the last 45 seconds, not the last 10.
+- **PIT is far cleaner on the corrected arms and still fails**: worst powered
+  K-S D 0.095 / 0.166 / 0.235 (`empirical_km3` / `srfloor` / `gamma_aft`)
+  against 0.52-0.56 for every old-flag arm. The truncation-aware metric exposes
+  a mis-specification round 2's metric could not see; 14-39 leak-sized cells
+  remain.
+- **The tree reference is refuted by the censored likelihood.**
+  `lgbm_quantile_r2` has the lowest CRPS_trunc in the grid (4.8386) and the
+  worst censored log-likelihood (-5.117 vs -3.516), 206 rows with zero
+  predictive mass below their own remaining clock, G1-CC +2.227 and EOH -6.31 s.
+  A model that cannot represent the censored tail cannot be the clock model.
+- **`xgb_aft` does not rescue the tree class**: better than the quantile
+  reference on every gate (G1-CC +1.212, EOH -2.24 s), worse on CRPS (4.9484).
+- **Responsiveness passes everywhere** (4/4 steps, slope ratios 0.775-1.052) and
+  the parametric arms hold SD inside tolerance. Neither matchup signal nor
+  dispersion is the blocker.
+
+### 11.6 Lookup-table export (deliverable)
+
+Run on the best-CRPS arm and labelled NOT ADOPTED. Grid 6 x 10 x 2 x 3 x 3 =
+1,080 cells x 91 durations, 187 cells empty and served by the pooled average.
+Binning error against the live model: **dCRPS_trunc +0.0687** (10.8x the 0.00638
+floor), TV distance mean **0.1032** / max **0.9252**, emergent G1-CC mean delta
+**+0.459 possessions worse** (live +2.227 -> binned +2.686). Throughput 13,728
+rows/s live vs **183,550 rows/s** binned, a **13.4x** speedup.
+
+**The binning error is NOT small**, which is the answer RESUME.md section 3 item
+4 asked for and warned against assuming. On this arm the grid is too coarse to
+bin without moving the gate by half a possession. The empirical arms are
+different -- they ARE lookup tables on the same dimensions, so their binning
+error is structural zero wherever a cell is populated -- and that is the cheap
+path if a cell-based arm ever wins.
+
+### 11.7 What round 3b must test
+
+The residual +0.9 to +1.4 possessions is the size of the effect the engine
+worker independently attributed to `score_diff` feedback inside the clock model
+(L23 / Decision 10: freezing `score_diff` moves the engine count 71.6 -> 67.84
+against 67.88 actual). Horn censoring and `score_diff` feedback are additive
+hypotheses, not competing ones. Round 3b (`experiments.md` section 10) crosses
+the censoring fix with three state parametrisations -- as designed, `score_diff`
+removed, and engine-safe end-game indicators -- adds the Decision-10 closed-loop
+paired-stream gate inside the engine, and then confirms the S1 training scheme.
