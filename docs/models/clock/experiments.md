@@ -1170,3 +1170,139 @@ files.
 **Until that gate runs, round 3b adopts nothing.** The offline stage cannot
 distinguish P1 from P2 from P3 on the question that matters (11.2), so the
 closed-loop run is the deciding evidence, not a confirmation.
+
+---
+
+## 12. Round 3c pre-registration -- the Decision-10 closed-loop run (2026-09-10)
+
+Appended VERBATIM BEFORE any round-3c code was written or run, and committed on
+its own before the first engine process started. Sections 8 and 10 (the round-3
+and round-3b pre-registrations) are STATIC and are NOT edited.
+
+Round 3b ended with an explicit negative result (11.2): **the offline chain
+cannot decide between P1, P2 and P3**, because `chain_halves` feeds the model
+the REAL score sequence and therefore contains no feedback loop to break. The
+offline grid measured the *information* in `score_diff` (0.08-0.23 possessions);
+the engine measures the *loop* (about 3.8). Decision 10 says the loop is decided
+inside the engine and nowhere else. Round 3c is that run.
+
+This round decides ONE question: **which state parametrisation the clock model
+ships with**. It does not reopen model class, censoring, or the training scheme;
+those are settled (L20, L21, L26).
+
+### 12.1 Arms
+
+Every arm is the clock model LOADED INTO THE ENGINE and run over the same games,
+the same seeds and the same RNG streams. Seven arms:
+
+| id | `ENGINE_CLOCK` | base arm | state | scheme | what it is |
+|---|---|---|---|---|---|
+| I | `reference` | round-1 `lgbm_quantile` | round-1 `C_plus_score` | static | THE INCUMBENT. What the engine runs today and what every gate report so far was measured on |
+| A1 | `v3c_gamma_P1_s1` | `gamma_aft` | P1 (as designed: `score_diff`, its clock interaction, the fine-bucket x period x score-state cross) | S1 | the round-3b best-CRPS state, with the loop fully live |
+| A2 | `v3c_gamma_P2_s1` | `gamma_aft` | P2 (`score_diff` removed entirely) | S1 | no simulation-produced score information reaches the clock at all |
+| A3 | `v3c_gamma_P3_s1` | `gamma_aft` | P3 (engine-safe end-game indicators only, last 120 s of H2/OT) | S1 | round 3b's best G1 arm (+0.885 / -0.269 offline) |
+| B1 | `v3c_srfloor_P1_s1` | `empirical_km3_srfloor` | P1 | S1 | CELL-BASED, therefore a lookup table by construction with ZERO binning error (L26). Simplest arm in the round-3 simplicity order |
+| B3 | `v3c_srfloor_P3_s1` | `empirical_km3_srfloor` | P3 | S1 | the same, engine-safe. P3's `eg_regime` is a cell dimension, so the state is supported |
+| F | `v3c_gamma_P1_s1` with `ENGINE_CLOCK_FREEZE=1` | `gamma_aft` | P1 with the margin held at its PREGAME value (zero) for the clock only | S1 | THE DECISION-10 FROZEN ARM. Same fitted object as A1, same streams; the only difference is that no simulated margin reaches the clock. A1 vs F is the size of the loop, measured directly |
+
+`empirical_km3_srfloor` is not fitted under P2: P2 deletes the score dimension
+from the cell grid, and a `srfloor` grid without the score dimension is the same
+object as `empirical_km3` under P2 with a floored clock bucket, which is a
+different arm from the one round 3 scored. It is left out rather than silently
+renamed.
+
+Freeze semantics, stated before the run: `ENGINE_CLOCK_FREEZE=1` replaces the
+clock adapter's view of the offence's score margin with zero on EVERY row, and
+every margin-derived column is then computed from that zero -- the two round-2
+score columns, the score-state leg of the R2 cross, and the P3 end-game
+indicators alike. It is strictly stronger than L23's two-column ablation and it
+is what "frozen at its pregame value" means for a model whose margin enters
+through several derived columns. Under P2 the freeze is a NO-OP by construction,
+which is the internal consistency check on the implementation.
+
+### 12.2 Every other sub-model is held fixed and named explicitly
+
+`ENGINE_EVENT=round2_s1`, `ENGINE_FG_MAKE=round2b_S_C_s1`,
+`ENGINE_FG3=decision8`, `ENGINE_ROTATION=reference`. All four are passed as
+explicit environment values on EVERY run, never left to a default, so that an
+arm run at 03:00 and an arm run at 05:00 are the same comparison. Any run made
+under a different value of any of them is discarded and re-run; a mixed design
+is not a paired comparison.
+
+### 12.3 Universe, subset selection rule, seeds, pairing
+
+- Universe: the F2 2025 engine input slate, `data/processed/models/engine/games_F2_2025.parquet`, 5,710 games.
+- **Subset selection rule, fixed here before any run:** sort the slate by `game_id` ASCENDING and take every 11th row (indices 0, 11, 22, ...), then keep the first 500. That is a deterministic, model-blind stride over the whole season; it is not the first 500 games, which would be November-only. The resulting subset spans 2024-11-04 to 2025-03-15 and holds 159 clock-complete games.
+- Screening read: 5 seeds (0-4). Deciding read: 25 seeds (0-24) on the arms that survive screening, plus the incumbent.
+- Pairing is by construction: the engine's RNG is seeded on (seed, game_id, family), so two arms run on the same games and seeds consume aligned streams and differ only where the clock model differs.
+
+### 12.4 Metrics
+
+Reported for every arm, at both seed counts:
+
+| id | metric | level |
+|---|---|---|
+| M1 | possessions per game, mean and SD, on CLOCK-COMPLETE games | overall |
+| M2 | possessions per game, mean and SD, on ALL 500 games | overall |
+| M3 | end-of-half: share of period-ending possessions that start with under 35 s left, and their mean duration | overall, by period type |
+| M4 | margin SD across all (game, seed) rows | overall |
+| M5 | home/away score correlation across the same rows | overall |
+| M6 | total bias against verified finals | overall, per game |
+| M7 | points per possession | overall |
+| M8 | possessions per game by team TEMPO-PRIOR quintile, with the slope ratio | per team quintile |
+| M9 | possessions per game delta | per month |
+
+M3 is accumulated inside the clock adapter itself: a possession whose INTENDED
+duration reaches or exceeds the time left is the period's last possession by
+construction, so the adapter records the seconds that were left at its start and
+the truncated duration it actually consumed. That is the engine's analogue of
+the offline end-of-half statistic and is labelled as such; the engine writes no
+possession-level file, so it cannot be recomputed after the fact.
+
+Tolerances (`docs/SIM_GUARDRAILS.md` G1, `docs/tests/gate_reference_2026-09-10.md`):
+G1 mean +/- 1.0 and SD +/- 0.75 against the same games' actual; the 2025 season
+figures are 67.875 possessions per game and 14.633 margin SD, but the SUBSET's
+own actuals are what every delta is taken against, never the season figure. A
+per-month or per-quintile cell with fewer than 100 games is reported
+UNDERPOWERED and is excluded from the decision, never presented as signal or as
+absence of signal. On the 500-game subset every clock-complete month cell is
+underpowered by that rule and is reported as such.
+
+### 12.5 Noise floor
+
+The floor is the same arm re-run with `--seed-offset 1000` (seeds 1000-1004 for
+the 5-seed read, 1000-1024 for the 25-seed read), which is a spec-identical
+re-run under a different seed block -- the engine's form of the bake-off's
+"spec-identical retrain under another seed". It is computed for the incumbent
+and for the leading candidate, and the larger of the two absolute deltas per
+metric is THE floor for that metric. A difference between two arms that is
+inside the floor is a tie.
+
+### 12.6 Decision rule
+
+Adopt the SIMPLEST arm (cell-based before gamma; P3 before P2 before P1 on
+engine-safety, i.e. fewer simulation-produced inputs first) that satisfies BOTH:
+
+1. its G1 mean is within +/- 1.0 and its G1 SD within +/- 0.75 of the same
+   games' actual, on BOTH the clock-complete set (M1) and all 500 games (M2); and
+2. it does not move margin SD (M4) or the home/away correlation (M5) by more
+   than the floor RELATIVE TO THE INCUMBENT.
+
+Ordering among qualifying arms: `srfloor|P3` before `srfloor|P1` before
+`gamma|P3` before `gamma|P2` before `gamma|P1`. If two qualifying arms differ on
+M1 by less than the floor, the simpler one wins. If NO arm qualifies, adopt
+nothing, report the diagnosis, and do not soften a gate. No multiplier, cap,
+clip, offset, calibration curve or blend is fitted at any point
+(`docs/SIM_GUARDRAILS.md` core principle).
+
+The frozen arm F is NOT a candidate for adoption -- freezing a feature is an
+ablation, not a model. It is the measuring stick: A1 minus F is the size of the
+loop that P2 and P3 exist to remove, and an arm whose G1 is no better than A1's
+has not removed it.
+
+### 12.7 Artifacts, code and naming
+
+- New module `src/cbb_sim/engine/clock_adapter_v3.py` holds ALL round-3c engine code. The hook in `adapters.py` is a few lines and is backward compatible: every existing `ENGINE_CLOCK` value keeps its exact current behaviour and still loads `ClockAdapter`.
+- New S1 schedules for the arms round 3b did not fit (`gamma_aft` under P1 and P2, `srfloor` under P1 and P3) are written by `scripts/train_clock_v3c_s1.py` into `data/processed/models/clock/v3c_s1/`, each with its own manifest. `v3b_s1/` is READ, never written: `gamma_aft|P3` reuses round 3b's artifacts verbatim so that arm is byte-identical to the one round 3b scored.
+- Artifact selection per game goes through `cbb_sim.engine.manifest.ArtifactManifest`, which enforces refit date at or before the game date AND last training date strictly before it, at load. The clock manifest format is translated into that object's format; the selection rule is not re-implemented.
+- Engine results: `results/engine_v0/clock3c_<arm>/`. Tables: `docs/tests/clock_round3c_closed_loop_2026-09-10.md`. Results and the decision are appended to this file as section 13.
