@@ -630,7 +630,33 @@ V5_MODES: dict[str, dict] = {
                        "param": "B2_sigma", "loc": "log_c",
                        "log_c_param": "B2_log_c",
                        "params_file": "v5b_bakeoff/v5b_bakeoff_report.json"},
+    # Round 5d (experiments.md section 26): round 5c's arm C4, the B1 latent
+    # with `sigma^2` a QUADRATIC in the PREGAME tempo feature. Same location
+    # (`m = +sigma^2/2`, row-wise, so `E[1/A] = 1` holds per game), same stream,
+    # same ordinal -- only the map from the shared uniform to `A` differs, which
+    # is what makes a C4 run pair with a B1 run game by game. DEFAULT-OFF.
+    "v5d_glat_pquad": {"base_mode": "v3c_srfloor_P3_s1", "unit": "game",
+                       "param": "B1_sigma", "loc": "plus_half",
+                       "sigma_fn": "pace2", "beta_param": "C4_beta",
+                       "centre_param": "C4_tbar",
+                       "params_file": "v5c_bakeoff/v5c_params.json",
+                       "params_root": None},
 }
+
+#: The pregame tempo feature the round-5d dispersion function is a function of.
+#: It is a TEAM_COLS member the served round-3c frame already carries, and it is
+#: game-level in the engine inputs (both team rows of a game carry the same
+#: value), so one draw is one pace realisation for the whole game and BOTH
+#: teams -- the CLAUDE.md modeling rule the latent exists to honour.
+TEMPO_COL: str = "tempo_prior_game"
+
+#: `exp_clk5c_dispersion_function.main` floors the fitted `sigma^2` at this
+#: value before taking a square root. Carried here so the engine's per-row
+#: sigma is the same function of the same coefficients as the offline grade's.
+#: Over the engine's observed tempo range the C4 quadratic is strictly
+#: positive, so the floor is a guard against a degenerate coefficient set and
+#: never active -- it is not a clip on engine output.
+SIGMA2_FLOOR: float = 1e-8
 
 #: The bake-off's fitted parameters, read rather than re-derived. Same rule as
 #: round 3c's "the fitted object is READ, never reimplemented": the engine draws
@@ -683,6 +709,14 @@ class LatentClockAdapter:
     #: round-5b latent LOCATION (section 21.2). The default reproduces round 5.
     loc_kind: str = "minus_half"
     log_c: float = 0.0
+    #: round-5d DISPERSION FUNCTION (section 26.1). `None` -- every round-5 and
+    #: round-5b arm -- keeps `sigma` a fitted scalar and the scalar code path
+    #: below BIT-IDENTICAL. `"pace2"` makes `sigma^2` the round-5c C4 quadratic
+    #: in the pregame tempo feature, with `beta` and `tbar` READ from the
+    #: offline fit, never re-derived.
+    sigma_fn: str | None = None
+    beta: tuple = ()
+    tbar: float = 0.0
 
     @classmethod
     def load(cls, inp: EngineInputs, mode: str, season: int = 2025) -> LatentClockAdapter:
@@ -699,10 +733,21 @@ class LatentClockAdapter:
             raise FileNotFoundError(
                 f"{pf} missing; run the round-5/5b bake-off script")
         rep = json.loads(pf.read_text(encoding="utf-8"))
-        sigma = float(rep["params"]["F2"][spec["param"]])
-        log_c = float(rep["params"]["F2"].get(spec.get("log_c_param", ""), 0.0)
+        # Round 5's and round 5b's reports nest their fitted values under
+        # `params`; round 5c's `v5c_params.json` is already keyed by fold. The
+        # spec names the shape rather than the loader guessing it.
+        fitted = rep["F2"] if spec.get("params_root", "params") is None \
+            else rep["params"]["F2"]
+        sigma = float(fitted[spec["param"]])
+        log_c = float(fitted.get(spec.get("log_c_param", ""), 0.0)
                       ) if spec.get("log_c_param") else 0.0
         loc_kind = str(spec.get("loc", "minus_half"))
+        sigma_fn = spec.get("sigma_fn")
+        beta: tuple = ()
+        tbar = 0.0
+        if sigma_fn is not None:
+            beta = tuple(float(b) for b in fitted[spec["beta_param"]])
+            tbar = float(fitted[spec["centre_param"]])
         inner = ClockAdapterV3.load(inp, spec["base_mode"], season)
         src = dict(inner.source)
         src.update({
@@ -714,8 +759,18 @@ class LatentClockAdapter:
             "note": ("round-5 closed-loop candidate (experiments.md section 16); "
                      "E[A]=1 scale mixture on the served cell law, NOT a default"),
         })
+        if sigma_fn is not None:
+            src.update({
+                "latent_sigma_fn": sigma_fn, "latent_sigma_beta": list(beta),
+                "latent_sigma_centre": tbar, "latent_sigma_feature": TEMPO_COL,
+                "note": ("round-5d closed-loop candidate (experiments.md section "
+                         "26); round-5c arm C4, sigma^2 quadratic in the PREGAME "
+                         "tempo feature under the B1 location so E[1/A]=1 holds "
+                         "per game. NOT a default, NOT adopted."),
+            })
         return cls(inner=inner, sigma=sigma, unit=str(spec["unit"]), mode=mode,
-                   source=src, loc_kind=loc_kind, log_c=log_c)
+                   source=src, loc_kind=loc_kind, log_c=log_c,
+                   sigma_fn=sigma_fn, beta=beta, tbar=tbar)
 
     def __getattr__(self, name: str):
         """Everything this wrapper does not override is the inner adapter's.
@@ -724,15 +779,45 @@ class LatentClockAdapter:
         fields always win and the delegation cannot shadow them."""
         return getattr(self.__dict__["inner"], name)
 
-    def _latent(self, keys: np.ndarray) -> np.ndarray:
+    def _sigma_rows(self, team: np.ndarray) -> np.ndarray:
+        """Per-ROW `sigma` under a round-5d dispersion function.
+
+        `sigma^2 = b0 + b1*(t - tbar) + b2*(t - tbar)^2` with `t` the PREGAME
+        tempo feature the served frame already carries. The coefficients are the
+        offline fit's, read at load time; nothing is estimated here and nothing
+        reads an outcome. `t` is game-level, so every row of a game gets the
+        same `sigma` and the latent stays ONE pace realisation per game."""
+        if self.sigma_fn != "pace2":
+            raise NotImplementedError(
+                f"ENGINE_CLOCK={self.mode} names dispersion function "
+                f"{self.sigma_fn!r}, which this adapter does not implement")
+        j = self.inner.team_idx[TEAM_COLS.index(TEMPO_COL)]
+        t = team[:, j].astype(np.float64) - self.tbar
+        b0, b1, b2 = self.beta
+        s2 = np.clip(b0 + b1 * t + b2 * t * t, SIGMA2_FLOOR, None)
+        return np.sqrt(s2)
+
+    def _latent(self, keys: np.ndarray,
+                team: np.ndarray | None = None) -> np.ndarray:
         from scipy.special import ndtri
 
         from cbb_sim.engine.rng import uniforms_at
         k = np.asarray(keys, dtype=np.uint64)
         u = uniforms_at(k, np.full(len(k), LATENT_ORDINAL, dtype=np.int64))
         from cbb_sim.models.clock_v5 import loc_for
-        m = float(loc_for(self.sigma, self.loc_kind, self.log_c))
-        return np.exp(self.sigma * ndtri(u) + m)
+        if self.sigma_fn is None:
+            # UNCHANGED scalar path: every round-5 and round-5b arm, including
+            # the served `v5b_glat_pmean`, reaches exactly these three lines.
+            m = float(loc_for(self.sigma, self.loc_kind, self.log_c))
+            return np.exp(self.sigma * ndtri(u) + m)
+        if team is None:
+            raise ValueError(
+                f"ENGINE_CLOCK={self.mode} needs the per-row team-static block "
+                f"to evaluate its dispersion function on {TEMPO_COL}")
+        s = self._sigma_rows(team)
+        # The B1 location, applied ROW-WISE at that row's own sigma, which is
+        # what makes `E[1/A] = 1` hold per game rather than only on average.
+        return np.exp(s * ndtri(u) + 0.5 * s * s)
 
     def pmf(self, team: np.ndarray, state: np.ndarray,
             gidx: np.ndarray | None = None) -> np.ndarray:
@@ -752,7 +837,8 @@ class LatentClockAdapter:
                 "loop.py passes them when the adapter sets wants_sim_keys. "
                 "Refusing to draw a game latent that is constant across seeds.")
         t = np.asarray(self.inner.draw(team, state, u, gidx), dtype=np.float64)
-        d = np.clip(np.rint(self._latent(keys) * t), 0.0, float(CK.DURATION_CAP))
+        d = np.clip(np.rint(self._latent(keys, team) * t), 0.0,
+                    float(CK.DURATION_CAP))
         left = state[:, self.inner.state_idx["seconds_remaining"]].astype(np.int64)
         self.eoh.add(state[:, self.inner.state_idx["period"]], left, d)
         return d
