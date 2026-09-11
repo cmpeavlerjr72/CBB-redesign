@@ -3307,3 +3307,307 @@ legitimate estimator and it is still the wrong arm to put forward:
   function of. The level is right, the location is right, the conditional law is
   right, the joint law's magnitude is right, and the state-dependence of the
   joint law's magnitude is wrong. That is round 6's object.
+
+---
+
+## 23. Run R11 -- round 5c DIAGNOSIS of the Q2 responsiveness band (2026-09-11)
+
+`scripts/diag_clk5c_q2.py` and `scripts/diag_clk5c_targets.py`. **Both FIT
+NOTHING and SELECT NOTHING.** They re-read round 5b's already-fitted parameters
+from `data/processed/models/clock/v5b_bakeoff/v5b_bakeoff_report.json` and reuse
+round 5's and round 5b's code BYTE FOR BYTE (`exp_clk5_dispersion_bakeoff`'s
+design loader, S1 schedule, `per_unit`, `var_sum`, `summarise`;
+`exp_clk5b_mean_consistent`'s `node_moments_loc` and `sigma_m_rows`). Universe
+unchanged: the 2025 clock-complete regulation possessions, **270,530 rows over
+1,991 games**, needed per-team-game possession SD **4.2795**, bridge
+`k = 3.8509`. **No fit, no engine run, no served default touched
+(`ENGINE_CLOCK` stays `v3c_srfloor_P3_s1`).**
+
+Sections 22.4 and 22.5 left one line failing for B1 `v5b_glat_pmean`, the arm
+now SERVED PROVISIONALLY (commit `e3ccce5`): the pre-registered responsiveness
+band, `no quintile outside [0.85, 1.15]`, against a Q2 reading of **1.174**.
+Round 5 section 17.4 asserted that "Q2's needed dispersion is a genuine 4-SE dip
+below the tempo trend, not noise". **That assertion is not reproduced by a
+direct measurement of the noise on the statistic the criterion is read on, and
+this section records the measurement.**
+
+### 23.1 The per-quintile table WITH its own noise
+
+`produced / needed` per-game possession SD by pregame-tempo quintile, all five
+powered (398-399 games, 50,840-57,542 possessions). The bridge constant cancels
+in the ratio, so `ratio = sqrt(mean_g[(eH_g+vF_g)/M_g^2] / Var_g(rbar))` is an
+average and a variance over the games of the quintile; the noise is a
+**GAME-BLOCK BOOTSTRAP over those games, 2,000 resamples, seed 20260911**, the
+same resampling rule round 5's and round 5b's offline floors use.
+
+| arm | Q1 | **Q2** | Q3 | Q4 | Q5 | ALL |
+|---|---:|---:|---:|---:|---:|---:|
+| R | 0.711 +/- 0.027 | 0.793 +/- 0.029 | 0.732 +/- 0.026 | 0.684 +/- 0.021 | 0.631 +/- 0.021 | 0.688 +/- 0.011 |
+| A1 | 1.035 +/- 0.040 | **1.168 +/- 0.042** | 1.067 +/- 0.038 | 0.997 +/- 0.031 | 0.919 +/- 0.031 | 1.004 +/- 0.016 |
+| **B1** (served) | 1.040 +/- 0.040 | **1.174 +/- 0.042** | 1.072 +/- 0.038 | 1.002 +/- 0.031 | 0.924 +/- 0.031 | 1.009 +/- 0.016 |
+| B3 | 1.004 +/- 0.038 | **1.158 +/- 0.042** | 1.075 +/- 0.038 | 1.017 +/- 0.031 | 0.954 +/- 0.032 | 1.008 +/- 0.016 |
+
+95% bootstrap intervals at Q2: A1 **[1.094, 1.257]**, B1 **[1.099, 1.263]**,
+B3 **[1.084, 1.246]**. **The band edge 1.15 lies INSIDE all three.**
+
+**Exceedance of the band edge, in units of the statistic's own SE:
+B1 0.56 SE, A1 0.42 SE, B3 0.19 SE.** A 0.56-SE exceedance does not
+distinguish a real miss from sampling error in the quintile's own needed
+variance. Round 5's and round 5b's **[0.85, 1.15] band was pre-registered
+without a noise term**, and every other line in both rounds is read against a
+measured floor; this one was not.
+
+### 23.2 Where the excess is: between-game, not within-game
+
+The grade path's own per-game identity, split:
+
+    Var_arm(Dbar) over a set of games = mean_g[eH_g/M_g^2] + mean_g[vF_g/M_g^2]
+                                        WITHIN (iid)         BETWEEN (latent)
+    needed = Var_g(rbar) = mean_g(V_iid_g) + [Var_g(rbar) - mean_g(V_iid_g)]
+                            iid floor         implied tau^2
+
+B1, variance units (s^2), bootstrap SE on the needed side:
+
+| quintile | needed | iid floor | **needed tau^2** | produced within | produced between | **within ratio** | **between ratio** |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| Q1 | 1.2630 | 0.6383 | 0.6248 +/- 0.0950 | 0.6425 | 0.7242 | **1.0067** | 1.159 |
+| **Q2** | 0.9750 | 0.6137 | **0.3613 +/- 0.0700** | 0.6178 | 0.7254 | **1.0067** | **2.008** |
+| Q3 | 1.0805 | 0.5793 | 0.5011 +/- 0.0758 | 0.5831 | 0.6593 | **1.0065** | 1.316 |
+| Q4 | 1.1952 | 0.5591 | 0.6360 +/- 0.0726 | 0.5627 | 0.6374 | **1.0064** | 1.002 |
+| Q5 | 1.3320 | 0.5297 | 0.8024 +/- 0.0881 | 0.5330 | 0.6047 | **1.0063** | 0.754 |
+
+Three readings, in order of how well measured they are:
+
+1. **It is NOT a within-game issue, anywhere.** The produced iid contribution
+   matches the needed iid floor to **0.63-0.67% in every quintile**, Q2
+   included. Section 17.1's channel (a) result (conditional SD ratio 0.9977)
+   holds per quintile, and the `produced between` column is nearly
+   deterministic (bootstrap SE 0.0017-0.0019, i.e. 0.3%). **Whatever the Q2
+   excess is, it is entirely in the BETWEEN-game latent component.**
+2. **The tempo SLOPE of the between-component IS real**: the between ratio runs
+   2.008 at Q2 to 0.754 at Q5, a difference of **1.25 +/- 0.40, 3.1 SE**; on
+   the needed side, `tau^2` Q5 - Q2 = **0.441 +/- 0.112, 3.9 SE**. A constant-CV
+   latent produces a between-variance that tracks `mbar^2` and is therefore
+   nearly FLAT in tempo (0.725 -> 0.605, -17%) against a needed `tau^2` that
+   more than doubles (0.361 -> 0.802, +122%). **That is a genuine
+   dispersion-FUNCTION defect and it is what B3 partially closes.**
+3. **The Q2-specific DIP is 1.4-2.2 SE, not 4 SE.** `tau^2` Q2 - Q1 =
+   **-0.264 +/- 0.118 (2.2 SE)**; Q2 - Q3 = **-0.140 +/- 0.103 (1.4 SE)**.
+   Section 17.4's "genuine 4-SE dip" is not reproduced.
+
+### 23.3 The dip does not replicate out of sample, and moves with the bucketing
+
+**(a) Model-free, per season.** Raw per-team possession count SD by
+pregame-tempo quintile -- no model, no residualisation, the same universe and
+the same `tempo_prior_game` quintiles computed within each season:
+
+| season | Q1 | Q2 | Q3 | Q4 | Q5 | minimum at |
+|---|---:|---:|---:|---:|---:|---|
+| 2022 | 4.316 | 4.108 | 4.259 | 4.450 | 5.117 | Q2 |
+| 2023 | 3.586 | 4.163 | 4.482 | 4.140 | 4.443 | Q1 |
+| 2024 | 4.118 | 4.401 | 4.222 | 4.420 | 4.686 | Q1 |
+| 2025 (F2 test) | 3.784 | 3.813 | 4.044 | 4.327 | 5.086 | Q1 |
+
+**The rising tempo slope replicates in all four seasons. The Q2 dip does not:
+its location moves season to season, and in the F2 test season itself the RAW
+Q1 and Q2 SDs are equal to 0.03 possessions.** The Q2 dip in the NEEDED column
+appears only after the model's own conditional mean is removed.
+
+**(b) At decile resolution the maximum is not in Q2.** B1's ratio by
+pregame-tempo decile: D1 1.031, **D2 1.183**, D3 1.159, **D4 1.205**, D5 1.074,
+D6 1.082, D7 1.071, D8 0.994, D9 0.965, D10 0.928. The excess region is D2-D4,
+which straddles the Q1/Q2 and Q2/Q3 boundaries; Q1's passing 1.040 is the
+average of a passing D1 (1.031) and a failing D2 (1.183). **Which bucket fails
+is a property of the grid, not only of the model.**
+
+**(c) Under a different pregame bucketing, the SAME arm passes the band in every
+bucket.** B1's ratio by quintile of the model's own predicted mean duration
+`mbar`: **0.906, 1.017, 1.007, 1.064, 1.070** -- all inside [0.85, 1.15]. Same
+arm, same games, same statistic, a different pregame bucketing variable.
+
+**(d) The dip's location moves with the pace feature.** Needed `tau^2` by
+quintile of each team's own AS-OF possession-count MEAN (walk-forward, prior
+games only, both teams, 886 games): 0.710, 0.565, **0.355**, 0.443, 0.751 --
+a U-shape with its minimum in bucket **3**, where `tempo_prior_game` on the same
+886 games puts it in bucket **2** (0.572, **0.265**, 0.371, 0.571, 0.837).
+
+### 23.4 Does a round-5c arm have a target? Two measurements
+
+**(T1) The per-game latent IS a team property.** Per-game latent estimate
+`s2_hat(g) = (rc^2 - V_iid)/(3 V_iid + mbar^2)` (round 5b's `fit_b3` estimator,
+unchanged), averaged per offence team over teams with at least 10 games,
+against a **label-permutation null** (400 permutations, seed 20260911):
+observed between-team variance **4.256e-06** against a null of
+**2.715e-06 +/- 2.4e-07**, **z = 6.50, p < 0.0025 (0 of 400)**. The real
+team-level component is 1.54e-06, i.e. a between-team SD of **1.24e-03 in
+`sigma^2` units against a global `sigma^2` of 2.212e-03 -- 56% of the level.**
+CAVEAT, stated: teams differ in tempo, so part of this is the tempo slope of
+23.2 item 2 and not an independent team effect; the permutation test
+establishes that a team-level component EXISTS, not that it is orthogonal to
+tempo.
+
+**(T2) A team's own as-of possession-count SD does NOT predict it.**
+`corr(as-of possession-count SD, s2_hat) = +0.0147` over the 886 games where
+both teams have at least 5 prior games in the season (SE about 0.034); needed
+`tau^2` by as-of-SD quintile is 0.504, 0.705, 0.533, 0.601, 0.630 with SEs
+0.100-0.163, i.e. **no slope beyond noise**. Labelled: the 886-game subset is
+45% of the test slate and is restricted to mid- and late-season games.
+
+### 23.5 What this diagnosis establishes
+
+1. **The Q2 band failure is inside the noise of the statistic it is read on**
+   (0.56 SE for B1), and the underlying needed-`tau^2` dip at Q2 is a 1.4-2.2 SE
+   effect that does not replicate in the other three seasons, moves by one
+   bucket when the pace feature changes, is not the worst bucket at decile
+   resolution, and disappears entirely under a `mbar` bucketing. **It is
+   reported as such. This lane does not waive criterion 4 and does not soften
+   it** -- the band stands verbatim in sections 16.7 and 21.7 and B1 is still
+   recorded as FAILING it in 22.5. What is new is that the failure cannot be
+   distinguished from sampling error, and that is a fact about the criterion,
+   not a licence to change it.
+2. **A real dispersion-function defect exists underneath it and is NOT Q2**: the
+   needed latent variance more than doubles from the slow to the fast tempo
+   quintile (3.9 SE) while a constant-CV latent is nearly flat (3.1 SE on the
+   ratio). B3 closes the ends and not the middle; that ordering is confirmed.
+3. **A per-team dispersion has a measured target (z = 6.50)** and **an as-of
+   possession-SD dispersion does not (corr +0.015)**. Any round 5c should run
+   the second anyway, with the failure predicted in writing, exactly as round 5
+   ran A4.
+
+### 23.6 Handed to the PM
+
+The adjudication B1 is waiting on is now strictly narrower. Of the two
+criterion failures recorded in 22.5, **criterion 4 (responsiveness at Q2) is a
+0.56-SE exceedance of a band that was pre-registered without a noise term, on a
+dip that does not replicate out of sample**; criterion 5 (G5 margin SD ratio,
+-0.0141 against a 0.0115 floor, 1.2 floors) is measured against a floor and is
+unaffected by anything in this section. **This lane adopts nothing, changes no
+default, and hand-tunes nothing.**
+
+---
+
+## 24. Round 5c pre-registration -- the dispersion FUNCTION (2026-09-11)
+
+Appended VERBATIM BEFORE any round-5c arm, module change, engine mode or fitted
+parameter existed, and committed together with section 23, the measurement it is
+written against. Sections 8, 10, 12, 14, 16, 17, 18, 19, 20, 21, 22 and 23 are
+STATIC and are NOT edited. `experiments.md` is append-only.
+
+**STATUS AND PREMISE, STATED FIRST.** Section 23 measures that the Q2 band
+failure is 0.56 SE and does not replicate, and that the real, replicating defect
+is the **tempo slope of the latent's dispersion** (3.1-3.9 SE). Round 5c is
+therefore pre-registered against the SLOPE, not against Q2, and its result
+cannot be read as "fixing Q2". **Nothing here changes the served default, the
+band, or any criterion of sections 16.7 or 21.7**, all of which are carried
+VERBATIM AND UNSOFTENED.
+
+### 24.1 Arms
+
+All arms wrap the round-4 reference artifact set (`empirical_km3_srfloor`,
+`P3`, `S1` monthly walk-forward) and the **B1 location `m = +sigma^2(x)/2`**
+(round 5b's result: the unique location preserving `E[1/A] = 1`, i.e. the
+possession count's expectation). They differ ONLY in what `sigma` is a function
+of. Round 5's and round 5b's code, tables and fitted artifacts are reused BYTE
+FOR BYTE; only what is new is fitted.
+
+| id | name | `sigma^2` | what it is |
+|---|---|---|---|
+| B1 | `v5b_glat_pmean` | constant | **THE REFERENCE**, the arm served provisionally at `e3ccce5`. One fitted scalar |
+| C1 | `v5c_glat_team` | per-team, shrunk | per-TEAM latent variance, shrunk to the global by an empirical-Bayes weight `n/(n+k)` with `k` estimated on TRAINING rows; a game's `sigma^2` is the mean of its two teams'. Measured target: T1, z = 6.50 |
+| C2 | `v5c_glat_asofsd` | `a + b * asof_sd` | `sigma^2` a fitted linear function of the two teams' own AS-OF possession-count SD (walk-forward, prior games only). A MEASURED quantity, not a knob. **PRE-REGISTERED PREDICTION: FAILS** -- T2 measures `corr = +0.0147` and a flat bucket table. Run anyway, exactly as A4 was |
+| C3 | `v5c_glat_offence` | constant, per offence | round 5's A2 per-offence latent under the B1 location -- already fitted in round 5, never wired at the call site. **PRE-REGISTERED PREDICTION: does not address the responsiveness structure** -- A2's round-5 quintile row (1.039, 1.172, 1.070, 0.999, 0.921) is A1's to 0.005 |
+| C4 | `v5c_glat_pace2` | `a + b*t + c*t^2` | `sigma^2` QUADRATIC in the pregame pace feature `t`, the only arm with a mechanism for a NON-MONOTONE needed-`tau^2` profile. Motivated by measurement, not by the failing cell: 23.3(d) measures a U-shape in needed `tau^2` under BOTH pace features, minimum near the middle of the pace distribution -- what a latent that is RESIDUAL pace uncertainty around a pregame prior should look like: smallest where the prior is best calibrated, larger at both tails. Three fitted coefficients. **A function of a pregame feature, not a per-bucket free parameter; no arm is permitted a per-quintile knob** |
+
+**No arm contains a post-hoc multiplier, cap, clip, offset, calibration curve or
+blend.** Every fitted quantity is estimated by method of moments or weighted
+least squares on TRAINING rows only, per S1 refit `k`, under the same
+`max_train_date < game_date` rule the round-4 artifacts already pass, using
+artifact `k`'s own predictions. `E[1/A] = 1` holds row-wise under every arm, so
+no arm can move the possession-count mean in its own favour. Nothing in the
+fitting touches the test fold, the engine, or any gate value. F1's fitted values
+are recorded before F2 is read.
+
+### 24.2 Folds, universe, seal, pairing
+
+Unchanged from rounds 3, 3c, 4, 5 and 5b. **F1 trains {2022, 2023} and tests
+2024; F2 trains {2022, 2023, 2024} and tests 2025 and is the SELECTION fold.
+The 2026 season is SEALED.** Offline universe: the 2025 clock-complete
+regulation possessions, 270,530 rows over 1,991 games, needed per-team-game
+possession SD 4.2795. Closed loop, if it runs: the section 14.4 subset (the F2
+2025 slate sorted by `game_id`, every 11th row, first 500 games, 159
+clock-complete), 5 seeds screening and 25 seeds for any arm put forward, paired
+by construction through the `(seed, game_id, family)` streams, every other
+sub-model pinned by explicit environment value on EVERY run and written into
+`run_meta.json` (`ENGINE_EVENT=round2_s1`,
+`ENGINE_FG_MAKE=round3_shooter_S_C_s1`, `ENGINE_FG3=decision8`,
+`ENGINE_ROTATION=reference`). New results directories `clk5c_*`; nothing
+existing is overwritten.
+
+### 24.3 Metrics
+
+**PRIMARY (offline, F2), UNCHANGED from rounds 5 and 5b:**
+`P_sd_produced = 3.8509 * sqrt(Var_arm(Dbar))`, `ratio = P_sd / 4.2795`.
+
+**NO-REGRESSION LINES, carried VERBATIM from sections 16.5 and 21.5 with their
+floors:** N1 `CRPS_trunc` (floor 0.00684), N2 `E[min(T,R)]` against the actual
+17.6526 (the round-4 mean gate), N3 PIT worst-cell K-S D and leaking-cell count,
+N4 implied possessions per team-game mean; and **M1, the HARD line: the
+closed-loop G1 possessions-per-team-game MEAN on BOTH game sets, against B1's
+25-seed values (+1.649 all-500, +0.989 cc) and R's (+1.704, +1.156), with the
+25-seed measured floors 0.074 (all) and 0.157 (cc).**
+
+**RESPONSIVENESS (criterion 4), carried VERBATIM AND UNSOFTENED:** monotone in
+at least 4 of 5 pregame-tempo quintiles and **no quintile outside
+[0.85, 1.15]**. **ADDITIONALLY, and NOT in place of it**, each quintile ratio is
+reported with the game-block bootstrap SE section 23.1 measures, and the
+**exceedance in SE units** is reported beside it. This lane does not decide
+whether a sub-SE exceedance counts as a failure; it reports both readings and
+the PM adjudicates. **A criterion is not softened by attaching its noise to it,
+and it is not passed by attaching its noise to it either.**
+
+**SECONDARY, the discriminators:** the between-component ratio and the needed
+`tau^2` per quintile (section 23.2), which is what the slope arms are aimed at;
+the same table under the `mbar` bucketing and at decile resolution; per
+`prev_end` cell; per period; the per-game distribution of the mean residual.
+Cells under 300 possessions are UNDERPOWERED and are not read.
+
+### 24.4 Noise floor
+
+Offline: spec-identical refits on GAME-BLOCK bootstrap resamples of the F2
+fitting window under `seed = 20260911` and `seed = 20260912`, graded by the same
+blind path, the larger absolute delta per metric being that metric's floor;
+round 5's measured 0.0242 on the primary is carried as the conservative choice
+(round 5b re-measured it at 0.0107). `CRPS_trunc` carries round 4's measured
+game-block SE 0.00684. Per-quintile ratios carry the bootstrap SEs of section
+23.1. Closed loop: round 5b's MEASURED 25-seed floors (22.3) are carried and
+re-measured for any new line. **A 5-seed number is never presented as a measured
+floor.**
+
+### 24.5 Decision rule
+
+Adopt the SIMPLEST arm satisfying ALL of: (1) primary `|ratio - 1| <= 0.10` on
+F2 and the improvement over B1 beyond the measured floor; (2) M1 on both game
+sets; (3) N1-N4 each within 1 floor; (4) responsiveness, verbatim, with the SE
+reading reported beside it; (5) no other closed-loop gate regressed beyond its
+floor. Simplicity order, fixed here: `B1` (one scalar) < `C3` (one scalar, two
+latents) < `C2` (two coefficients) < `C4` (three coefficients) < `C1` (a
+per-team parameter set plus a shrinkage weight). Ties -- a gap inside the
+measured floor -- are broken on the PACE-LEVEL component `(Dbar_h + Dbar_a)/2`
+per section 21.7's replacement tie-break, then on the closed-loop G1 possession
+mean, then on simplicity. **S1/S2 do not break ties** (section 17.7's recorded
+defect, fixed in 21.7).
+
+If NO arm qualifies, adopt nothing, report the decomposition, **do not soften a
+gate**. An offline winner is a CANDIDATE, not an adoption. **This lane does not
+change the served default under any outcome; the PM switches it.**
+
+### 24.6 Execution and artifacts
+
+Additive only. New fitter+grader `scripts/exp_clk5c_dispersion_function.py`,
+importing round 5's and round 5b's fitters, node moments and
+`clock_v3.score_arm_v3` UNEDITED so no arm gets a bespoke scorer; artifacts take
+a `v5c_` prefix under `data/processed/models/clock/`; `adapters.py` DEFAULTS ARE
+NOT TOUCHED. Threads capped at 6, engine pool at 6 workers. Results are appended
+to this file as section 25 and the evidence goes to
+`docs/tests/clock_q2_responsiveness_2026-09-11.md`; a row goes to
+`docs/models/change_ledger.md` only if an arm passes every line.
