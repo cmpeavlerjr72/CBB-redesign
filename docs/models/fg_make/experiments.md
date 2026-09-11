@@ -1208,3 +1208,185 @@ arrived. Per that instruction's own branch, the round-2 spec was not changed
 retroactively; instead round 2b was pre-registered (section 15) after round 2
 decided and before 2b ran, and is the record of the S1 question. Both rounds'
 numbers stand as they were produced.
+
+---
+
+## 17. ROUND 3 PRE-REGISTRATION: the shooter-label data fix (written 2026-09-10, BEFORE round-3 modelling ran)
+
+Owner: Sonnet worker. Trigger: `docs/models/change_ledger.md`'s "CBBD's
+`participant_1_id` is the ASSISTER, not the shooter, on half of all assisted
+made field goals" row, which names fg_make as "STILL ON THE WRONG COLUMN and
+needs a re-run", and `docs/LEARNINGS.md` L27's closing line ("fg_make round 3
+re-keys the shooter on `shot_shooter_id`"). Evidence this spec is built on,
+committed in the same commit and BEFORE the round runs:
+**`docs/tests/fg_make_shooter_key_2026-09-10.md`**
+(`scripts/diag_fg_make_shooter_key_v1.py`,
+`data/processed/models/fg_make/shooter_key_audit_v1.json`).
+
+Nothing in this section may be edited after the round starts. Results append
+below it; a status change goes to `docs/models/change_ledger.md` in the same
+commit.
+
+### 17.0 What the step-1 evidence established, and what it changes about this round
+
+1. **`fg_make` reads the wrong participant column.** `_season_events` calls
+   `event_stream.build_stream` with no `shooter_key`, so it takes
+   `DEFAULT_SHOOTER_KEY = "participant_1_id"`, which is the ASSISTER on
+   47.7-50.2% of ASSISTED made field goals in every one of 2022-2025, flat
+   across seasons (evidence doc 1.1-1.2). The defect is confined to assisted
+   makes (unassisted mismatch 0.000-0.005%) and is 2.4-2.9x larger on rim/three
+   than on the mid-range jumper, which tracks the assisted share of each class
+   (25.2 / 10.4 / 28.0%).
+2. **The shooter as-of feature this drives, `shooter_make_c`, moves a lot.**
+   Correlation between the old- and new-keyed feature is 0.694 (rim) / 0.802
+   (jumper) / **0.335 (three)**; the mean absolute move is 7.68 / 5.11 / 12.97
+   pp across ALL attempts (not just the relabelled ones -- the credited
+   player's cumulative tally ripples onto every other attempt he or the
+   wrongly-credited assister ever took). Round 2b's own realised
+   `shooter_make_c` quintile span on `FGA_rim` is 16.08 pp
+   (`round2b/run_report.json`), so this move is roughly half the feature's own
+   range -- large enough that the Decision-8 shooter-slope reading is expected
+   to be different, not merely re-estimated.
+3. **`shooter_att_c` and `shooter_games_asof` barely move** (corr 0.89-1.00):
+   attempt COUNTS are conserved in aggregate even when the credited player
+   changes; only the MAKE/MISS content of a player's history moves. This
+   isolates the fix to exactly the one feature the mislabelling can touch.
+4. **The drop cost of keying on `shot_shooter_id` is small and reported, never
+   imputed:** 1,385 of 2,241,195 attempts (0.062%) pooled 2022-2025; per-team
+   p95 is 0.0-1.0% and the max in any single team-season is 8.94% (`FGA_3`,
+   2022), the class with the thinnest per-team volume. `scripts/train_fg_make_v3_shooter.py`
+   reports this by season and by team, not just pooled.
+
+**Consequence for the arm list.** This round does NOT re-open the state
+parametrisation (round 2, section 13) or the S1-vs-static question (round 2b,
+section 15) -- both already decided and orthogonal to the shooter label, since
+every round-2/2b arm read the SAME (contaminated) shooter column. It re-opens
+exactly one thing: the DATA the round-2b winner is trained on.
+
+### 17.1 What is FIXED and not up for selection
+
+- **Arm: the round-2b winner, S-C `R2_C_safe_state`, under S1.** No state
+  parametrisation and no scheme is re-decided here.
+- **Model class and parameters:** unchanged (LightGBM per class, the F1-only
+  frozen ladder, `lgbm_ladder_v2.json`). No new parameter search.
+- **Folds:** F1 reported (selects nothing), **F2 = train {2022, 2023, 2024}
+  test 2025 = SELECTION**. 2026 sealed (`assert_not_sealed`).
+- **`FG.score()` is unchanged** -- log loss, Brier, calibration, Decision 8
+  responsiveness (both drivers), by-chance calibration. Nothing in the metric
+  is added or relaxed for this round.
+- **Possessions version v2**, L16 rim override, same universe (D-I,
+  non-truncated, `pbp_complete`).
+- **S1 is reused, not reimplemented**, exactly as round 2b: one refit per
+  calendar month of the test season via `possession_outcome.month_boundaries`.
+
+### 17.2 The two arms
+
+| arm | shooter key | scheme | artifact |
+|---|---|---|---|
+| **REFERENCE** `R2b_S_C_s1` | `participant_1_id` (the defect) | S1 | `round2b/S_C_s1/<class>_<refit_date>.joblib` + `manifest_<class>.json` (already exists, round 2b; read back, NOT refit) |
+| **NEW** `R3_S_C_s1_shooterfix` | `shot_shooter_id` (the fix) | S1 | `round3_shooter/S_C_s1/<class>_<refit_date>.joblib` + `manifest_<class>.json` |
+
+The reference's numbers are read back from `round2b/run_report.json` rather
+than recomputed, so the comparison is against the exact object round 2b
+decided on (the same convention `train_fg_make_v2b_s1.py` used against round
+2's own artifacts). Rows with no `shot_shooter_id` are DROPPED from the new
+arm's training and test data, never imputed, with the count reported by season
+and by team (17.0 item 4); no fallback to `participant_1_id` on those rows,
+because a fallback would silently reinstate the assister on exactly the
+population this fix exists to remove.
+
+### 17.3 Offline metrics and gates (unchanged from rounds 2/2b, same `FG.score()`)
+
+Per shot class, on F2:
+
+- **Primary:** attempt-level log loss. Brier reported.
+- **Calibration:** worst gated decile gap <= 2.00 pp.
+- **Responsiveness:** `ARCHITECTURE_DECISIONS.md` Decision 8 on both drivers
+  (`shooter_make_c`, `def_allow_c`), `low_span_exempt` reading (the adopted
+  one; both readings reported).
+- **THE METRIC THIS ROUND EXPECTS TO MOVE: the `shooter_make_c` Decision-8
+  slope ratio and quintile step count.** A data fix that removes 48-50% wrong
+  labels on assisted makes is expected to make the shooter as-of rate a more
+  faithful (not necessarily a stronger) predictor of the true shooter's own
+  skill; if the slope does not move outside noise, that is reported as a
+  finding, not suppressed.
+- **By-chance-number calibration gap** reported for first and continuation.
+- **Noise floor: SECOND-SEED REFIT.** Unlike rounds 2/2b (which reused round
+  1's five-seed/bootstrap floor because the arm was unchanged), the DATA
+  changes this round, so the floor is recomputed on the new arm: the entire
+  S1 schedule (all monthly refits, all three classes) is refit a second time
+  with `seed=1`, and the floor per class is `abs(log_loss(seed=0) -
+  log_loss(seed=1))` on F2. This is a smaller, cheaper floor than the round-2
+  five-seed SD by construction (one extra fit instead of four), and is stated
+  as such rather than presented as equivalent.
+
+### 17.4 The Decision-10 CLOSED-LOOP gate
+
+Per Decision 10, on the fixed 500-game subset, 5 seeds, via
+`scripts/run_engine.py --fold F2 --season 2025 --seeds 5 --max-games 500` +
+`scripts/diag_engine_multilevel.py`, `ENGINE_EVENT=round2_s1` passed
+EXPLICITLY (the environment default is `reference` and must not be relied on,
+per section 14.5's own note), `ENGINE_CLOCK=reference`,
+`ENGINE_ROTATION=reference`, `ENGINE_FG3=decision8`.
+
+**Known constraint, stated here before the round runs:** `cbb_sim.engine.adapters.FgMakeAdapter._load_round2b`
+resolves `ENGINE_FG_MAKE=round2b_<arm>` to the fixed path
+`data/processed/models/fg_make/round2b/<arm>/`; it has no branch for
+`data/processed/models/fg_make/round3_shooter/<arm>/`. This worker does not
+own `adapters.py` (another worker does) and will not edit it. Consequence,
+pre-committed: **the REFERENCE arm's closed-loop number is the one already on
+record** (`ENGINE_FG_MAKE=round2b_S_C_s1`, section 16.3: margin SD 14.002,
+corr(home,away) +0.229, poss/gm 70.758, total bias +3.912, PPP 1.0553, PASS)
+and is cited rather than re-executed, because the artifacts, the 500 games and
+the 5 seeds are byte-identical to that run and RNG is seeded on `(seed,
+game_id, family)`, so a re-run would reproduce it exactly at the cost of
+shared compute five other workers are using. **The NEW (shot_shooter_id)
+arm's closed-loop is PENDING an adapter change** -- either a new
+`mode.startswith("round3_shooter_")` branch in `FgMakeAdapter.load`, or
+generalising `_load_round2b` to take the round directory name as an argument
+derived from the mode string -- and is not run this round. The offline
+decision (17.5) is therefore made WITHOUT a closed-loop read on the new arm;
+this is reported as an open item, not hidden.
+
+| check | tolerance | source |
+|---|---|---|
+| **CL1** margin SD | `abs(SD(arm) - SD(S-B)) <= 1.00` point | unchanged from round 2 (13.5) |
+| **CL2** home/away score correlation | `abs(corr(arm) - corr(S-B)) <= 0.05` | unchanged |
+| **CL3** possessions/game | `abs(poss(arm) - poss(S-B)) <= 1.00` | unchanged |
+| **CL4** total bias | `abs(bias(arm) - bias(S-B)) <= 1.00` point | unchanged |
+
+### 17.5 Decision rule
+
+**Adopt the re-keyed arm unless a gate regresses beyond the floor.**
+Concretely, per class:
+
+1. If the new arm fails calibration or Decision 8 on F2 where the reference
+   passed, the new arm is NOT adopted for that class.
+2. If the new arm's closed-loop gate is run and fails, the new arm is not
+   adopted at all. **If the closed-loop gate could not be run (17.4), this
+   step is a no-op and the offline decision stands provisionally, pending the
+   adapter change and a closed-loop confirmation before the artifacts replace
+   `round2b_S_C_s1` as the engine's served model.**
+3. If the new arm's log loss is WORSE than the reference's by more than one
+   noise floor (17.3), the new arm is not adopted for that class.
+4. Otherwise **the new arm is adopted**, including when the log-loss
+   difference is inside the floor or slightly worse than it: a data fix that
+   corrects 48-50% wrong labels on assisted makes is not required to buy log
+   loss, and a loss inside the floor is explicitly NOT a veto (the
+   coordinator's instruction for this round). **The shooter-quintile
+   Decision-8 slope moving is treated as the expected, positive result of a
+   correct label, not as a surprise to explain away.**
+
+### 17.6 What would falsify this round
+
+If `shooter_make_c`'s Decision-8 slope and quintile steps are UNCHANGED
+(within noise) between the reference and the new arm despite 1.1-1.4's
+measured feature movement, the honest reading is that the mislabelling washes
+out in aggregate and the fix is cosmetic; that outcome is pre-committed here so
+it cannot later be presented as a disappointment. If the new arm's log loss is
+worse than the reference by more than the floor on any class, that class does
+NOT adopt the fix and is reported as an open item rather than forced through.
+
+<!-- RESULTS FOR ROUND 3 APPEND BELOW THIS LINE -->
+
+---
