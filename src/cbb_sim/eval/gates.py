@@ -245,7 +245,8 @@ def gate_g2(summary: pd.DataFrame, raw: pd.DataFrame, season: int, tol: dict,
 # G3 -- shot mix per possession, by team
 # ---------------------------------------------------------------------------
 def gate_g3(summary: pd.DataFrame, raw: pd.DataFrame, season: int, tol: dict,
-            box_available: dict[str, bool], min_cell_n: int = DEFAULT_MIN_CELL_N) -> GateResult:
+            box_available: dict[str, bool], min_cell_n: int = DEFAULT_MIN_CELL_N,
+            truth_dir: str | None = None) -> GateResult:
     needed = ("fga3", "fga2_rim", "fga2_jump", "fta")
     missing = [s for s in needed if not box_available.get(s, False)]
     if missing:
@@ -287,20 +288,88 @@ def gate_g3(summary: pd.DataFrame, raw: pd.DataFrame, season: int, tol: dict,
                 "sim": sim_v, "actual": act_v, "delta_pp": (sim_v - act_v) * 100,
                 "status": cell_status(n, within(sim_v, act_v, tol["g3_pp"] / 100), min_cell_n),
             })
+
+    # rim share -- PROVISIONAL: truth_tables_v1's team_game_shots_v1.parquet
+    # (event layer, `docs/tests/truth_tables_v1_2026-09-10.md`) is the first
+    # time this metric has a truth source at all.
+    team_truth = ref_mod.load_team_shot_truth(season, truth_dir) if truth_dir else None
+    rim_check = GateCheck("rim share by team", "n/a", "n/a", f"+/-{tol['g3_pp']}pp", "NEEDS-INSTRUMENTATION")
+    pooled_checks: list[GateCheck] = []
+    notes = []
+
+    if team_truth is not None and len(team_truth):
+        tt = team_truth[team_truth["ev_fga"].notna() & (team_truth["ev_fga"] > 0)]
+        act_rim_by_team = tt.groupby("team_id").agg(
+            n_games=("game_id", "size"), rim_share=("rim_share_ev", "mean"),
+        )
+        for team_id, act_row in act_rim_by_team.iterrows():
+            if team_id not in sim_by_team.index:
+                continue
+            n = int(act_row["n_games"])
+            sim_v = float(sim_by_team.loc[team_id, "rim_share"])
+            act_v = float(act_row["rim_share"])
+            rows.append({
+                "metric": "rim_share", "team_id": team_id, "n_games": n,
+                "sim": sim_v, "actual": act_v, "delta_pp": (sim_v - act_v) * 100,
+                "status": cell_status(n, within(sim_v, act_v, tol["g3_pp"] / 100), min_cell_n),
+            })
+        rim_pow = pd.DataFrame(rows)
+        rim_pow = rim_pow[rim_pow["metric"] == "rim_share"]
+        rim_powered = rim_pow[rim_pow["status"] != "UNDERPOWERED"]
+        rim_bad = rim_powered[rim_powered["status"] == "FAIL"]
+        rim_check = GateCheck(
+            "rim share by team", f"{len(rim_powered) - len(rim_bad)}/{len(rim_powered)} powered teams inside",
+            "all inside", f"+/-{tol['g3_pp']}pp (PROVISIONAL truth)",
+            status_of(len(rim_bad) == 0) if len(rim_powered) else "NEEDS-INSTRUMENTATION",
+        )
+
+        # season-level pooled reads (genuinely powered, n = every team-game) --
+        # the by-team cells above are UNDERPOWERED at ~30-40 games/team under
+        # min_cell_n=300, so this is the only read that can actually PASS/FAIL.
+        sim_pool_fga = sim["fga"].sum()
+        sim_pooled = {
+            "three_pa_share": sim["fga3"].sum() / sim_pool_fga,
+            "fta_per_fga": sim["fta"].sum() / sim_pool_fga,
+            "rim_share": sim["fga2_rim"].sum() / sim_pool_fga,
+        }
+        box_pool_fga = box["fga"].sum()
+        act_pooled = {
+            "three_pa_share": box["tpa"].sum() / box_pool_fga,
+            "fta_per_fga": box["fta"].sum() / box_pool_fga,
+            "rim_share": tt["ev_fga_rim"].sum() / tt["ev_fga"].sum(),
+        }
+        for metric in ("three_pa_share", "fta_per_fga", "rim_share"):
+            sv, av = float(sim_pooled[metric]), float(act_pooled[metric])
+            pooled_checks.append(GateCheck(
+                f"{metric} (season, pooled, PROVISIONAL)", f"{sv:.4f} vs {av:.4f}",
+                f"{av:.4f}", f"+/-{tol['g3_pp']}pp",
+                status_of(within(sv, av, tol['g3_pp'] / 100)),
+            ))
+        notes.append(
+            "Season-level pooled reads (sum of attempts over every team-game, not a mean of "
+            "per-team means) are the only genuinely powered read here -- the by-team cells are "
+            "UNDERPOWERED at ~30-40 games/team under min_cell_n=300."
+        )
+        notes.append(
+            "Rim share truth is PROVISIONAL: `data/processed/truth/team_game_shots_v1.parquet` "
+            "(CBBD possessions_v2 event layer, first wired in here 2026-09-10, "
+            "`docs/tests/truth_tables_v1_2026-09-10.md`), not yet itself bake-off-validated as a "
+            "grading source the way the box-derived 3PA-share/FTA-rate truth is."
+        )
+    else:
+        notes.append("Rim-vs-jump truth requires pbp shot-location classification; rim share is "
+                     "NEEDS-INSTRUMENTATION because no --truth-dir was supplied (or it has no "
+                     "team_game_shots_v1.parquet for this season), even when the sim reports fga2_rim.")
+
     tab = pd.DataFrame(rows)
-    powered = tab[tab["status"] != "UNDERPOWERED"] if len(tab) else tab
+    three_fta = tab[tab["metric"].isin(("three_pa_share", "fta_per_fga"))] if len(tab) else tab
+    powered = three_fta[three_fta["status"] != "UNDERPOWERED"] if len(three_fta) else three_fta
     bad = powered[powered["status"] == "FAIL"] if len(powered) else powered
     checks = [GateCheck(
         "3PA share & FTA/FGA by team", f"{len(powered) - len(bad)}/{len(powered)} powered team-metrics inside",
         "all inside", f"+/-{tol['g3_pp']}pp",
         status_of(len(bad) == 0) if len(powered) else "NEEDS-INSTRUMENTATION",
-    ), GateCheck(
-        "rim share by team", "n/a", "n/a", f"+/-{tol['g3_pp']}pp", "NEEDS-INSTRUMENTATION",
-    )]
-    notes = ["Rim-vs-jump truth requires pbp shot-location classification, out of this task's scope "
-             "(`data/processed/possessions*` is off-limits here); rim share is always "
-             "NEEDS-INSTRUMENTATION until that truth table is wired in, even when the sim reports "
-             "fga2_rim."]
+    ), rim_check, *pooled_checks]
     return GateResult(
         gate="G3", title="Shot mix per possession: 3PA share, rim share, FTA/FGA (by team)",
         checks=checks, tables=[("by team-metric", tab)] if len(tab) else [], notes=notes,
@@ -311,7 +380,8 @@ def gate_g3(summary: pd.DataFrame, raw: pd.DataFrame, season: int, tol: dict,
 # G4 -- four factors, offense and defense, by team and by tier
 # ---------------------------------------------------------------------------
 def gate_g4(summary: pd.DataFrame, raw: pd.DataFrame, season: int, tol: dict,
-            box_available: dict[str, bool], min_cell_n: int = DEFAULT_MIN_CELL_N) -> GateResult:
+            box_available: dict[str, bool], min_cell_n: int = DEFAULT_MIN_CELL_N,
+            truth_dir: str | None = None) -> GateResult:
     needed = ("fga3", "fga2_rim", "fga2_jump", "fta", "tov", "oreb", "dreb")
     missing = [s for s in needed if not box_available.get(s, False)]
     checks: list[GateCheck] = [GateCheck(
@@ -373,6 +443,47 @@ def gate_g4(summary: pd.DataFrame, raw: pd.DataFrame, season: int, tol: dict,
             "all inside", f"+/-{tol['g4_pp']}pp" if metric != "ft_rate" else f"+/-{tol['g4_ft_rate']}",
             status_of(len(bad) == 0) if len(powered) else "NEEDS-INSTRUMENTATION",
         ))
+
+    # season-level pooled reads -- PROVISIONAL, gated on --truth-dir the same
+    # way G3's are (only tov_pct/oreb_pct/ft_rate: eFG% needs sim-side makes,
+    # which the contract does not carry regardless of truth data -- see the
+    # eFG% note above; this does NOT change that check).
+    team_truth = ref_mod.load_team_shot_truth(season, truth_dir) if truth_dir else None
+    if team_truth is not None and len(team_truth):
+        sim_pooled_metric = {
+            "tov_pct": float(sim["tov"].sum() / poss_est.sum()),
+            "oreb_pct": float(sim["oreb"].sum() / (sim["oreb"] + sim["opp_dreb"]).sum()),
+            "ft_rate": float(sim["fta"].sum() / sim["fga"].sum()),
+        }
+        act_pooled_metric = {
+            "tov_pct": float(box["tov"].sum() / (box["fga"] - box["oreb"] + box["tov"] + 0.44 * box["fta"]).sum()),
+            "oreb_pct": float(box["oreb"].sum() / (box["oreb"] + box["opp_dreb"]).sum()),
+            "ft_rate": float(box["fta"].sum() / box["fga"].sum()),
+        }
+        for metric, tolkey in (("tov_pct", "g4_pp"), ("oreb_pct", "g4_pp"), ("ft_rate", "g4_ft_rate")):
+            tolerance = tol[tolkey] / 100 if tolkey == "g4_pp" else tol[tolkey]
+            sim_v = sim_pooled_metric[metric]
+            act_v = act_pooled_metric[metric]
+            checks.append(GateCheck(
+                f"{metric} (season, pooled, PROVISIONAL)", f"{sim_v:.4f} vs {act_v:.4f}",
+                f"{act_v:.4f}", f"+/-{tol[tolkey]}pp" if tolkey == "g4_pp" else f"+/-{tol[tolkey]}",
+                status_of(within(sim_v, act_v, tolerance)),
+            ))
+        both = team_truth[team_truth["box_fga"].notna() & team_truth["box_fgm"].notna()]
+        act_efg = float((both["box_fgm"] + 0.5 * both["box_fgm3"]).sum() / both["box_fga"].sum())
+        notes.append(
+            f"eFG% ACTUAL side is now computable ({act_efg:.4f} pooled, from "
+            "data/processed/truth/team_game_shots_v1.parquet box_fgm/box_fga/box_fgm3, PROVISIONAL) "
+            "-- the SIM side still cannot be, because games.parquet's optional box columns remain "
+            "attempt counts only (no FGM/3PM anywhere in the engine's own output contract). This is "
+            "an engine-contract gap, not a truth gap, and eFG% stays NEEDS-INSTRUMENTATION until the "
+            "engine emits makes."
+        )
+        notes.append(
+            "Season-level pooled tov_pct/oreb_pct/ft_rate reads (sum over every team-game) are "
+            "genuinely powered; the by-team cells above are UNDERPOWERED at ~30-40 games/team under "
+            "min_cell_n=300."
+        )
     return GateResult(gate="G4", title="Four factors, offense and defense (by team, by tier)",
                        checks=checks, tables=[("by team-metric", tab)], notes=notes)
 
@@ -475,7 +586,8 @@ def gate_g7(summary: pd.DataFrame, season: int, tol: dict) -> GateResult:
 # ---------------------------------------------------------------------------
 # G8 -- player layer
 # ---------------------------------------------------------------------------
-def gate_g8(players: pd.DataFrame | None, tol: dict, min_cell_n: int = DEFAULT_MIN_CELL_N) -> GateResult:
+def gate_g8(players: pd.DataFrame | None, tol: dict, min_cell_n: int = DEFAULT_MIN_CELL_N,
+            season: int | None = None, truth_dir: str | None = None) -> GateResult:
     if players is None:
         return GateResult(
             gate="G8", title="Player layer: minutes, usage share, distribution tails",
@@ -497,20 +609,71 @@ def gate_g8(players: pd.DataFrame | None, tol: dict, min_cell_n: int = DEFAULT_M
     n_used = rotation.groupby(["game_id", "seed", "team_id"]).size()
 
     n_rows = int(len(rotation))
+
+    truth = (ref_mod.load_player_game_truth(season, truth_dir)
+              if (truth_dir and season is not None) else None)
+
+    if truth is None:
+        checks = [
+            GateCheck("rotation minutes mean", f"{minutes_mean:.2f}", "n/a (needs actual box; see notes)",
+                      f"+/-{tol['g8_minutes_mean']}",
+                      "NEEDS-INSTRUMENTATION" if n_rows < min_cell_n else "PASS"),
+            GateCheck("rotation minutes SD ratio", f"{minutes_sd:.2f}", "n/a", "0.9-1.1", "NEEDS-INSTRUMENTATION"),
+            GateCheck("top-1 FGA share, mean", f"{float(top1):.4f}", "n/a", "report only", "NEEDS-INSTRUMENTATION"),
+            GateCheck("players used per team-game, mean", f"{float(n_used.mean()):.2f}", "n/a", "K-S p > 0.1",
+                      "NEEDS-INSTRUMENTATION"),
+        ]
+        notes = ["Sim-side player aggregates computed from players.parquet; the actual-box comparison "
+                 "(hoopR player_box minutes/usage truth) is not wired into this harness -- box-score "
+                 "truth exists (`data/raw/hoopr/player_box`) but the per-player join/name-matching layer "
+                 "is out of this task's scope, so every sim-vs-actual comparison here is "
+                 "NEEDS-INSTRUMENTATION even though the sim-side numbers are real."]
+        return GateResult(gate="G8", title="Player layer: minutes, usage share, distribution tails",
+                           checks=checks, notes=notes)
+
+    # PROVISIONAL: player_game_v1.parquet (hoopR player_box keyed on ESPN
+    # athlete_id, `docs/tests/truth_tables_v1_2026-09-10.md`), first wired
+    # into G8 2026-09-10. Restrict to the games this sim run actually covers.
+    sim_game_ids = set(players["game_id"].unique().tolist())
+    t = truth[truth["game_id"].isin(sim_game_ids)].copy()
+    t["minutes"] = t["minutes"].fillna(0)
+    t_rotation = t[t["minutes"] > 0]
+    t_starter_cut = t_rotation.groupby(["game_id", "team_id"])["minutes"].transform(
+        lambda x: x.rank(ascending=False) <= 5
+    )
+    act_minutes_mean = float(t_rotation.loc[t_starter_cut, "minutes"].mean())
+    act_minutes_sd = float(t_rotation.loc[t_starter_cut, "minutes"].std())
+    t_team_fga = t.groupby(["game_id", "team_id"])["fga"].transform("sum")
+    t_share = np.where(t_team_fga > 0, t["fga"] / t_team_fga, np.nan)
+    act_top1 = float(t.assign(share=t_share).groupby(["game_id", "team_id"])["share"].max().mean())
+    act_n_used = t_rotation.groupby(["game_id", "team_id"]).size()
+
+    sd_ratio = minutes_sd / act_minutes_sd if act_minutes_sd else float("nan")
+    ks_used = stats.ks_2samp(n_used.to_numpy(dtype="float64"), act_n_used.to_numpy(dtype="float64"))
+    n_teamgames = int(len(t.groupby(["game_id", "team_id"])))
+
     checks = [
-        GateCheck("rotation minutes mean", f"{minutes_mean:.2f}", "n/a (needs actual box; see notes)",
-                  f"+/-{tol['g8_minutes_mean']}",
-                  "NEEDS-INSTRUMENTATION" if n_rows < min_cell_n else "PASS"),
-        GateCheck("rotation minutes SD ratio", f"{minutes_sd:.2f}", "n/a", "0.9-1.1", "NEEDS-INSTRUMENTATION"),
-        GateCheck("top-1 FGA share, mean", f"{float(top1):.4f}", "n/a", "report only", "NEEDS-INSTRUMENTATION"),
-        GateCheck("players used per team-game, mean", f"{float(n_used.mean()):.2f}", "n/a", "K-S p > 0.1",
-                  "NEEDS-INSTRUMENTATION"),
+        GateCheck("rotation minutes mean", f"{minutes_mean:.2f} vs {act_minutes_mean:.2f}",
+                  f"{act_minutes_mean:.2f}", f"+/-{tol['g8_minutes_mean']}",
+                  cell_status(n_rows, within(minutes_mean, act_minutes_mean, tol["g8_minutes_mean"]), min_cell_n)),
+        GateCheck("rotation minutes SD ratio", f"{sd_ratio:.4f}", "1.0",
+                  f"{tol['g8_minutes_sd_ratio_lo']}-{tol['g8_minutes_sd_ratio_hi']}",
+                  cell_status(n_rows,
+                              tol["g8_minutes_sd_ratio_lo"] <= sd_ratio <= tol["g8_minutes_sd_ratio_hi"],
+                              min_cell_n)),
+        GateCheck("top-1 FGA share, mean", f"{float(top1):.4f} vs {act_top1:.4f}", f"{act_top1:.4f}",
+                  "report only (no pre-registered tolerance)", "NEEDS-INSTRUMENTATION"),
+        GateCheck("players used per team-game, mean", f"{float(n_used.mean()):.2f} vs {float(act_n_used.mean()):.2f}",
+                  f"{float(act_n_used.mean()):.2f}", f"K-S p > {tol['g8_ks_p']}",
+                  cell_status(n_teamgames, ks_used.pvalue > tol["g8_ks_p"], min_cell_n)),
     ]
-    notes = ["Sim-side player aggregates computed from players.parquet; the actual-box comparison "
-             "(hoopR player_box minutes/usage truth) is not wired into this harness -- box-score "
-             "truth exists (`data/raw/hoopr/player_box`) but the per-player join/name-matching layer "
-             "is out of this task's scope, so every sim-vs-actual comparison here is "
-             "NEEDS-INSTRUMENTATION even though the sim-side numbers are real."]
+    notes = [
+        "PROVISIONAL: actual-box truth from `data/processed/truth/player_game_v1.parquet` (hoopR "
+        "player_box keyed on ESPN athlete_id; `docs/tests/truth_tables_v1_2026-09-10.md`), first "
+        f"wired into G8 2026-09-10. Restricted to the {len(sim_game_ids)} games this run covers.",
+        f"players-used K-S statistic D = {ks_used.statistic:.4f} (p = {ks_used.pvalue:.3g}).",
+        "top-1 FGA share has no pre-registered tolerance in docs/gates.yaml; reported, not gated.",
+    ]
     return GateResult(gate="G8", title="Player layer: minutes, usage share, distribution tails",
                        checks=checks, notes=notes)
 

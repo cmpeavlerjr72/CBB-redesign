@@ -34,6 +34,7 @@ from cbb_sim.eval import report as R  # noqa: E402
 from cbb_sim.eval.cli import load_tolerances, tag_from_results_dir  # noqa: E402
 
 DEFAULT_GATES_YAML = Path("docs/gates.yaml")
+DEFAULT_TRUTH_DIR = Path("data/processed/truth")
 OUT_DIR = Path("docs/tests")
 
 
@@ -45,6 +46,11 @@ def main() -> int:
     ap.add_argument("--out", default=None)
     ap.add_argument("--allow-sealed", action="store_true",
                      help="grade a run whose run_meta.json has sealed_touched=True (deliberate override)")
+    ap.add_argument("--truth-dir", default=str(DEFAULT_TRUTH_DIR),
+                     help="team/player/finals truth tables for G3/G4/G8 (scripts/build_truth_tables.py); "
+                          "gates fall back to their pre-truth-table NEEDS-INSTRUMENTATION behaviour when "
+                          "this directory or a season's file inside it does not exist, so this is safe to "
+                          "leave at the default for any engine/season with no truth tables built yet")
     args = ap.parse_args()
 
     tol = load_tolerances(Path(args.gates_config))
@@ -59,12 +65,14 @@ def main() -> int:
     results: list[G.GateResult] = []
     results.append(G.gate_g1(summary, raw, args.season, tol, min_cell_n))
     results.append(G.gate_g2(summary, raw, args.season, tol, min_cell_n))
-    results.append(G.gate_g3(summary, raw, args.season, tol, engine.box_available, min_cell_n))
-    results.append(G.gate_g4(summary, raw, args.season, tol, engine.box_available, min_cell_n))
+    results.append(G.gate_g3(summary, raw, args.season, tol, engine.box_available, min_cell_n,
+                              truth_dir=args.truth_dir))
+    results.append(G.gate_g4(summary, raw, args.season, tol, engine.box_available, min_cell_n,
+                              truth_dir=args.truth_dir))
     results.append(G.gate_g5(summary, raw, args.season, tol))
     results.append(G.gate_g6(summary, tol, min_cell_n))
     results.append(G.gate_g7(summary, args.season, tol))
-    results.append(G.gate_g8(engine.players, tol, min_cell_n))
+    results.append(G.gate_g8(engine.players, tol, min_cell_n, season=args.season, truth_dir=args.truth_dir))
     results.append(G.gate_g9(summary, tol, min_cell_n))
 
     now = datetime.now(UTC)

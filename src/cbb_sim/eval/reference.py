@@ -32,6 +32,7 @@ DEFAULT_UNIVERSE = Path("data/processed/games_universe.parquet")
 DEFAULT_REFERENCE_DIR = Path("data/reference")
 DEFAULT_LINES_DIR = Path("data/raw/cbbd")
 DEFAULT_HOOPR_DIR = Path("data/raw/hoopr")
+DEFAULT_TRUTH_DIR = Path("data/processed/truth")
 
 # Provider preference, highest first. Names match `data/raw/cbbd/
 # lines_providers.json` verbatim ("Draft Kings" has the space CBBD uses).
@@ -164,6 +165,59 @@ def load_lines(season: int, lines_dir: Path | str = DEFAULT_LINES_DIR,
         "cbbd_game_id", "provider_used", "spread", "spreadOpen",
         "overUnder", "overUnderOpen", "homeMoneyline", "awayMoneyline",
     ]].reset_index(drop=True)
+
+
+
+# ---------------------------------------------------------------------------
+# G3/G4/G8 truth tables (`scripts/build_truth_tables.py`, PROVISIONAL 2026-09-10)
+# ---------------------------------------------------------------------------
+def load_team_shot_truth(season: int, truth_dir: Path | str = DEFAULT_TRUTH_DIR) -> pd.DataFrame | None:
+    """One row per (game_id, team_id) for `season`: event-layer (CBBD
+    possessions_v2) FGA/FGM by shot class + FTA/FTM, alongside hoopR
+    `team_box`'s FGA/FGM/FG3A/FG3M/FTA/FTM as the second source, plus a diff
+    and `any_disagreement` flag per stat -- `team_game_shots_v1.parquet`
+    (`scripts/build_truth_tables.py`, `docs/tests/truth_tables_v1_2026-09-10.md`).
+
+    Returns None (not an error) when the truth directory or the file inside
+    it does not exist, so a caller with no truth built yet degrades to its
+    pre-truth-table behaviour instead of crashing.
+    """
+    path = Path(truth_dir) / "team_game_shots_v1.parquet"
+    if not path.exists():
+        return None
+    df = pd.read_parquet(path)
+    return df[df["season"] == int(season)].reset_index(drop=True)
+
+
+def load_player_game_truth(season: int, truth_dir: Path | str = DEFAULT_TRUTH_DIR) -> pd.DataFrame | None:
+    """One row per (game_id, athlete_id) for `season`: hoopR `player_box`
+    (minutes, box counts) keyed on the ESPN athlete id, joined to the CBBD
+    player id via the crosswalk (`src/cbb_sim/data/player_ids.py`; CBBD
+    rosters exist for 2024-2026 only, so `cbbd_player_id` and the event-layer
+    `ev_*` columns are null for 2022-2023 by construction), plus event-layer
+    FGA/FGM by class keyed on `shot_shooter_id` (never `participant_1_id`).
+    `player_game_v1.parquet` (`scripts/build_truth_tables.py`).
+
+    Returns None when the truth directory/file does not exist.
+    """
+    path = Path(truth_dir) / "player_game_v1.parquet"
+    if not path.exists():
+        return None
+    df = pd.read_parquet(path)
+    return df[df["season"] == int(season)].reset_index(drop=True)
+
+
+def load_game_finals_truth(season: int, truth_dir: Path | str = DEFAULT_TRUTH_DIR) -> pd.DataFrame | None:
+    """One row per game_id for `season`: hoopR-schedule final score / OT count
+    / per-period scores alongside CBBD `games` as the second source.
+    `game_finals_v1.parquet` (`scripts/build_truth_tables.py`). Returns None
+    when the truth directory/file does not exist.
+    """
+    path = Path(truth_dir) / "game_finals_v1.parquet"
+    if not path.exists():
+        return None
+    df = pd.read_parquet(path)
+    return df[df["season"] == int(season)].reset_index(drop=True)
 
 
 def team_quality_terciles(actual_games: pd.DataFrame) -> dict[str, pd.Series]:

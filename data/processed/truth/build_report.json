@@ -1,0 +1,368 @@
+{
+  "seasons": [
+    2022,
+    2023,
+    2024,
+    2025
+  ],
+  "team_game_shots_v1": {
+    "2022": {
+      "n_team_games": 10792,
+      "n_event_and_box": 10564,
+      "n_event_only": 0,
+      "n_box_only": 228,
+      "reconciliation": {
+        "fga": {
+          "n": 10564,
+          "pct_0": 0.8030102234002272,
+          "pct_1": 0.09219992427110943,
+          "pct_2plus": 0.10478985232866339
+        },
+        "fgm": {
+          "n": 10564,
+          "pct_0": 0.8738167360848164,
+          "pct_1": 0.07989397955319955,
+          "pct_2plus": 0.046289284361984095
+        },
+        "fga3": {
+          "n": 10564,
+          "pct_0": 0.9847595607724347,
+          "pct_1": 0.010602044680045438,
+          "pct_2plus": 0.004638394547519879
+        },
+        "fgm3": {
+          "n": 10564,
+          "pct_0": 0.9968761832639151,
+          "pct_1": 0.0008519500189322226,
+          "pct_2plus": 0.002271866717152594
+        },
+        "fta": {
+          "n": 10564,
+          "pct_0": 0.915940931465354,
+          "pct_1": 0.019878833775085196,
+          "pct_2plus": 0.06418023475956078
+        },
+        "ftm": {
+          "n": 10564,
+          "pct_0": 0.9254070427868232,
+          "pct_1": 0.028587656190836804,
+          "pct_2plus": 0.046005301022340024
+        }
+      }
+    },
+    "2023": {
+      "n_team_games": 11248,
+      "n_event_and_box": 11080,
+      "n_event_only": 2,
+      "n_box_only": 166,
+      "reconciliation": {
+        "fga": {
+          "n": 11080,
+          "pct_0": 0.8146209386281589,
+          "pct_1": 0.08564981949458483,
+          "pct_2plus": 0.09972924187725632
+        },
+        "fgm": {
+          "n": 11080,
+          "pct_0": 0.8798736462093862,
+          "pct_1": 0.07779783393501805,
+          "pct_2plus": 0.042328519855595666
+        },
+        "fga3": {
+          "n": 11080,
+          "pct_0": 0.9890794223826714,
+          "pct_1": 0.008754512635379061,
+          "pct_2plus": 0.0021660649819494585
+        },
+        "fgm3": {
+          "n": 11080,
+          "pct_0": 0.9983754512635379,
+          "pct_1": 0.000812274368231047,
+          "pct_2plus": 0.000812274368231047
+        },
+        "fta": {
+          "n": 11080,
+          "pct_0": 0.8890794223826715,
+          "pct_1": 0.038628158844765344,
+          "pct_2plus": 0.07229241877256318
+        },
+        "ftm": {
+          "n": 11080,
+          "pct_0": 0.9025270758122743,
+          "pct_1": 0.04305054151624549,
+          "pct_2plus": 0.05442238267148015
+        }
+      }
+    },
+    "2024": {
+      "n_team_games": 11268,
+      "n_event_and_box": 11102,
+      "n_event_only": 4,
+      "n_box_only": 162,
+      "reconciliation": {
+        "fga": {
+          "n": 11102,
+          "pct_0": 0.945865609800036,
+          "pct_1": 0.049360475589983785,
+          "pct_2plus": 0.004773914609980184
+        },
+        "fgm": {
+          "n": 11102,
+          "pct_0": 0.9619888308412898,
+          "pct_1": 0.035939470365699874,
+          "pct_2plus": 0.0020716987930102684
+        },
+        "fga3": {
+          "n": 11102,
+          "pct_0": 0.9885606197081607,
+          "pct_1": 0.01008827238335435,
+          "pct_2plus": 0.0013511079084849577
+        },
+        "fgm3": {
+          "n": 11102,
+          "pct_0": 0.997838227346424,
+          "pct_1": 0.0021617726535759323,
+          "pct_2plus": 0.0
+        },
+        "fta": {
+          "n": 11102,
+          "pct_0": 0.9201945595388218,
+          "pct_1": 0.012700414339758602,
+          "pct_2plus": 0.06710502612141957
+        },
+        "ftm": {
+          "n": 11102,
+          "pct_0": 0.9273103945235093,
+          "pct_1": 0.024680237794991892,
+          "pct_2plus": 0.04800936768149883
+        }
+      }
+    },
+    "2025": {
+      "n_team_games": 11406,
+      "n_event_and_box": 11179,
+      "n_event_only": 6,
+      "n_box_only": 221,
+      "reconciliation": {
+        "fga": {
+          "n": 11179,
+          "pct_0": 0.9727167009571518,
+          "pct_1": 0.017085606941586905,
+          "pct_2plus": 0.010197692101261294
+        },
+        "fgm": {
+          "n": 11179,
+          "pct_0": 0.9853296359245013,
+          "pct_1": 0.008587530190535826,
+          "pct_2plus": 0.006082833884962877
+        },
+        "fga3": {
+          "n": 11179,
+          "pct_0": 0.986850344395742,
+          "pct_1": 0.009213704266929064,
+          "pct_2plus": 0.00393595133732892
+        },
+        "fgm3": {
+          "n": 11179,
+          "pct_0": 0.9960640486626711,
+          "pct_1": 0.002236335987118705,
+          "pct_2plus": 0.0016996153502102157
+        },
+        "fta": {
+          "n": 11179,
+          "pct_0": 0.9209231594954826,
+          "pct_1": 0.008229716432596833,
+          "pct_2plus": 0.07084712407192056
+        },
+        "ftm": {
+          "n": 11179,
+          "pct_0": 0.9265587261830217,
+          "pct_1": 0.01976921012612935,
+          "pct_2plus": 0.05367206369084891
+        }
+      }
+    }
+  },
+  "player_game_v1": {
+    "crosswalk_coverage": {
+      "2022": {
+        "cbbd_rosters_available": false,
+        "player_game_rows": 171440,
+        "matched_rows": 0,
+        "row_match_rate": 0.0,
+        "played_rows": 105833,
+        "played_matched": 0,
+        "played_match_rate": 0.0
+      },
+      "2023": {
+        "cbbd_rosters_available": false,
+        "player_game_rows": 175644,
+        "matched_rows": 0,
+        "row_match_rate": 0.0,
+        "played_rows": 110135,
+        "played_matched": 0,
+        "played_match_rate": 0.0
+      },
+      "2024": {
+        "cbbd_rosters_available": true,
+        "player_game_rows": 177638,
+        "matched_rows": 177276,
+        "row_match_rate": 0.9979621477386595,
+        "played_rows": 110464,
+        "played_matched": 110234,
+        "played_match_rate": 0.9979178736964078
+      },
+      "2025": {
+        "cbbd_rosters_available": true,
+        "player_game_rows": 182614,
+        "matched_rows": 182428,
+        "row_match_rate": 0.9989814581576439,
+        "played_rows": 112312,
+        "played_matched": 112168,
+        "played_match_rate": 0.9987178573972505
+      }
+    },
+    "shot_reconciliation": {
+      "2022": {
+        "n_player_games": 171440,
+        "n_with_event_layer_match": 0,
+        "reconciliation": "no event-layer match this season (no CBBD roster crosswalk)"
+      },
+      "2023": {
+        "n_player_games": 175644,
+        "n_with_event_layer_match": 0,
+        "reconciliation": "no event-layer match this season (no CBBD roster crosswalk)"
+      },
+      "2024": {
+        "n_player_games": 177638,
+        "n_with_event_layer_match": 177276,
+        "reconciliation": {
+          "fga": {
+            "n": 111163,
+            "pct_0": 0.9773845614098217,
+            "pct_1": 0.009877387260149511,
+            "pct_2plus": 0.012738051330028876
+          },
+          "fgm": {
+            "n": 111163,
+            "pct_0": 0.9828540071786476,
+            "pct_1": 0.008069231668810666,
+            "pct_2plus": 0.009076761152541763
+          },
+          "fga3": {
+            "n": 111163,
+            "pct_0": 0.9874598562471326,
+            "pct_1": 0.005586391155330461,
+            "pct_2plus": 0.00695375259753695
+          },
+          "fgm3": {
+            "n": 111163,
+            "pct_0": 0.9932441549796245,
+            "pct_1": 0.0038591977546485793,
+            "pct_2plus": 0.0028966472657269053
+          },
+          "fta": {
+            "n": 111163,
+            "pct_0": 0.990554411090021,
+            "pct_1": 0.0014303320349396832,
+            "pct_2plus": 0.008015256875039357
+          },
+          "ftm": {
+            "n": 111163,
+            "pct_0": 0.9919037809343036,
+            "pct_1": 0.0021859791477380065,
+            "pct_2plus": 0.005910239917958314
+          }
+        }
+      },
+      "2025": {
+        "n_player_games": 182614,
+        "n_with_event_layer_match": 182428,
+        "reconciliation": {
+          "fga": {
+            "n": 112951,
+            "pct_0": 0.9706155766659879,
+            "pct_1": 0.010756876875813406,
+            "pct_2plus": 0.01862754645819869
+          },
+          "fgm": {
+            "n": 112951,
+            "pct_0": 0.9766447397544068,
+            "pct_1": 0.010057458543970395,
+            "pct_2plus": 0.013297801701622827
+          },
+          "fga3": {
+            "n": 112951,
+            "pct_0": 0.9828952377579658,
+            "pct_1": 0.006551513488149728,
+            "pct_2plus": 0.010553248753884428
+          },
+          "fgm3": {
+            "n": 112951,
+            "pct_0": 0.9902612637338315,
+            "pct_1": 0.005462545705659977,
+            "pct_2plus": 0.004276190560508539
+          },
+          "fta": {
+            "n": 112951,
+            "pct_0": 0.9874547370098539,
+            "pct_1": 0.0019123336668112722,
+            "pct_2plus": 0.010632929323334898
+          },
+          "ftm": {
+            "n": 112951,
+            "pct_0": 0.989234269727581,
+            "pct_1": 0.003346583916919726,
+            "pct_2plus": 0.007419146355499288
+          }
+        }
+      }
+    }
+  },
+  "game_finals_v1": {
+    "2022": {
+      "n_games": 5406,
+      "n_with_cbbd_match": 5406,
+      "final_score_disagree": 0,
+      "n_periods_both_present": 5282,
+      "n_periods_disagree": 0,
+      "n_periods_hoopr_missing": 124,
+      "hoopr_per_period_available": false,
+      "n_period_scores_checked": 0,
+      "n_period_scores_disagree": 0
+    },
+    "2023": {
+      "n_games": 5658,
+      "n_with_cbbd_match": 5658,
+      "final_score_disagree": 0,
+      "n_periods_both_present": 5624,
+      "n_periods_disagree": 0,
+      "n_periods_hoopr_missing": 11,
+      "hoopr_per_period_available": true,
+      "n_period_scores_checked": 5624,
+      "n_period_scores_disagree": 0
+    },
+    "2024": {
+      "n_games": 5640,
+      "n_with_cbbd_match": 5640,
+      "final_score_disagree": 0,
+      "n_periods_both_present": 5635,
+      "n_periods_disagree": 0,
+      "n_periods_hoopr_missing": 4,
+      "hoopr_per_period_available": true,
+      "n_period_scores_checked": 5635,
+      "n_period_scores_disagree": 0
+    },
+    "2025": {
+      "n_games": 5710,
+      "n_with_cbbd_match": 5710,
+      "final_score_disagree": 4,
+      "n_periods_both_present": 5705,
+      "n_periods_disagree": 0,
+      "n_periods_hoopr_missing": 5,
+      "hoopr_per_period_available": true,
+      "n_period_scores_checked": 5705,
+      "n_period_scores_disagree": 3
+    }
+  }
+}
