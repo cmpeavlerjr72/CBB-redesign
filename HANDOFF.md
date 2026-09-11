@@ -1,3 +1,54 @@
+# SUMMARY FOR USER, 2026-09-10 21:50 -> 2026-09-11 04:00 EDT
+
+Written by the PM at 03:05 EDT (draft; the 03:47 wrap-up fills the PENDING items). Every number below is in a committed doc; paths in brackets.
+
+## What was decided (with evidence)
+
+| lane | decision | evidence |
+|---|---|---|
+| Usage r2/r2b | Shooter re-keyed on `shot_shooter_id` (CBBD orders shooter/assister at random on assisted makes; 51% agreement). LightGBM winner unchanged on all 5 classes; U1 top-3 usage gap -2.17 -> -1.79 pp; S1 monthly adopted (+0.44-0.82 floors, no gate lost). Engine still runs U1; tree blocked on a Decision-10 gate. L28 | `docs/tests/shooter_key_audit_2026-09-10.md`, `docs/models/usage/experiments.md` r2-2b, commit 2a7f624 |
+| fg_make r2/2b/3/4 | `score_diff` was the score AFTER the shot (post-outcome leak; 62-84% of its effect manufactured; tripled sim margin variance). Winner: engine-safe state, no margin term, S1 (L27). r3: the shooter label defect had manufactured the shooter signal (FGA_3 quintile span 35.9 -> 2.8 pp; L29); corrected-label arm served interim. r4: one shrunk shooter column (B1) wins every gate, D8 slope 0.31 -> 0.92-1.04; a join-coverage leak found and repaired (L32); engine inputs must be keyed on `shot_shooter_id` (skew worth 1 pp of 3P%). Served: `round3_shooter_S_C_s1` until inputs v2 carry the shrunk column, then `round4_B1` | `docs/tests/fg_make_state_confound_2026-09-10.md`, `fg_make_shooter_key_2026-09-10.md`, `fg_make_shooter_skill_2026-09-10.md`; fg_make experiments.md sections 14-20; commits 9ae38fa, 2b83b94, 40a7be6, 46f54bc |
+| Attribution r1/r2 | r1 (static, F1 selects): REB_off cond_logit, REB_def lgbm, steal proportional, block lgbm, assisted/blocked aware_ridge; assist and stolen adopt nothing. Table-builder defect (all-zero team features) fixed (L22). r2: the score leak reached 2 of 8 targets; REB_def and block move to S1 on calibration; assisted within-2025 miss 6.1 -> 4.3 pp, still fails | `docs/tests/attribution_team_asof_lg_defect_2026-09-10.md`, `attribution_score_diff_leak_2026-09-10.md`; commits 75e09f6, 9f585e9 |
+| Clock r3/3b/3c | Horn censoring fix confirmed (~0.45 poss; L26). Nothing adopted offline (0/9, 0/6) or closed-loop (0/6). State question closed: P2 = P3 beat P1 by 0.42 poss in the engine; cell-based family preferred (tempo slope inside the D8 band). A freeze ablation detects but cannot size a loop (L31). Best arm `srfloor|P3|S1` +1.16 poss vs incumbent +2.70; residual is a uniform -1.9% duration shortfall. Serving it is BLOCKED on a game-indexed clock call site (default stays `reference`). r4 PENDING | `docs/tests/clock_censoring_audit_2026-09-10.md`; clock experiments.md sections 8-14; commits 9961890, 15f812a, 421b97b |
+| Rotation r3/3b/4/5 | r3: the override family cannot reach the close cell (L25); S1 adopted as scheme; R2 is 2/8 cells under S1. r4: per-player hazards identified, 5/8 cells, beat R2 by 61-76 floors on minutes MAE, but over-substitute 43% (L30); loop.py `push_lineups` order defect fixed (6431772). r5: joint wave draw fixes the sub rate and close-late keep; composition (WHO) is the next joint structure (L33). No arm adopted; R2 served | `docs/tests/rotation_close_game_audit_2026-09-10.md`, `rotation_sub_hazard_audit_2026-09-10.md`, `rotation_wave_audit_2026-09-11.md`; rotation experiments.md sections 6-11; commits 1e6bb3e, 6431772, 32f9f65 |
+| Rebound / free throw S1 | Rebound: S1_weekly adopted (+15.6 floors); the early-conference calibration gate fails for every scheme (open). Free throw: S1_conf_aligned adopted (first-4-conference-weeks gap 0.94 vs 1.27 pp), the first data point for conference-aligned refits | rebound / free_throw experiments.md sections 7-8; commit a0810d8 |
+| Possession-outcome r3 (your conference-regime question; Decision 9) | PENDING at 03:05: Stage A diagnostic and the cadence x opponent-adjustment cross; hard stop 03:15 | `docs/tests/possession_outcome_conference_regime_2026-09-10.md` (if written); PO experiments.md round 3 |
+| Truth tables v1/v2 | Team shots, player games, finals, two sources each. The FT disagreement (7-10% of team-games) was technical free throws excluded from the event layer on purpose, not a defect (L24); with them carried, FTA matches the box on 99.3-99.8%. Four flagged 2025 finals settled by a third source | `docs/tests/truth_tables_v1_2026-09-10.md`, `truth_tables_v2_2026-09-10.md`, `ft_trip_reconciliation_2026-09-10.md`; commits 06c2a69, c35b154 |
+| Engine contract | FGM by class and FTM added; the eFG% gate reads (smoke: 0.474 vs 0.509 actual under the leaked fg_make; 0.500 after r2) | commit 827503f |
+| Lines source | CBBD ESPN BET 2023-2025 ACCEPTED: coverage 93-100%, overround 4.6%, spread MAE 8.81 vs an honest KenPom approximation at 9.00 on the same 16,076 games (corr 0.966), close beats open by 0.06. No line-level timestamps: CLV is open-to-close only, 2025 only. The old 10-11 pt MAE band was wrong for CBB | `docs/tests/lines_cbbd_validation_2026-09-10.md`; commits 4306c50, b369936 |
+| Market scorecard v2 | Built and guarded: calibration at >= 200 seeds, ROI/Brier refused below ~2,000, per-row artifact `max_train_date < tipoff` on every family, open-to-close leak check | `docs/tests/market_scorecard_pipeline_2026-09-10.md`; commit ad92ef9 |
+| Engine rewiring v1 | Inputs v2 (shooter block on `shot_shooter_id`, shrunk shooter column), run_meta with per-family `max_train_date` and `engine_commit`, parity digest v3; rotation R2 under S1, rebound/FT manifests. The 200-seed read launched 00:57 locally with a time budget; expected ~40-55 complete seeds (PROVISIONAL vs the 200 floor). Gate table PENDING | commits 493a818, 3f0b7d9, 4503c52, 0cfd68a; `results/engine_v0/F2_2025_s200_rewire1` |
+| AWS | Spot c7a.48xlarge launched 22:04, Linux parity PASS on every simulated value, terminated 00:22, ~2h18m, ~$5-6. The throughput read was unreliable (short run); the hf pull path bug found there is fixed (230e302). Recommend rotating the HF token (it appeared in a worker's process listing) | `docs/ops/aws_launch_chain.md` section 12; commits bfe807a, 230e302 |
+
+## Rules and learnings added
+
+Decision 9 (opponent adjustment, conference flag, refit cadence and alignment as MANDATORY BAKE-OFF ARMS, pending evidence; amended at your request from a standing rule to a test). Decision 10 (closed-loop gate for every engine-produced state feature; both frozen and refit-without arms). Learnings L22-L33. Data rule: model-artifact directories over 20 MB are gitignored and HF-synced. Token-discipline rule for workers (no polling, report once, write docs once).
+
+## Event: weekly API limit
+
+At 23:50 EDT the worker models' weekly limit terminated five workers mid-run; it reset at midnight and every lane was resumed from its on-disk state. Cost: about 30 minutes and one restarted engine run.
+
+## Engine gate table
+
+PENDING at 03:05; filled at 03:47.
+
+## Open items and the recommended next step
+
+1. Clock: make the clock call site game-indexed (clock r4, PENDING), serve `v3c_srfloor_P3_s1`, then fix the uniform -1.9% duration shortfall (clock r4 diagnosis PENDING).
+2. Rotation round 6: composition conditioned on who left (L33). R2 served meanwhile.
+3. fg_make: serve `round4_B1` once inputs v2 are the default; per-class serving is open (BR wins the rim class by 65 floors).
+4. Usage: a Decision-10 gate before wiring the tree; audit its `score_diff` with the own-row delta test.
+5. Possession-outcome r3 decides whether opponent adjustment and conference alignment become standing rules (Decision 9).
+6. 200-seed and 2,000-seed reads on AWS after a proper throughput measurement (runbook ready, parity proven).
+7. Rebound: early-conference calibration fails under every scheme; the Decision-9 arms are the candidate fix.
+8. Rotate the HF token.
+
+## Left out and why
+
+No unsealing of 2026. No ROI numbers (seed floor). No per-class fg_make serving (adapter). No rotation round 6 launch (03:02 stop). PROJECT_STATUS.md is updated at 03:47.
+
+---
+
 # HANDOFF.md
 
 ## SESSION 2026-09-10 -- READ THIS FIRST
