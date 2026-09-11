@@ -3,9 +3,13 @@
 Status: **BAKE-OFF RUN 2026-09-10.** Winner on F2: **`lgbm` / `C_plus_state`**,
 the first L3 arm in this project to pass BOTH pre-registered gates. Rebounding
 is a **TEAM-level** sub-model, not a lineup-level one, and dead-ball rebounds do
-NOT need a model of their own. Absolute numbers, the full grid and the noise
-floor live in [`experiments.md`](experiments.md); this file gives the relative
-picture and how the sim consumes it.
+NOT need a model of their own. **S1 scheme confirmation (2026-09-10,
+`experiments.md` sections 7-8): refit cadence is `S1_weekly`**, beating the L21
+monthly default and the conference-aligned calendar on log loss beyond a
+(corrected) noise floor, though no calendar tested clears the conference-window
+calibration gate on this sub-model -- see section 10 below. Absolute numbers,
+the full grid and the noise floor live in [`experiments.md`](experiments.md);
+this file gives the relative picture and how the sim consumes it.
 
 Companion docs: [`features.md`](features.md), [`experiments.md`](experiments.md).
 Pre-registration: `experiments.md` section 1 (PM, 2026-09-10, written before any
@@ -291,3 +295,38 @@ Trainer: `scripts/train_rebound_v1.py`. Module:
 6. **No paired-seed sim run yet.** Per `CLAUDE.md`, an offline winner ships only
    after a paired-seed sim run shows no gate regressed. G4's OREB% is the gate
    this model moves.
+
+---
+
+## 10. S1 scheme confirmation: refit cadence (2026-09-10)
+
+Pre-registration and full results: `experiments.md` sections 7-8. Model class and feature set held
+fixed (`lgbm` / `C_plus_state`); only the refit CALENDAR was in question. Four schemes tested on F2
+(2025): `S0` static (reference, reproduces the adopted F2 log loss 0.645565 exactly), `S1_monthly`
+(the L21 default, 6 refits), `S1_conf_aligned` (29 refits), `S1_weekly` (23 refits).
+
+**Winner: `S1_weekly`.** All three S1 schemes beat the `S0` reference on log loss, and by a wide
+margin against the CORRECTED noise floor: the pre-registered second-seed gap came back
+implausibly small (4e-06) because seeds 0 and 1 happen to sit close together, so the floor used is
+round 1's own already-published 5-seed SD for this arm (6.7e-05, the larger and more robust number,
+per the standing "use the larger floor" convention -- `experiments.md` section 8.2). Under that
+floor, `S1_weekly` (log loss 0.644522, 15.6x the floor) is the only scheme within the floor of
+itself as the best beater; `S1_monthly` (9.2x) and `S1_conf_aligned` (10.3x) both clear the
+reference but not `S1_weekly`'s own number.
+
+**A caveat this project does not smooth over.** Unlike the free-throw S1 confirmation (same date),
+NO scheme here clears the 2.00 pp conf4 gate: `S0` 2.462 pp, `S1_monthly` 2.660, `S1_conf_aligned`
+2.367 (the best of the four, but not the log-loss winner), `S1_weekly` 2.565 -- a slight WORSENING
+relative to `S0` (-0.103 pp). `S1_weekly` wins on the primary metric alone, which the pre-registered
+OR decision rule permits, but Decision 9's predicted damage segment (the first four weeks of
+conference play) is not resolved for rebound by any calendar tested here. This is reported as an
+open item, not folded into the winner's headline.
+
+F1 (2024) evidence exists for `S0` (cited from section 3, not refit: 0.620446) and `S1_monthly`
+(refit: 0.619726) only; `S1_conf_aligned` and `S1_weekly` were not run on F1 by the pre-registered
+budget/drop order.
+
+**Engine consequence.** The FT-2-style manifest the adapter needs is
+`data/processed/models/rebound/s1_confirm/S1_weekly/F2/manifest.json` (season 2025;
+`manifest.py` format, `max_train_date` on every entry, 23 dated artifacts). As with free throw, this
+is the SELECTION-fold schedule; a live 2026 deployment manifest is a separate, later step.

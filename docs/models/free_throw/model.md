@@ -3,7 +3,12 @@
 Status: **BAKE-OFF RUN 2026-09-10.** Winner on F2: **`lgbm`** on the shooter
 feature set, with **`eb_shrink`** (empirical-Bayes shrinkage of the shooter's
 own as-of rate toward a POSITION prior, strength m = 30 pseudo-attempts) as the
-simplest arm that also passes both gates. Absolute numbers, the full grid and
+simplest arm that also passes both gates. **S1 scheme confirmation (2026-09-10,
+`experiments.md` section 7-8): refit cadence is `S1_conf_aligned`**, not the
+L21 monthly default -- the first sub-model where Decision 9's alignment
+dimension beats the reference, on the first-four-conference-weeks calibration
+gap (0.935 vs 1.271 pp, 0.336 pp beyond the fixed 0.25 pp threshold), all log
+losses sitting inside the noise floor. Absolute numbers, the full grid and
 the noise floor live in [`experiments.md`](experiments.md); this file gives the
 relative picture and how the sim consumes it.
 
@@ -253,3 +258,46 @@ Trainer: `scripts/train_free_throw_v1.py`. Module:
 6. **No paired-seed sim run yet.** Per `CLAUDE.md`, an offline winner ships only
    after a paired-seed sim run shows no gate regressed. G2 (points per
    possession) and G4 (FT rate) are the gates this model moves.
+
+---
+
+## 10. S1 scheme confirmation: refit cadence (2026-09-10)
+
+Pre-registration and full results: `experiments.md` sections 7-8. Model class and features held
+fixed (`lgbm` on `FT_FEATURES`); only the refit CALENDAR was in question. Four schemes tested on F2
+(2025): `S0` static (reference, reproduces the adopted F2 log loss 0.575281 exactly), `S1_monthly`
+(the L21 default), `S1_conf_aligned`, `S1_weekly`. All four pass calibration and responsiveness; all
+four log losses sit inside the noise floor of each other (largest gap 0.000151, floor 0.000147).
+
+**Winner: `S1_conf_aligned`.** It is the only scheme that beats the `S0` reference beyond either
+threshold, and it does so on the calibration axis Decision 9 predicted, not on log loss: the
+first-four-conference-weeks decile-calibration gap falls from 1.271 pp (`S0`) to 0.935 pp, a 0.336 pp
+improvement against the pre-registered 0.25 pp bar, while `S1_monthly` (0.191 pp) and `S1_weekly`
+(0.214 pp) both fall short of it. This is the same shape of result L21 found for S1 itself -- a
+calibration win invisible to log loss alone -- one level down, on WHICH calendar the walk-forward
+refit uses, not on whether to walk forward at all.
+
+Two things this result does NOT say. It does not reopen the model class or feature bundle (both
+held fixed by design). And the F1 (2024) evidence collected here is for `S0` (cited) and
+`S1_monthly` only -- `S1_conf_aligned` and `S1_weekly` were not run on F1 by the pre-registration's
+own budget/drop order, so the per-fold robustness of this specific finding is single-fold pending a
+future round.
+
+**Engine consequence.** The engine adapter for free-throw FT-2 needs a MANIFEST, not a single
+artifact: `data/processed/models/free_throw/s1_confirm/S1_conf_aligned/F2/manifest.json` (season
+2025; `manifest.py` format, `max_train_date` on every entry). A live 2026 deployment manifest
+(refitting the same calendar rule forward into the sealed season) is a separate, later step; this
+round produced and gated the SELECTION-fold schedule only.
+
+**L24 segment, reported not gated.** Of the 2022-2024 training pool, 1.057% of attempts are
+technical (already excluded from the universe) and 40.6% sit in an `ft_trip_ambiguous`-equivalent
+trip (a two-attempt bonus-or-double-bonus trip the feed cannot disambiguate). Calibration on clean
+trips only (decile-based, same method as the overall gate) reads 3.27-3.78 pp across the four
+schemes against 0.7-1.6 pp overall -- WORSE, not better, once the ambiguous ~40% is removed. That is
+the opposite of what "the ambiguous rows are the noisy ones" would predict, and the likely reason is
+methodological rather than substantive: the clean subset is smaller and the ambiguous trips are
+concentrated in the bonus, a `score_diff`/`in_bonus` region the model already fits well, so removing
+them narrows the remaining sample's coverage of the feature space rather than removing noise. Not
+re-attributed here -- flagged as a question for a future round -- and notably it does NOT move with
+scheme the way `conf4_gap_pp` does (3.27 to 3.78 pp across all four schemes, versus 0.94-2.07 pp for
+`conf4_gap_pp`), which is itself evidence this segment is not what the cadence decision is fixing.

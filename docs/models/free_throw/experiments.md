@@ -230,3 +230,30 @@ round-1 `run_report.json`) are read back, never rebuilt or overwritten -- in par
 which the engine already reads into GameState, is not touched by anything in this section.
 
 <!-- ROUND-2 (S1 SCHEME CONFIRMATION) RESULTS APPENDED BELOW BY scripts/train_free_throw_v2_s1.py -->
+
+## 8. S1 scheme confirmation: results (run 2026-09-11T02:38:13.302562+00:00, `scripts/train_free_throw_v2_s1.py`)
+
+S0/F2 reproduction of round 1's adopted number: CONFIRMED (cited 0.575281).
+
+L24 segment (training pool [2022, 2023, 2024]): technical attempts 1.057% of all attempts (excluded from every FT-2 arm's universe already); `ft_trip_ambiguous`-equivalent attempts (two-attempt trips whose foul class is bonus_one_and_one or double_bonus) 40.601% -- both reported segments, neither a gate.
+
+| cell | n_fits | log_loss | calib | worst_gap_pp | respons | slope_ratio | conf4_n | conf4_gap_pp | clean_gap_pp | ambiguous_pct | fit_s |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| F2|S0|s0 | 1 | 0.575281 | PASS | 1.266 | PASS | 0.9769 | 45398 | 1.271 | 3.27 | 40.4 | 37.5 |
+| F2|S0|s1 | 1 | 0.575428 | PASS | 1.427 | PASS | 0.9735 | 45398 | 1.552 | 3.459 | 40.4 | 30.3 |
+| F2|S1_monthly|s0 | 6 | 0.575237 | PASS | 0.835 | PASS | 0.9627 | 45398 | 1.08 | 3.553 | 40.4 | 229.3 |
+| F1|S1_monthly|s0 | 6 | 0.578044 | PASS | 1.801 | PASS | 0.9862 | 47167 | 2.065 | 4.147 | 40.668 | 190.4 |
+| F2|S1_conf_aligned|s0 | 29 | 0.57521 | PASS | 0.697 | PASS | 0.9554 | 45398 | 0.935 | 3.775 | 40.4 | 892.9 |
+| F2|S1_weekly|s0 | 23 | 0.57536 | PASS | 0.892 | PASS | 0.9368 | 45398 | 1.057 | 3.782 | 40.4 | 461.1 |
+
+S0 F1 (cited, not refit, section 4): log loss 0.578489, calib gap 2.812 pp (FAIL), slope 0.9962.
+
+Noise floor: primary-metric floor (S0 second-seed refit) = **0.000147**. conf4 seed spread (context only) = 0.281 pp.
+
+### 8.1 Decision
+
+- `S1_monthly`: log loss 0.575237 (gain +0.000044 vs S0), conf4 gain 0.191 pp, gates PASS, beats reference: False
+- `S1_conf_aligned`: log loss 0.57521 (gain +0.000071 vs S0), conf4 gain 0.336 pp, gates PASS, beats reference: True
+- `S1_weekly`: log loss 0.57536 (gain -0.000079 vs S0), conf4 gain 0.214 pp, gates PASS, beats reference: False
+
+**WINNER: S1_conf_aligned** -- beats the S0 reference beyond the floor; simplest arm within the floor of the best beater

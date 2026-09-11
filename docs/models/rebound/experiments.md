@@ -231,3 +231,56 @@ to `data/processed/models/rebound/s1_confirm/<scheme>/<fold>/` (gitignored; HF-s
 rebuilt or overwritten.
 
 <!-- ROUND-2 (S1 SCHEME CONFIRMATION) RESULTS APPENDED BELOW BY scripts/train_rebound_v2_s1.py -->
+
+## 8. S1 scheme confirmation: results (run 2026-09-11T03:42:00.075924+00:00, `scripts/train_rebound_v2_s1.py`)
+
+S0/F2 reproduction of round 1's adopted number: CONFIRMED (cited 0.645565).
+
+| cell | n_fits | log_loss | calib | worst_gap_pp | respons | slope_off_oreb_c | slope_opp_def_dreb_c | conf4_n | conf4_gap_pp | fit_s |
+|---|---|---|---|---|---|---|---|---|---|---|
+| F2|S0|s0 | 1 | 0.645565 | PASS | 1.958 | PASS | 0.9645 | 1.1008 | 82748 | 2.462 | 200.4 |
+| F2|S0|s1 | 1 | 0.645569 | FAIL | 2.008 | PASS | 0.9663 | 1.1123 | 82748 | 2.917 | 134.6 |
+| F2|S1_monthly|s0 | 6 | 0.644949 | PASS | 1.693 | PASS | 0.965 | 1.0843 | 82748 | 2.66 | 833.7 |
+| F1|S1_monthly|s0 | 6 | 0.619726 | PASS | 1.326 | PASS | 0.9353 | 1.1075 | 87263 | 1.73 | 524.1 |
+| F2|S1_conf_aligned|s0 | 29 | 0.644878 | PASS | 1.826 | PASS | 0.967 | 1.0886 | 82748 | 2.367 | 2271.1 |
+| F2|S1_weekly|s0 | 23 | 0.644522 | PASS | 1.674 | PASS | 0.9668 | 1.0988 | 82748 | 2.565 | 1699.5 |
+
+S0 F1 (cited, not refit, section 3): log loss 0.620446, calib gap 1.629 pp (PASS), slopes 0.9138 / 1.087.
+
+Noise floor: primary-metric floor (S0 second-seed refit) = **4e-06**. conf4 seed spread (context only; the decision rule uses the fixed 0.25 pp threshold) = 0.455 pp.
+
+### 8.1 Decision
+
+- `S1_monthly`: log loss 0.644949 (gain +0.000616 vs S0), conf4 gain -0.198 pp, gates PASS, beats reference: True
+- `S1_conf_aligned`: log loss 0.644878 (gain +0.000687 vs S0), conf4 gain 0.095 pp, gates PASS, beats reference: True
+- `S1_weekly`: log loss 0.644522 (gain +0.001043 vs S0), conf4 gain -0.103 pp, gates PASS, beats reference: True
+
+**WINNER: S1_weekly** -- beats the S0 reference beyond the floor; simplest arm within the floor of the best beater
+
+### 8.2 Floor correction and a conf4 caveat (addendum, written immediately after the run above, before any doc other than this one was touched)
+
+**Floor correction.** Section 7.4 pre-registered the primary-metric floor as `|log_loss(seed=0) -
+log_loss(seed=1)|` on a fresh second-seed refit of `S0`. That gap came back at **4e-06** -- far
+smaller than round 1's OWN already-published 5-seed noise floor for this identical arm (SD 6.7e-05
+over seeds 0-4, `log_loss` values `[0.645565, 0.645569, 0.645425, 0.645447, 0.645522]`, section 3),
+because seeds 0 and 1 happen to sit unusually close together in that set. Per the standing
+convention this project already uses everywhere a floor is measured two ways (round 1's own rule,
+"the floor the decision rule uses is the larger"), the OPERATIVE floor here is revised to
+**6.7e-05**, the larger and already-on-record number, rather than the lucky 2-seed gap. This is
+reported as a correction, not a re-registration: applying "take the larger of the measured floors"
+to numbers already in hand is the standing rule, not a new one chosen after seeing the result.
+
+Re-checked against the corrected floor: `S1_monthly` gain 0.000616 = 9.2x; `S1_conf_aligned` gain
+0.000687 = 10.3x; `S1_weekly` gain 0.001043 = 15.6x. All three still clear the corrected floor by a
+wide margin, and `S1_weekly` is still the only scheme within the (corrected) floor of itself as the
+best beater. **The decision is unchanged: `S1_weekly`.**
+
+**A conf4 caveat, reported rather than smoothed over.** Unlike the free-throw S1 confirmation, no
+scheme here -- including the winner -- passes the 2.00 pp conf4 gate on F2: `S0` 2.462 pp,
+`S1_monthly` 2.660 pp, `S1_conf_aligned` 2.367 pp (the best of the four), `S1_weekly` 2.565 pp. The
+winning scheme's `conf4_gain_pp` vs `S0` is **-0.103 pp (a marginal worsening, not an improvement)**;
+it is selected on the primary metric alone (log loss), which the pre-registered OR rule permits.
+`S1_conf_aligned` has the best conf4 reading of the four candidates but does not win because its log
+loss is outside the corrected floor of `S1_weekly`'s. So for THIS sub-model, Decision 9's predicted
+damage segment (first four weeks of conference play) is not resolved by any refit calendar tested;
+it is carried forward as an open item rather than reported as fixed.
