@@ -3976,3 +3976,185 @@ adjudicate the monotonicity half of criterion 4, which section 25.3 handed to
 the PM and which no closed-loop number settles. It cannot price C4 on any game
 set other than the 500-game subset. And a NEUTRAL or PASSING verdict here is
 still only a CANDIDATE: adoption is the PM's, on the full section 24.5 list.
+
+
+## 27. Run R13 -- round 5d, the C4 paired closed loop, 25 seeds (2026-09-11)
+
+Pre-registration section 26 committed **d940b41** BEFORE the engine mode
+`v5d_glat_pquad` existed and before any `clk5d_*` directory existed; wiring and
+tests **e3b7754**. Sections 8 through 26 are STATIC and are NOT edited.
+`experiments.md` is append-only. Evidence, multi-level:
+`docs/tests/clock_pquad_closed_loop_2026-09-11.md`.
+
+**VERDICT, STATED FIRST. C4 DOES NOT SUPERSEDE B1.** Both halves of section
+26.4's decision rule fail, each by a little over one measured floor: **L9, the
+G9 possessions-by-tempo calibration slope, regresses 1.029 -> 1.041 against a
+re-measured floor of 0.010 (1.2 floors)**, and **L12's quintile spread WIDENS
+0.1312 -> 0.1537 against a measured floor of 0.0171 (1.3 floors)**, where the
+rule required it to NARROW beyond floor. Nine of the eleven no-regression lines
+move less than a quarter of a floor. `ENGINE_CLOCK` is untouched,
+`provisional_clock` is untouched, no default was changed by this lane, no
+criterion was softened or waived, and nothing was hand-tuned, capped, scaled,
+clipped or blended at any point.
+
+### 27.1 The precondition: the served B1 path is BIT-IDENTICAL
+
+Section 26.1's check, run BEFORE any C4 number was read. A 60-game x 5-seed
+smoke on the UNCHANGED default under the new code
+(`results/engine_v0/smoke60x5_v5d_wiring`) digests
+
+    sha256 492300a7fd1e6dc388a3c47b822f61e04da6501720ef762bde0afe7ba15451a1
+
+which is **byte-for-byte the digest of `results/engine_v0/smoke60x5_default_v5b`**,
+the run the PM's serving decision was verified on at `e3ccce5`.
+`scripts/digest_engine_run.py --compare` exits 0: "PASS -- bit-identical
+digest." `pytest tests/test_clock_adapter_v5d.py tests/test_clock_adapter_v3.py
+-q` 44 passed; `pytest tests/test_engine.py -q` 20 passed. The reuse of
+`clk5b_B1_s25` as the paired B1 reference, which 26.2 made conditional on this
+check, therefore stands.
+
+`tests/test_clock_adapter_v5d.py` pins six properties: the served B1 arm still
+computes `exp(sigma*z + sigma^2/2)` for the one fitted scalar and never reaches
+a line the round-5d branch added; C4's coefficients are READ from
+`v5c_bakeoff/v5c_params.json` key `F2` and equal it exactly; C4's per-row sigma
+is the offline `sigma2_rows("C4", ...)` quadratic to the bit and is identical
+for a game's two team rows (one pace realisation per game, both teams scaled by
+it); C4 and B1 consume the SAME uniform at the SAME ordinal; `E[1/A] = 1`
+row-wise; and the engine runs end to end under the flag. The 1e-8 sigma^2 floor
+is never active over the engine's tempo range (58.6 to 79.5) and is asserted
+inactive by the test -- it is a guard on a degenerate coefficient set, not a
+clip on engine output.
+
+### 27.2 The deciding table -- 25 paired seeds, 500 games, 159 clock-complete
+
+`clk5d_C4_s25` (555 s, 6 workers, 12,500 rows) against `clk5b_B1_s25`, every
+other sub-model pinned identically by `run_clk4_closed_loop.PINNED_SUBMODELS`
+and written into both `run_meta.json`s. Floors are section 22.3's MEASURED
+25-seed seed-offset floors, carried verbatim, except L9 and L12 which section
+26.3 said would be re-measured here and are (from `clock4_R_s25` against
+`clock4_R_s25_floor`).
+
+| # | line | **B1** | **C4** | C4 - B1 | floor | in floors | actual |
+|---|---|---:|---:|---:|---:|---:|---:|
+| L1 | G1 poss mean, all 500 | +1.649 | +1.667 | +0.018 | 0.074 | 0.24 | 0.000 |
+| L2 | G1 poss mean, cc | +0.989 | +1.012 | +0.023 | 0.157 | 0.15 | 0.000 |
+| L3 | possession SD ratio, cc | 1.03204 | **1.03040** | **-0.00164 (TOWARD 1)** | 0.0042 | 0.39 | 1.000 |
+| L4 | G5 total SD ratio | 0.82267 | 0.82235 | -0.00031 | 0.0165 | 0.02 | 1.000 |
+| L5 | `corr(home, away)` | +0.10051 | +0.10028 | -0.00022 | 0.0037 | 0.06 | 0.2374 |
+| L6 | `corr(P, eFG%)` | -0.12235 | -0.12371 | -0.00137 | 0.0231 | 0.06 | ~0.000 |
+| L7 | G5 margin SD ratio | 0.95634 | 0.95586 | -0.00047 | 0.0115 | 0.04 | 1.000 |
+| L8 | total bias | -1.061 | -1.075 | -0.014 | 0.377 | 0.04 | 0.000 |
+| **L9** | **G9 calibration slope** | **1.029** | **1.041** | **+0.012** | **0.010** | **1.2 FAIL** | 1.000 |
+| L10 | margin SD (points) | 15.881 | 15.922 | +0.041 | 0.081 | 0.51 | 15.472 |
+| L11 | within-game poss SD, cc | 4.8147 | 4.8272 | +0.0125 | 0.0857 | 0.15 | 4.6652 |
+| -- | PPP | 1.0379 | 1.0375 | -0.0004 | -- | -- | 1.0705 |
+| -- | G1 poss SD delta, cc | +0.423 | +0.463 | +0.040 | -- | -- | 5.120 |
+
+**L9's floor is re-measured here and it is TIGHT**: `clock4_R_s25` slope ratio
+1.047, `clock4_R_s25_floor` 1.057, so the measured seed-offset floor is 0.010 --
+the tightest floor in the table relative to the move it has to price. C4's
++0.012 is 1.2 of it. This is a small, real regression on a responsiveness line,
+and it is NOT waived. It is recorded with its own caveat: a floor built from a
+single paired difference of two runs is itself a noisy estimate, exactly as
+every other floor in this table is, and the lane does not get to call this one
+noise because it is inconvenient.
+
+**Everything else holds comfortably.** The only line C4 IMPROVES is L3, the
+possession SD ratio, and it improves it by 0.4 floors -- inside the floor, so it
+is not a claim. L1, L2, L4-L8, L10 and L11 all move away from truth by under
+0.55 floors. **There is no possession-mean cost and no points cost**: C4's
+possession mean is B1's to 0.02 per team-game and its total bias to 0.014
+points, so round 5b's 22.6 warning ("a dispersion change that moves the
+possession mean pays in points") is NOT what happened here.
+
+### 27.3 L12 -- the responsiveness line, read CLOSED-LOOP, and the round's real finding
+
+`scripts/grade_clk5d_quintile_sd.py`, five quintiles of 99-100 games each, all
+powered. The numerator is the engine's mean per-game across-seed possession SD
+and the denominator is `SD(actual - sim per-game mean)`, both
+`grade_clk5_dispersion_loop.score`'s definitions unchanged.
+
+| arm | Q1 | Q2 | Q3 | Q4 | Q5 | ALL | spread | worst \|dev\| | outside [0.85, 1.15] |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---|
+| R `v3c_srfloor_P3_s1` | 0.778 | 0.786 | 0.702 | 0.836 | 0.692 | 0.755 | 0.1445 | 0.308 | **all five** |
+| R offset 1000 | 0.798 | 0.805 | 0.745 | 0.810 | 0.683 | 0.762 | 0.1274 | 0.317 | **all five** |
+| **B1 (served)** | 0.986 | 0.966 | 0.944 | **1.050** | 0.919 | 0.970 | **0.1312** | 0.081 | **none** |
+| **C4** | 0.986 | 0.944 | **0.904** | 1.057 | **0.999** | 0.976 | **0.1537** | 0.096 | **none** |
+
+Per-quintile floors from the two R runs: Q1 0.0206, Q2 0.0189, Q3 0.0438,
+Q4 0.0260, Q5 0.0087; spread floor **0.0171**.
+
+**C4's mechanism works, and it is the largest single move on the board.** Q5 --
+the fast end, the cell round 5c's section 25.3 said C4 was the only arm to raise
+-- goes **0.919 -> 0.999, +0.0803 against a 0.0087 floor, 9.2 floors, and lands
+on 1.000 to within 0.001**. That is the offline prediction reproducing in the
+engine on a line nothing was fitted against.
+
+**And the spread still widens, because it overcorrects the middle.** Q3 moves
+0.944 -> 0.904 (-0.040, 0.9 floors, AWAY from 1) and Q2 0.966 -> 0.944 (-0.022,
+1.2 floors, away). Max minus min goes 0.1312 -> 0.1537, **+0.0225 against a
+0.0171 floor, 1.3 floors in the wrong direction**. Section 26.4's criterion 2
+required the spread to NARROW beyond floor. It widened. **The criterion fails
+and is not re-specified after the fact to a statistic C4 wins on.**
+
+**THE ROUND'S REAL FINDING, and it is not about C4.** The defect round 5c was
+built to fix **does not reproduce in the engine**. Offline (section 25.3) B1's
+Q2 is **1.174**, outside the pre-registered [0.85, 1.15] band, and that failure
+is one of the two blockers on B1's adoption recorded in 22.5. Closed-loop, at 25
+paired seeds, **B1's five quintiles are 0.919 to 1.050 and every one of them is
+inside the band**; its worst deviation is 0.081 where offline it is 0.174. The
+two readings are of different objects -- the offline denominator is the needed
+per-game duration-residual SD propagated through `P = 1200/Dbar`, the
+closed-loop denominator is `SD(actual - sim mean)` over whole simulated games,
+which carries every other sub-model's variance as well -- and **this lane does
+not claim either one supersedes the other.** What it records is the measurement:
+**on the closed-loop reading, B1 already passes the band, C4 also passes the
+band, and the quintile evidence cannot distinguish them in B1's disfavour.** A
+PM adjudicating criterion 4 for B1 now has two readings of it that disagree, and
+that disagreement is a finding of round 5d, not a licence to pick the flattering
+one.
+
+### 27.4 Verdict against section 26.4
+
+| # | condition | C4 |
+|---|---|---|
+| 1 | no line L1-L11 regresses beyond its measured floor | **FAIL** -- L9 +0.012 against a 0.010 floor (1.2 fl). L1-L8, L10, L11 all inside, nine of them under 0.25 fl |
+| 2 | L12 quintile spread narrows beyond floor, no quintile worse outside the band | **FAIL** on the spread (+0.0225 against 0.0171, 1.3 fl). The band half is vacuous here: neither arm has a quintile outside it |
+
+**C4 `v5d_glat_pquad` is REJECTED as a replacement for B1** under 26.4's own
+words ("if (1) fails, C4 is REJECTED regardless of (2)"). **B1
+`v5b_glat_pmean` stays the arm this lane puts forward and stays the served
+provisional default.** The engine flag `v5d_glat_pquad` remains wired,
+default-off, selectable for reproduction.
+
+Three honest qualifications, none of which changes the verdict:
+
+1. **The failure is small and the arm is not harmful.** The worst line in the
+   table moves 1.2 floors; B1's own adoption is blocked by a 1.2-floor
+   margin-SD-ratio regression (22.3 item 6) of exactly the same size. C4 costs
+   nothing on the possession mean, the total, the margin SD ratio, `corr(P,
+   eFG%)` or PPP.
+2. **Its one large effect is real and is in the right direction.** The 9.2-floor
+   Q5 move is the biggest per-cell improvement any clock arm has produced in the
+   engine, and it is the cell a constant-CV latent structurally cannot reach.
+   **A tempo-dependent dispersion function is not refuted by this round; this
+   particular quadratic, fitted on the offline needed-`tau^2` profile, is.**
+   Round 6 inherits a located target: raise Q5 without lowering Q2 and Q3, i.e.
+   a dispersion function whose tempo derivative is right at the fast end and
+   near zero in the middle, which the fitted quadratic's minimum at tempo 67.79
+   is not.
+3. **The offline and closed-loop responsiveness readings disagree about B1**, so
+   the offline motivation for round 5c is weaker than section 25 could know. Any
+   round 6 should fix WHICH reading its criterion is written against before it
+   fits anything.
+
+### 27.5 What did not run
+
+No 5-seed screening pair was run: the 25-seed pair fit in the session's wall
+clock, and section 22.7 is explicit that a 5-seed within-game SD is biased low
+on both sides of its own ratio, so the 5-seed run would have added a reading
+this round is not allowed to quote as a level. No per-quintile bootstrap SE was
+computed closed-loop -- the floors above are seed-offset floors, which is what
+section 26.3 pre-registered; a game-block bootstrap of the closed-loop quintile
+ratios is round 6's if round 6 wants one. No offline quantity was recomputed and
+no artifact was refitted or rewritten.

@@ -1,0 +1,179 @@
+{
+  "clk5b_B1_s25": {
+    "ALL": {
+      "n": 499,
+      "within_sd": 4.796164666188391,
+      "resid_sd": 4.945976920517133,
+      "ratio": 0.9697102803477946,
+      "tempo_mean": 68.82777404785156,
+      "underpowered": false
+    },
+    "Q1": {
+      "n": 100,
+      "within_sd": 4.701362978714735,
+      "resid_sd": 4.768313527756947,
+      "ratio": 0.9859592812736653,
+      "tempo_mean": 64.54495239257812,
+      "underpowered": false
+    },
+    "Q2": {
+      "n": 100,
+      "within_sd": 4.568913649458086,
+      "resid_sd": 4.729879965162804,
+      "ratio": 0.9659682028105806,
+      "tempo_mean": 67.29400634765625,
+      "underpowered": false
+    },
+    "Q3": {
+      "n": 99,
+      "within_sd": 4.797773982091263,
+      "resid_sd": 5.084558310182654,
+      "ratio": 0.9435970028080789,
+      "tempo_mean": 68.71601104736328,
+      "underpowered": false
+    },
+    "Q4": {
+      "n": 100,
+      "within_sd": 4.8665808856886095,
+      "resid_sd": 4.634388560892725,
+      "ratio": 1.0501020408075488,
+      "tempo_mean": 70.35708618164062,
+      "underpowered": false
+    },
+    "Q5": {
+      "n": 100,
+      "within_sd": 5.046207928148289,
+      "resid_sd": 5.491471720455787,
+      "ratio": 0.9189172201963844,
+      "tempo_mean": 73.22566223144531,
+      "underpowered": false
+    },
+    "_spread": 0.13118482061116432,
+    "_worst_dev": 0.08108277980361556,
+    "_outside_band": [],
+    "_arm": "v5b_glat_pmean",
+    "_n_seeds": 25
+  },
+  "clock4_R_s25": {
+    "ALL": {
+      "n": 499,
+      "within_sd": 3.668386319674642,
+      "resid_sd": 4.859635987674462,
+      "ratio": 0.7548685393265674,
+      "tempo_mean": 68.82777404785156,
+      "underpowered": false
+    },
+    "Q1": {
+      "n": 100,
+      "within_sd": 3.594965478170619,
+      "resid_sd": 4.622906497523878,
+      "ratio": 0.7776418320587178,
+      "tempo_mean": 64.54495239257812,
+      "underpowered": false
+    },
+    "Q2": {
+      "n": 100,
+      "within_sd": 3.6323739277770972,
+      "resid_sd": 4.623592131884062,
+      "ratio": 0.7856172915271714,
+      "tempo_mean": 67.29400634765625,
+      "underpowered": false
+    },
+    "Q3": {
+      "n": 99,
+      "within_sd": 3.5259195208413296,
+      "resid_sd": 5.02596622630281,
+      "ratio": 0.7015406316080757,
+      "tempo_mean": 68.71601104736328,
+      "underpowered": false
+    },
+    "Q4": {
+      "n": 100,
+      "within_sd": 3.841243148912187,
+      "resid_sd": 4.594385260205322,
+      "ratio": 0.8360733659372142,
+      "tempo_mean": 70.35708618164062,
+      "underpowered": false
+    },
+    "Q5": {
+      "n": 100,
+      "within_sd": 3.746004854683643,
+      "resid_sd": 5.416902599989941,
+      "ratio": 0.6915400056649716,
+      "tempo_mean": 73.22566223144531,
+      "underpowered": false
+    },
+    "_spread": 0.1445333602722425,
+    "_worst_dev": 0.30845999433502835,
+    "_outside_band": [
+      "Q1",
+      "Q2",
+      "Q3",
+      "Q4",
+      "Q5"
+    ],
+    "_arm": "v3c_srfloor_P3_s1",
+    "_n_seeds": 25
+  },
+  "clock4_R_s25_floor": {
+    "ALL": {
+      "n": 499,
+      "within_sd": 3.676001856492136,
+      "resid_sd": 4.823530007668178,
+      "ratio": 0.7620978517078227,
+      "tempo_mean": 68.82777404785156,
+      "underpowered": false
+    },
+    "Q1": {
+      "n": 100,
+      "within_sd": 3.5806303786317284,
+      "resid_sd": 4.485943550174649,
+      "ratio": 0.7981889068783146,
+      "tempo_mean": 64.54495239257812,
+      "underpowered": false
+    },
+    "Q2": {
+      "n": 100,
+      "within_sd": 3.638279549039976,
+      "resid_sd": 4.522492313677574,
+      "ratio": 0.8044855130071897,
+      "tempo_mean": 67.29400634765625,
+      "underpowered": false
+    },
+    "Q3": {
+      "n": 99,
+      "within_sd": 3.794803818142936,
+      "resid_sd": 5.091861744949936,
+      "ratio": 0.7452684319063826,
+      "tempo_mean": 68.71601104736328,
+      "underpowered": false
+    },
+    "Q4": {
+      "n": 100,
+      "within_sd": 3.6590736740643997,
+      "resid_sd": 4.516588589283784,
+      "ratio": 0.8101410172150826,
+      "tempo_mean": 70.35708618164062,
+      "underpowered": false
+    },
+    "Q5": {
+      "n": 100,
+      "within_sd": 3.7084098821981506,
+      "resid_sd": 5.431577169244173,
+      "ratio": 0.6827501049228748,
+      "tempo_mean": 73.22566223144531,
+      "underpowered": false
+    },
+    "_spread": 0.12739091229220778,
+    "_worst_dev": 0.3172498950771252,
+    "_outside_band": [
+      "Q1",
+      "Q2",
+      "Q3",
+      "Q4",
+      "Q5"
+    ],
+    "_arm": "v3c_srfloor_P3_s1",
+    "_n_seeds": 25
+  }
+}
