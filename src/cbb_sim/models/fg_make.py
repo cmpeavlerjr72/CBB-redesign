@@ -104,6 +104,32 @@ The universe is the pre-registration's: D-I, non-truncated, AND `pbp_complete`
 (the CBBD event stream accounts for the final score). That is stricter than the
 universe the rebound and free-throw bake-offs used, so row counts here are not
 comparable to theirs; the trainer reports both.
+
+===========================================================================
+THE SHOOTER-KEY DEFECT (round 3, 2026-09-10) AND ITS FIX
+===========================================================================
+Every function in this module that resolves "who took this shot" ultimately
+reads `event_stream.build_stream`'s `player_id` column, which up to and
+including round 2b is `participant_1_id` on every row -- CBBD's field-goal
+`participants` array is not ordered shooter-first, and on an ASSISTED made
+field goal `participant_1_id` is the ASSISTER on 100.000% of the ~49% of rows
+where it disagrees with the dedicated `shot_shooter_id` column
+(`docs/tests/shooter_key_audit_2026-09-10.md`, `docs/models/change_ledger.md`
+row "CBBD's `participant_1_id` is the ASSISTER..."). `usage` (L4) fixed this by
+adding a `shooter_key` parameter to `event_stream.build_stream` /
+`build_usage_events`, defaulting to the OLD column so every other model stays
+byte-identical and opting a caller in explicitly. `build_fg_events` and
+`_season_events` follow the identical pattern: `shooter_key` defaults to
+`event_stream.DEFAULT_SHOOTER_KEY` ("participant_1_id", today's behaviour,
+byte for byte) and threads straight through to `build_stream`; passing
+`shooter_key="shot_shooter_id"` re-keys every FGA row's shooter (and only FGA
+rows -- missed FGAs, free throws and every non-shooting event this module never
+reads are untouched) and leaves a row's shooter id missing, never imputed and
+never falling back to `participant_1_id`, wherever `shot_shooter_id` itself is
+absent (0.04-0.27% of FGA rows per class). `build_design`'s existing
+`np.isfinite(events["shooter_id"])` drop (module docstring above) is what
+removes those rows; it needed no change because it already keys off whichever
+column `events["shooter_id"]` was built from.
 """
 
 from __future__ import annotations
@@ -196,20 +222,29 @@ def build_fg_events(
     pbp_dir: Path | str = ES.DEFAULT_PBP_DIR,
     universe_path: Path | str = DEFAULT_UNIVERSE,
     require_pbp_complete: bool = True,
+    shooter_key: str = ES.DEFAULT_SHOOTER_KEY,
 ) -> pd.DataFrame:
     """One row per field-goal attempt for `seasons` (module docstring).
 
     `version` selects the possessions build whose rim-location override
     threshold is applied when the stream is classified; it is read out of that
     build's own `build_report.json` by `event_stream.rim_override_for_version`,
-    so the threshold is never typed in here."""
+    so the threshold is never typed in here.
+
+    `shooter_key` (module docstring, "THE SHOOTER-KEY DEFECT") defaults to
+    `event_stream.DEFAULT_SHOOTER_KEY` ("participant_1_id", today's behaviour,
+    byte for byte) and is threaded straight through to
+    `event_stream.build_stream`; pass `"shot_shooter_id"` to re-key the FGA
+    shooter onto the dedicated, correct column."""
     if universe is None:
         universe = ES.load_universe(universe_path, require_pbp_complete=require_pbp_complete)
     max_ft = ES.rim_override_for_version(version, poss_dir)
-    frames = [_season_events(int(s), universe, max_ft, pbp_dir) for s in seasons]
+    frames = [_season_events(int(s), universe, max_ft, pbp_dir, shooter_key=shooter_key)
+              for s in seasons]
     out = pd.concat(frames, ignore_index=True)
     out.attrs["possessions_version"] = version or DEFAULT_VERSION
     out.attrs["rim_override_max_ft"] = float(max_ft)
+    out.attrs["shooter_key"] = shooter_key
     return out
 
 
@@ -317,8 +352,10 @@ def chance_state(st: pd.DataFrame) -> pd.DataFrame:
 
 
 def _season_events(season: int, universe: pd.DataFrame, max_ft: float,
-                   pbp_dir: Path | str) -> pd.DataFrame:
-    st = ES.build_stream(season, universe, rim_override_max_ft=max_ft, pbp_dir=pbp_dir)
+                   pbp_dir: Path | str,
+                   shooter_key: str = ES.DEFAULT_SHOOTER_KEY) -> pd.DataFrame:
+    st = ES.build_stream(season, universe, rim_override_max_ft=max_ft, pbp_dir=pbp_dir,
+                         shooter_key=shooter_key)
     ch = chance_state(st)
     cls = st["cls"].to_numpy(dtype=object)
     made = st["made"].to_numpy()

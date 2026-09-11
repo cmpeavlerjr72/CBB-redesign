@@ -419,19 +419,32 @@ p_make = p[:, FG.CLASS_INDEX["MAKE"]]
    sections 14.5, 14.6 and 16.3 -- and it found the defect that item 0 of this
    list now names. Items 2-6 are unchanged and still open.
 
-8. **The shooter is keyed on the WRONG participant column (BLOCKING, round 3).**
-   `fg_make._season_events` calls `event_stream.build_stream` without
-   `shooter_key`, so it takes `DEFAULT_SHOOTER_KEY = participant_1_id`, which
-   `docs/tests/shooter_key_audit_2026-09-10.md` measures as the ASSISTER on
-   48.98% of assisted made field goals -- mislabelling 11.9 / 5.0 / 14.1% of
-   rim / jumper / three attempts in 2024 and 12.0 / 4.9 / 14.1% in 2025. The
-   whole shooter as-of block accumulates onto the wrong player on those rows.
-   `usage` has already been re-run on `shot_shooter_id` (round 2 there, winner
-   unchanged); fg_make has not. Rounds 2 and 2b are unaffected as COMPARISONS
-   -- every arm reads the same contaminated events table, and the state block
-   is orthogonal to the shooter label -- but the adopted artifacts carry it and
-   a round 3 with the corrected key is required before any player prop is built
-   on this model.
+8. **The shooter is keyed on the WRONG participant column -- ROUND 3 RAN
+   (2026-09-10); THE SERVED MODEL STILL CARRIES THE DEFECT.**
+   `fg_make.build_fg_events`/`_season_events` gained a `shooter_key` parameter
+   this round (defaulting to `participant_1_id`, byte-identical to every prior
+   artifact) and round 3 refit the round-2b winner (S-C under S1) on
+   `shot_shooter_id` (`experiments.md` section 17-18,
+   `scripts/train_fg_make_v3_shooter.py`,
+   `docs/tests/fg_make_shooter_key_2026-09-10.md`). **Result: NOT ADOPTED on
+   any class**, per the pre-registered rule -- F2 log loss is worse than the
+   round-2b reference by 51.6 / 46.5 / 8,182.6 noise floors (rim / jumper /
+   three) and Decision 8 flips PASS -> FAIL on the jumper and the three. This
+   is not a defect in the fix: the `shooter_make_c` Decision-8 quintile span
+   collapses from 16.1/8.1/35.9 pp (reference) to 10.2/4.3/2.8 pp (corrected)
+   -- a **96% collapse on `FGA_3`** -- because a 35.9 pp shooter-skill spread
+   on three-point makes was never plausible on its own; it is the size the
+   mislabelling produces when ~half of assisted makes are credited to the
+   team's primary ball-handler, whose contaminated history then reads as a
+   near-perfect proxy for team shot quality. The round-2b artifacts
+   (`ENGINE_FG_MAKE=round2b_S_C_s1`, still keyed on `participant_1_id`) remain
+   served; nothing under `round2b/` was touched. **Open item for a round 4**:
+   re-run the shooter-block bake-off (feature set and the EB-shrinkage
+   arm) from scratch on `shot_shooter_id`, since S-C's spec was itself chosen
+   against the contaminated label and a straight data swap under an unchanged
+   spec is not expected to be the right model. The Decision-10 closed-loop for
+   the corrected arm is still pending an `adapters.py` change
+   (`experiments.md` section 17.4/18.5) neither this nor the prior round made.
 
 9. **G4's defence tercile regressed under the honest arms** (1.066 pp for S-C
    against a 1.0 pp tolerance, where the round-1 leaked trio read 0.914 pp).

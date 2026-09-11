@@ -1,0 +1,710 @@
+{
+  "created_at": "2026-09-11T01:37:58.195707+00:00",
+  "seasons": [
+    2022,
+    2023,
+    2024,
+    2025
+  ],
+  "rim_override_max_ft": 2.27,
+  "by_season_class": {
+    "2022|FGA_rim": {
+      "n": 171648,
+      "p1_present_pct": 99.9971,
+      "shooter_present_pct": 99.9779,
+      "shooter_missing_pct": 0.0221,
+      "both_present_n": 171610,
+      "agree_pct": 87.8346,
+      "mismatch_pct": 12.1654,
+      "mismatch_n": 20877,
+      "assisted": {
+        "n": 43692,
+        "p1_present_pct": 100.0,
+        "shooter_present_pct": 99.9245,
+        "shooter_missing_pct": 0.0755,
+        "both_present_n": 43659,
+        "agree_pct": 52.1817,
+        "mismatch_pct": 47.8183,
+        "mismatch_n": 20877
+      },
+      "unassisted": {
+        "n": 127956,
+        "p1_present_pct": 99.9961,
+        "shooter_present_pct": 99.9961,
+        "shooter_missing_pct": 0.0039,
+        "both_present_n": 127951,
+        "agree_pct": 100.0,
+        "mismatch_pct": 0.0,
+        "mismatch_n": 0
+      },
+      "assist_flag_missing": {
+        "n": 0
+      }
+    },
+    "2022|FGA_jump2": {
+      "n": 132095,
+      "p1_present_pct": 99.9924,
+      "shooter_present_pct": 99.9803,
+      "shooter_missing_pct": 0.0197,
+      "both_present_n": 132069,
+      "agree_pct": 95.1563,
+      "mismatch_pct": 4.8437,
+      "mismatch_n": 6397,
+      "assisted": {
+        "n": 13708,
+        "p1_present_pct": 100.0,
+        "shooter_present_pct": 99.8833,
+        "shooter_missing_pct": 0.1167,
+        "both_present_n": 13692,
+        "agree_pct": 53.2793,
+        "mismatch_pct": 46.7207,
+        "mismatch_n": 6397
+      },
+      "unassisted": {
+        "n": 118387,
+        "p1_present_pct": 99.9916,
+        "shooter_present_pct": 99.9916,
+        "shooter_missing_pct": 0.0084,
+        "both_present_n": 118377,
+        "agree_pct": 100.0,
+        "mismatch_pct": 0.0,
+        "mismatch_n": 0
+      },
+      "assist_flag_missing": {
+        "n": 0
+      }
+    },
+    "2022|FGA_3": {
+      "n": 184916,
+      "p1_present_pct": 99.987,
+      "shooter_present_pct": 99.9216,
+      "shooter_missing_pct": 0.0784,
+      "both_present_n": 184771,
+      "agree_pct": 86.0519,
+      "mismatch_pct": 13.9481,
+      "mismatch_n": 25772,
+      "assisted": {
+        "n": 51377,
+        "p1_present_pct": 100.0,
+        "shooter_present_pct": 99.7645,
+        "shooter_missing_pct": 0.2355,
+        "both_present_n": 51256,
+        "agree_pct": 49.7191,
+        "mismatch_pct": 50.2809,
+        "mismatch_n": 25772
+      },
+      "unassisted": {
+        "n": 133539,
+        "p1_present_pct": 99.982,
+        "shooter_present_pct": 99.982,
+        "shooter_missing_pct": 0.018,
+        "both_present_n": 133515,
+        "agree_pct": 100.0,
+        "mismatch_pct": 0.0,
+        "mismatch_n": 0
+      },
+      "assist_flag_missing": {
+        "n": 0
+      }
+    },
+    "2023|FGA_rim": {
+      "n": 185382,
+      "p1_present_pct": 99.9989,
+      "shooter_present_pct": 99.9703,
+      "shooter_missing_pct": 0.0297,
+      "both_present_n": 185327,
+      "agree_pct": 87.7201,
+      "mismatch_pct": 12.2799,
+      "mismatch_n": 22758,
+      "assisted": {
+        "n": 47639,
+        "p1_present_pct": 100.0,
+        "shooter_present_pct": 99.8887,
+        "shooter_missing_pct": 0.1113,
+        "both_present_n": 47586,
+        "agree_pct": 52.175,
+        "mismatch_pct": 47.825,
+        "mismatch_n": 22758
+      },
+      "unassisted": {
+        "n": 137743,
+        "p1_present_pct": 99.9985,
+        "shooter_present_pct": 99.9985,
+        "shooter_missing_pct": 0.0015,
+        "both_present_n": 137741,
+        "agree_pct": 100.0,
+        "mismatch_pct": 0.0,
+        "mismatch_n": 0
+      },
+      "assist_flag_missing": {
+        "n": 0
+      }
+    },
+    "2023|FGA_jump2": {
+      "n": 137759,
+      "p1_present_pct": 99.9869,
+      "shooter_present_pct": 99.9637,
+      "shooter_missing_pct": 0.0363,
+      "both_present_n": 137709,
+      "agree_pct": 94.9074,
+      "mismatch_pct": 5.0926,
+      "mismatch_n": 7013,
+      "assisted": {
+        "n": 14738,
+        "p1_present_pct": 100.0,
+        "shooter_present_pct": 99.8236,
+        "shooter_missing_pct": 0.1764,
+        "both_present_n": 14712,
+        "agree_pct": 52.3314,
+        "mismatch_pct": 47.6686,
+        "mismatch_n": 7013
+      },
+      "unassisted": {
+        "n": 123021,
+        "p1_present_pct": 99.9854,
+        "shooter_present_pct": 99.9805,
+        "shooter_missing_pct": 0.0195,
+        "both_present_n": 122997,
+        "agree_pct": 100.0,
+        "mismatch_pct": 0.0,
+        "mismatch_n": 0
+      },
+      "assist_flag_missing": {
+        "n": 0
+      }
+    },
+    "2023|FGA_3": {
+      "n": 193506,
+      "p1_present_pct": 99.9979,
+      "shooter_present_pct": 99.9654,
+      "shooter_missing_pct": 0.0346,
+      "both_present_n": 193439,
+      "agree_pct": 85.8953,
+      "mismatch_pct": 14.1047,
+      "mismatch_n": 27284,
+      "assisted": {
+        "n": 54186,
+        "p1_present_pct": 100.0,
+        "shooter_present_pct": 99.8837,
+        "shooter_missing_pct": 0.1163,
+        "both_present_n": 54123,
+        "agree_pct": 49.5889,
+        "mismatch_pct": 50.4111,
+        "mismatch_n": 27284
+      },
+      "unassisted": {
+        "n": 139320,
+        "p1_present_pct": 99.9971,
+        "shooter_present_pct": 99.9971,
+        "shooter_missing_pct": 0.0029,
+        "both_present_n": 139316,
+        "agree_pct": 100.0,
+        "mismatch_pct": 0.0,
+        "mismatch_n": 0
+      },
+      "assist_flag_missing": {
+        "n": 0
+      }
+    },
+    "2024|FGA_rim": {
+      "n": 225021,
+      "p1_present_pct": 99.9996,
+      "shooter_present_pct": 99.9524,
+      "shooter_missing_pct": 0.0476,
+      "both_present_n": 224914,
+      "agree_pct": 88.1297,
+      "mismatch_pct": 11.8703,
+      "mismatch_n": 26698,
+      "assisted": {
+        "n": 55707,
+        "p1_present_pct": 100.0,
+        "shooter_present_pct": 99.8313,
+        "shooter_missing_pct": 0.1687,
+        "both_present_n": 55613,
+        "agree_pct": 51.9932,
+        "mismatch_pct": 48.0068,
+        "mismatch_n": 26698
+      },
+      "unassisted": {
+        "n": 169314,
+        "p1_present_pct": 99.9994,
+        "shooter_present_pct": 99.9923,
+        "shooter_missing_pct": 0.0077,
+        "both_present_n": 169301,
+        "agree_pct": 100.0,
+        "mismatch_pct": 0.0,
+        "mismatch_n": 0
+      },
+      "assist_flag_missing": {
+        "n": 0
+      }
+    },
+    "2024|FGA_jump2": {
+      "n": 153702,
+      "p1_present_pct": 99.9707,
+      "shooter_present_pct": 99.73,
+      "shooter_missing_pct": 0.27,
+      "both_present_n": 153287,
+      "agree_pct": 95.0211,
+      "mismatch_pct": 4.9789,
+      "mismatch_n": 7632,
+      "assisted": {
+        "n": 15735,
+        "p1_present_pct": 100.0,
+        "shooter_present_pct": 99.892,
+        "shooter_missing_pct": 0.108,
+        "both_present_n": 15718,
+        "agree_pct": 51.5651,
+        "mismatch_pct": 48.4349,
+        "mismatch_n": 7613
+      },
+      "unassisted": {
+        "n": 137967,
+        "p1_present_pct": 99.9674,
+        "shooter_present_pct": 99.7115,
+        "shooter_missing_pct": 0.2885,
+        "both_present_n": 137569,
+        "agree_pct": 99.9862,
+        "mismatch_pct": 0.0138,
+        "mismatch_n": 19
+      },
+      "assist_flag_missing": {
+        "n": 0
+      }
+    },
+    "2024|FGA_3": {
+      "n": 225731,
+      "p1_present_pct": 99.9991,
+      "shooter_present_pct": 99.9632,
+      "shooter_missing_pct": 0.0368,
+      "both_present_n": 225648,
+      "agree_pct": 85.9117,
+      "mismatch_pct": 14.0883,
+      "mismatch_n": 31790,
+      "assisted": {
+        "n": 63599,
+        "p1_present_pct": 100.0,
+        "shooter_present_pct": 99.8726,
+        "shooter_missing_pct": 0.1274,
+        "both_present_n": 63518,
+        "agree_pct": 49.9512,
+        "mismatch_pct": 50.0488,
+        "mismatch_n": 31790
+      },
+      "unassisted": {
+        "n": 162132,
+        "p1_present_pct": 99.9988,
+        "shooter_present_pct": 99.9988,
+        "shooter_missing_pct": 0.0012,
+        "both_present_n": 162130,
+        "agree_pct": 100.0,
+        "mismatch_pct": 0.0,
+        "mismatch_n": 0
+      },
+      "assist_flag_missing": {
+        "n": 0
+      }
+    },
+    "2025|FGA_rim": {
+      "n": 235458,
+      "p1_present_pct": 99.9983,
+      "shooter_present_pct": 99.9533,
+      "shooter_missing_pct": 0.0467,
+      "both_present_n": 235348,
+      "agree_pct": 87.9506,
+      "mismatch_pct": 12.0494,
+      "mismatch_n": 28358,
+      "assisted": {
+        "n": 59303,
+        "p1_present_pct": 100.0,
+        "shooter_present_pct": 99.8347,
+        "shooter_missing_pct": 0.1653,
+        "both_present_n": 59205,
+        "agree_pct": 52.102,
+        "mismatch_pct": 47.898,
+        "mismatch_n": 28358
+      },
+      "unassisted": {
+        "n": 176155,
+        "p1_present_pct": 99.9977,
+        "shooter_present_pct": 99.9932,
+        "shooter_missing_pct": 0.0068,
+        "both_present_n": 176143,
+        "agree_pct": 100.0,
+        "mismatch_pct": 0.0,
+        "mismatch_n": 0
+      },
+      "assist_flag_missing": {
+        "n": 0
+      }
+    },
+    "2025|FGA_jump2": {
+      "n": 149087,
+      "p1_present_pct": 99.992,
+      "shooter_present_pct": 99.7894,
+      "shooter_missing_pct": 0.2106,
+      "both_present_n": 148773,
+      "agree_pct": 95.0636,
+      "mismatch_pct": 4.9364,
+      "mismatch_n": 7344,
+      "assisted": {
+        "n": 15302,
+        "p1_present_pct": 100.0,
+        "shooter_present_pct": 99.915,
+        "shooter_missing_pct": 0.085,
+        "both_present_n": 15289,
+        "agree_pct": 52.0178,
+        "mismatch_pct": 47.9822,
+        "mismatch_n": 7336
+      },
+      "unassisted": {
+        "n": 133785,
+        "p1_present_pct": 99.991,
+        "shooter_present_pct": 99.775,
+        "shooter_missing_pct": 0.225,
+        "both_present_n": 133484,
+        "agree_pct": 99.994,
+        "mismatch_pct": 0.006,
+        "mismatch_n": 8
+      },
+      "assist_flag_missing": {
+        "n": 0
+      }
+    },
+    "2025|FGA_3": {
+      "n": 246890,
+      "p1_present_pct": 99.998,
+      "shooter_present_pct": 99.9567,
+      "shooter_missing_pct": 0.0433,
+      "both_present_n": 246783,
+      "agree_pct": 85.9123,
+      "mismatch_pct": 14.0877,
+      "mismatch_n": 34766,
+      "assisted": {
+        "n": 69293,
+        "p1_present_pct": 100.0,
+        "shooter_present_pct": 99.8528,
+        "shooter_missing_pct": 0.1472,
+        "both_present_n": 69191,
+        "agree_pct": 49.7536,
+        "mismatch_pct": 50.2464,
+        "mismatch_n": 34766
+      },
+      "unassisted": {
+        "n": 177597,
+        "p1_present_pct": 99.9972,
+        "shooter_present_pct": 99.9972,
+        "shooter_missing_pct": 0.0028,
+        "both_present_n": 177592,
+        "agree_pct": 100.0,
+        "mismatch_pct": 0.0,
+        "mismatch_n": 0
+      },
+      "assist_flag_missing": {
+        "n": 0
+      }
+    }
+  },
+  "pooled_by_class": {
+    "FGA_rim": {
+      "n": 817509,
+      "p1_present_pct": 99.9985,
+      "shooter_present_pct": 99.9621,
+      "shooter_missing_pct": 0.0379,
+      "both_present_n": 817199,
+      "agree_pct": 87.9233,
+      "mismatch_pct": 12.0767,
+      "mismatch_n": 98691,
+      "assisted": {
+        "n": 206341,
+        "p1_present_pct": 100.0,
+        "shooter_present_pct": 99.8653,
+        "shooter_missing_pct": 0.1347,
+        "both_present_n": 206063,
+        "agree_pct": 52.1064,
+        "mismatch_pct": 47.8936,
+        "mismatch_n": 98691
+      },
+      "unassisted": {
+        "n": 611168,
+        "p1_present_pct": 99.998,
+        "shooter_present_pct": 99.9948,
+        "shooter_missing_pct": 0.0052,
+        "both_present_n": 611136,
+        "agree_pct": 100.0,
+        "mismatch_pct": 0.0,
+        "mismatch_n": 0
+      }
+    },
+    "FGA_jump2": {
+      "n": 572643,
+      "p1_present_pct": 99.9852,
+      "shooter_present_pct": 99.8594,
+      "shooter_missing_pct": 0.1406,
+      "both_present_n": 571838,
+      "agree_pct": 95.036,
+      "mismatch_pct": 4.964,
+      "mismatch_n": 28386,
+      "assisted": {
+        "n": 59483,
+        "p1_present_pct": 100.0,
+        "shooter_present_pct": 99.879,
+        "shooter_missing_pct": 0.121,
+        "both_present_n": 59411,
+        "agree_pct": 52.2664,
+        "mismatch_pct": 47.7336,
+        "mismatch_n": 28359
+      },
+      "unassisted": {
+        "n": 513160,
+        "p1_present_pct": 99.9834,
+        "shooter_present_pct": 99.8572,
+        "shooter_missing_pct": 0.1428,
+        "both_present_n": 512427,
+        "agree_pct": 99.9947,
+        "mismatch_pct": 0.0053,
+        "mismatch_n": 27
+      }
+    },
+    "FGA_3": {
+      "n": 851043,
+      "p1_present_pct": 99.9959,
+      "shooter_present_pct": 99.9528,
+      "shooter_missing_pct": 0.0472,
+      "both_present_n": 850641,
+      "agree_pct": 85.9386,
+      "mismatch_pct": 14.0614,
+      "mismatch_n": 119612,
+      "assisted": {
+        "n": 238455,
+        "p1_present_pct": 100.0,
+        "shooter_present_pct": 99.8461,
+        "shooter_missing_pct": 0.1539,
+        "both_present_n": 238088,
+        "agree_pct": 49.7614,
+        "mismatch_pct": 50.2386,
+        "mismatch_n": 119612
+      },
+      "unassisted": {
+        "n": 612588,
+        "p1_present_pct": 99.9943,
+        "shooter_present_pct": 99.9943,
+        "shooter_missing_pct": 0.0057,
+        "both_present_n": 612553,
+        "agree_pct": 100.0,
+        "mismatch_pct": 0.0,
+        "mismatch_n": 0
+      }
+    }
+  },
+  "per_team_drop": {
+    "2022|FGA_rim": {
+      "teams": 358,
+      "underpowered_teams": 0,
+      "min_pct": 0.0,
+      "median_pct": 0.0,
+      "p95_pct": 0.0,
+      "max_pct": 1.81,
+      "sd_pp": 0.155
+    },
+    "2022|FGA_jump2": {
+      "teams": 358,
+      "underpowered_teams": 0,
+      "min_pct": 0.0,
+      "median_pct": 0.0,
+      "p95_pct": 0.0,
+      "max_pct": 1.4085,
+      "sd_pp": 0.1217
+    },
+    "2022|FGA_3": {
+      "teams": 358,
+      "underpowered_teams": 0,
+      "min_pct": 0.0,
+      "median_pct": 0.0,
+      "p95_pct": 0.2037,
+      "max_pct": 8.9404,
+      "sd_pp": 0.5989
+    },
+    "2023|FGA_rim": {
+      "teams": 363,
+      "underpowered_teams": 0,
+      "min_pct": 0.0,
+      "median_pct": 0.0,
+      "p95_pct": 0.0,
+      "max_pct": 2.4164,
+      "sd_pp": 0.2295
+    },
+    "2023|FGA_jump2": {
+      "teams": 363,
+      "underpowered_teams": 0,
+      "min_pct": 0.0,
+      "median_pct": 0.0,
+      "p95_pct": 0.2306,
+      "max_pct": 3.0201,
+      "sd_pp": 0.2196
+    },
+    "2023|FGA_3": {
+      "teams": 363,
+      "underpowered_teams": 0,
+      "min_pct": 0.0,
+      "median_pct": 0.0,
+      "p95_pct": 0.0,
+      "max_pct": 6.1425,
+      "sd_pp": 0.3795
+    },
+    "2024|FGA_rim": {
+      "teams": 362,
+      "underpowered_teams": 0,
+      "min_pct": 0.0,
+      "median_pct": 0.0,
+      "p95_pct": 0.1583,
+      "max_pct": 4.4925,
+      "sd_pp": 0.3489
+    },
+    "2024|FGA_jump2": {
+      "teams": 362,
+      "underpowered_teams": 0,
+      "min_pct": 0.0,
+      "median_pct": 0.1773,
+      "p95_pct": 1.0447,
+      "max_pct": 3.2967,
+      "sd_pp": 0.4263
+    },
+    "2024|FGA_3": {
+      "teams": 362,
+      "underpowered_teams": 0,
+      "min_pct": 0.0,
+      "median_pct": 0.0,
+      "p95_pct": 0.0,
+      "max_pct": 7.2052,
+      "sd_pp": 0.4672
+    },
+    "2025|FGA_rim": {
+      "teams": 364,
+      "underpowered_teams": 0,
+      "min_pct": 0.0,
+      "median_pct": 0.0,
+      "p95_pct": 0.0,
+      "max_pct": 6.903,
+      "sd_pp": 0.4708
+    },
+    "2025|FGA_jump2": {
+      "teams": 364,
+      "underpowered_teams": 0,
+      "min_pct": 0.0,
+      "median_pct": 0.0,
+      "p95_pct": 1.0018,
+      "max_pct": 1.9444,
+      "sd_pp": 0.3464
+    },
+    "2025|FGA_3": {
+      "teams": 364,
+      "underpowered_teams": 0,
+      "min_pct": 0.0,
+      "median_pct": 0.0,
+      "p95_pct": 0.0,
+      "max_pct": 6.6574,
+      "sd_pp": 0.4032
+    },
+    "pooled|FGA_rim": {
+      "teams": 366,
+      "underpowered_teams": 0,
+      "min_pct": 0.0,
+      "median_pct": 0.0,
+      "p95_pct": 0.1021,
+      "max_pct": 2.9091,
+      "sd_pp": 0.2047
+    },
+    "pooled|FGA_jump2": {
+      "teams": 366,
+      "underpowered_teams": 0,
+      "min_pct": 0.0,
+      "median_pct": 0.0836,
+      "p95_pct": 0.5006,
+      "max_pct": 1.5184,
+      "sd_pp": 0.1972
+    },
+    "pooled|FGA_3": {
+      "teams": 366,
+      "underpowered_teams": 0,
+      "min_pct": 0.0,
+      "median_pct": 0.0,
+      "p95_pct": 0.0933,
+      "max_pct": 2.8233,
+      "sd_pp": 0.2615
+    }
+  },
+  "assisted_split": {
+    "FGA_rim": {
+      "n": 817509,
+      "assisted_pct": 25.2402
+    },
+    "FGA_jump2": {
+      "n": 572643,
+      "assisted_pct": 10.3874
+    },
+    "FGA_3": {
+      "n": 851043,
+      "assisted_pct": 28.0191
+    }
+  },
+  "feature_movement": {
+    "n_events_p1": 2241195,
+    "n_events_sh": 2241195,
+    "n_reassigned_shooter_rows": 246689,
+    "n_design_p1": 2241063,
+    "n_design_sh": 2239678,
+    "n_joined": 2239678,
+    "by_class": {
+      "FGA_rim": {
+        "n": 817199,
+        "n_reassigned": 98691,
+        "corr_shooter_make_c": 0.693858,
+        "mean_abs_delta_pp": 7.6827,
+        "rms_delta_pp": 12.1583,
+        "pct_moved_ge_1pp": 78.8913,
+        "pct_moved_ge_3pp": 63.0611,
+        "reassigned_rows": {
+          "mean_abs_delta_pp": 14.21,
+          "pct_moved_ge_1pp": 90.6445,
+          "pct_moved_ge_3pp": 81.1107
+        },
+        "shooter_att_c_corr": 0.905066,
+        "shooter_games_asof_corr": 0.987952
+      },
+      "FGA_jump2": {
+        "n": 571838,
+        "n_reassigned": 28386,
+        "corr_shooter_make_c": 0.80183,
+        "mean_abs_delta_pp": 5.1115,
+        "rms_delta_pp": 9.7292,
+        "pct_moved_ge_1pp": 64.0222,
+        "pct_moved_ge_3pp": 46.1358,
+        "reassigned_rows": {
+          "mean_abs_delta_pp": 15.9635,
+          "pct_moved_ge_1pp": 90.8406,
+          "pct_moved_ge_3pp": 82.1461
+        },
+        "shooter_att_c_corr": 0.967107,
+        "shooter_games_asof_corr": 0.99506
+      },
+      "FGA_3": {
+        "n": 850641,
+        "n_reassigned": 119612,
+        "corr_shooter_make_c": 0.334746,
+        "mean_abs_delta_pp": 12.9735,
+        "rms_delta_pp": 18.1815,
+        "pct_moved_ge_1pp": 85.4346,
+        "pct_moved_ge_3pp": 77.7594,
+        "reassigned_rows": {
+          "mean_abs_delta_pp": 18.7912,
+          "pct_moved_ge_1pp": 91.9883,
+          "pct_moved_ge_3pp": 85.2832
+        },
+        "shooter_att_c_corr": 0.893822,
+        "shooter_games_asof_corr": 0.988545
+      }
+    }
+  },
+  "runtime_s": 176.8
+}

@@ -1390,3 +1390,146 @@ NOT adopt the fix and is reported as an open item rather than forced through.
 <!-- RESULTS FOR ROUND 3 APPEND BELOW THIS LINE -->
 
 ---
+
+## 18. ROUND 3 RESULTS (`scripts/train_fg_make_v3_shooter.py`, run 2026-09-10)
+
+Executes section 17 exactly as written. Runtime 2,552 s (~42.5 min: one events
+build, one design build, and TWO full six-refit S1 schedules across three
+classes -- seed 0, the served arm, and seed 1, the noise-floor refit).
+Artifacts: `data/processed/models/fg_make/round3_shooter/S_C_s1/<class>_<refit_date>.joblib`,
+`manifest_<class>.json`, `round3_shooter/run_report.json`,
+`events_v2_shotshooter.parquet`.
+
+### 18.1 Drop report (section 17.0 item 4, realised)
+
+| class | n attempts | dropped (no `shot_shooter_id`) | drop % |
+|---|---:|---:|---:|
+| `FGA_rim` | 817,509 | 310 | 0.038 |
+| `FGA_jump2` | 572,643 | 805 | 0.141 |
+| `FGA_3` | 851,043 | 402 | 0.047 |
+
+Design row count: 2,239,678 (vs round 2b's 2,241,063 under `participant_1_id`
+-- a further 1,385-row loss, consistent with `docs/tests/fg_make_shooter_key_2026-09-10.md`
+1.3-1.4). By-season/by-team detail: `round3_shooter/run_report.json`
+`drop_report`.
+
+### 18.2 F2, reference (round 2b, `participant_1_id`) vs new (round 3, `shot_shooter_id`)
+
+| class | scheme | log loss | delta vs ref | floor (2nd-seed) | delta in floors | calib gap pp | D8 |
+|---|---|---:|---:|---:|---:|---:|---|
+| `FGA_rim` | reference S1 | 0.660150 | -- | -- | -- | 0.672 | PASS |
+| `FGA_rim` | **new S1 (shooterfix)** | **0.664284** | **+0.004134** | 0.000080 | **+51.6** | 1.139 | PASS |
+| `FGA_jump2` | reference S1 | 0.663985 | -- | -- | -- | 1.693 | PASS |
+| `FGA_jump2` | **new S1 (shooterfix)** | **0.665918** | **+0.001933** | 0.000042 | **+46.5** | 1.567 | **FAIL** (`shooter_make_c`) |
+| `FGA_3` | reference S1 | 0.591644 | -- | -- | -- | 0.578 | PASS |
+| `FGA_3` | **new S1 (shooterfix)** | **0.637293** | **+0.045649** | 0.000006 | **+8,182.6** | 1.603 | **FAIL** (`shooter_make_c`) |
+
+The noise floor (a second seed-1 refit of the identical new arm) is 6e-6 to
+8e-5 -- one to two orders of magnitude SMALLER than round 1's own
+game-block-bootstrap floors (0.000539-0.000849) for the same classes, because
+this LightGBM configuration's seed-to-seed variance is small at this scale.
+Reported as measured, not inflated: even judged against the much larger
+round-1 floors, every delta above is still 5-80x beyond them, so the
+conclusion below does not depend on which floor is used.
+
+### 18.3 THE HEADLINE FINDING: the shooter-quintile Decision-8 span collapses, most on `FGA_3`
+
+| class | `shooter_make_c` realised span, reference | realised span, new (shooterfix) | steps (of 4) | slope ratio, ref -> new | D8 |
+|---|---:|---:|---:|---|---|
+| `FGA_rim` | 16.084 pp | **10.238 pp** | 4 -> 4 | 1.0062 -> 1.0593 | PASS -> PASS |
+| `FGA_jump2` | 8.138 pp | **4.343 pp** | 4 -> 3 | 1.0161 -> 0.8990 | PASS -> **FAIL** |
+| `FGA_3` | 35.899 pp | **2.802 pp** | 4 -> 3 | 0.9917 -> 0.9439 | PASS -> **FAIL** |
+
+**This, not the log-loss number, is the round's real result.** A 35.9
+percentage-point top-to-bottom quintile spread in three-point make probability
+by "shooter as-of rate" was never a plausible skill signal on its own (elite
+vs poor college three-point shooters do not differ by 36 points of true
+make-probability); it is the size a labelling defect produces when the feed
+misattributes roughly half of assisted makes to the team's primary
+ball-handler, who touches nearly every possession and whose aggregated
+(contaminated) history therefore reads as a near-perfect proxy for team shot
+quality. Corrected, the `FGA_3` span is 2.8 pp -- inside the 2.0 pp
+low-span band on the low side, and genuinely weak. The rim and jumper spans
+shrink less (36% and 47%) because their assisted shares and mismatch rates are
+smaller (25.2%/12.1% and 10.4%/5.0% respectively, vs `FGA_3`'s 28.0%/14.1%,
+`docs/tests/fg_make_shooter_key_2026-09-10.md` 1.1).
+
+This is exactly why `FGA_3`'s log-loss regression is 100-150x larger than
+rim's or the jumper's (18.2): **the shooter block's entire F2 log-loss
+contribution for `FGA_3` was manufactured almost entirely by the mislabelling.**
+Comparing to round 1's own `team_baseline` (`A_team`, no shooter at all, F2 log
+loss 0.639094 for `FGA_3`, section 3.3): the reference (mislabelled) shooter
+block was worth 0.639094 - 0.591644 = **0.0474** over team-only; the corrected
+shooter block is worth 0.639094 - 0.637293 = **0.0018** -- a **96% collapse**.
+The same comparison on `FGA_rim` (team_baseline 0.675996) shrinks from 0.0158
+to 0.0117 (a 26% reduction) and on `FGA_jump2` (team_baseline 0.668211) from
+0.0042 to 0.0023 (46%) -- real but far smaller, tracking each class's mismatch
+rate exactly as `docs/tests/fg_make_shooter_key_2026-09-10.md` 1.4 predicted.
+
+### 18.4 THE DECISION, by section 17.5
+
+| class | calibration | Decision 8 | log loss vs floor | **decision** |
+|---|---|---|---|---|
+| `FGA_rim` | PASS (both) | PASS (both) | +51.6 floors, beyond | **NOT ADOPTED** (rule 3) |
+| `FGA_jump2` | PASS (both) | PASS -> **FAIL** | +46.5 floors, beyond | **NOT ADOPTED** (rules 1 and 3) |
+| `FGA_3` | PASS (both) | PASS -> **FAIL** | +8,182.6 floors, beyond | **NOT ADOPTED** (rules 1 and 3) |
+
+**No class adopts the re-keyed arm under the pre-registered rule.** Per
+section 17.6, this is the falsification outcome stated in advance: the new
+arm's log loss is worse than the reference by (far) more than the floor on
+every class, so every class is reported as an open item rather than forced
+through. This is NOT a defect in the fix -- section 18.3 shows the regression
+is fully explained by the removal of a spurious, defect-driven predictive
+channel, exactly the L27/round-1 `score_diff` pattern repeating one round
+later on a different sub-model. **The round-2b artifacts
+(`round2b_S_C_s1`, keyed on the wrong column) remain the served model.**
+
+### 18.5 Closed-loop gate
+
+Per section 17.4, the FIXED (shot_shooter_id) arm's closed-loop is **PENDING
+an adapters.py change**: `FgMakeAdapter._load_round2b` resolves
+`ENGINE_FG_MAKE=round2b_<arm>` to the fixed path
+`data/processed/models/fg_make/round2b/<arm>/` and has no branch for
+`data/processed/models/fg_make/round3_shooter/<arm>/`. This worker does not
+own `adapters.py` and did not edit it. The REFERENCE arm's closed-loop is the
+number already on record (section 16.3, `ENGINE_FG_MAKE=round2b_S_C_s1`:
+margin SD 14.002, corr(home,away) +0.229, poss/gm 70.758, total bias +3.912,
+PPP 1.0553, PASS) and was not re-executed this round -- the artifacts, the 500
+games and the 5 seeds are byte-identical to that run and RNG is seeded on
+`(seed, game_id, family)`, so a re-run would reproduce it exactly at the cost
+of shared compute five other workers are using. Since no class is adopted
+(18.4), the fixed arm's closed-loop is now moot for a SHIP decision, but would
+still be informative for a future round that re-optimises the shooter block
+under the corrected label (18.6).
+
+### 18.6 What this round actually recommends (not a formal gate, stated for the record)
+
+The offline decision (18.4) is "keep serving the mislabelled artifacts",
+which is the mechanically correct reading of the pre-registered rule but is
+an uncomfortable place to stop: it means the ENGINE'S SERVED FG_MAKE MODEL
+KNOWINGLY KEYS THE SHOOTER ON THE WRONG COLUMN, and 18.3 shows why swapping
+only the data underneath an unchanged model spec makes the fit look worse
+without making the underlying attempt-level truth any less correct. The
+likely reason a straight swap loses is that S-C's feature set, EB priors (used
+by other arms) and LightGBM parameters were themselves chosen (rounds 1-2) on
+the contaminated label, i.e. tuned to exploit it; nothing in this round
+re-opens that choice. **This is round 3's recommended handoff to a round 4**:
+re-run the shooter-block bake-off (feature set and possibly the EB-shrinkage
+arm, which round 1 rejected partly on strength fitted against the same
+contaminated label) on `shot_shooter_id` from scratch, rather than assuming
+S-C-S1's spec is still the right one once the label defect it was fit against
+is removed. `model.md` item 8 records this as the open item.
+
+### 18.7 Artifacts
+
+| path | what |
+|---|---|
+| `data/processed/models/fg_make/round3_shooter/S_C_s1/<class>_<refit_date>.joblib` | 18 fitted LightGBM (seed 0, the served-candidate arm), one per (class, monthly refit); NOT adopted (18.4), all carry `adopted=False` |
+| `data/processed/models/fg_make/round3_shooter/S_C_s1/manifest_<class>.json` | `ArtifactManifest`-format manifest, `shooter_key="shot_shooter_id"` recorded per class |
+| `data/processed/models/fg_make/round3_shooter/run_report.json` | full detail: drop report, per-class scores (reference read back from round 2b, new computed here), both seeds' log loss, Decision-8 before/after, decision and reason per class |
+| `data/processed/models/fg_make/events_v2_shotshooter.parquet` | the `shot_shooter_id`-keyed event cache (round 2b's `events_v2.parquet` is untouched) |
+| `data/processed/models/fg_make/shooter_key_audit_v1.json` | step-1 evidence (`docs/tests/fg_make_shooter_key_2026-09-10.md`) |
+
+**The engine's served fg_make model is unchanged: `ENGINE_FG_MAKE=round2b_S_C_s1`,
+keyed on `participant_1_id`.** Nothing under `round2b/` or `winner_FGA_*.joblib`
+was touched.
