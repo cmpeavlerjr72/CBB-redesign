@@ -1,0 +1,346 @@
+{
+  "exit_side": {
+    "Y1_exit_rate": {
+      "n_waves_by_size": [
+        5593,
+        2063,
+        728
+      ],
+      "starter_share_of_leavers_by_size": [
+        0.5636,
+        0.5368,
+        0.5
+      ],
+      "starter_share_of_entrants_by_size": [
+        0.4584,
+        0.4896,
+        0.4991
+      ],
+      "p_any_starter_out_by_size": [
+        0.5636,
+        0.7426,
+        0.7445
+      ],
+      "starter_share_of_leavers_overall": 0.5422,
+      "starter_share_of_entrants_overall": 0.4769,
+      "p_starter_in_given_bench_out": 0.6891,
+      "p_starter_in_given_starter_out": 0.2798,
+      "n_bench_out": 2441,
+      "n_starter_out": 3152,
+      "underpowered_sizes": [
+        false,
+        false,
+        false
+      ],
+      "spread_pp": 40.9
+    },
+    "Z1_exit_marg": {
+      "n_waves_by_size": [
+        5582,
+        2089,
+        740
+      ],
+      "starter_share_of_leavers_by_size": [
+        0.5485,
+        0.5232,
+        0.5032
+      ],
+      "starter_share_of_entrants_by_size": [
+        0.4523,
+        0.4852,
+        0.4822
+      ],
+      "p_any_starter_out_by_size": [
+        0.5485,
+        0.7262,
+        0.7459
+      ],
+      "starter_share_of_leavers_overall": 0.5311,
+      "starter_share_of_entrants_overall": 0.4694,
+      "p_starter_in_given_bench_out": 0.6869,
+      "p_starter_in_given_starter_out": 0.2593,
+      "n_bench_out": 2520,
+      "n_starter_out": 3062,
+      "underpowered_sizes": [
+        false,
+        false,
+        false
+      ],
+      "spread_pp": 42.8
+    },
+    "Z2_exit_interact": {
+      "n_waves_by_size": [
+        5563,
+        2097,
+        744
+      ],
+      "starter_share_of_leavers_by_size": [
+        0.5472,
+        0.5215,
+        0.5028
+      ],
+      "starter_share_of_entrants_by_size": [
+        0.4496,
+        0.4835,
+        0.4814
+      ],
+      "p_any_starter_out_by_size": [
+        0.5472,
+        0.7177,
+        0.7473
+      ],
+      "starter_share_of_leavers_overall": 0.5297,
+      "starter_share_of_entrants_overall": 0.4675,
+      "p_starter_in_given_bench_out": 0.6812,
+      "p_starter_in_given_starter_out": 0.2579,
+      "n_bench_out": 2519,
+      "n_starter_out": 3044,
+      "underpowered_sizes": [
+        false,
+        false,
+        false
+      ],
+      "spread_pp": 42.3
+    },
+    "ACTUAL_asof_starters": {
+      "n_waves_by_size": [
+        5282,
+        1980,
+        738
+      ],
+      "starter_share_of_leavers_by_size": [
+        0.5867,
+        0.5576,
+        0.4931
+      ],
+      "starter_share_of_entrants_by_size": [
+        0.4852,
+        0.5028,
+        0.5145
+      ],
+      "p_any_starter_out_by_size": [
+        0.5867,
+        0.753,
+        0.7791
+      ],
+      "starter_share_of_leavers_overall": 0.5576,
+      "starter_share_of_entrants_overall": 0.4972,
+      "p_starter_in_given_bench_out": 0.6848,
+      "p_starter_in_given_starter_out": 0.3446,
+      "n_bench_out": 2183,
+      "n_starter_out": 3099,
+      "underpowered_sizes": [
+        false,
+        false,
+        false
+      ],
+      "spread_pp": 34.0
+    }
+  },
+  "by_composition": {
+    "Y1_exit_rate": [
+      {
+        "starters_on_floor": 0,
+        "n_leavers": 75,
+        "p_starter_leaves": 0.0,
+        "proportional": 0.0,
+        "ci": 0.0244,
+        "underpowered": true
+      },
+      {
+        "starters_on_floor": 1,
+        "n_leavers": 451,
+        "p_starter_leaves": 0.4612,
+        "proportional": 0.2,
+        "ci": 0.0458,
+        "underpowered": false
+      },
+      {
+        "starters_on_floor": 2,
+        "n_leavers": 1158,
+        "p_starter_leaves": 0.4447,
+        "proportional": 0.4,
+        "ci": 0.0286,
+        "underpowered": false
+      },
+      {
+        "starters_on_floor": 3,
+        "n_leavers": 1734,
+        "p_starter_leaves": 0.4844,
+        "proportional": 0.6,
+        "ci": 0.0235,
+        "underpowered": false
+      },
+      {
+        "starters_on_floor": 4,
+        "n_leavers": 1578,
+        "p_starter_leaves": 0.6286,
+        "proportional": 0.8,
+        "ci": 0.0238,
+        "underpowered": false
+      },
+      {
+        "starters_on_floor": 5,
+        "n_leavers": 597,
+        "p_starter_leaves": 1.0,
+        "proportional": 1.0,
+        "ci": 0.0032,
+        "underpowered": false
+      }
+    ],
+    "Z1_exit_marg": [
+      {
+        "starters_on_floor": 0,
+        "n_leavers": 45,
+        "p_starter_leaves": 0.0,
+        "proportional": 0.0,
+        "ci": 0.0393,
+        "underpowered": true
+      },
+      {
+        "starters_on_floor": 1,
+        "n_leavers": 387,
+        "p_starter_leaves": 0.3049,
+        "proportional": 0.2,
+        "ci": 0.0457,
+        "underpowered": false
+      },
+      {
+        "starters_on_floor": 2,
+        "n_leavers": 1149,
+        "p_starter_leaves": 0.3943,
+        "proportional": 0.4,
+        "ci": 0.0282,
+        "underpowered": false
+      },
+      {
+        "starters_on_floor": 3,
+        "n_leavers": 1818,
+        "p_starter_leaves": 0.4818,
+        "proportional": 0.6,
+        "ci": 0.0229,
+        "underpowered": false
+      },
+      {
+        "starters_on_floor": 4,
+        "n_leavers": 1608,
+        "p_starter_leaves": 0.6468,
+        "proportional": 0.8,
+        "ci": 0.0233,
+        "underpowered": false
+      },
+      {
+        "starters_on_floor": 5,
+        "n_leavers": 575,
+        "p_starter_leaves": 1.0,
+        "proportional": 1.0,
+        "ci": 0.0033,
+        "underpowered": false
+      }
+    ],
+    "Z2_exit_interact": [
+      {
+        "starters_on_floor": 0,
+        "n_leavers": 53,
+        "p_starter_leaves": 0.0,
+        "proportional": 0.0,
+        "ci": 0.0338,
+        "underpowered": true
+      },
+      {
+        "starters_on_floor": 1,
+        "n_leavers": 399,
+        "p_starter_leaves": 0.3333,
+        "proportional": 0.2,
+        "ci": 0.0461,
+        "underpowered": false
+      },
+      {
+        "starters_on_floor": 2,
+        "n_leavers": 1120,
+        "p_starter_leaves": 0.4009,
+        "proportional": 0.4,
+        "ci": 0.0287,
+        "underpowered": false
+      },
+      {
+        "starters_on_floor": 3,
+        "n_leavers": 1797,
+        "p_starter_leaves": 0.4741,
+        "proportional": 0.6,
+        "ci": 0.0231,
+        "underpowered": false
+      },
+      {
+        "starters_on_floor": 4,
+        "n_leavers": 1615,
+        "p_starter_leaves": 0.6384,
+        "proportional": 0.8,
+        "ci": 0.0234,
+        "underpowered": false
+      },
+      {
+        "starters_on_floor": 5,
+        "n_leavers": 579,
+        "p_starter_leaves": 1.0,
+        "proportional": 1.0,
+        "ci": 0.0033,
+        "underpowered": false
+      }
+    ],
+    "ACTUAL_asof_starters": [
+      {
+        "starters_on_floor": 0,
+        "n_leavers": 48,
+        "p_starter_leaves": 0.0,
+        "proportional": 0.0,
+        "ci": 0.0371,
+        "underpowered": true
+      },
+      {
+        "starters_on_floor": 1,
+        "n_leavers": 244,
+        "p_starter_leaves": 0.3115,
+        "proportional": 0.2,
+        "ci": 0.0577,
+        "underpowered": true
+      },
+      {
+        "starters_on_floor": 2,
+        "n_leavers": 982,
+        "p_starter_leaves": 0.4369,
+        "proportional": 0.4,
+        "ci": 0.031,
+        "underpowered": false
+      },
+      {
+        "starters_on_floor": 3,
+        "n_leavers": 1775,
+        "p_starter_leaves": 0.5115,
+        "proportional": 0.6,
+        "ci": 0.0232,
+        "underpowered": false
+      },
+      {
+        "starters_on_floor": 4,
+        "n_leavers": 1689,
+        "p_starter_leaves": 0.6761,
+        "proportional": 0.8,
+        "ci": 0.0223,
+        "underpowered": false
+      },
+      {
+        "starters_on_floor": 5,
+        "n_leavers": 544,
+        "p_starter_leaves": 1.0,
+        "proportional": 1.0,
+        "ci": 0.0035,
+        "underpowered": false
+      }
+    ]
+  },
+  "config": {
+    "sim_games": 200,
+    "sim_seed": 0
+  }
+}
