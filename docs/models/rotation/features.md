@@ -107,3 +107,49 @@ arm was flat across margin bands in the final eight minutes.
 | CBBD season ratings / lineup ratings (`/lineups/game`) | end-of-season snapshots, banned as pregame features (L7) |
 | a flat expanding `start_freq_asof` as the start ordering | measured 4.22 of 5 starters correct against 4.60 for the fitted EWMA; the metric counts the five the model started, so a wrong fifth man is worth ~2–4 pp of the late-window starters' share on its own |
 | `is_transition` / possession-outcome features | the rotation model is called *before* the possession is resolved |
+
+---
+
+## 4. Round 4: the per-player substitution-hazard feature set (`rotation_v4.SUB_FEATURES`)
+
+Round 4 changed model family (L25, `experiments.md` §10). The family is two
+per-player discrete-time hazards evaluated at every possession boundary — a
+sub-out hazard over the five on the floor and a sub-in hazard over the eligible
+bench — so its feature set is a *decision* feature set, not a budget feature
+set, and it replaces §1.2's "minutes played so far vs target / recent on-floor
+rate" pair rather than adding to it.
+
+**45 features, one design function.** `rotation_v4.design()` is written over
+(M, S) arrays and is called with M = 1 by the offline sampler and M = 2N by
+`engine/rotation_adapter.py`, so the bake-off and the engine cannot drift apart;
+`tests/test_rotation_v4.py` pins that equality, the feature order, and the
+`period_boundary` coding.
+
+| group | features | source at fit time | source in the engine |
+|---|---|---|---|
+| player role | `is_starter` (as-of `start_rank_asof` ≤ 5), `share` (as-of minutes share × 5, normalised over **all** candidates) | §1.1 | `inp.rot_srank`, `inp.rot_share` |
+| player fouls | `fouls`, `foul_out`, `fouls × is_starter`, `fouls × late` | the training game's own `PersonalFoul` events | the (2N, S) `GameState.player_fouls` block, **simulated** |
+| player fatigue | `state_min` (minutes in the current on/off state — stint if on, rest if off), `half_min` (minutes played so far in this half), `half_min_dev` = `half_min − share ×` elapsed half minutes | on-floor stream | rotation-batch state |
+| clock | `sec_left_frac`, `is_ot`, eight **time-cell dummies** (the nine audit cells, `H1 20:00–10:00` the reference) | `period`, `start_clock` | `st.period`, `st.seconds_remaining` |
+| margin | `abs_margin`, `mb_6_15`, `mb_gt15` | `start_score_diff` re-signed | `st.home_score_diff()` re-signed |
+| dead ball | `period_boundary`, `dead_made_ft`, `dead_tov`, `dead_other` — the `start_reason` levels, which are exactly `engine.state.PREV_END_LEVELS` | possessions `start_reason` | `st.prev_end` |
+| team fouls | `team_fouls_frac` (own team fouls / 5) | possessions `off_team_fouls`/`def_team_fouls` re-signed to the team | `st.team_fouls[:, side]` |
+| interactions | `is_starter ×` each time-cell dummy, each margin-band dummy, `period_boundary`, `sec_left_frac`, `is_close × late`, `is_blowout × late`, `abs_margin`; `share ×` `late`, `mb_gt15`, `period_boundary` | — | — |
+
+**Why the design is saturated in (time cell × margin band × is_starter).** The
+audit (`docs/tests/rotation_sub_hazard_audit_2026-09-10.md` §1) measures a
+starter's exit hazard running 0.035 → 0.020 → 0.054 → 0.027 → 0.037 across the
+nine cells — non-monotone — a bench player's exit hazard jumping to 0.244 in
+H2 20:00–16:00, and the starter/bench ordering reversing sign in the final two
+minutes of a blowout. A linear time term cannot represent that shape. The gate
+reads *occupancy* in some of those cells, which is a different functional of the
+process (an equilibrium under the five-on-the-floor constraint), and §10.9's
+reachability probe is what makes the claim falsifiable.
+
+### 4.1 Round-4 rejected features (measured, then excluded)
+
+| Feature | Measured effect | Why not |
+|---|---|---|
+| timeout at this stoppage (CBBD `OfficialTVTimeOut` / `ShortTimeOut` / `RegularTimeOut`) | multiplies every hazard 3–4× (starter exit 0.031 → 0.136, starter entry 0.068 → 0.243, n = 4.0M / 162k) | the engine has no timeout model, so a hazard conditioned on it could be fitted offline and could never be evaluated in simulation — the same exclusion class as `is_transition`. Its cost is visible: the arms' substitutions are more uniform in time than real ones, which shows up in the substitution rate and distinct-lineup counts |
+| prior-season minutes share (hoopR `player_box` of season − 1 through the crosswalk) | a real gradient, same sign as the as-of share and about half its size (P5 − P1: −0.9 pp on starter exit, +1.8 pp on starter entry, against −1.3 / +2.8 for the as-of share) | a near-duplicate of a feature already in the design, and not expressible in the engine without a new per-roster-slot input array, i.e. without rebuilding `arrays_F2_2025.npz` while other workers read it |
+| the R1/R2 scheduler's `minutes played so far vs target` and EMA on-floor rate | — | superseded: `half_min_dev` carries the budget deviation and `state_min` carries the stint, both as hazard covariates rather than as a scheduler utility |

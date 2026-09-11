@@ -202,16 +202,25 @@ def simulate_chunk(inp: EngineInputs, ad: Adapters, game_index: np.ndarray,
     rot_rows = np.arange(2 * n)
     rot_book = StreamBook(np.concatenate([seeds, seeds]),
                           np.concatenate([gids, gids]) * 2 + two,
-                          families=("rotation", "rotation_foul"))
+                          families=("rotation", "rotation_foul", "rotation_sub"))
+    # ENGINE_ROTATION=round4 serves the per-player substitution-hazard family
+    # (`models/rotation_v4.py`) from an S1 manifest; `reference` is the R2
+    # hierarchical Dirichlet + scheduler. The mode is read here rather than in
+    # `adapters.py`, which another deliverable owns.
+    r4 = RA.load_round4(inp.games) if RA.rotation_mode() == "round4" else None
     rot = RA.init_batch(
         ad.rot_fit,
         inp.rot_share[gg, two], inp.rot_srank[gg, two], inp.rot_fpm[gg, two],
-        inp.rot_pavail[gg, two], rot_book, rot_rows)
+        inp.rot_pavail[gg, two], rot_book, rot_rows,
+        round4=None if r4 is None else RA.round4_rows(r4, gg))
     # the rotation decides foul-outs off the same counters the box score reports,
     # so the (2n, S) block is the single source of truth until the game is over
     fouls2 = np.zeros((2 * n, inp.n_slots), dtype=np.int8)
 
     def push_lineups() -> None:
+        # `prev_end` is the possession's own start reason -- the dead-ball
+        # opportunity the round-4 hazards condition on -- and is exactly the
+        # possessions table's `start_reason`. `team_fouls` is each side's own.
         five = RA.next_lineup(
             rot,
             np.concatenate([st.period, st.period]),
@@ -219,7 +228,9 @@ def simulate_chunk(inp: EngineInputs, ad: Adapters, game_index: np.ndarray,
             np.concatenate([hsd, hsd]),
             np.concatenate([last_dur, last_dur]),
             fouls2, rot_book, rot_rows,
-            np.concatenate([st.active, st.active]))
+            np.concatenate([st.active, st.active]),
+            prev_end=np.concatenate([st.prev_end, st.prev_end]),
+            team_fouls=np.concatenate([st.team_fouls[:, 0], st.team_fouls[:, 1]]))
         st.on_floor[:, 0, :] = five[:n]
         st.on_floor[:, 1, :] = five[n:]
 
@@ -448,11 +459,10 @@ def simulate_chunk(inp: EngineInputs, ad: Adapters, game_index: np.ndarray,
         st.player_seconds[act[:, None], dfn[:, None], st.on_floor[act, dfn]] += \
             used[:, None].astype(np.float32)
 
-        # ---- (e) rotation -------------------------------------------------
+        # ---- (e) rotation: state only; the call itself is after (f) --------
         last_dur[:] = 0.0
         last_dur[act] = used
         hsd = st.home_score_diff()
-        push_lineups()
 
         # ---- (f) period / halftime / overtime ----------------------------
         ended = st.active & (st.seconds_remaining <= 0)
@@ -487,6 +497,21 @@ def simulate_chunk(inp: EngineInputs, ad: Adapters, game_index: np.ndarray,
                     st.off[ot] = (book.draw("tipoff", ot) < 0.5).astype(np.int8)
                     st.prev_end[ot] = PREV["period_start"]
                     st.chance_number[ot] = 1
+
+        # ---- (e, continued) the rotation chooses the NEXT possession's five
+        # DEFECT FIX (2026-09-10, rotation round 4). This call used to sit
+        # before block (f), so at a period boundary the rotation was handed the
+        # PREVIOUS possession's period and clock: the five that took the floor
+        # for the first possession of the second half were chosen with
+        # `period = 1, seconds_remaining = 0`, and the R2 adapter's own
+        # period-boundary reshuffle fired one possession late. The offline
+        # samplers (`run_scheduler`, `run_sub_hazard`) have always used the
+        # possession's own state, so the engine and the bake-off disagreed
+        # exactly at the cell round 4 adds. Moving the call after (f) makes the
+        # engine match the samplers. It changes R2's engine lineups at every
+        # period boundary and is a behaviour change, stated here rather than
+        # buried.
+        push_lineups()
 
         if progress and step % progress == 0:
             print(f"    step {step}: {int(st.active.sum())}/{n} active", flush=True)

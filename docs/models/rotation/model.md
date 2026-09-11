@@ -1,6 +1,24 @@
 # Rotation model (L4) — who is on the floor, and for how long
 
-Status: **BAKE-OFF RUN 2026-09-10, three rounds, NO ARM ADOPTED.** Round 3 added
+Status: **BAKE-OFF RUN 2026-09-10/11, FOUR rounds, NO ARM ADOPTED.** Round 4
+changed model family (L25): per-player discrete-time substitution hazards
+(sub-out over the five on the floor, sub-in over the eligible bench) in place of
+a minutes budget or a donor sequence. It **produces both structural facts three
+rounds could not** — the second-half tip goes from R2's 0.79 to 0.94 against a
+real 0.97, and the opening ten minutes of a close game from R2's 0.60 to 0.74
+against a real 0.78 — **passes the blowout band for the first time in four
+rounds**, **passes the within-player minutes SD ratio for the first time ever**,
+and beats R2 on per-player minutes MAE by 0.98 min against a 0.015 min floor.
+It is **not adopted**: it loses the close-and-late band (0.669 against 0.749,
+where R2 is 0.725), so no arm has all eight state cells and the pre-registered
+rule adopts nothing. The mechanism is measured, not guessed: the arms substitute
+**43% too often** (0.206 against a real 0.152 at a possession boundary) because
+independent per-player Bernoulli exits cannot represent a coordinated dead-ball
+substitution wave — the same defect that stops the *earned*-reset arm (H2) at
+0.85 while its fitted boundary hazards are right to 1 pp. Round 5's arm is this
+family with a **joint** dead-ball substitution draw. Also this round: the
+incumbent's first-ever Decision-10 closed-loop gate (it passes), and an engine
+loop defect fixed (§7 item 9). Earlier rounds: Round 3 added
 a fitted close-game keep-starters override in two functional forms (R7 logistic,
 R8 per-cell threshold) and adopted neither; it also closed §5's hazard-matrix
 defect, whose corrected re-run makes the donor family **worse** than the column
@@ -235,6 +253,61 @@ starter flag, decay fitted on 2024) already bought 4.22 → 4.60 of 5 over a fla
 expanding mean; closing the remaining 0.4 players needs availability information
 the as-of feature set does not have (injury reports), not a better estimator.
 
+### 5.5 Round 4 (same 1,600 games, 3 seeds under S1 + 3 static; `experiments.md` §10-11)
+
+A new family: two per-player discrete-time hazards at every possession boundary,
+`p_out` over the five on the floor and `p_in` over the eligible bench, with
+exits drawn as independent Bernoulli and entrants taken in an
+Efraimidis–Spirakis exponential race weighted by `p_in / (1 − p_in)`. Three
+arms: **H1** logistic + a hard reset to the predicted starters at the first
+possession of period 2, **H2** the same hazards with the reset left to be
+*earned*, **H3** H1 with a LightGBM hazard. `R2_hier_dirichlet` is the
+reference, under S1 and static.
+
+| cell (S1) | ACTUAL | R2 | H1 | H2 | H3 |
+|---|---:|---:|---:|---:|---:|
+| final 8:00, \|m\| ≤ 5 | 0.7491 | **0.7254** ✓ | 0.6692 | 0.6719 | 0.6797 |
+| final 8:00, \|m\| 6–15 | 0.7240 | 0.6914 | 0.6518 | 0.6489 | 0.6636 |
+| final 8:00, \|m\| > 15 | 0.5223 | 0.4694 | **0.5446** ✓ | **0.5471** ✓ | **0.5517** ✓ |
+| starters at ≥ 4 fouls | 0.4613 | **0.4626** ✓ | **0.4344** ✓ | **0.4341** ✓ | 0.4005 |
+| **H2 tip, ≤ 5 / 6–15 / > 15** | 0.968 / 0.961 / 0.956 | 0.789 / 0.798 / 0.734 | **0.939 / 0.937 / 0.943** ✓ | 0.855 / 0.849 / 0.848 | **0.939 / 0.942 / 0.945** ✓ |
+| **H1 20:00–10:00, ≤ 5** | 0.7822 | 0.5988 | 0.7434 | 0.7450 | **0.7581** ✓ |
+| per-player minutes MAE (min) | 0.0 | 9.794 | **8.819** | 8.897 | **8.674** |
+| within-player minutes SD ratio | 1.000 | 1.342 | **1.079** ✓ | **1.080** ✓ | **1.022** ✓ |
+| distinct lineups / team-game | 14.84 | 15.51 | 19.73 | 19.93 | 20.41 |
+| substitution rate at a boundary | 0.1518 | 0.1437 | 0.2058 | 0.2052 | 0.2050 |
+
+Reading, in the order the evidence forces:
+
+1. **The family reaches the cells the round existed for.** The two structural
+   facts of L25 are produced, the blowout band passes for the first time in four
+   rounds, and the within-player minutes SD ratio — which had failed for every
+   arm in every round — passes on all three hazard arms. Per-player minutes MAE
+   improves by 61–76 noise floors. None of it comes from a knob; round 4 has
+   none, and a spec-identical refit under a second seed moves six of eight cells
+   by 0.04–0.81 pp (round 3's override knobs were *not identified*).
+2. **The reset must be given, not earned — and the fit is not what fails.** On
+   the 2024 training rows the model predicts a bench player's exit at a period
+   boundary at **0.786** against an actual **0.791**, and an off-floor starter's
+   entry at **0.771** against **0.780**. H2 still lands 11 pp short of the tip.
+   Independent Bernoulli exits capped at the bench size realise about four
+   fifths of a coordinated two- or three-player swap, whatever the marginal
+   rates are.
+3. **The cell it breaks is the one it did not previously fail, and by the same
+   mechanism.** The arms substitute 43% too often, run 19.7 distinct lineups
+   against 14.84, and compress the late-game spread across margin bands to
+   12.4 pp against a real 22.7 pp. Real substitutions bunch at dead balls;
+   independent draws spread the same total exits over more boundaries, and every
+   extra churn resamples the floor toward the unconditional mix.
+4. **The two families fail in orthogonal ways.** R2 gets the close-and-late
+   *level* right and the within-game *shape* badly wrong (−16 to −22 pp at the
+   tip, −18.3 pp over the opening ten minutes). The hazard family gets the shape
+   right and the level wrong. Round 5 is this family with a joint dead-ball
+   substitution mechanism, not a third family.
+
+Decision 8 is satisfied by all four arms (slope +0.629 / +0.628 / +0.672 /
++0.706 against an actual +0.692, monotone 4 of 4) and separates none of them.
+
 ---
 
 ## 6. Garbage time: how each arm produces it, from data rather than a rule
@@ -339,6 +412,52 @@ events of the game being simulated would be a leak of exactly the kind
     numbers), which is why its cells differ from `docs/tests/rotation_close_game_audit_2026-09-10.md`
     by 0.1-0.6 pp. That difference is a free extra seed-noise reading and is
     smaller than noise floor A on every cell.
+14. **Round 4's design is saturated in (time cell x margin band x is_starter),
+    and that was declared before the run.** The audit measures a starter's exit
+    hazard running 0.035 -> 0.020 -> 0.054 -> 0.027 -> 0.037 across the nine
+    time cells, a bench player's exit hazard jumping to 0.244 in H2 20:00-16:00,
+    and the starter/bench ordering reversing sign in the last two minutes of a
+    blowout. A linear time term cannot represent that. The gate reads
+    *occupancy* in some of those cells, which is a different functional of the
+    process -- an equilibrium under the five-on-the-floor constraint -- and the
+    L25 reachability probe (`experiments.md` §10.9) is what makes the claim that
+    the family can reach the cells falsifiable rather than rhetorical.
+15. **Timeouts and prior-season minutes share are measured and excluded.** A
+    timeout multiplies every hazard by 3-4x and is the strongest non-boundary
+    stoppage signal in the data; it is excluded because the engine has no
+    timeout model, so a hazard conditioned on it could be fitted and never
+    evaluated in simulation. Prior-season minutes share has a real gradient,
+    same-signed and about half the size of the as-of share already in the
+    design, and would need a new per-roster-slot engine input array. Both costs
+    are sized in `features.md` §4.1, and the timeout exclusion is now the
+    leading candidate cause of round 4's binding defect.
+16. **Round 4 fits only what it adds; the base fits are reused from round 3b.**
+    `rotation_fit_v3.json` and the six `rotation_fit_v3_S1_{YYYYMM}.json` are the
+    base parameter sets, so the round-4 `R2 S1` column IS round 3b's and a
+    difference between rounds cannot be a difference in R2's fit. The arms live
+    in `src/cbb_sim/models/rotation_v4.py`; `rotation.py` and every fit file are
+    untouched.
+17. **An engine loop defect was found and fixed during this round.**
+    `engine/loop.py` called `push_lineups()` *before* the period/halftime block,
+    so at a period boundary the rotation was handed the previous possession's
+    period and clock -- the five that took the floor for the first possession of
+    the second half were chosen with `period = 1, seconds_remaining = 0`, and
+    R2's own period-boundary reshuffle fired one possession late. The offline
+    samplers have always used the possession's own state, so the engine and the
+    bake-off disagreed exactly at the cell round 4 adds. The call now sits after
+    the period block. Blast radius on aggregate engine metrics is about one
+    possession in 137 and the counter-based streams stay aligned, but it is a
+    behaviour change for every engine run started after the fix and any paired
+    comparison that straddles it is invalid.
+18. **The incumbent has a closed-loop gate for the first time (Decision 10).**
+    `ENGINE_ROTATION_FREEZE=1` holds the rotation model's margin and foul counts
+    at their pregame values while leaving foul accrual, the foul-out rule and the
+    box-score counters live. Paired 5-seed runs over a fixed 500-game subset:
+    R2 margin SD ratio 0.9950, home/away correlation -0.0026, possessions +0.061;
+    H1 0.9963, +0.0106, +0.094. The rotation's consumption of engine-produced
+    state is **not** a feedback channel -- it changes who scores, not how much --
+    which is why both pass by two orders of magnitude against L23's `fg_make`
+    loop.
 
 ---
 
@@ -417,6 +536,32 @@ Notes for the caller:
 ---
 
 ## 10. Known gaps / followups
+
+- **ROUND 5, and it is the only item that matters.** The round-4 family needs a
+  **joint dead-ball substitution draw**: one Bernoulli per (team, boundary) for
+  "is there a substitution wave here", conditioned on `prev_end` and the state,
+  then a wave size and a composition drawn from the same per-player hazards.
+  Measured evidence that this is the binding defect, not a guess:
+  (a) the fitted period-boundary hazards are right to 1 pp and the *earned*-reset
+  arm still misses the tip by 11 pp; (b) the arms' boundary change rate is
+  0.2058 against a real 0.1518 while their per-player exit rate is right;
+  (c) distinct lineups per team-game 19.7 against 14.84. A timeout indicator
+  would supply the same bunching directly and is excluded because the engine has
+  no timeout model (`features.md` §4.1) — the joint draw gets the effect from
+  `prev_end` alone, which the engine does carry.
+- **The hazard family's close-and-late level is 8 pp low and the reachability
+  probe says it should not be.** The saturated cell form of the same family,
+  fitted on 2024 and run on 400 2025 games with the real starting five, lands at
+  0.7393 against 0.7388 (audit §8). The arms land at 0.669. 2.8 pp of the gap is
+  the as-of starter set (measured); the rest is item 1's over-substitution.
+- **Lineup concentration got worse, not better.** Top-1 five-man lineup share
+  0.198–0.220 against a real 0.294 and R2's 0.229; K-S D 0.27–0.37 against R7's
+  0.030, which remains the best any arm has produced. A unit-level substitution
+  block is the shape to aim at, and it is the same object as item 1.
+- **H3 (LightGBM hazard) is not expressible in the sim loop.** `CLAUDE.md` bans
+  live model calls there; shipping a tree hazard needs the booster discretised
+  into a lookup table. It did not earn that work in round 4 (it loses the
+  foul-trouble cell at −6.1 pp and the pooled minutes SD ratio at 0.856).
 
 - **REFUTED BY ROUND 3 (kept for the record).** The hypothesis below — that R5
   spends its starter time too early and needs a within-game time-profile

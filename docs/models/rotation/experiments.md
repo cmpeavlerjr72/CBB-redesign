@@ -1436,3 +1436,376 @@ waived.
    deviation from "refit everything per window" and is stated as one.
 
 ---
+
+## 11. Round-4 results (train 2024, test 2025) -- run 2026-09-10T23:57Z
+
+Test universe: the **same** 1,600-game subset of 2025 rounds 2, 3 and 3b used
+(numpy RandomState seed 2025), 3 seeds per arm under S1 and 3 static, one blind
+grading path. 9,600 simulated team-games and 68,859 rotation player-games per
+arm against 3,200 actual team-games and 23,914 actual rotation player-games.
+Every state cell is far above the n < 300 UNDERPOWERED threshold: final-8:00
+slots 29,660 / 36,804 / 23,360, foul-trouble opportunities 58,652, second-half
+tip slots 6,330 / 7,360 / 2,310, opening-ten-minutes slots 414,680.
+
+Six S1 windows and the games each scored: 202411 147, 202412 297, 202501 438,
+202502 444, 202503 267, 202504 7 (the last is UNDERPOWERED at 7 games and is
+reported only because it exists). Window 202411's training data is 2024 alone,
+which IS the static fit. Base fits reused from round 3b per section 10.4; only
+the two hazards are fitted here, on 800 team-games per window (fit seed 11):
+547,450 out rows at base rate 0.04275 and 1,091,977 in rows at base rate
+0.02135 for the static fit.
+
+### 11.1 Does the fitted hazard reproduce the hazards the audit measured? (training season only)
+
+Pre-registered in 10.12 as the faithfulness check, computed on the **2024
+training rows** and on nothing else. Actual / predicted, starter | bench:
+
+| time cell | OUT \|m\|<=5 | OUT 6-15 | OUT >15 | IN \|m\|<=5 | IN 6-15 |
+|---|---|---|---|---|---|
+| H1 20:00-10:00 | 0.0312/0.0337 \| 0.0394/0.0421 | 0.0534/0.0441 \| 0.0484/0.0463 | 0.0432/0.0503 \| 0.0667/0.0431 | 0.0548/0.0581 \| 0.0112/0.0116 | 0.0659/0.0641 \| 0.0169/0.0130 |
+| H1 10:00-00:00 | 0.0374/0.0344 \| 0.0696/0.0677 | 0.0367/0.0388 \| 0.0702/0.0708 | 0.0329/0.0440 \| 0.0687/0.0623 | 0.0751/0.0736 \| 0.0136/0.0120 | 0.0733/0.0737 \| 0.0138/0.0142 |
+| H2 20:00-16:00 | 0.0169/0.0185 \| 0.1555/0.1634 | 0.0212/0.0202 \| 0.1556/0.1573 | 0.0229/0.0205 \| 0.1219/0.1114 | 0.1502/0.1567 \| 0.0081/0.0083 | 0.1523/0.1522 \| 0.0099/0.0093 |
+| H2 16:00-12:00 | 0.0516/0.0481 \| 0.0398/0.0418 | 0.0506/0.0542 \| 0.0412/0.0422 | 0.0598/0.0566 \| 0.0404/0.0356 | 0.0570/0.0574 \| 0.0159/0.0138 | 0.0578/0.0602 \| 0.0160/0.0159 |
+| H2 12:00-08:00 | 0.0342/0.0331 \| 0.0638/0.0639 | 0.0325/0.0353 \| 0.0619/0.0625 | 0.0442/0.0381 \| 0.0525/0.0527 | 0.0827/0.0787 \| 0.0092/0.0086 | 0.0746/0.0788 \| 0.0097/0.0097 |
+| H2 08:00-04:00 | 0.0256/0.0223 \| 0.0701/0.0646 | 0.0258/0.0209 \| 0.0651/0.0659 | 0.0338/0.0479 \| 0.0534/0.0544 | 0.0826/0.0996 \| 0.0090/0.0087 | 0.0683/0.0674 \| 0.0101/0.0105 |
+| H2 04:00-02:00 | 0.0204/0.0259 \| 0.0627/0.0541 | 0.0206/0.0259 \| 0.0619/0.0576 | 0.0769/0.0580 \| 0.0368/0.0450 | 0.0810/0.0755 \| 0.0068/0.0110 | 0.0587/0.0527 \| 0.0095/0.0142 |
+| H2 02:00-00:00 | 0.0330/0.0363 \| 0.0738/0.0482 | 0.0341/0.0387 \| 0.0567/0.0591 | 0.0970/0.0704 \| 0.0277/0.0377 | 0.0856/0.0614 \| 0.0137/0.0141 | 0.0589/0.0563 \| 0.0145/0.0191 |
+
+At a **period boundary**: OUT starter 0.0399 actual / 0.0383 predicted
+(n = 2,859), OUT bench **0.7909 / 0.7856** (n = 1,521); IN starter
+**0.7801 / 0.7707** (n = 1,501), IN bench 0.0200 / 0.0230 (n = 7,236).
+
+**The fit is faithful.** The saturated design reproduces every cell it was given
+to within about 1 pp, including the reset row the whole round turns on. So
+anything the arms miss below is a property of the *sampler* -- of how hazards
+become occupancy under the five-on-the-floor constraint -- and not of the fit.
+
+### 11.2 G8 cells (report, not veto) -- S1
+
+| cell | tol | ACTUAL | R2_hier_dirichlet | H1_sub_hazard | H2_sub_hazard_noreset | H3_sub_hazard_lgbm |
+|---|---|---:|---:|---:|---:|---:|
+| minutes mean (rotation players) | +/- 2.0 | 24.55 | 25.36  PASS | 25.99  PASS | 25.96  PASS | 25.75  PASS |
+| minutes SD ratio, pooled | 0.9-1.1 | 1.0000 | 1.0548  PASS | 0.9117  PASS | 0.9074  PASS | 0.8562  FAIL |
+| minutes SD ratio, within-player | 0.9-1.1 | 1.0000 | 1.3416  FAIL | **1.0792  PASS** | **1.0804  PASS** | **1.0219  PASS** |
+| top-5 share of team minutes | +/- 2 pp | 0.7472 | 0.7630  PASS | 0.7583  PASS | 0.7566  PASS | 0.7457  PASS |
+| top-8 share of team minutes | +/- 2 pp | 0.9560 | 0.9626  PASS | 0.9778  FAIL | 0.9776  FAIL | 0.9771  FAIL |
+| players with > 0 minutes | +/- 1.0 | 9.64 | 9.13  PASS | 8.64  FAIL | 8.63  FAIL | 8.50  FAIL |
+
+The within-player minutes SD ratio has **failed in every round for every arm**
+since round 1 (1.296 / 1.353 / 1.117 / 1.051 in round 1, 1.354 / 1.235 / 1.131
+in round 2, 1.354 / 1.294 / 1.330 / 1.253 in round 3). All three hazard arms
+pass it. That is the CFB "too narrow / too wide" pair closing, and it is the
+first time.
+
+### 11.3 State cells (the veto) -- S1
+
+| cell | ACTUAL | R2_hier_dirichlet | H1_sub_hazard | H2_sub_hazard_noreset | H3_sub_hazard_lgbm |
+|---|---:|---:|---:|---:|---:|
+| final 8:00 starters' share, \|m\| <= 5 | 0.7491 | 0.7254 (-2.4 pp)  PASS | 0.6692 (-8.0 pp)  FAIL | 0.6719 (-7.7 pp)  FAIL | 0.6797 (-6.9 pp)  FAIL |
+| final 8:00 starters' share, \|m\| 6-15 | 0.7240 | 0.6914 (-3.3 pp)  FAIL | 0.6518 (-7.2 pp)  FAIL | 0.6489 (-7.5 pp)  FAIL | 0.6636 (-6.0 pp)  FAIL |
+| final 8:00 starters' share, \|m\| > 15 | 0.5223 | 0.4694 (-5.3 pp)  FAIL | **0.5446 (+2.2 pp)  PASS** | **0.5471 (+2.5 pp)  PASS** | **0.5517 (+2.9 pp)  PASS** |
+| starters on floor at >= 4 fouls | 0.4613 | 0.4626 (+0.1 pp)  PASS | 0.4344 (-2.7 pp)  PASS | 0.4341 (-2.7 pp)  PASS | 0.4005 (-6.1 pp)  FAIL |
+| **H2 TIP starters' share, \|m\| <= 5** | 0.9678 | 0.7892 (-17.9 pp)  FAIL | **0.9390 (-2.9 pp)  PASS** | 0.8548 (-11.3 pp)  FAIL | **0.9394 (-2.8 pp)  PASS** |
+| **H2 TIP starters' share, \|m\| 6-15** | 0.9611 | 0.7977 (-16.3 pp)  FAIL | **0.9374 (-2.4 pp)  PASS** | 0.8493 (-11.2 pp)  FAIL | **0.9418 (-1.9 pp)  PASS** |
+| **H2 TIP starters' share, \|m\| > 15** | 0.9563 | 0.7338 (-22.3 pp)  FAIL | **0.9434 (-1.3 pp)  PASS** | 0.8483 (-10.8 pp)  FAIL | **0.9453 (-1.1 pp)  PASS** |
+| **H1 20:00-10:00 starters' share, \|m\| <= 5** | 0.7822 | 0.5988 (-18.3 pp)  FAIL | 0.7434 (-3.9 pp)  FAIL | 0.7450 (-3.7 pp)  FAIL | **0.7581 (-2.4 pp)  PASS** |
+| (diagnostic) at exactly 4 fouls | 0.5166 | 0.5722 | 0.6666 | 0.6579 | 0.5630 |
+
+Each side is scored against **its own** starting five, the convention rounds 1-3
+used. The model's as-of starter set overlaps the real one on **4.58 of 5**;
+re-grading the ACTUAL sequence with the MODEL's as-of starter set gives the
+benchmark 0.7215 / 0.6964 / 0.5048 / 0.4636 on the round-3 cells and
+0.9024 / 0.8908 / 0.8909 / 0.7384 on the round-4 cells.
+
+**Two readings that must not be overstated.** (1) An arm with a hard reset
+passes the three tip cells close to by construction, so H1's and H3's passes
+there are a statement about the mechanism, not independent evidence; the
+informative rows are H2 at -10.8 to -11.3 pp (an *earned* reset) and R2 at -16.3
+to -22.3 pp. (2) The tip cell is a single possession per team-game, so its
+sampling noise is the largest of any state cell (floor A 0.8-2.4 pp).
+
+### 11.4 Primary metric and lineup concentration -- S1
+
+| metric | ACTUAL | R2_hier_dirichlet | H1_sub_hazard | H2_sub_hazard_noreset | H3_sub_hazard_lgbm |
+|---|---:|---:|---:|---:|---:|
+| **per-player minutes MAE (min)** | 0.0 | 9.7939 | **8.8189** | 8.8967 | **8.6739** |
+| top-1 lineup share of possessions | 0.2940 | 0.2286 | 0.2054 | 0.1982 | 0.2196 |
+| top-3 lineup share | 0.5426 | 0.4819 | 0.4427 | 0.4333 | 0.4492 |
+| top-5 lineup share | 0.6894 | 0.6409 | 0.5992 | 0.5906 | 0.5953 |
+| distinct lineups per team-game | 14.84 | 15.51 | 19.73 | 19.93 | 20.41 |
+| K-S of per-player minutes (D) | -- | 0.0798 | 0.0796 | 0.0801 | 0.0813 |
+| K-S of the top-1 lineup share (D) | -- | 0.2273 | 0.3373 | 0.3743 | 0.2653 |
+| substitution rate at a possession boundary | 0.1518 (train) | 0.1437 | **0.2058** | 0.2052 | 0.2050 |
+
+Every hazard arm beats R2 on the primary metric by **0.90 to 1.12 minutes**
+against a floor-A seed SD of **0.0147**, i.e. by 61 to 76 noise floors. No arm
+in three rounds had ever beaten R2 on per-player minutes at all. The price is
+lineup concentration: the hazard arms run **19.7-20.4** distinct lineups per
+team-game against a real 14.84 and R2's 15.51, and their top-1 five-man lineup
+share falls to 0.198-0.220 against a real 0.294.
+
+### 11.5 Static column (reported alongside, per 10.4)
+
+| cell | ACTUAL | R2 | H1 | H2 | H3 |
+|---|---:|---:|---:|---:|---:|
+| final 8:00, \|m\| <= 5 | 0.7491 | 0.7258  PASS | 0.6760  FAIL | 0.6743  FAIL | 0.6852  FAIL |
+| final 8:00, \|m\| 6-15 | 0.7240 | 0.6936  FAIL | 0.6579  FAIL | 0.6556  FAIL | 0.6718  FAIL |
+| final 8:00, \|m\| > 15 | 0.5223 | 0.4773  FAIL | 0.5583  FAIL | 0.5545  FAIL | 0.5585  FAIL |
+| starters at >= 4 fouls | 0.4613 | 0.4650  PASS | 0.4414  PASS | 0.4377  PASS | 0.4024  FAIL |
+| H2 tip, \|m\| <= 5 | 0.9678 | 0.7866  FAIL | 0.9353  FAIL | 0.8587  FAIL | 0.9389  PASS |
+| H2 tip, \|m\| 6-15 | 0.9611 | 0.7969  FAIL | 0.9374  PASS | 0.8555  FAIL | 0.9385  PASS |
+| H2 tip, \|m\| > 15 | 0.9563 | 0.7362  FAIL | 0.9429  PASS | 0.8481  FAIL | 0.9405  PASS |
+| H1 20:00-10:00, \|m\| <= 5 | 0.7822 | 0.6120  FAIL | 0.7472  FAIL | 0.7479  FAIL | 0.7619  PASS |
+| per-player minutes MAE | 0.0 | 9.8557 | 8.8863 | 8.9510 | 8.7622 |
+
+S1 improves every arm's MAE and moves the blowout band toward the actual on all
+three hazard arms (H1 0.5583 -> 0.5446, H2 0.5545 -> 0.5471, H3 0.5585 ->
+0.5517), reproducing round 3b's finding that S1 moves cells toward truth.
+
+### 11.6 Noise floor A (20 seeds x 150 games)
+
+| metric | R2_hier_dirichlet | H1_sub_hazard | H2_sub_hazard_noreset | H3_sub_hazard_lgbm |
+|---|---:|---:|---:|---:|
+| minutes_mae | 0.01473 | 0.01304 | 0.01433 | 0.01356 |
+| minutes_mean | 0.13394 | 0.15646 | 0.14532 | 0.15176 |
+| top5_share | 0.00256 | 0.00300 | 0.00336 | 0.00271 |
+| top8_share | 0.00114 | 0.00140 | 0.00170 | 0.00165 |
+| n_nonzero_mean | 0.05849 | 0.05207 | 0.05597 | 0.04517 |
+| lu_top1 | 0.00506 | 0.00493 | 0.00510 | 0.00460 |
+| late_starter_share_b0 | 0.00646 | 0.01219 | 0.01137 | 0.01176 |
+| late_starter_share_b1 | 0.00945 | 0.00641 | 0.00702 | 0.00942 |
+| late_starter_share_b2 | 0.01302 | 0.01275 | 0.01465 | 0.01174 |
+| foul_trouble_share | 0.01837 | 0.01815 | 0.02470 | 0.01748 |
+| h2tip_starter_share_b0 | 0.01086 | 0.00795 | 0.01151 | 0.01103 |
+| h2tip_starter_share_b1 | 0.00987 | 0.00896 | 0.01046 | 0.00660 |
+| h2tip_starter_share_b2 | 0.02173 | 0.01447 | 0.02386 | 0.01780 |
+| opentip_starter_share_close | 0.00637 | 0.00475 | 0.00570 | 0.00373 |
+
+Caveat, stated: floor A's `minutes_mae` rows are computed against the whole
+test universe's actual minutes while the sim side is 150 games, so their LEVEL
+is not the level of 11.4; the seed-to-seed SD, which is what a floor is, is
+unaffected, and on 1,600 games the Monte-Carlo SE is about a third of it. The
+floor used in 11.8 is therefore conservative.
+
+### 11.7 Noise floor B -- spec-identical refit under a second seed
+
+Both fits use the same specification; the second draws a different
+training-game sample (fit seed 101 vs 11), a different logistic `random_state`
+and a different sim seed (23 vs 7). Graded on the same 150-game universe. H1 is
+the arm floor B is run on, per 10.8.
+
+| cell | ACTUAL (150 games) | H1 seed 1 | H1 seed 2 | \|delta\| pp |
+|---|---:|---:|---:|---:|
+| final 8:00, \|m\| <= 5 | 0.7436 | 0.6662 | 0.6666 | 0.04 |
+| final 8:00, \|m\| 6-15 | 0.7186 | 0.6602 | 0.6448 | 1.54 |
+| final 8:00, \|m\| > 15 | 0.5518 | 0.5515 | 0.5308 | 2.07 |
+| starters at >= 4 fouls | 0.4362 | 0.4746 | 0.4483 | 2.63 |
+| H2 tip, \|m\| <= 5 | 0.9655 | 0.9328 | 0.9345 | 0.17 |
+| H2 tip, \|m\| 6-15 | 0.9662 | 0.9095 | 0.9176 | 0.81 |
+| H2 tip, \|m\| > 15 | 0.9611 | 0.9722 | 0.9667 | 0.56 |
+| H1 20:00-10:00, \|m\| <= 5 | 0.7710 | 0.7373 | 0.7402 | 0.29 |
+
+**The round-4 family is identified across refits.** Round 3's strongest single
+result was that the override family's knobs were not (R8's single `theta` moved
+0.1 -> 0.3 between two spec-identical refits and its close band 6.1 pp; R7's
+keep scale spanned the whole grid across six S1 windows). Round 4 has no knobs
+at all -- only fitted coefficients -- and the two refits agree to 0.04-0.81 pp
+on six of eight cells. The two that move more, the blowout band (2.07 pp) and
+foul trouble (2.63 pp), move less than round 3's R8 did on its own target cell.
+
+### 11.8 Decision 8 slope check
+
+Cell = starters' share of on-floor slots in the final 8:00 at \|margin\| <= 5,
+by quintile of the pregame as-of predicted starter-minutes share.
+
+| quintile | team-games | prior starter share | ACTUAL | R2 | H1 | H2 | H3 |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| Q1 | 640 | 0.5572 | 0.6770 | 0.6515 | 0.5927 | 0.5910 | 0.5992 |
+| Q2 | 640 | 0.6342 | 0.7226 | 0.7080 | 0.6514 | 0.6536 | 0.6605 |
+| Q3 | 640 | 0.6698 | 0.7471 | 0.7294 | 0.6768 | 0.6758 | 0.6807 |
+| Q4 | 640 | 0.7044 | 0.7763 | 0.7530 | 0.6999 | 0.7072 | 0.7074 |
+| Q5 | 640 | 0.7685 | 0.8219 | 0.7834 | 0.7229 | 0.7298 | 0.7490 |
+
+- `ACTUAL` slope **+0.692**, Q5 - Q1 **+14.5 pp**
+- `R2_hier_dirichlet` **+0.629**, +13.2 pp
+- `H1_sub_hazard` **+0.628**, +13.0 pp
+- `H2_sub_hazard_noreset` **+0.672**, +13.9 pp
+- `H3_sub_hazard_lgbm` **+0.706**, +15.0 pp
+
+Every arm is monotone in 4 of 4 steps with a slope inside [0.8, 1.2] of the
+actual slope ratio (0.91 / 0.91 / 0.97 / 1.02). **Decision 8 is satisfied by all
+four arms and cannot separate them**, exactly as in round 3: the close-band
+failures are level failures, not responsiveness failures.
+
+### 11.9 Decision 10: the closed-loop check
+
+`ENGINE_ROTATION_FREEZE=1` holds the rotation model's margin at 0 and its
+personal- and team-foul counts at 0 while leaving foul accrual, the foul-out
+eviction rule and the box-score counters live. Paired-stream runs, 5 seeds over
+the fixed 500-game subset of F2 2025 (the slate sorted by `game_id` ascending,
+every 11th row, the first 500 -- the same subset the clock round-3c check uses),
+with `ENGINE_EVENT=round2_s1`, `ENGINE_FG_MAKE=round2b_S_C_s1`,
+`ENGINE_FG3=decision8`, `ENGINE_CLOCK=reference` pinned and recorded in every
+`run_meta.json`.
+
+| arm | margin SD, live | frozen | ratio | home/away corr, live | frozen | delta | possessions, live | frozen | delta | per-player minutes MAE, live | frozen |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| R2 (incumbent) | 16.2915 | 16.3735 | **0.9950** | 0.0517 | 0.0543 | -0.0026 | 71.6704 | 71.6090 | +0.061 | 9.3323 | 9.5031 |
+| H1 (round 4) | 16.4533 | 16.5148 | **0.9963** | 0.0437 | 0.0331 | +0.0106 | 71.6744 | 71.5800 | +0.094 | 8.7736 | 8.8395 |
+
+**Both pass, and this is the first closed-loop gate the incumbent has ever had
+(L25).** Freezing the rotation's engine-produced state moves margin SD by 0.5%,
+the home/away correlation by 0.003-0.011 and possessions by 0.06-0.09 -- two
+orders of magnitude smaller than the `score_diff` loop L23 found in `fg_make`
+(margin SD 34.6 live vs 11.4 frozen). The rotation's consumption of `margin` and
+`fouls` is **not** a feedback channel: the rotation changes who scores, not how
+much, so it cannot inflate its own input.
+
+The engine table also reproduces the offline MAE ordering independently: H1
+8.774 against R2 9.332 on the engine's own player minutes, a 0.56-minute gap in
+the same direction as the offline 0.98.
+
+Engine cost of the round-4 family: 500 games x 1 seed in 123 s against R2's 93 s
+on the same three workers, i.e. **+32%** on the rotation layer.
+
+### 11.10 Decision
+
+| arm | simplicity | state cells | eligible | G8 cells | minutes MAE | MAE vs R2 | floor | beats floor |
+|---|---:|---:|---|---:|---:|---:|---:|---|
+| R2_hier_dirichlet | 1 | 2/8 | NO | 5/6 | 9.7939 | -- | 0.0147 | -- |
+| H1_sub_hazard | 2 | **5/8** | NO | 4/6 | **8.8189** | +0.9750 | 0.0147 | YES |
+| H2_sub_hazard_noreset | 3 | 2/8 | NO | 4/6 | 8.8967 | +0.8971 | 0.0147 | YES |
+| H3_sub_hazard_lgbm | 4 | **5/8** | NO | 3/6 | **8.6739** | +1.1200 | 0.0147 | YES |
+
+**No arm adopted.** No arm has all eight state cells inside +/- 3 pp, so by the
+pre-registered rule (10.8) nothing is adopted and the diagnosis is reported.
+Cell-by-cell misses:
+
+| arm | cell | sim | actual | miss |
+|---|---|---:|---:|---:|
+| R2 | final 8:00 \|m\| 6-15 | 0.6914 | 0.7240 | -3.3 pp |
+| R2 | final 8:00 \|m\| > 15 | 0.4694 | 0.5223 | -5.3 pp |
+| R2 | H2 tip (3 bands) | 0.7892 / 0.7977 / 0.7338 | 0.9678 / 0.9611 / 0.9563 | -17.9 / -16.3 / -22.3 pp |
+| R2 | H1 20:00-10:00 \|m\| <= 5 | 0.5988 | 0.7822 | -18.3 pp |
+| H1 | final 8:00 \|m\| <= 5 | 0.6692 | 0.7491 | -8.0 pp |
+| H1 | final 8:00 \|m\| 6-15 | 0.6518 | 0.7240 | -7.2 pp |
+| H1 | H1 20:00-10:00 \|m\| <= 5 | 0.7434 | 0.7822 | -3.9 pp |
+| H2 | the same three, plus all three tip bands | 0.8548 / 0.8493 / 0.8483 | 0.9678 / 0.9611 / 0.9563 | -10.8 to -11.3 pp |
+| H3 | final 8:00 \|m\| <= 5 / 6-15 | 0.6797 / 0.6636 | 0.7491 / 0.7240 | -6.9 / -6.0 pp |
+| H3 | starters at >= 4 fouls | 0.4005 | 0.4613 | -6.1 pp |
+
+### 11.11 Diagnosis
+
+**1. The family does what the reachability check said it would, on the cells the
+round was called for, and it is not a knob.** The two structural facts L25 named
+are produced: the second-half tip goes from R2's 0.789 / 0.798 / 0.734 to
+0.939 / 0.937 / 0.943 against 0.968 / 0.961 / 0.956, and the opening ten minutes
+of a close game from R2's 0.599 to 0.743-0.758 against 0.782. The blowout band,
+which R2 has failed in all four rounds (-4.7, -4.7, -4.7, -5.3 pp), passes on
+all three hazard arms for the first time (+2.2 / +2.5 / +2.9 pp). The
+within-player minutes SD ratio, which had failed for every arm in every round,
+passes on all three (1.02-1.08 against 1.25-1.35). Per-player minutes MAE
+improves by 61-76 noise floors. None of that came from a fitted knob: round 4
+has no knobs, and floor B says the coefficients are identified.
+
+**2. The reset must be GIVEN, not earned, and the reason is the sampler, not the
+fit.** H2 is the pre-registered test of whether a fitted hazard can produce the
+second-half reset without being told. It cannot: 0.849-0.855 against
+0.956-0.968, a 11 pp miss, while H1 and H3 with the same hazards and a hard
+reset land at 0.937-0.945. And section 11.1 shows the *fit* is right -- at a
+period boundary the model predicts a bench player's exit at 0.786 against an
+actual 0.791 and an off-floor starter's entry at 0.771 against 0.780. The gap is
+the **sampler's independence assumption**: the real reset is a near-deterministic
+*joint* swap of two or three players at one stoppage, and independent Bernoulli
+exits capped at the bench size realise only about four fifths of it
+(E[bench exits] = 1.7 of the ~2 bench players on the floor at the horn). A
+per-player hazard with independent draws cannot represent a coordinated
+substitution, however well each marginal rate is fitted. **That is the round's
+sharpest structural finding and it generalises: any per-player hazard family
+needs a joint substitution mechanism at dead balls, not five independent coins.**
+
+**3. What broke is the cell the family did not previously fail, and the
+mechanism is measurable.** H1's close-late band is 0.6692 against 0.7491, worse
+than R2's 0.7254 and 7 pp below the 0.7393 the reachability probe reached.
+The probe and the arms differ in exactly two ways, and the second is the cause:
+
+  - the probe used the real starting five (the as-of set costs 2.8 pp, measured:
+    the actual sequence re-graded with the model's starter set is 0.7215);
+  - the probe's hazards were a saturated cell table applied to the real
+    participant pool, while the arms substitute **43% too often** -- 0.2058
+    against a real 0.1518 at a possession boundary and R2's 0.1437 -- and run
+    **19.7 distinct lineups per team-game against 14.84**.
+
+Over-substitution is the same independence defect as (2) seen from the other
+side. Real substitutions arrive in bunches at dead balls; independent Bernoulli
+draws on five players spread the same total exits across more boundaries, so the
+number of boundaries with any change rises even though the per-player rate is
+right. Each extra churn event resamples the floor toward the arm's unconditional
+mix, which compresses state dependence: the arms' late-game spread across margin
+bands is 0.669 -> 0.545 (12.4 pp) against an actual 0.749 -> 0.522 (22.7 pp).
+The level miss and the compression are one phenomenon.
+
+**4. The excluded timeout feature is the leading candidate cause, and the audit
+said so before the run.** `experiments.md` 10.2 excluded a timeout indicator for
+engine expressibility and recorded the expected cost: "the model's substitutions
+are slightly more uniform in time than real ones". A timeout multiplies every
+hazard by 3-4x (audit section 2.3), which is exactly the mechanism that makes
+real substitutions bunch. The measured 43% excess in the boundary change rate is
+that cost, now sized. Fixing it does not require a timeout model: it requires a
+**joint** substitution draw -- one Bernoulli per (team, boundary) for "is there a
+substitution wave here", then a size and a composition -- which is expressible in
+the engine from `prev_end` alone and is the obvious round-5 arm.
+
+**5. H3 is not worth its cost.** The LightGBM hazard buys the opening-tip cell
+(-2.4 pp vs H1's -3.9) and 0.14 minutes of MAE, and loses the foul-trouble cell
+(-6.1 pp, the only arm to fail it) and the pooled minutes SD ratio (0.856). It
+is also not expressible in the sim loop without discretising the booster into a
+lookup table (10.11). By the simplicity rule it would lose to H1 on equal cells;
+it does not have equal cells.
+
+**6. What round 4 leaves standing.** `R2_hier_dirichlet` is still the arm with
+the most round-3 state cells, and it is now measurably the *worst* arm on the
+two new cells (-16 to -22 pp at the tip, -18.3 pp over the opening ten minutes)
+and on per-player minutes (+0.98 min). Neither family is adoptable. The honest
+summary is that the two families fail in **orthogonal** ways -- R2 gets the
+close-and-late level right and the within-game shape badly wrong; the hazard
+family gets the shape right and the close-and-late level wrong -- and round 5
+should be the hazard family with a joint dead-ball substitution mechanism, not a
+third family.
+
+### 11.12 Artifacts and flags
+
+- Hazards: `rotation_v4_sub_static.json` and `rotation_v4_sub_S1_{YYYYMM}.json`
+  for the five refit windows, with `rotation_v4_manifest.json` in the
+  `engine/manifest.py` format (`model`, `scheme: S1`, `fold: F1`, `artifacts`
+  with `refit_date` / `path` / `max_train_date`). A window trained on games with
+  `game_date < m`, so `max_train_date` is the day before `m`; the manifest's two
+  honest-backtest checks (`refit_date < tipoff`, `max_train_date < game_date`)
+  both pass on the whole F2 2025 slate. Nothing overwrites `rotation_fit.json`,
+  `rotation_fit_v3.json` or any `rotation_fit_v3_S1_*.json`.
+- Engine flag: `ENGINE_ROTATION=round4` (plus `ENGINE_ROTATION_ARM=H1|H2`) is
+  wired in `engine/rotation_adapter.py` and `engine/loop.py` and runs end to end
+  on the 500-game subset. `engine/adapters.py` still refuses a non-`reference`
+  value and is owned by another deliverable; `scripts/run_rot4_closed_loop.py`
+  loads the adapters as `reference` and sets the mode in-worker, which is what a
+  one-line relaxation of that guard would do. **Since no arm was adopted, the
+  flag ships unused** and `ENGINE_ROTATION=reference` remains the default.
+- `ENGINE_ROTATION_FREEZE=1` is now available for both rotation modes.
+- Results: `rotation_F1_round4_results.json` / `_table.csv`,
+  `results/engine_v0/rot4_{R2,H1}_{live,frozen}/`.
+
+### 11.13 An engine defect found and fixed during this round
+
+`engine/loop.py` called `push_lineups()` **before** the period/halftime block, so
+at a period boundary the rotation was handed the previous possession's period and
+clock: the five that took the floor for the first possession of the second half
+were chosen with `period = 1, seconds_remaining = 0`, and the R2 adapter's own
+period-boundary reshuffle fired one possession late. The offline samplers have
+always used the possession's own state, so the engine and the bake-off disagreed
+**exactly at the cell round 4 adds**. The call now sits after the period block.
+Blast radius on aggregate engine metrics is about one possession in 137 and the
+counter-based streams stay aligned (the number of draws per call is unchanged),
+but it is a behaviour change for every engine run started after this commit and
+any paired comparison that straddles it is invalid.
+
+---
