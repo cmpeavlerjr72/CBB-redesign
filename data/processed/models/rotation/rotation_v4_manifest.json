@@ -1,0 +1,46 @@
+{
+  "model": "rotation",
+  "scheme": "S1",
+  "fold": "F1",
+  "season": 2025,
+  "arm": "round4_sub_hazard",
+  "artifacts": [
+    {
+      "refit_date": "2024-11-01",
+      "path": "rotation_v4_sub_static.json",
+      "max_train_date": "2024-04-30",
+      "base_fit": "rotation_fit_v3_S1_202411.json"
+    },
+    {
+      "refit_date": "2024-12-01",
+      "path": "rotation_v4_sub_S1_202412.json",
+      "max_train_date": "2024-11-30",
+      "base_fit": "rotation_fit_v3_S1_202412.json"
+    },
+    {
+      "refit_date": "2025-01-01",
+      "path": "rotation_v4_sub_S1_202501.json",
+      "max_train_date": "2024-12-31",
+      "base_fit": "rotation_fit_v3_S1_202501.json"
+    },
+    {
+      "refit_date": "2025-02-01",
+      "path": "rotation_v4_sub_S1_202502.json",
+      "max_train_date": "2025-01-31",
+      "base_fit": "rotation_fit_v3_S1_202502.json"
+    },
+    {
+      "refit_date": "2025-03-01",
+      "path": "rotation_v4_sub_S1_202503.json",
+      "max_train_date": "2025-02-28",
+      "base_fit": "rotation_fit_v3_S1_202503.json"
+    },
+    {
+      "refit_date": "2025-04-01",
+      "path": "rotation_v4_sub_S1_202504.json",
+      "max_train_date": "2025-03-31",
+      "base_fit": "rotation_fit_v3_S1_202504.json"
+    }
+  ],
+  "note": "each S1 window trained on games with game_date < its refit_date, so max_train_date is the day before; manifest.py checks max_train_date < game_date"
+}

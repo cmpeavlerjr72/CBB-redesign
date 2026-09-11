@@ -90,3 +90,6 @@ data/processed/models/engine_fgm4/
 # clock round 4 (docs/models/clock/experiments.md section 14): fitted schedules,
 # diagnosis cell tables and the v4_diag dumps. Bulk, HF-synced, never committed.
 data/processed/models/clock/v4_*
+data/processed/models/free_throw/s1_confirm/
+data/processed/models/rebound/s1_confirm/
+logs/

@@ -1,0 +1,201 @@
+{
+ "created_at": "2026-09-11T03:42:00.075924+00:00",
+ "arm": "lgbm",
+ "feature_set": "C_plus_state",
+ "s0_f2_reproduction_ok": true,
+ "cited_s0_f1": {
+  "log_loss": 0.620446,
+  "calib_worst_gap_pp": 1.629,
+  "calib_pass": true,
+  "resp_pass": true,
+  "resp_min_steps": 4,
+  "slope_off_oreb_c": 0.9138,
+  "slope_opp_def_dreb_c": 1.087,
+  "fit_s": 31.8,
+  "source": "experiments.md section 3, F1 row lgbm/C_plus_state"
+ },
+ "cited_s0_f2": {
+  "log_loss": 0.645565
+ },
+ "primary_metric_floor": 4e-06,
+ "conf4_floor_pp_fixed": 0.25,
+ "conf4_seed_spread_pp": 0.455,
+ "cells": {
+  "F2|S0|s0": {
+   "scheme": "S0",
+   "fold": "F2",
+   "seed": 0,
+   "n_fits": 1,
+   "n_test": 392538,
+   "fit_seconds": 200.4,
+   "log_loss": 0.645565,
+   "calib_pass": true,
+   "calib_worst_gap_pp": 1.958,
+   "calib_worst_class": "DREB",
+   "resp_pass": true,
+   "resp_min_steps": 4,
+   "slope_off_oreb_c": 0.9645,
+   "slope_opp_def_dreb_c": 1.1008,
+   "conf4": {
+    "n": 82748,
+    "worst_gap_pp": 2.462,
+    "worst_class": "DREB",
+    "gate_pass": false,
+    "underpowered": false
+   },
+   "manifest_path": "data\\processed\\models\\rebound\\s1_confirm\\S0\\F2\\manifest.json"
+  },
+  "F2|S0|s1": {
+   "scheme": "S0",
+   "fold": "F2",
+   "seed": 1,
+   "n_fits": 1,
+   "n_test": 392538,
+   "fit_seconds": 134.6,
+   "log_loss": 0.645569,
+   "calib_pass": false,
+   "calib_worst_gap_pp": 2.008,
+   "calib_worst_class": "DREB",
+   "resp_pass": true,
+   "resp_min_steps": 4,
+   "slope_off_oreb_c": 0.9663,
+   "slope_opp_def_dreb_c": 1.1123,
+   "conf4": {
+    "n": 82748,
+    "worst_gap_pp": 2.917,
+    "worst_class": "OREB",
+    "gate_pass": false,
+    "underpowered": false
+   },
+   "manifest_path": null
+  },
+  "F2|S1_monthly|s0": {
+   "scheme": "S1_monthly",
+   "fold": "F2",
+   "seed": 0,
+   "n_fits": 6,
+   "n_test": 392538,
+   "fit_seconds": 833.7,
+   "log_loss": 0.644949,
+   "calib_pass": true,
+   "calib_worst_gap_pp": 1.693,
+   "calib_worst_class": "DREB",
+   "resp_pass": true,
+   "resp_min_steps": 4,
+   "slope_off_oreb_c": 0.965,
+   "slope_opp_def_dreb_c": 1.0843,
+   "conf4": {
+    "n": 82748,
+    "worst_gap_pp": 2.66,
+    "worst_class": "OREB",
+    "gate_pass": false,
+    "underpowered": false
+   },
+   "manifest_path": "data\\processed\\models\\rebound\\s1_confirm\\S1_monthly\\F2\\manifest.json"
+  },
+  "F1|S1_monthly|s0": {
+   "scheme": "S1_monthly",
+   "fold": "F1",
+   "seed": 0,
+   "n_fits": 6,
+   "n_test": 393154,
+   "fit_seconds": 524.1,
+   "log_loss": 0.619726,
+   "calib_pass": true,
+   "calib_worst_gap_pp": 1.326,
+   "calib_worst_class": "DREB",
+   "resp_pass": true,
+   "resp_min_steps": 4,
+   "slope_off_oreb_c": 0.9353,
+   "slope_opp_def_dreb_c": 1.1075,
+   "conf4": {
+    "n": 87263,
+    "worst_gap_pp": 1.73,
+    "worst_class": "DREB",
+    "gate_pass": true,
+    "underpowered": false
+   },
+   "manifest_path": "data\\processed\\models\\rebound\\s1_confirm\\S1_monthly\\F1\\manifest.json"
+  },
+  "F2|S1_conf_aligned|s0": {
+   "scheme": "S1_conf_aligned",
+   "fold": "F2",
+   "seed": 0,
+   "n_fits": 29,
+   "n_test": 392538,
+   "fit_seconds": 2271.1,
+   "log_loss": 0.644878,
+   "calib_pass": true,
+   "calib_worst_gap_pp": 1.826,
+   "calib_worst_class": "DREB",
+   "resp_pass": true,
+   "resp_min_steps": 4,
+   "slope_off_oreb_c": 0.967,
+   "slope_opp_def_dreb_c": 1.0886,
+   "conf4": {
+    "n": 82748,
+    "worst_gap_pp": 2.367,
+    "worst_class": "OREB",
+    "gate_pass": false,
+    "underpowered": false
+   },
+   "manifest_path": "data\\processed\\models\\rebound\\s1_confirm\\S1_conf_aligned\\F2\\manifest.json"
+  },
+  "F2|S1_weekly|s0": {
+   "scheme": "S1_weekly",
+   "fold": "F2",
+   "seed": 0,
+   "n_fits": 23,
+   "n_test": 392538,
+   "fit_seconds": 1699.5,
+   "log_loss": 0.644522,
+   "calib_pass": true,
+   "calib_worst_gap_pp": 1.674,
+   "calib_worst_class": "DREB",
+   "resp_pass": true,
+   "resp_min_steps": 4,
+   "slope_off_oreb_c": 0.9668,
+   "slope_opp_def_dreb_c": 1.0988,
+   "conf4": {
+    "n": 82748,
+    "worst_gap_pp": 2.565,
+    "worst_class": "OREB",
+    "gate_pass": false,
+    "underpowered": false
+   },
+   "manifest_path": "data\\processed\\models\\rebound\\s1_confirm\\S1_weekly\\F2\\manifest.json"
+  }
+ },
+ "not_run": [],
+ "decision": {
+  "winner": "S1_weekly",
+  "reason": "beats the S0 reference beyond the floor; simplest arm within the floor of the best beater",
+  "beaters": [
+   {
+    "scheme": "S1_monthly",
+    "log_loss": 0.644949,
+    "ll_gain": 0.000616,
+    "conf4_gain_pp": -0.198,
+    "gates_ok": true,
+    "beats_reference": true
+   },
+   {
+    "scheme": "S1_conf_aligned",
+    "log_loss": 0.644878,
+    "ll_gain": 0.000687,
+    "conf4_gain_pp": 0.095,
+    "gates_ok": true,
+    "beats_reference": true
+   },
+   {
+    "scheme": "S1_weekly",
+    "log_loss": 0.644522,
+    "ll_gain": 0.001043,
+    "conf4_gain_pp": -0.103,
+    "gates_ok": true,
+    "beats_reference": true
+   }
+  ]
+ },
+ "runtime_min": 94.9
+}
