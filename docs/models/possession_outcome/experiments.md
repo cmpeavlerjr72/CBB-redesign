@@ -1276,3 +1276,376 @@ data rule. Round 3's `design_v3.parquet` and `boxes_first_chance.parquet` are RE
 `docs/tests/possession_outcome_early_season_2026-09-11.md`.
 
 <!-- ROUND 4 RESULTS APPENDED BELOW BY scripts/train_possession_outcome_v4.py -->
+
+---
+
+## 9. Round 4 full results (run 2026-09-11 10:06-12:15, `scripts/train_possession_outcome_v4.py`)
+
+Wall clock 2.1 h against the pre-registered external stop of 12:15 ET, at a six-thread total cap
+split across two concurrent processes (three threads each) on a machine four other workers were
+using. Cells run: 22. Cells the budget did not reach: 6 -- listed in 9.7 as NOT RUN, never as a
+result.
+
+**Headline.** On the SELECTION population `first`, the first shrinkage arm, `G1` -- every as-of
+style rate multiplied by its own empirical-Bayes reliability `w = D/(D+k)` -- **cuts the
+weeks-0-3 calibration gap from 3.832 pp to 2.766 pp**, a 1.066 pp gain against a pre-registered
+0.25 pp threshold, while giving nothing back on the other decision segment (non-conference 2.492
+-> 2.351 pp), passing both gates, improving the Decision 8 quintile slope (0.947 -> 0.974) and
+costing 0.000091 of log loss against a 0.000804 floor. That is an adoption under the
+pre-registered rule, and it is the first thing in four rounds to move the segment round 3
+identified. On `cont`, where the ladder is COMPLETE, the winner is `G2` (shrink toward the team's
+prior-season rate), with `G3` close behind; `G1` is disqualified there by the pre-registered
+no-shuffling clause (it buys 0.035 pp in weeks 0-3 and gives back 0.314 pp on non-conference).
+
+**The tree ladder is INCOMPLETE and the round is therefore a PARTIAL adoption.** `G4`, `G2` and
+`G3` on `first` did not finish inside the wall clock, so `G1` won a ladder of two. The engine
+default must not move on this evidence alone: `cont`'s complete ladder prefers `G2` to `G1`, and
+`G2`/`G3` have never been measured on the tree. 9.7 gives the measured cost of the missing cells.
+
+### 9.0 Reproduction checks passed before any round-4 number was read
+
+| check | expected | measured |
+|---|---|---|
+| reference `first` F2 log loss, re-scored from round 3's stored predictions through the round-4 grader | 1.515428 | 1.515428 (diff 0.00e+00) |
+| `cont` F2 `G0 x S1_monthly` refit in round 4 | 1.499760 (rounds 2 and 3) | 1.499760 |
+| `cont` F2 `G0 x S1_conf_aligned` | 1.499720 (round 3) | 1.499720 |
+| `cont` F2 `G0 x S1_weekly` | 1.499639 (round 3) | 1.499639 |
+| `first` F2 cascade probe `G0 x S1_monthly` / `conf_aligned` / `weekly` | 1.530507 / 1.530448 / 1.530323 (round 3) | 1.530508 / 1.530448 / 1.530323 |
+| round-4 rebuild of round 2's raw centred style columns vs the cached round-3 design | < 1e-3 | **0.0 on every one of the eight columns** -- an exact rebuild |
+
+**One number does not reproduce, and it matters.** The `cont` reference cell's NON-CONFERENCE gap
+reads 2.586 pp in round 4 against 2.609 pp in round 3, on the **identical** segment (n = 42,282 in
+both) and with log loss matching to 1e-6 and the conference (2.156), first-four-conference-weeks
+(2.787) and weeks-0-3 (2.849) gaps matching exactly. The difference is decile-boundary
+sensitivity: a perturbation far below the sixth decimal of the fitted probabilities moves which
+decile carries the maximum. It is 0.023 pp, and it is enough to move round 3's `cont` alignment
+adoption from 0.260 pp -- just over the 0.25 pp threshold -- to 0.237 pp, just under it. Round 3
+wrote that this result was "a lead, not a finding" because `cascade` is deterministic and its
+second seed could not corroborate the segment gain; round 4 supplies the corroboration it was
+missing, and the answer is that the gain sits inside the grader's own discretisation noise. See
+9.3 and 9.8.
+
+### 9.1 The grid
+
+
+**`first` / F2** (SELECTION)
+
+| stage | role | population | fold | arm | feature_arm | scheme | seed | n_fits | log_loss | worst_gated_gap_pp | wk03_gap_pp | nonconf_gap_pp | conf4_gap_pp | quintile_slope_worst | calibration_pass | responsiveness_pass | ncss_slope_pass | fit_seconds |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| 1 | interaction probe (not selection) | first | F2 | cascade | G0 | S1_conf_aligned | 0 | 29 | 1.530448 | 2.076 | 3.241 | 2.148 | 2.165 | 0.8692 | False | True | True | 204.5 |
+| 1 | interaction probe (not selection) | first | F2 | cascade | G0 | S1_monthly | 0 | 6 | 1.530508 | 2.088 | 3.429 | 2.178 | 2.233 | 0.8693 | False | True | True | 35.7 |
+| 1 | interaction probe (not selection) | first | F2 | cascade | G1 | S1_monthly | 0 | 6 | 1.529618 | 2.0 | 2.974 | 2.198 | 1.79 | 0.9497 | True | True | True | 43.9 |
+| 1 | interaction probe (not selection) | first | F2 | cascade | G2 | S1_monthly | 0 | 6 | 1.529241 | 1.89 | 2.411 | 1.843 | 1.765 | 0.8805 | True | True | True | 44.9 |
+| 1 | interaction probe (not selection) | first | F2 | cascade | G3 | S1_monthly | 0 | 6 | 1.529028 | 1.874 | 2.518 | 2.021 | 1.675 | 0.9334 | True | True | True | 48.3 |
+| 1 | interaction probe (not selection) | first | F2 | cascade | G4 | S1_monthly | 0 | 6 | 1.5305 | 2.086 | 3.491 | 2.238 | 2.211 | 0.8668 | False | True | True | 51.2 |
+| 1 | interaction probe (not selection) | first | F2 | cascade | G0 | S1_weekly | 0 | 23 | 1.530323 | 2.093 | 3.071 | 1.919 | 2.201 | 0.8672 | False | True | True | 198.7 |
+| 0 | reference (re-scored from round 3) | first | F2 | lgbm | G0 | S1_monthly | 0 | 6 | 1.515428 | 0.98 | 3.832 | 2.492 | 1.166 | 0.9473 | True | True | True | 0.0 |
+| 2 | selection | first | F2 | lgbm | G1 | S1_monthly | 0 | 6 | 1.515519 | 1.456 | 2.766 | 2.351 | 1.166 | 0.9745 | True | True | True | 4883.1 |
+
+**`cont` / F2** (SELECTION)
+
+| stage | role | population | fold | arm | feature_arm | scheme | seed | n_fits | log_loss | worst_gated_gap_pp | wk03_gap_pp | nonconf_gap_pp | conf4_gap_pp | quintile_slope_worst | calibration_pass | responsiveness_pass | ncss_slope_pass | fit_seconds |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| 1 | selection | cont | F2 | cascade | G0 | S1_conf_aligned | 0 | 29 | 1.49972 | 1.886 | 2.961 | 2.349 | 2.658 | 0.7717 | True | True | True | 27.0 |
+| 1 | selection | cont | F2 | cascade | G0 | S1_monthly | 0 | 6 | 1.49976 | 1.859 | 2.849 | 2.586 | 2.787 | 0.7711 | True | True | True | 5.3 |
+| 1 | selection | cont | F2 | cascade | G1 | S1_monthly | 0 | 6 | 1.498952 | 1.819 | 2.884 | 2.9 | 2.849 | 0.901 | True | True | True | 5.8 |
+| 1 | selection | cont | F2 | cascade | G2 | S1_monthly | 0 | 6 | 1.498802 | 1.692 | 2.76 | 2.249 | 2.737 | 0.7907 | True | True | True | 6.0 |
+| 1 | selection | cont | F2 | cascade | G3 | S1_monthly | 0 | 6 | 1.498677 | 1.754 | 2.422 | 2.175 | 2.97 | 0.8425 | True | True | True | 6.8 |
+| 1 | selection | cont | F2 | cascade | G4 | S1_monthly | 0 | 6 | 1.499739 | 2.01 | 2.727 | 2.542 | 2.513 | 0.7705 | False | True | True | 8.3 |
+| 1 | selection | cont | F2 | cascade | G0 | S1_weekly | 0 | 23 | 1.499639 | 1.974 | 2.866 | 2.691 | 2.87 | 0.7702 | True | True | True | 29.7 |
+
+**`cont` / F1**
+
+| stage | role | population | fold | arm | feature_arm | scheme | seed | n_fits | log_loss | worst_gated_gap_pp | wk03_gap_pp | nonconf_gap_pp | conf4_gap_pp | quintile_slope_worst | calibration_pass | responsiveness_pass | ncss_slope_pass | fit_seconds |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| 1 | selection | cont | F1 | cascade | G0 | S1_monthly | 0 | 6 | 1.499063 | 1.188 | 3.213 | 2.251 |  | 0.7017 | True | True | True | 3.8 |
+| 1 | selection | cont | F1 | cascade | G1 | S1_monthly | 0 | 6 | 1.498338 | 1.549 | 2.888 | 2.486 |  | 0.8216 | True | True | True | 3.5 |
+| 1 | selection | cont | F1 | cascade | G2 | S1_monthly | 0 | 6 | 1.497797 | 1.585 | 4.547 | 2.469 |  | 0.7731 | True | True | True | 3.9 |
+| 1 | selection | cont | F1 | cascade | G3 | S1_monthly | 0 | 6 | 1.497673 | 1.688 | 3.021 | 1.874 |  | 0.8161 | True | True | True | 4.5 |
+| 1 | selection | cont | F1 | cascade | G4 | S1_monthly | 0 | 6 | 1.499069 | 1.2 | 2.972 | 2.164 |  | 0.7036 | True | True | True | 5.1 |
+
+`wk03_gap_pp` is the worst gated decile calibration gap over chances in the first four calendar weeks of the test season -- the segment round 4 targets. `quintile_slope_worst` is the own-driver Decision 8 slope ratio furthest from 1.0 among the drivers whose realised quintile span clears 2 pp.
+
+
+### 9.2 Noise floor
+
+* **`first`**: reference cell `G0 x S1_monthly`, seed 0 log loss 1.515428, seed 1 None, spread None; weeks-0-3 gap 3.832 vs None pp; non-conference gap 2.492 vs None pp; 200-replicate game-block bootstrap SE 0.000804. Applied floor **0.000804**. PARTIAL: SECOND SEED NOT RUN -- the floor falls back to the block bootstrap SE alone and is labelled PARTIAL.
+* **`cont`**: reference cell `G0 x S1_monthly`, seed 0 log loss 1.49976, seed 1 None, spread None; weeks-0-3 gap 2.849 vs None pp; non-conference gap 2.586 vs None pp; 200-replicate game-block bootstrap SE 0.001982. Applied floor **0.001982**. PARTIAL: SECOND SEED NOT RUN -- the floor falls back to the block bootstrap SE alone and is labelled PARTIAL.
+
+### 9.3 Decision
+
+
+**`first`** (fold F2, noise floor 0.000804)
+
+
+*feature ladder*
+
+| feature_arm | seed | log_loss | gain_vs_reference | wk03_gap_pp | wk03_gain_pp | nonconf_gap_pp | nonconf_gain_pp | quintile_slope_worst | gates_pass | moves_error_between_segments | beats_reference_beyond_floor |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| G0 | 0 | 1.515428 | 0.0 | 3.832 | 0.0 | 2.492 | 0.0 | 0.9473 | True | False | False |
+| G1 | 0 | 1.515519 | -9.1e-05 | 2.766 | 1.066 | 2.351 | 0.141 | 0.9745 | True | False | True |
+
+Winner: `G1` -- G1 beats the reference beyond the floor and is the simplest arm within the floor of the best beater (1.515519).
+
+
+*scheme ladder*
+
+| scheme | seed | log_loss | gain_vs_reference | wk03_gap_pp | wk03_gain_pp | nonconf_gap_pp | nonconf_gain_pp | quintile_slope_worst | gates_pass | moves_error_between_segments | beats_reference_beyond_floor |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| S1_monthly | 0 | 1.515428 | 0.0 | 3.832 | 0.0 | 2.492 | 0.0 | 0.9473 | True | False | False |
+
+Winner: `S1_monthly` -- the simplest arm stands -- no more complex arm beat it by more than the noise floor 0.00080 on log loss or by more than 0.25 pp on the weeks-0-3 or non-conference gap without giving the other segment back. Under the pre-registration that is a RESULT, not a failure.
+
+
+**`cont`** (fold F2, noise floor 0.001982)
+
+
+*feature ladder*
+
+| feature_arm | seed | log_loss | gain_vs_reference | wk03_gap_pp | wk03_gain_pp | nonconf_gap_pp | nonconf_gain_pp | quintile_slope_worst | gates_pass | moves_error_between_segments | beats_reference_beyond_floor |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| G0 | 0 | 1.49976 | 0.0 | 2.849 | 0.0 | 2.586 | 0.0 | 0.7711 | True | False | False |
+| G1 | 0 | 1.498952 | 0.000808 | 2.884 | -0.035 | 2.9 | -0.314 | 0.901 | True | True | False |
+| G2 | 0 | 1.498802 | 0.000958 | 2.76 | 0.089 | 2.249 | 0.337 | 0.7907 | True | False | True |
+| G3 | 0 | 1.498677 | 0.001083 | 2.422 | 0.427 | 2.175 | 0.411 | 0.8425 | True | False | True |
+| G4 | 0 | 1.499739 | 2.1e-05 | 2.727 | 0.122 | 2.542 | 0.044 | 0.7705 | False | False | False |
+
+Winner: `G2` -- G2 beats the reference beyond the floor and is the simplest arm within the floor of the best beater (1.498677).
+
+
+*scheme ladder*
+
+| scheme | seed | log_loss | gain_vs_reference | wk03_gap_pp | wk03_gain_pp | nonconf_gap_pp | nonconf_gain_pp | quintile_slope_worst | gates_pass | moves_error_between_segments | beats_reference_beyond_floor |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| S1_conf_aligned | 0 | 1.49972 | 4e-05 | 2.961 | -0.112 | 2.349 | 0.237 | 0.7717 | True | False | False |
+| S1_monthly | 0 | 1.49976 | 0.0 | 2.849 | 0.0 | 2.586 | 0.0 | 0.7711 | True | False | False |
+| S1_weekly | 0 | 1.499639 | 0.000121 | 2.866 | -0.017 | 2.691 | -0.105 | 0.7702 | True | False | False |
+
+Winner: `S1_monthly` -- the simplest arm stands -- no more complex arm beat it by more than the noise floor 0.00198 on log loss or by more than 0.25 pp on the weeks-0-3 or non-conference gap without giving the other segment back. Under the pre-registration that is a RESULT, not a failure.
+
+
+### 9.4 Responsiveness by own-rating quintile (Decision 8)
+
+| cell | driver | class | span_pred_pp | span_act_pp | slope_ratio | steps | exempt_narrow_span | pass |
+|---|---|---|---|---|---|---|---|---|
+| first/F2/lgbm/G0/S1_monthly/s0 | off_3pa_c | FGA_3 | 8.867 | 9.36 | 0.9473 | 4/4 | False | True |
+| first/F2/lgbm/G0/S1_monthly/s0 | off_rim_c | FGA_rim | 5.972 | 6.083 | 0.9819 | 4/4 | False | True |
+| first/F2/lgbm/G0/S1_monthly/s0 | off_tov_c | TOV | 2.773 | 2.756 | 1.0062 | 4/4 | False | True |
+| cont/F1/cascade/G0/S1_monthly/s0 | off_3pa_c | FGA_3 | 7.818 | 8.352 | 0.9361 | 4/4 | False | True |
+| cont/F1/cascade/G0/S1_monthly/s0 | off_rim_c | FGA_rim | 4.268 | 6.082 | 0.7017 | 4/4 | False | False |
+| cont/F1/cascade/G0/S1_monthly/s0 | off_tov_c | TOV | 2.197 | 2.402 | 0.9143 | 4/4 | False | True |
+| cont/F2/cascade/G0/S1_monthly/s0 | off_3pa_c | FGA_3 | 8.325 | 9.695 | 0.8587 | 4/4 | False | True |
+| cont/F2/cascade/G0/S1_monthly/s0 | off_rim_c | FGA_rim | 4.304 | 5.582 | 0.7711 | 4/4 | False | False |
+| cont/F2/cascade/G0/S1_monthly/s0 | off_tov_c | TOV | 1.938 | 2.105 | 0.921 | 3/4 | False | True |
+| first/F2/cascade/G0/S1_monthly/s0 | off_3pa_c | FGA_3 | 8.604 | 9.36 | 0.9192 | 4/4 | False | True |
+| first/F2/cascade/G0/S1_monthly/s0 | off_rim_c | FGA_rim | 5.288 | 6.083 | 0.8693 | 4/4 | False | True |
+| first/F2/cascade/G0/S1_monthly/s0 | off_tov_c | TOV | 2.451 | 2.756 | 0.8893 | 4/4 | False | True |
+| cont/F1/cascade/G1/S1_monthly/s0 | off_3pa_c | FGA_3 | 8.407 | 8.352 | 1.0066 | 4/4 | False | True |
+| cont/F1/cascade/G1/S1_monthly/s0 | off_rim_c | FGA_rim | 4.997 | 6.082 | 0.8216 | 4/4 | False | True |
+| cont/F1/cascade/G1/S1_monthly/s0 | off_tov_c | TOV | 2.164 | 2.402 | 0.9007 | 4/4 | False | True |
+| cont/F2/cascade/G1/S1_monthly/s0 | off_3pa_c | FGA_3 | 8.928 | 9.695 | 0.9209 | 4/4 | False | True |
+| cont/F2/cascade/G1/S1_monthly/s0 | off_rim_c | FGA_rim | 5.029 | 5.582 | 0.901 | 4/4 | False | True |
+| cont/F2/cascade/G1/S1_monthly/s0 | off_tov_c | TOV | 1.94 | 2.105 | 0.9217 | 3/4 | False | True |
+| first/F2/cascade/G1/S1_monthly/s0 | off_3pa_c | FGA_3 | 9.143 | 9.36 | 0.9768 | 4/4 | False | True |
+| first/F2/cascade/G1/S1_monthly/s0 | off_rim_c | FGA_rim | 5.875 | 6.083 | 0.9658 | 4/4 | False | True |
+| first/F2/cascade/G1/S1_monthly/s0 | off_tov_c | TOV | 2.618 | 2.756 | 0.9497 | 4/4 | False | True |
+| cont/F1/cascade/G2/S1_monthly/s0 | off_3pa_c | FGA_3 | 8.501 | 8.352 | 1.0179 | 4/4 | False | True |
+| cont/F1/cascade/G2/S1_monthly/s0 | off_rim_c | FGA_rim | 4.901 | 6.082 | 0.8058 | 4/4 | False | True |
+| cont/F1/cascade/G2/S1_monthly/s0 | off_tov_c | TOV | 1.857 | 2.402 | 0.7731 | 4/4 | False | False |
+| cont/F2/cascade/G2/S1_monthly/s0 | off_3pa_c | FGA_3 | 8.741 | 9.695 | 0.9016 | 4/4 | False | True |
+| cont/F2/cascade/G2/S1_monthly/s0 | off_rim_c | FGA_rim | 5.006 | 5.582 | 0.8968 | 4/4 | False | True |
+| cont/F2/cascade/G2/S1_monthly/s0 | off_tov_c | TOV | 1.664 | 2.105 | 0.7907 | 3/4 | False | False |
+| first/F2/cascade/G2/S1_monthly/s0 | off_3pa_c | FGA_3 | 8.989 | 9.36 | 0.9603 | 4/4 | False | True |
+| first/F2/cascade/G2/S1_monthly/s0 | off_rim_c | FGA_rim | 5.849 | 6.083 | 0.9616 | 4/4 | False | True |
+| first/F2/cascade/G2/S1_monthly/s0 | off_tov_c | TOV | 2.427 | 2.756 | 0.8805 | 4/4 | False | True |
+| cont/F1/cascade/G3/S1_monthly/s0 | off_3pa_c | FGA_3 | 8.586 | 8.352 | 1.028 | 4/4 | False | True |
+| cont/F1/cascade/G3/S1_monthly/s0 | off_rim_c | FGA_rim | 5.059 | 6.082 | 0.8318 | 4/4 | False | True |
+| cont/F1/cascade/G3/S1_monthly/s0 | off_tov_c | TOV | 1.961 | 2.402 | 0.8161 | 4/4 | False | True |
+| cont/F2/cascade/G3/S1_monthly/s0 | off_3pa_c | FGA_3 | 8.855 | 9.695 | 0.9133 | 4/4 | False | True |
+| cont/F2/cascade/G3/S1_monthly/s0 | off_rim_c | FGA_rim | 5.164 | 5.582 | 0.9251 | 4/4 | False | True |
+| cont/F2/cascade/G3/S1_monthly/s0 | off_tov_c | TOV | 1.773 | 2.105 | 0.8425 | 3/4 | False | True |
+| first/F2/cascade/G3/S1_monthly/s0 | off_3pa_c | FGA_3 | 9.086 | 9.36 | 0.9707 | 4/4 | False | True |
+| first/F2/cascade/G3/S1_monthly/s0 | off_rim_c | FGA_rim | 6.019 | 6.083 | 0.9896 | 4/4 | False | True |
+| first/F2/cascade/G3/S1_monthly/s0 | off_tov_c | TOV | 2.573 | 2.756 | 0.9334 | 4/4 | False | True |
+| cont/F1/cascade/G4/S1_monthly/s0 | off_3pa_c | FGA_3 | 7.8 | 8.352 | 0.9339 | 4/4 | False | True |
+| cont/F1/cascade/G4/S1_monthly/s0 | off_rim_c | FGA_rim | 4.28 | 6.082 | 0.7036 | 4/4 | False | False |
+| cont/F1/cascade/G4/S1_monthly/s0 | off_tov_c | TOV | 2.205 | 2.402 | 0.9176 | 4/4 | False | True |
+| cont/F2/cascade/G4/S1_monthly/s0 | off_3pa_c | FGA_3 | 8.322 | 9.695 | 0.8584 | 4/4 | False | True |
+| cont/F2/cascade/G4/S1_monthly/s0 | off_rim_c | FGA_rim | 4.301 | 5.582 | 0.7705 | 4/4 | False | False |
+| cont/F2/cascade/G4/S1_monthly/s0 | off_tov_c | TOV | 1.924 | 2.105 | 0.9141 | 3/4 | False | True |
+| first/F2/cascade/G4/S1_monthly/s0 | off_3pa_c | FGA_3 | 8.602 | 9.36 | 0.919 | 4/4 | False | True |
+| first/F2/cascade/G4/S1_monthly/s0 | off_rim_c | FGA_rim | 5.273 | 6.083 | 0.8668 | 4/4 | False | True |
+| first/F2/cascade/G4/S1_monthly/s0 | off_tov_c | TOV | 2.427 | 2.756 | 0.8805 | 4/4 | False | True |
+| cont/F2/cascade/G0/S1_conf_aligned/s0 | off_3pa_c | FGA_3 | 8.348 | 9.695 | 0.8611 | 4/4 | False | True |
+| cont/F2/cascade/G0/S1_conf_aligned/s0 | off_rim_c | FGA_rim | 4.307 | 5.582 | 0.7717 | 4/4 | False | False |
+| cont/F2/cascade/G0/S1_conf_aligned/s0 | off_tov_c | TOV | 1.936 | 2.105 | 0.9199 | 3/4 | False | True |
+| first/F2/cascade/G0/S1_conf_aligned/s0 | off_3pa_c | FGA_3 | 8.601 | 9.36 | 0.9188 | 4/4 | False | True |
+| first/F2/cascade/G0/S1_conf_aligned/s0 | off_rim_c | FGA_rim | 5.287 | 6.083 | 0.8692 | 4/4 | False | True |
+| first/F2/cascade/G0/S1_conf_aligned/s0 | off_tov_c | TOV | 2.451 | 2.756 | 0.8891 | 4/4 | False | True |
+| cont/F2/cascade/G0/S1_weekly/s0 | off_3pa_c | FGA_3 | 8.342 | 9.695 | 0.8604 | 4/4 | False | True |
+| cont/F2/cascade/G0/S1_weekly/s0 | off_rim_c | FGA_rim | 4.299 | 5.582 | 0.7702 | 4/4 | False | False |
+| cont/F2/cascade/G0/S1_weekly/s0 | off_tov_c | TOV | 1.919 | 2.105 | 0.9118 | 3/4 | False | True |
+| first/F2/cascade/G0/S1_weekly/s0 | off_3pa_c | FGA_3 | 8.596 | 9.36 | 0.9184 | 4/4 | False | True |
+| first/F2/cascade/G0/S1_weekly/s0 | off_rim_c | FGA_rim | 5.275 | 6.083 | 0.8672 | 4/4 | False | True |
+| first/F2/cascade/G0/S1_weekly/s0 | off_tov_c | TOV | 2.448 | 2.756 | 0.8882 | 4/4 | False | True |
+| first/F2/lgbm/G1/S1_monthly/s0 | off_3pa_c | FGA_3 | 9.122 | 9.36 | 0.9745 | 4/4 | False | True |
+| first/F2/lgbm/G1/S1_monthly/s0 | off_rim_c | FGA_rim | 6.205 | 6.083 | 1.0201 | 4/4 | False | True |
+| first/F2/lgbm/G1/S1_monthly/s0 | off_tov_c | TOV | 2.806 | 2.756 | 1.0182 | 4/4 | False | True |
+
+### 9.5 Leak test on every column round 4 adds
+
+| column | n | n_update | n_level | corr_asjoined | corr_update | corr_level | static | n_nonzero_deltas | verdict | level_verdict |
+|---|---|---|---|---|---|---|---|---|---|---|
+| off_3pa_c | 37347 | 37347 | 38794 | 0.0061628264203572 | 0.0269764877765137 | 0.0600946219636213 | False | 37347 | pass | pass (level-form) |
+| off_rim_c | 37347 | 37347 | 38794 | 0.0169587716157511 | 0.0880541406581658 | 0.0739535468275101 | False | 37347 | pass | pass (level-form) |
+| off_tov_c | 37347 | 37347 | 38794 | -0.0214933503591643 | -0.1269878664220332 | -0.1549727634400307 | False | 37347 | pass | LEAK (level-form) |
+| off_ftr_c | 37347 | 37347 | 38794 | 0.0078106256894635 | 0.0888630993438912 | 0.0377702211154443 | False | 37347 | pass | pass (level-form) |
+| off_3pa_g1 | 37347 | 37347 | 38794 | 0.0165674982806949 | 0.0376815702405395 | 0.0572822762416461 | False | 37347 | pass | pass (level-form) |
+| off_3pa_g2 | 37347 | 37347 | 38794 | 0.0073662578445344 | 0.0269338499826288 | 0.0623648573465147 | False | 37347 | pass | pass (level-form) |
+| off_3pa_g3 | 37347 | 37347 | 38794 | 0.0085125426168135 | 0.0283835277323774 | 0.0620163433890055 | False | 37347 | pass | pass (level-form) |
+| off_rim_g1 | 37347 | 37347 | 38794 | 0.0305078241373466 | 0.1352039635350138 | 0.0644765142678936 | False | 37347 | pass | pass (level-form) |
+| off_rim_g2 | 37347 | 37347 | 38794 | 0.0220869355098952 | 0.1246052347381212 | 0.0709213089016107 | False | 37347 | pass | pass (level-form) |
+| off_rim_g3 | 37347 | 37347 | 38794 | 0.0237929805307076 | 0.1272563690637964 | 0.0706309490745993 | False | 37347 | pass | pass (level-form) |
+| off_tov_g1 | 37347 | 37347 | 38794 | -0.0476293505552661 | -0.2083602754028026 | -0.1497966639598137 | False | 37347 | pass | pass (level-form) |
+| off_tov_g2 | 37347 | 37347 | 38794 | -0.0217419781123207 | -0.1773111483499024 | -0.181281973616032 | False | 37347 | pass | LEAK (level-form) |
+| off_tov_g3 | 37347 | 37347 | 38794 | -0.0287558967510083 | -0.186535366618264 | -0.1788550204224482 | False | 37347 | pass | LEAK (level-form) |
+| off_ftr_g1 | 37347 | 37347 | 38794 | 0.0099646531848854 | 0.1359011594735028 | 0.0267759905518781 | False | 37347 | pass | pass (level-form) |
+| off_ftr_g2 | 37347 | 37347 | 38794 | 0.0062051585070542 | 0.1307588629797164 | 0.0308775215964918 | False | 37347 | pass | pass (level-form) |
+| off_ftr_g3 | 37347 | 37347 | 38794 | 0.0074104081531508 | 0.1331035455129471 | 0.0322219355549812 | False | 37347 | pass | pass (level-form) |
+| off_n_prior_g | 37347 | 37347 | 38794 |  |  | 0.0162321982163389 | False | 37347 |  | pass (level-form) |
+| def_n_prior_g | 37347 | 37347 | 38794 | -0.0611824636461942 | 0.0483457865066383 | -0.0162321982163389 | False | 31363 | pass | pass (level-form) |
+
+Gate: |as-joined change-form corr| <= 0.15. Round 2's raw-centred columns are shown alongside so the shrunk numbers are read against columns already accepted.
+
+
+### 9.6 The fitted shrinkage weight
+
+| season | side | rate | k (denominator mass) | s2 | tau2_raw | tau2_net | fitted_from_seasons | note |
+|---|---|---|---|---|---|---|---|---|
+| 2022 | off | 3pa | 206.896 | 3174.22476 | 17.12519 | 15.34212 | [2022, 2023, 2024] | pooled (no prior season in panel; 2022 is train-only in both folds) |
+| 2022 | off | rim | 270.792 | 4354.83627 | 19.44994 | 16.08184 | [2022, 2023, 2024] | pooled (no prior season in panel; 2022 is train-only in both folds) |
+| 2022 | off | tov | 616.251 | 1630.01772 | 3.56069 | 2.64505 | [2022, 2023, 2024] | pooled (no prior season in panel; 2022 is train-only in both folds) |
+| 2022 | off | ftr | 753.272 | 10131.73428 | 21.28634 | 13.45029 | [2022, 2023, 2024] | pooled (no prior season in panel; 2022 is train-only in both folds) |
+| 2022 | def | 3pa | 431.986 | 3650.39947 | 10.50082 | 8.45027 | [2022, 2023, 2024] | pooled (no prior season in panel; 2022 is train-only in both folds) |
+| 2022 | def | rim | 362.478 | 4534.14252 | 16.01551 | 12.50873 | [2022, 2023, 2024] | pooled (no prior season in panel; 2022 is train-only in both folds) |
+| 2022 | def | tov | 416.417 | 1554.79711 | 4.60713 | 3.73375 | [2022, 2023, 2024] | pooled (no prior season in panel; 2022 is train-only in both folds) |
+| 2022 | def | ftr | 434.136 | 9686.97419 | 29.80527 | 22.31321 | [2022, 2023, 2024] | pooled (no prior season in panel; 2022 is train-only in both folds) |
+| 2023 | off | 3pa | 207.694 | 3178.22616 | 17.23756 | 15.30242 | [2022] |  |
+| 2023 | off | rim | 284.454 | 4326.84464 | 18.85092 | 15.21107 | [2022] |  |
+| 2023 | off | tov | 601.431 | 1689.22054 | 3.83719 | 2.80867 | [2022] |  |
+| 2023 | off | ftr | 819.949 | 9705.80438 | 20.00185 | 11.83709 | [2022] |  |
+| 2023 | def | 3pa | 425.967 | 3644.47476 | 10.77478 | 8.55576 | [2022] |  |
+| 2023 | def | rim | 358.08 | 4464.1134 | 16.22212 | 12.46679 | [2022] |  |
+| 2023 | def | tov | 396.085 | 1603.54006 | 5.02483 | 4.04847 | [2022] |  |
+| 2023 | def | ftr | 437.025 | 9240.29175 | 28.91678 | 21.14362 | [2022] |  |
+| 2024 | off | 3pa | 214.997 | 3204.08165 | 16.81191 | 14.90291 | [2022, 2023] |  |
+| 2024 | off | rim | 294.163 | 4326.04405 | 18.27013 | 14.70627 | [2022, 2023] |  |
+| 2024 | off | tov | 638.33 | 1675.41361 | 3.62289 | 2.62468 | [2022, 2023] |  |
+| 2024 | off | ftr | 757.258 | 9884.31322 | 21.19561 | 13.05278 | [2022, 2023] |  |
+| 2024 | def | 3pa | 433.799 | 3651.3495 | 10.59262 | 8.41715 | [2022, 2023] |  |
+| 2024 | def | rim | 387.945 | 4483.15469 | 15.24944 | 11.55615 | [2022, 2023] |  |
+| 2024 | def | tov | 405.609 | 1586.65337 | 4.85711 | 3.91178 | [2022, 2023] |  |
+| 2024 | def | ftr | 426.918 | 9433.27503 | 29.8675 | 22.09624 | [2022, 2023] |  |
+| 2025 | off | 3pa | 206.896 | 3174.22476 | 17.12519 | 15.34212 | [2022, 2023, 2024] |  |
+| 2025 | off | rim | 270.792 | 4354.83627 | 19.44994 | 16.08184 | [2022, 2023, 2024] |  |
+| 2025 | off | tov | 616.251 | 1630.01772 | 3.56069 | 2.64505 | [2022, 2023, 2024] |  |
+| 2025 | off | ftr | 753.272 | 10131.73428 | 21.28634 | 13.45029 | [2022, 2023, 2024] |  |
+| 2025 | def | 3pa | 431.986 | 3650.39947 | 10.50082 | 8.45027 | [2022, 2023, 2024] |  |
+| 2025 | def | rim | 362.478 | 4534.14252 | 16.01551 | 12.50873 | [2022, 2023, 2024] |  |
+| 2025 | def | tov | 416.417 | 1554.79711 | 4.60713 | 3.73375 | [2022, 2023, 2024] |  |
+| 2025 | def | ftr | 434.136 | 9686.97419 | 29.80527 | 22.31321 | [2022, 2023, 2024] |  |
+
+Every k is fitted from COMPLETED PRIOR SEASONS ONLY by method of moments; none is chosen by looking at a score. `w = D/(D+k)` with `D` the team's as-of denominator mass, so a team with `D = k` sits at half weight.
+
+
+**Reproduction check**: the round-4 rebuild of round 2's raw centred columns matches the cached round-3 design to 0.0 absolute, so the arms differ by the shrinkage and by nothing else.
+
+
+### 9.7 Cells the budget did not reach (NOT RUN, not a result)
+
+| stage | population | arm | fold | feature_arm | scheme | role | seed | reason |
+|---|---|---|---|---|---|---|---|---|
+| 3 | first | lgbm | F2 | G4 | S1_monthly | selection | 0 | not reached inside the pre-registered wall clock (round 4 section 8.7 drop order) |
+| 4 | first | lgbm | F2 | G2 | S1_monthly | selection | 0 | not reached inside the pre-registered wall clock (round 4 section 8.7 drop order) |
+| 5 | first | lgbm | F2 | G3 | S1_monthly | selection | 0 | not reached inside the pre-registered wall clock (round 4 section 8.7 drop order) |
+| 6 | first | lgbm | F2 | G0 | S1_monthly | noise floor | 1 | not reached inside the pre-registered wall clock (round 4 section 8.7 drop order) |
+| 7 | first | lgbm | F2 | G0 | S1_conf_aligned | selection | 0 | not reached inside the pre-registered wall clock (round 4 section 8.7 drop order) |
+| 8 | first | lgbm | F2 | G0 | S1_weekly | selection | 0 | not reached inside the pre-registered wall clock (round 4 section 8.7 drop order) |
+### 9.8 What this says about Decision 9 (REPORTED, not decided -- the PM amends Decision 9)
+
+Round 4 does not settle Decision 9c and says so plainly.
+
+1. **The two tree alignment cells round 3 owed are STILL NOT RUN.** `G0 x S1_conf_aligned` on
+   `first` was started in its own process at 10:08 ET and was stopped at 10:56 after 48 minutes
+   with the cell unfinished; its partial work was discarded rather than recorded. Measured cost at
+   the three-thread cap this round could use: **one six-refit tree cell on the fold-2 `first` slice
+   took 75 minutes**, so the 29-refit conference-aligned cell is about **6 hours** and the 23-refit
+   weekly cell about **4.8 hours** at this thread budget. They are not reachable inside a
+   two-hour window on a shared 20-core box under a six-thread cap; they are minutes on the
+   196-core box. Nothing about TREE alignment is claimed from this run.
+2. **What round 4 DOES add on alignment is negative.** Round 3 adopted `S1_conf_aligned` on `cont`
+   on a single number: a 0.260 pp non-conference gain against a 0.25 pp threshold, with a log-loss
+   gain of a fiftieth of the floor, and round 3 itself labelled it "a lead, not a finding" because
+   `cascade` is deterministic and could not put a measured spread behind the segment. Round 4 refit
+   the identical cells and the identical segment and reads the gain at **0.237 pp** -- below the
+   threshold -- because the reference's own non-conference gap moved 0.023 pp on decile-boundary
+   sensitivity while its log loss reproduced to 1e-6. **Under round 4's grader the `cont` alignment
+   adoption does not reproduce**, and the scheme ladder's winner on `cont` is the reference
+   `S1_monthly`. A finding that flips on a 0.023 pp discretisation artefact was never a finding.
+3. **The `first` cascade interaction probe, complete on all three schemes, points the same way as
+   round 3's did.** `S1_weekly` 1.530323 and `S1_conf_aligned` 1.530448 against `S1_monthly`
+   1.530508: gains of 0.000185 and 0.000060 on a population whose tree floor is 0.000804, so both
+   are inside the floor on the primary metric. On the segments `S1_weekly` does move the weeks-0-3
+   gap 3.429 -> 3.071 pp (0.358) and the non-conference gap 2.178 -> 1.919 pp (0.259). That is the
+   ONE place alignment has cleared a segment threshold twice; it is a probe on the wrong model
+   class and it is reported as a probe.
+4. **And the same segments move three times further under shrinkage on the model that actually
+   serves.** `G1` on the tree takes weeks 0-3 from 3.832 to 2.766 pp (1.066) at the reference's own
+   monthly calendar. If the season-start defect is what the alignment arms were reaching for, the
+   feature's reliability is a much larger lever than the refit calendar, which is what L35
+   predicted and what round 4 measures.
+
+**Recommendation to the PM, for Decision 9:** leave 9c PENDING EVIDENCE for possession-outcome, and
+record that the `cont` adoption round 3 made is withdrawn as inside grader noise unless a segment
+floor with a measured spread is put behind it. 9a (opponent adjustment) and 9b (conference flag)
+are untouched by round 4 and stand as round 3 left them. This worker does not amend Decision 9.
+
+### 9.9 Execution note (worker, 2026-09-11)
+
+Written by hand, because a round split across three processes has no single `run_meta` that sees
+all of it.
+
+**Three processes, three checkpoints, one merged render, no cell computed twice.** Process A
+(`--stages 1,2,3,4,5,6 --ckpt ckpt_a.json`, 10:06 ET) ran the cascade cross and then the tree
+shrinkage ladder. Process B (`--stages 7 --ckpt ckpt_b.json`, 10:06 ET) ran the tree alignment cell
+`G0 x S1_conf_aligned` from the first minute so that Decision 9c competed against the clock in
+parallel rather than queueing behind this lane's headline. At 10:56 the measured pace made B's
+completion impossible before the external stop -- one six-refit tree cell was already 30 minutes in
+without finishing, implying about 6 hours for B's 29 refits -- so **this worker stopped its own
+process B** and started process B2 (`--stages 4,5,6 --ckpt ckpt_b2.json`, 10:56 ET) on the
+shrinkage cells A would not reach. B's partial work was discarded, not recorded. No process this
+worker did not start was signalled at any point. A final pass merged the three checkpoints, fitted
+nothing, computed the floor, applied the decision rule and rendered every table.
+
+**Nothing round 3 already measured was refit.** The reference cell was re-scored from round 3's
+stored predictions, not refit, and reproduces 1.515428 exactly (9.0). Round 3's `design_v3.parquet`,
+`boxes_first_chance.parquet` and `ref_pred_*.npy` were read and never written; the round-4 columns
+went to a versioned sibling `round4/design_v4.parquet`.
+
+**Cost, for whoever schedules the missing cells.** At the three-thread cap on a shared 20-core box
+with four other workers active (machine load 25-47% throughout), one six-refit `first` tree cell
+took 75 minutes -- against round 3's 15 minutes at four threads on a quiet machine and 53 minutes
+at four threads under contention. The four missing tree cells (`G4`, `G2`, `G3`, and the
+second-seed floor) are about 5 hours at this budget and minutes on the 196-core box; the two
+alignment cells are about 11 hours. This is the second consecutive round in which the tree
+alignment cells were the casualty of a shared-machine thread cap, which is itself the finding that
+should decide where round 5 runs.
+
+**The noise floor is PARTIAL in a way round 3's was not.** The second-seed reference refit (stage 6)
+did not finish, so the applied `first` floor is the 200-replicate game-block bootstrap SE alone,
+0.000804 -- which is the number round 3 applied as well, because there the seed spread (0.000113)
+was an eighth of the SE and never binding. What round 4 does NOT have is a measured seed spread on
+the weeks-0-3 SEGMENT gap. Round 3 measured that spread at 0.076 pp on `conf4` and 0.133 pp on
+non-conference, both well under the 0.25 pp threshold, and `G1`'s 1.066 pp gain is eight to
+fourteen times either. The adoption does not rest on the missing cell; the statement that it does
+not is on the record here rather than left to be inferred.
