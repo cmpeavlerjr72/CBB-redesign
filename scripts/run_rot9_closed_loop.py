@@ -329,7 +329,7 @@ def grade(args) -> int:
                "season": int(args.season), "rows": rowsd}
     if truth is not None:
         payload["truth_note"] = "season truth available; see eval_gates.py for G1/G2"
-    outp = res / "rot6_closed_loop_summary.json"
+    outp = res / f"closed_loop_summary_{tags[0]}_vs_{tags[-1]}.json"
     outp.write_text(json.dumps(payload, indent=2, default=str), encoding="utf-8")
     hdr = ["tag", "n_games", "n_seeds", "margin_sd_per_sim", "home_away_corr",
            "possessions", "total", "player_minutes_mae"]

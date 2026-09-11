@@ -5863,3 +5863,189 @@ overwritten), `rotation_F1_round9_floorB_Z1.json`.
 
 ---
 
+
+## 22. The round-9 engine adapter and the Decision-10 freeze on K1 and Z1 (run 2026-09-11T17:04-17:16Z)
+
+21.15 reported that the adapter had not been written for the THIRD round running
+and that condition 6 was therefore unmet for every round-7, -8 and -9 arm. This
+section closes that gap: the adapter is written to 21.15's own scope, the two
+bit-identity checks it owes the served engine are run, it is checked against the
+offline sampler, and the Decision-10 freeze is run on **K1** (the round-6 arm
+closest to eligibility, re-run so the two arms are one comparison) and on **Z1**
+(round 9's closest arm). **No default moved and no arm was adopted.** Z1 still
+fails conditions 1, 4 and 5 offline by 2 to 58 floors (21.12); passing the freeze
+changes none of that, and the freeze is reported here as the instrument it is,
+not as a result in Z1's favour.
+
+### 22.1 What was written
+
+`ENGINE_ROTATION=round9`, default-off, in `src/cbb_sim/engine/rotation_adapter.py`:
+`Round9Batch`, `init_batch_round9`, `next_lineup_round9`, `load_round9`,
+`round9_rows`, `round9_arm`, and the `next_lineup` / `init_batch` dispatch
+(`Round9Batch` is tested BEFORE `Round6Batch`, which it subclasses -- a test
+asserts the order, because the reverse silently turns every round-9 run into a
+round-6 run). `engine/loop.py` gains the one `load_round9` line round 6 has.
+`ENGINE_ROTATION_ARM=Z1|Z2` selects the table. `adapters.py` `DEFAULTS` was not
+touched; the runner keeps round 6's stated hack of loading the adapters as
+`reference` and setting the mode in-worker.
+
+`next_lineup_round9` is `next_lineup_round6`'s K1 path with the exit block
+replaced, exactly as scoped:
+
+* `ce = V7.exit_cell(period, seconds_remaining, margin, foul_state)` and
+  `n_st = (on & is_starter).sum(axis=1)`, both off the round-6 batch;
+* `row = zexit[seg, clip(size,1,5)-1, ce, min(n_st, N_ST-1)]`, support clipped to
+  `[max(0, size - n_bench_on, forced_starters), min(size, n_starters_on,
+  size - forced_bench)]` with round 8's `hi < lo` collapse, renormalised,
+  `k_out` drawn;
+* `leaving = _pick_k(on & is_st, key_out, k_out) | _pick_k(on & ~is_st, key_out,
+  size - k_out)` with round 5's `key_out`;
+* round 6's K1 entry block unchanged, reading `k_out` off `leaving` as it does.
+
+**Stated RNG divergence**, declared before any number was read and exactly as
+round 6 declared one from round 5 (14.11): the `rotation_sub` draw block is
+`2S + 5` wide, not `2S + 4`, and the new scalar at `2S + 4` is the `k_out`
+uniform. **Round-9 arms are paired with each other and NOT with round 6 or
+round 5.** The K1 freeze pair below is internally paired on round 6's own
+`2S + 4` block, so the two pairs are each internally valid and are not read
+against one another.
+
+A default-off audit hook (`ENGINE_ROT9_AUDIT=1`, `RA.ROUND9_AUDIT`) records every
+wave the exit block resolves. It exists for 22.3 and costs one environment
+lookup per possession when off.
+
+### 22.2 The two bit-identity checks the served engine is owed
+
+| check | method | result |
+|---|---|---|
+| served R2 path (`reference`) | 60 games x 5 seeds, `ENGINE_CLOCK=v5b_glat_pmean` pinned (the served clock, read out of `results/engine_v0/smoke60x5_default_v5b/run_meta.json`), `scripts/digest_engine_run.py --compare` | **PASS**, sha256 `492300a7...51a1` identical to `smoke60x5_default_v5b` |
+| existing round-6 K1 path | a 30-game x 3-seed `round6`/`K1` chunk run under the HEAD tree and under the working tree, both frames hashed at 6 dp | **PASS**, `fd3ec157...f0ee` on both, 12,896 possessions |
+
+The round-6 K1 path is checked a second time, at full scale and by accident of
+design: `K1_live` and `K1_frozen` below reproduce 15.13's published K1 table to
+every digit printed there (16.5337 / 16.5367, 0.0361 / 0.0399, 71.7092 /
+71.6818, 8.7390 / 8.6491). A 500-game x 5-seed round-6 run is byte-for-byte what
+it was before the round-9 code existed.
+
+### 22.3 Parity against the offline sampler
+
+The only thing that differs between the adapter and `rotation_v9.run_wave9` is
+the exit draw, so that is what is checked, on real engine states rather than
+synthetic ones: `ENGINE_ROT9_AUDIT=1` over **150 games x 3 seeds** (450
+team-game sims, 64,896 possessions) recorded **21,506 resolved waves** with their
+`(size, n_st_on, n_bn_on, forced_st, forced_bn, exit_cell, seg, u_x, k_out)`, and
+`k_out` was recomputed from the same uniforms and the same fitted tables by the
+OFFLINE scalar block in `rotation_v8.run_wave8` that `run_wave9` delegates to.
+
+**Floor A for an identity check is 0**, and that is what is required here: the
+two are the same sampler or they are not.
+
+| n_starters on floor | waves | adapter starter share | offline starter share | \|delta\| |
+|---:|---:|---:|---:|---:|
+| 0 | 201 | 0.000000 | 0.000000 | 0.000000 (UNDERPOWERED, 201 waves) |
+| 1 | 1,457 | 0.224374 | 0.224374 | 0.000000 |
+| 2 | 4,588 | 0.350178 | 0.350178 | 0.000000 |
+| 3 | 7,267 | 0.502056 | 0.502056 | 0.000000 |
+| 4 | 5,728 | 0.728523 | 0.728523 | 0.000000 |
+| 5 | 2,265 | 1.000000 | 1.000000 | 0.000000 |
+
+**0 of 21,506 `k_out` draws differ.** The share slopes monotonically with
+`n_starters` (0.224 -> 1.000), which is the responsiveness the exit side is
+supposed to carry; that it slopes identically on both sides is the parity claim,
+not a separate finding. Artifact:
+`data/processed/models/rotation/round9_adapter_parity_2026-09-11.json`.
+
+A 20,000-row randomised-state equality test over the same two blocks, including
+the all-zero-row and degenerate-support branches, is in
+`tests/test_rotation_round9.py`; `pytest tests/test_rotation_round9.py` 8 passed,
+`pytest tests/test_engine.py` 20 passed.
+
+### 22.4 The freeze (Decision 10)
+
+Paired-stream runs on 14.9's fixed **500-game subset** of F2 2025 (sorted by
+`game_id` ascending, every 11th row, the first 500), **5 seeds**, 3 workers per
+arm, with 14.9's pinned sub-models (`ENGINE_EVENT=round2_s1`,
+`ENGINE_FG_MAKE=round3_shooter_S_C_s1`, `ENGINE_CLOCK=reference`) recorded in
+every `run_meta.json`. `ENGINE_ROTATION_FREEZE=1` holds margin at 0 and the
+personal and team foul counts at 0 **for the rotation model only**; foul
+accrual, the foul-out eviction and the box-score counters stay live. Runs:
+`results/engine_v0/dec10_rot_20260911/{K1,Z1}_{live,frozen}`.
+
+| run | seeds | margin SD | per-game margin SD | home/away corr | possessions | total | per-player minutes MAE |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| K1 live | 5 | 16.5337 | 12.1434 | 0.0361 | 71.7092 | 149.367 | 8.7390 |
+| K1 `FREEZE=1` | 5 | 16.5367 | 12.2718 | 0.0399 | 71.6818 | 149.516 | 8.6491 |
+| Z1 live | 5 | 16.3696 | 11.9869 | 0.0404 | 71.7064 | 149.088 | 9.2922 |
+| Z1 `FREEZE=1` | 5 | 16.2635 | 12.0815 | 0.0567 | 71.7038 | 149.162 | 9.3511 |
+
+| comparison | margin SD ratio | corr delta | possessions delta | floor | verdict |
+|---|---:|---:|---:|---|---|
+| K1 live / frozen | **0.9998** | -0.0038 | +0.027 | SD ratio in [0.95, 1.05]; possessions within G1 mean +/- 1.0 | **PASS** |
+| Z1 live / frozen | **1.0065** | -0.0163 | +0.003 | same | **PASS** |
+| (15.13) K1, 5 seeds | 0.9998 | -0.0038 | +0.027 | -- | PASS, reproduced exactly |
+| (15.13) K1, 25 seeds | 0.9934 | +0.0099 | -0.016 | -- | PASS (quoted, not re-run) |
+| (13.12) W4, 5 seeds | 0.9948 | -0.0132 | -0.087 | -- | PASS (quoted) |
+
+Z1's freeze moves margin SD by 0.65%, possessions by 0.003 against a G1
+tolerance of 1.0, and the home/away correlation by 0.016 -- larger on the
+correlation than K1's 0.004, smaller than round 5's W4 -0.0132 is from zero and
+the same sign. 14.9 pins the margin-SD and possession floors numerically and
+states the correlation floor only as "inside the G1/G2 tolerances"; **no numeric
+correlation band is pre-registered**, so -0.0163 is reported against the
+-0.0132 / -0.0038 / +0.0099 the three prior passing pairs produced rather than
+against a threshold invented now.
+
+**25 seeds were not run.** A 500-game x 25-seed pair costs about 22 minutes per
+run on the 3 workers each arm was capped at, so four runs would have cost about
+90 minutes against a 13:35 ET stop that the 5-seed set cleared at 13:16. Its
+absence is reported, not hidden; 15.13's 25-seed K1 pair stands as the only
+25-seed read on this family.
+
+### 22.5 What the freeze does and does not license
+
+**Condition 6 is now RUN for K1 and for Z1, and both pass.** It is not met for
+X1, Y1, Z2 or any other round-7/8/9 arm, which were not run.
+
+**Nothing is adopted.** Z1 still fails condition 1 (four of eight state cells),
+condition 4 (-0.451 minutes of MAE to K1 offline, every player quintile to both
+K1 and W4) and condition 5 (Decision 8 slope ratio 0.51 against a [0.8, 1.2]
+band) by 2 to 58 floors (21.12). A closed-loop pass removes an obstacle; it
+supplies no evidence for the arm. `ENGINE_ROTATION=reference` (R2) remains the
+served default, `round9` ships default-off, and **this lane changed no default.**
+
+The engine reproduces the offline ordering on its own player minutes, which is
+the multi-level cross-check the freeze table is worth reading for: on the same
+500 games with the same pinned sub-models, K1 8.7390 against Z1 9.2922, a
+0.553-minute gap in the same direction and about the same size as the offline
+8.8622 against 9.3132 (0.451). The engine and the offline sampler agree that
+round 9's exit rule is WORSE than round 6's, independently.
+
+### 22.6 Artifacts and disclosures
+
+* Adapter: `src/cbb_sim/engine/rotation_adapter.py` (round-9 section),
+  `src/cbb_sim/engine/loop.py` (one line), commit `3923f5f`.
+* Runner: `scripts/run_rot9_closed_loop.py` (a copy of
+  `scripts/run_rot6_closed_loop.py` with the `round9` arm added; the round-6
+  runner was NOT edited, so a round-6 run another lane started cannot change
+  because round 9 exists).
+* Parity: `scripts/diag_rot9_adapter_parity.py`,
+  `data/processed/models/rotation/round9_adapter_parity_2026-09-11.json`.
+* Tests: `tests/test_rotation_round9.py` (8), `tests/test_engine.py` (20).
+* Runs: `results/engine_v0/dec10_rot_20260911/` (four runs, 358.4-358.5k
+  possessions each, 266-409 s) and `results/engine_v0/smoke60x5_rot9adapter`.
+* Write-up: `docs/tests/rotation_adapter_freeze_2026-09-11.md`.
+* **Disclosure.** The freeze pairs are 5 seeds, the minimum Decision 10 allows
+  for an SD ratio and far below the 200 it asks for a final read. They detect a
+  new state channel; they do not size one (L31), and no magnitude is quoted from
+  them.
+* **Disclosure.** The Z1 pair is internally paired on round 9's `2S + 5` stream
+  and the K1 pair on round 6's `2S + 4` stream. The two pairs' LEVELS are
+  therefore not comparable stream-for-stream; only the within-pair ratios are
+  read as freeze evidence. The minutes-MAE comparison in 22.5 is across streams
+  and is reported as a directional cross-check, not as a paired measurement.
+* **Disclosure.** Round 9's exit tables were fitted on fold F1 (train 2024, test
+  2025) and are served here through the same S1 manifest round 6 uses; the
+  manifest's segment alignment against round 6 is asserted in `load_round9` and
+  passed on all 6 windows.
+* **Disclosure.** The bit-identity smoke ran one extra single-worker process
+  alongside this lane's 6 engine workers for about 100 seconds.
