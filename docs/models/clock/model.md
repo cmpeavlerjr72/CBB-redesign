@@ -846,3 +846,86 @@ reproduction, re-run, and the design re-graded before any of it was read as
 evidence. The incident, the bisection that bounded it and what moved:
 `experiments.md` section 14 and
 `docs/tests/clock_round3c_closed_loop_2026-09-10.md` section 11.
+
+
+---
+
+## 13. Round 4 (2026-09-11): the shortfall located, and nothing adopted
+
+Full evidence: `docs/models/clock/experiments.md` sections 14 (pre-registration,
+committed 421b97b) and 15 (results), and
+`docs/tests/clock_duration_shortfall_2026-09-11.md` (the diagnosis).
+
+### 13.1 Section 12.3's "uniform duration-level bias" was not uniform
+
+The tiling identity closes every "missing component" hypothesis at once. The
+data's possessions tile each period exactly -- `duration_s == start_clock -
+end_clock` on 768,834 of 768,834 rows, clock-complete regulation periods sum to
+1199.58 s of 1200, 11 of 270,541 rows fall outside the design -- and `loop.py`
+subtracts exactly `min(draw, seconds_remaining)`. **The model is trained on the
+quantity the loop consumes.** There is no missing dead-ball inbound component,
+no stoppage time (the game clock is stopped, so no possession absorbs it on
+either side), no OREB continuation split (both sides carry ONE duration per
+possession spanning every chance), and no second-rounding term.
+
+Decomposed on the engine's own live cell accumulator (`ENGINE_CLOCK_DIAG=1`),
+159 clock-complete games, 10 seeds, against the same games' real possessions:
+
+| term | seconds | share |
+|---|---:|---:|
+| total (engine mean consumed minus actual) | -0.222 | 100% |
+| state COMPOSITION | -0.148 | 67% |
+| interaction | -0.052 | 23% |
+| the model's own LAW | **-0.071** | 32% |
+| cells the engine reaches and the real games did not | +0.049 | -22% |
+
+The composition term is ENTIRELY the `prev_end` mix: the engine starts 2.50 pp
+fewer possessions after a made field goal and 2.10 pp more after a defensive
+rebound, and those states' durations differ by 7.5 s. **That is upstream, in the
+event / fg_make lane, and the clock does not compensate for it.**
+
+### 13.2 The clock's own -0.071 s, and why round 4 could not close it
+
+Two separable causes. The `srfloor` floor in the 20-59 s band is 2.9% of
+possessions and 37.5% of the offline law gap. A season LEVEL drift is the rest:
+2025's clock-complete mean regulation duration is 17.653 s against 17.510 /
+17.584 / 17.547 for 2024 / 2023 / 2022, and 17.374 s in November against
+17.836 s in February. It is not cell sparsity -- 99.0-100.0% of rows are served
+at the full five-dimension grid.
+
+Four arms attacked it; none passed and two made it worse:
+
+| arm | G1 cc (25 seeds) | law term | what it did |
+|---|---:|---:|---|
+| `srfloor` (served) | +1.156 | -0.071 | reference |
+| `calpart` | +1.127 | -0.074 | season-part cell dimension; TIES the reference (floor 0.180) |
+| `recency` (H=365 on F1) | +1.254 | -0.102 | recency-weighted KM; law term WORSE |
+| `curseason` | +1.346 | -0.134 | current-season cell dimension; law term WORSE |
+| `nofloor` | +1.561 | **-0.051** | the floor removed; best law term, worst count |
+
+**Why the two level arms backfire.** S1's "current season to date" is by
+construction the part of the season BEFORE the game being served, and duration
+rises monotonically through a season, so up-weighting it anchors the fit on the
+FASTEST available data -- while the pooled multi-season fit silently contains
+February and March of three prior seasons. Only pooling by season PART across
+seasons points the right way, and it is worth 0.006 s.
+
+**Why removing the floor does not help either.** `nofloor` cuts the law term by
+28% and doubles the composition term (-0.291), because its shorter end-of-period
+possessions (last-possession duration 9.12 s against an actual 11.89) manufacture
+extra possessions at the horn. The floor is doing real work and stays.
+
+### 13.3 State of the model
+
+`ENGINE_CLOCK` serves **`v3c_srfloor_P3_s1`** -- the engine DEFAULT since commit
+1a5acef, now routed per GAME off its six-artifact S1 manifest rather than by
+partitioning the run. `provisional_clock` stays True; no arm has been adopted in
+any round. G1 is the only failing gate and it fails by +1.16 (clock-complete) /
++1.70 (all games) against a +/- 1.0 tolerance, of which about 0.28 possessions
+is the clock's and the rest is the `prev_end` mix.
+
+Open and logged, not compensated for: the `prev_end` composition (event /
+fg_make lane); PPP -0.033 on every arm including the incumbent; the sim OT rate;
+PIT failure in 13-17 powered cells in every round since round 1; and the
+round-2 cell grid's omission of `site_code`, which carries a 0.12 s home-away
+law gap under the standing "home/away is a first-class feature" rule.

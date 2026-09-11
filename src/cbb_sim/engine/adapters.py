@@ -826,10 +826,10 @@ def RA_MANIFEST() -> Path:                                    # noqa: N802
 
 
 def _load_clock(inp: EngineInputs, mode: str, season: int):
-    """Round-3c clock arms live in `clock_adapter_v3`; everything else is
-    unchanged. `docs/models/clock/experiments.md` section 12. The import is
-    deferred so this module has no new import-time dependency."""
-    if mode.startswith("v3c_"):
+    """Round-3c and round-4 clock arms live in `clock_adapter_v3`; everything
+    else is unchanged. `docs/models/clock/experiments.md` sections 12 and 14.
+    The import is deferred so this module has no new import-time dependency."""
+    if mode.startswith(("v3c_", "v4_")):
         from cbb_sim.engine.clock_adapter_v3 import ClockAdapterV3
         return ClockAdapterV3.load(inp, mode, season)
     return ClockAdapter.load(inp, mode, season)

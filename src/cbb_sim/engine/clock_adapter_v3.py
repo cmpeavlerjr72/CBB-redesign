@@ -99,6 +99,19 @@ V3C_MODES: dict[str, dict] = {
                           "base_arm": "empirical_km3_srfloor", "parametrisation": "P1"},
     "v3c_srfloor_P3_s1": {"manifest": "v3c_s1/manifest_srfloor_P3.json",
                           "base_arm": "empirical_km3_srfloor", "parametrisation": "P3"},
+    # --- round 4 (experiments.md section 14) -----------------------------
+    # Same family, same P3 state, same S1 schedule; they differ only in how the
+    # fit weights or partitions CALENDAR TIME, and A4 in the clock-bucket floor.
+    "v4_recency_P3_s1": {"manifest": "v4_s1/manifest_recency.json",
+                         "base_arm": "empirical_km3_srfloor", "parametrisation": "P3"},
+    "v4_curseason_P3_s1": {"manifest": "v4_s1/manifest_curseason.json",
+                           "base_arm": "empirical_km3_srfloor", "parametrisation": "P3"},
+    "v4_calpart_P3_s1": {"manifest": "v4_s1/manifest_calpart.json",
+                         "base_arm": "empirical_km3_srfloor", "parametrisation": "P3"},
+    "v4_nofloor_P3_s1": {"manifest": "v4_s1/manifest_nofloor.json",
+                         "base_arm": "empirical_km3", "parametrisation": "P3"},
+    "v4_ref_P3_s1": {"manifest": "v4_s1/manifest_ref.json",
+                     "base_arm": "empirical_km3_srfloor", "parametrisation": "P3"},
 }
 
 #: Team-static columns any round-3c arm reads. `tempo_prior_game` is on the
@@ -245,12 +258,20 @@ class ClockAdapterV3:
     team_idx: np.ndarray = field(default_factory=lambda: np.zeros(0, dtype=np.int64))
     state_idx: dict = field(default_factory=dict)
     eoh: EohAccumulator = field(default_factory=EohAccumulator)
+    #: The season being simulated, and each slate game's calendar month. Round
+    #: 4's calendar arms code a cell from them; every other arm ignores them.
+    season: int = 2025
+    game_month: np.ndarray = field(default_factory=lambda: np.zeros(0, dtype=np.int64))
     #: `ENGINE_CLOCK_DIAG=1`: accumulate the round-4 state-composition cells.
     diag: bool = False
     cells: CellAccumulator = field(default_factory=CellAccumulator)
     #: every fitted object of the schedule, indexed by manifest entry. Length 1
     #: and equal to `(arm,)` when a segment is pinned.
     arms: tuple = ()
+
+    #: With a pinned segment and no game index, every row is served that
+    #: segment's own refit month -- which is what a pinned run IS. Never a guess.
+    pinned_month: int | None = None
 
     #: `loop.py` reads this and passes the active rows' game index to `draw`.
     #: An adapter without it keeps the old three-argument call, so the
@@ -323,9 +344,13 @@ class ClockAdapterV3:
             "note": ("round-3c closed-loop candidate (experiments.md section 12); "
                      "live fitted object, no lookup table, so no binning error (L26)"),
         }
+        gm = pd.to_datetime(inp.games["game_date"]).dt.month.to_numpy().astype(np.int64)
         return cls(mode=mode, arm=arms[0], manifests={"clock": man}, segment=pinned,
                    freeze=freeze, source=src, team_idx=team_idx,
                    state_idx=dict(STATE_INDEX), arms=tuple(arms),
+                   season=int(season), game_month=gm,
+                   pinned_month=(None if pinned is None
+                                 else int(man.entries[pinned].refit_date.month)),
                    diag=os.environ.get("ENGINE_CLOCK_DIAG", "0") == "1")
 
     # -- the schedule the runner has to honour ----------------------------
@@ -334,7 +359,8 @@ class ClockAdapterV3:
         return self.manifests["clock"].seg_of_game
 
     # -- prediction -------------------------------------------------------
-    def _frame(self, team: np.ndarray, state: np.ndarray) -> pd.DataFrame:
+    def _frame(self, team: np.ndarray, state: np.ndarray,
+               gidx: np.ndarray | None = None) -> pd.DataFrame:
         """The design frame, built from the engine's own blocks.
 
         Every derived column is recomputed here from the LIVE clock and the
@@ -368,6 +394,12 @@ class ClockAdapterV3:
         d = np.column_stack([cols[c] for c in CK.PREV_END_DUMMIES])
         code = np.where(d.any(axis=1), d.argmax(axis=1) + 1, 0)
         df["prev_end"] = np.asarray(CK.PREV_END_LEVELS, dtype=object)[code]
+        # Round 4's calendar arms read these two; every other arm ignores them.
+        df["season"] = np.int64(self.season)
+        if gidx is not None and len(self.game_month):
+            df["month"] = self.game_month[np.asarray(gidx)]
+        elif self.pinned_month is not None:
+            df["month"] = np.int64(self.pinned_month)
         return df
 
     def pmf(self, team: np.ndarray, state: np.ndarray,
@@ -379,7 +411,7 @@ class ClockAdapterV3:
         game through `ArtifactManifest.segments`. Same total row count, no
         per-game model call, and a game can only ever be served the artifact
         the manifest's honest-backtest checks already cleared for it."""
-        return self._pmf_from_frame(self._frame(team, state), gidx)
+        return self._pmf_from_frame(self._frame(team, state, gidx), gidx)
 
     def _pmf_from_frame(self, df: pd.DataFrame, gidx: np.ndarray | None) -> np.ndarray:
         if self.segment is not None or len(self.arms) == 1:
@@ -403,7 +435,7 @@ class ClockAdapterV3:
         """One INTENDED duration per row, by inverse CDF on the engine's own
         uniforms. `loop.py` truncates at the horn (L20); nothing is clipped
         here."""
-        df = self._frame(team, state)
+        df = self._frame(team, state, gidx)
         dur = CK.sample_from_pmf(self._pmf_from_frame(df, gidx), u)
         left = state[:, self.state_idx["seconds_remaining"]].astype(np.int64)
         self.eoh.add(state[:, self.state_idx["period"]], left, dur)

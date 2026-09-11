@@ -1710,3 +1710,170 @@ was luck of timing, not a control. Two cheap controls follow: **`run_meta.json`
 should record the engine commit hash**, and **a long run sequence should re-run
 its earliest arm against its latest code and assert bit-identity before the table
 is read**. Both are cheaper than the four hours of engine time this cost.
+
+---
+
+## 15. Run R7 -- the round-4 grid (2026-09-11)
+
+`scripts/train_clock_v4.py` (module `src/cbb_sim/models/clock_v4.py`) and
+`scripts/run_clk4_closed_loop.py`, graded by the SAME blind path round 3c used
+(`scripts/grade_clk3c_closed_loop.py --pattern "clock4_*"`). Pre-registration
+section 14 committed **421b97b** BEFORE `clock_v4.py` or the trainer existed.
+Diagnosis: `docs/tests/clock_duration_shortfall_2026-09-11.md`.
+
+Every engine run: `ENGINE_EVENT=round2_s1`,
+`ENGINE_FG_MAKE=round3_shooter_S_C_s1`, `ENGINE_FG3=decision8`,
+`ENGINE_ROTATION=reference`, passed as explicit environment values and recorded
+in every `run_meta.json`; `loop.py` at commit **4503c52** on all 17 round-4 runs
+(verified from the metas, so the paired design holds). Subset: the F2 2025 slate
+sorted by `game_id` ascending, every 11th row, first 500 games; 159
+clock-complete. Actual on that subset: 68.530 possessions per team-game
+clock-complete, 68.328 all, margin SD 15.472, corr(h,a) 0.237, PPP 1.0705.
+
+Artifacts `v4_*` in `data/processed/models/clock/` (gitignored, HF-synced);
+engine results `results/engine_v0/clock4_*` (not committed).
+
+### 15.1 The half-life, chosen on F1 ONLY
+
+| half-life (days) | F1 CRPS_trunc | F1 censored loglik | F1 pred mean duration |
+|---:|---:|---:|---:|
+| 120 | 4.85862 | -3.51668 | 17.469 |
+| **365** | **4.85814** | -3.51095 | 17.514 |
+| 730 | 4.85821 | -3.51035 | 17.528 |
+
+**Chosen: 365 days**, by the pre-registered rule (lowest CRPS_trunc on F1). The
+spread is 0.0005, well inside any floor, so the rule is doing the choosing and
+not the data; recorded as such. F1 actual mean duration 17.419.
+
+### 15.2 F2 offline
+
+| id | arm | CRPS_trunc | censored loglik | pred mean dur | PIT worst D | PIT leak cells | G1-CC chain | eoh dur gap | slope ratio |
+|---|---|---:|---:|---:|---:|---:|---:|---:|---:|
+| R | `srfloor` (served) | 4.89946 | -3.50999 | 17.615 | 0.1553 | 16 | +0.662 | -1.065 | 0.786 |
+| A1 | `recency` (H=365) | 4.89903 | -3.51086 | 17.591 | 0.1503 | 15 | +0.751 | -1.130 | 0.780 |
+| A2 | `curseason` | 4.90023 | -3.54133 | 17.559 | 0.1474 | 16 | +0.884 | -1.047 | 0.756 |
+| A3 | `calpart` | 4.89983 | -3.53240 | 17.619 | 0.1585 | 17 | +0.657 | -1.176 | 0.785 |
+| A4 | `nofloor` | **4.88748** | -3.50713 | 17.609 | 0.1107 | 13 | +1.048 | **-3.216** | 0.787 |
+
+Offline noise floor, game-block bootstrap SE of mean CRPS_trunc over 5,319 test
+games, measured per arm: 0.00656-0.00684; **floor = 0.00684**. A4 beats R by
+0.01198 = **1.75 floors**; A1 beats R by 0.00043 (0.06 floors, a tie); A3 and A2
+lose by 0.04 and 0.08 floors (ties). PIT fails for every arm, as it has since
+round 1, and the end-of-half duration floor is +/- 0.2538 s, which every arm
+misses and A4 misses by 12.7 floors.
+
+**The direct offline read of what round 4 exists to fix** -- the model's own
+expected CONSUMED duration `E[min(T,R)]` against the actual, on all 270,530
+clock-complete 2025 regulation possessions (actual mean 17.6526 s):
+
+| arm | E[min(T,R)] | gap | implied possessions per team-game |
+|---|---:|---:|---:|
+| R `srfloor` | 17.4965 | -0.1561 | +0.606 |
+| A1 `recency` | 17.4698 | **-0.1828** | +0.711 |
+| A2 `curseason` | 17.4368 | **-0.2158** | +0.841 |
+| A3 `calpart` | 17.5022 | -0.1505 | +0.584 |
+| A4 `nofloor` | **17.5262** | **-0.1264** | +0.490 |
+
+**Two of the three calendar arms make the law term WORSE, and the reason is
+structural.** S1's "current season to date" is by construction the part of the
+season BEFORE the game being served, and duration rises monotonically through
+the season (2025 clock-complete: 17.374 s in November, 17.409 in December,
+17.793 in January, 17.836 in February). Conditioning on the current season
+(A2) or up-weighting recent rows (A1) therefore anchors the fit on the FASTEST
+available part of the current season and pulls the prediction DOWN, while the
+pooled multi-season fit the reference uses silently contains February and March
+of three prior seasons. Only A3, which pools by SEASON PART across seasons, points
+the right way, and it is worth 0.006 s. `v4_ref` and the served
+`v3c_srfloor_P3_s1` produce identical E[min(T,R)] to four decimals on those
+270,530 rows, which is the harness's own identity check.
+
+### 15.3 The deciding closed-loop read (25 seeds, paired streams, 500 games)
+
+| id | arm | G1 cc mean | G1 cc SD | G1 all mean | G1 all SD | margin SD | corr(h,a) | total bias | PPP | slope ratio |
+|---|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| R | `v3c_srfloor_P3_s1` (served) | **+1.156** | -0.477 | **+1.704** | -0.599 | 15.941 | 0.003 | -0.931 | 1.0380 | 1.047 |
+| A1 | `v4_recency_P3_s1` | +1.254 | -0.443 | +1.787 | -0.595 | 15.838 | 0.009 | -0.706 | 1.0384 | 1.040 |
+| A2 | `v4_curseason_P3_s1` | +1.346 | -0.510 | +1.902 | -0.584 | 15.904 | 0.005 | -0.434 | 1.0386 | 1.027 |
+| A3 | `v4_calpart_P3_s1` | **+1.127** | -0.468 | **+1.677** | -0.586 | 15.861 | 0.011 | -0.890 | 1.0387 | 1.049 |
+| A4 | `v4_nofloor_P3_s1` | +1.561 | -0.468 | +2.108 | -0.567 | 15.947 | 0.013 | -0.198 | 1.0373 | 1.052 |
+
+The 5-seed screening read agrees with every row to within 0.20 possessions and
+preserves the ordering at the top (A3 < R < A1 < A2 < A4).
+
+**Noise floor** (the same arm re-run with seeds 1000-1024, measured for R and
+for A4): G1 cc **0.180**, G1 all **0.074**, margin SD 0.101, corr 0.013, total
+bias 0.377. (R: +1.156 -> +0.999 cc, +1.704 -> +1.630 all. A4: +1.561 -> +1.381
+cc, +2.108 -> +2.038 all.) The G1-cc floor is twice round 3c's 0.089 on the same
+subset and seed count, which is itself worth recording: the floor is re-measured
+per round, never assumed.
+
+### 15.4 M8 -- law versus composition, per arm
+
+`ENGINE_CLOCK_DIAG=1` on the 159 clock-complete games, 10 seeds, decomposed by
+`scripts/diag_clk4_composition.py` against the same games' real possessions on
+the round-2 cell grid (regulation; the identity closes to 3e-15):
+
+| id | arm | mean consumed | total gap | LAW | COMPOSITION | interaction | sim-only cells |
+|---|---|---:|---:|---:|---:|---:|---:|
+| R | `srfloor` | 17.334 | -0.222 | **-0.071** | -0.148 | -0.052 | +0.049 |
+| A1 | `recency` | 17.309 | -0.247 | -0.102 | -0.147 | -0.045 | +0.048 |
+| A2 | `curseason` | 17.268 | -0.287 | -0.134 | -0.158 | -0.047 | +0.052 |
+| A3 | `calpart` | 17.316 | -0.240 | -0.074 | -0.160 | -0.055 | +0.049 |
+| A4 | `nofloor` | 17.221 | -0.334 | **-0.051** | **-0.291** | -0.040 | +0.048 |
+
+This is the round's most useful table and it says three things no other read
+does:
+
+1. **A1 and A2 degrade the law term in the engine too** (-0.102 and -0.134
+   against R's -0.071), confirming 15.2's structural explanation rather than an
+   offline artefact.
+2. **A4 is the only arm that improves the law term** (-0.051, a 28% reduction),
+   exactly as the diagnosis predicted for removing the `srfloor` approximation
+   -- and it is still the WORST arm on G1, because removing the floor doubles
+   the COMPOSITION term (-0.291 against -0.148). Shorter end-of-period
+   possessions (last-possession duration 9.12 s against an actual 11.89, R
+   11.19) manufacture extra possessions at the horn, which dilutes the made-FG
+   start share further. That is L20's mechanism arriving from the other
+   direction, and it is why the floor stays.
+3. **The composition term is untouched by every arm** (-0.147 to -0.160 for the
+   four floored arms), as pre-registered. It is not the clock's.
+
+### 15.5 Verdict
+
+**NO ARM ADOPTED. 0 of 5 pass criterion 1** (G1 mean inside +/- 1.0 on BOTH game
+sets). Criterion 2 passes for every arm (margin SD 15.84-15.95 against an actual
+15.472, inside +/- 0.75; corr(h,a) 0.003-0.013 against 0.237 and reported, not
+gated). Responsiveness passes for every arm (slope ratio 1.027-1.052, inside
+Decision 8's [0.8, 1.2], monotone 4 of 4).
+
+A3 `calpart` is the best arm at +1.127 / +1.677, and it **ties** the reference:
+the gaps are 0.029 (cc, floor 0.180) and 0.027 (all, floor 0.074). The
+pre-registered tie-break orders `R` before `A3`, so the simpler arm keeps the
+slot. A1 and A2 are no better than R or worse; A4 is worse than R by 0.405
+possessions, far outside the floor.
+
+`ENGINE_CLOCK` therefore stays **`v3c_srfloor_P3_s1`** (the engine default since
+commit 1a5acef), `provisional_clock` stays True, and nothing was hand-tuned,
+capped, scaled or blended at any point.
+
+### 15.6 What this round establishes, beyond the verdict
+
+- **The train/serve quantity is not the defect** and every "missing component"
+  hypothesis is closed by the tiling identity (section 14's diagnosis, four
+  independent checks).
+- **The clock's own share of the possession overshoot is about 0.28 possessions
+  per team-game** (the -0.071 s law term), and the best any round-4 arm managed
+  was 0.020 s of it -- at the cost of 0.144 s of composition.
+- **The remaining +1.0 to +1.7 is the `prev_end` mix**, i.e. the event /
+  fg_make lane: the engine starts 2.50 pp fewer possessions after a made field
+  goal and 2.10 pp more after a defensive rebound, worth -0.148 s. Round 5 for
+  the CLOCK has no target left that is worth a round; the target moved
+  upstream, and that is logged for the event / fg_make lane rather than
+  compensated for here.
+- **In-season recency is anti-correlated with the within-season trend.** Any
+  scheme that up-weights "what has happened so far this season" is up-weighting
+  November when it is serving February. S1's calibration benefit (L21) comes
+  from seeing the current season's LEVEL, not from a monotone trend, and for a
+  target that trends monotonically within a season a recency weight moves the
+  prediction the wrong way. That is a general result for every sub-model whose
+  target drifts through a season, not a clock curiosity.
