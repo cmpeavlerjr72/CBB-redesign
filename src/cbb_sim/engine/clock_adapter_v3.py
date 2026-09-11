@@ -116,6 +116,21 @@ PERIOD_KEYS: tuple[str, ...] = ("H1", "H2", "OT")
 #: The offline end-of-half statistic's window (`clock.SECS_BUCKET_EDGES[1]`).
 EOH_WINDOW_S = 35
 
+#: Round-4 diagnosis cell grid (`ENGINE_CLOCK_DIAG=1`). The engine writes no
+#: possession-level file, so the state COMPOSITION it visits -- as opposed to
+#: the conditional law it draws from -- can only be accumulated live. These are
+#: the round-2 cell dimensions the offline tables are cut on, so the sim and the
+#: data are read on the same grid.
+CELL_DIMS: tuple[tuple[str, int], ...] = (
+    ("prev_end", len(CK.PREV_END_LEVELS)),
+    ("r2_bucket", len(CK.R2_SR_LABELS)),
+    ("period_group", 3),
+    ("bonus", 2),
+    ("tempo_tercile", 3),
+)
+CELL_SHAPE: tuple[int, ...] = tuple(n for _, n in CELL_DIMS)
+CELL_N: int = int(np.prod(CELL_SHAPE))
+
 
 def _manifest_obj(path: Path) -> dict:
     """Translate a clock S1 manifest into `ArtifactManifest`'s format.
@@ -186,6 +201,37 @@ class EohAccumulator:
 
 
 @dataclass
+class CellAccumulator:
+    """Counts and consumed seconds per round-2 state cell, accumulated LIVE.
+
+    Round 3c's residual is a mean-duration shortfall (L31). It has exactly two
+    sources: the conditional law the model draws from, and the distribution of
+    STATES the engine visits. The first is measurable offline on the real
+    possessions; the second is only measurable here, because the engine writes
+    no possession-level file. Enabled by `ENGINE_CLOCK_DIAG=1`; off, this costs
+    one `if`."""
+
+    n: np.ndarray = field(default_factory=lambda: np.zeros(CELL_N, dtype=np.int64))
+    sum_consumed: np.ndarray = field(default_factory=lambda: np.zeros(CELL_N))
+    sum_intended: np.ndarray = field(default_factory=lambda: np.zeros(CELL_N))
+
+    def add(self, codes: np.ndarray, consumed: np.ndarray, intended: np.ndarray) -> None:
+        np.add.at(self.n, codes, 1)
+        np.add.at(self.sum_consumed, codes, consumed)
+        np.add.at(self.sum_intended, codes, intended)
+
+    def snapshot(self) -> dict:
+        return {k: getattr(self, k).tolist() for k in ("n", "sum_consumed", "sum_intended")}
+
+    def drain(self) -> dict:
+        out = self.snapshot()
+        self.n = np.zeros(CELL_N, dtype=np.int64)
+        self.sum_consumed = np.zeros(CELL_N)
+        self.sum_intended = np.zeros(CELL_N)
+        return out
+
+
+@dataclass
 class ClockAdapterV3:
     """One round-3c clock arm, batched, over the engine's own state block."""
 
@@ -199,6 +245,9 @@ class ClockAdapterV3:
     team_idx: np.ndarray = field(default_factory=lambda: np.zeros(0, dtype=np.int64))
     state_idx: dict = field(default_factory=dict)
     eoh: EohAccumulator = field(default_factory=EohAccumulator)
+    #: `ENGINE_CLOCK_DIAG=1`: accumulate the round-4 state-composition cells.
+    diag: bool = False
+    cells: CellAccumulator = field(default_factory=CellAccumulator)
     #: every fitted object of the schedule, indexed by manifest entry. Length 1
     #: and equal to `(arm,)` when a segment is pinned.
     arms: tuple = ()
@@ -276,7 +325,8 @@ class ClockAdapterV3:
         }
         return cls(mode=mode, arm=arms[0], manifests={"clock": man}, segment=pinned,
                    freeze=freeze, source=src, team_idx=team_idx,
-                   state_idx=dict(STATE_INDEX), arms=tuple(arms))
+                   state_idx=dict(STATE_INDEX), arms=tuple(arms),
+                   diag=os.environ.get("ENGINE_CLOCK_DIAG", "0") == "1")
 
     # -- the schedule the runner has to honour ----------------------------
     def game_segments(self) -> np.ndarray:
@@ -329,7 +379,9 @@ class ClockAdapterV3:
         game through `ArtifactManifest.segments`. Same total row count, no
         per-game model call, and a game can only ever be served the artifact
         the manifest's honest-backtest checks already cleared for it."""
-        df = self._frame(team, state)
+        return self._pmf_from_frame(self._frame(team, state), gidx)
+
+    def _pmf_from_frame(self, df: pd.DataFrame, gidx: np.ndarray | None) -> np.ndarray:
         if self.segment is not None or len(self.arms) == 1:
             return self.arms[0].pmf(df)
         if gidx is None:
@@ -351,12 +403,37 @@ class ClockAdapterV3:
         """One INTENDED duration per row, by inverse CDF on the engine's own
         uniforms. `loop.py` truncates at the horn (L20); nothing is clipped
         here."""
-        dur = CK.sample_from_pmf(self.pmf(team, state, gidx), u)
+        df = self._frame(team, state)
+        dur = CK.sample_from_pmf(self._pmf_from_frame(df, gidx), u)
         left = state[:, self.state_idx["seconds_remaining"]].astype(np.int64)
         self.eoh.add(state[:, self.state_idx["period"]], left, dur)
+        if self.diag:
+            self.cells.add(self._cell_codes(df),
+                           np.minimum(dur, left).astype(np.float64),
+                           dur.astype(np.float64))
         return dur
 
+    def _cell_codes(self, df: pd.DataFrame) -> np.ndarray:
+        """Round-2 cell index per row, from the frame the model itself saw."""
+        prev = df["prev_end"].map(CK.PREV_END_INDEX).to_numpy().astype(np.int64)
+        bucket = CK.r2_bucket_id(df["seconds_remaining"].to_numpy()).astype(np.int64)
+        per = df["period"].to_numpy()
+        pg = np.where(per <= 1.0, 0, np.where(per <= 2.0, 1, 2)).astype(np.int64)
+        bonus = (df["in_bonus"].to_numpy() > 0).astype(np.int64)
+        edges = tempo_edges_of(self.arms[0])
+        tempo = (np.searchsorted(np.asarray(edges),
+                                 df["tempo_prior_game"].to_numpy(), side="right")
+                 .astype(np.int64) if edges is not None
+                 else np.zeros(len(df), dtype=np.int64))
+        return np.ravel_multi_index((prev, bucket, pg, bonus, tempo), CELL_SHAPE)
+
     # -- diagnostics ------------------------------------------------------
+    def cell_snapshot(self) -> dict:  # noqa: D401
+        return self.cells.snapshot()
+
+    def cell_drain(self) -> dict:
+        return self.cells.drain()
+
     def eoh_snapshot(self) -> dict:
         return self.eoh.snapshot()
 
@@ -454,4 +531,47 @@ def summarise_eoh(snaps: list[dict]) -> dict:
         "mean_possession_duration_s": (float(tot["sum_intended"][:2].sum() / tot["n_poss"][:2].sum())
                                        if tot["n_poss"][:2].sum() else float("nan")),
     }
+    return out
+
+
+def tempo_edges_of(arm) -> tuple | None:
+    """The fitted tempo-tercile cut points, through any state wrapper.
+
+    A P2/P3 arm is a `StateWrapArm` around the fitted cell table, so the edges
+    live one level in. Walked rather than duplicated: the diagnosis must code
+    its cells on the SAME cut points the model itself used, or the composition
+    table would be measuring a different grid from the one the engine drew on."""
+    seen = set()
+    while arm is not None and id(arm) not in seen:
+        seen.add(id(arm))
+        e = getattr(arm, "tempo_edges", None)
+        if e is not None:
+            return tuple(e)
+        arm = getattr(arm, "inner", None)
+    return None
+
+
+def summarise_cells(snaps: list[dict]) -> pd.DataFrame:
+    """Fold worker cell snapshots into one long table.
+
+    One row per occupied round-2 cell with the engine's own possession count,
+    mean CONSUMED duration (what `loop.py` subtracts from the clock) and mean
+    INTENDED duration (what the model drew). Read against the same cut of the
+    real possessions, this separates the conditional law from the state
+    composition."""
+    tot = {k: np.zeros(CELL_N, dtype=np.float64) for k in
+           ("n", "sum_consumed", "sum_intended")}
+    for s in snaps:
+        for k, v in tot.items():
+            v += np.asarray(s[k], dtype=np.float64)
+    idx = np.flatnonzero(tot["n"] > 0)
+    codes = np.array(np.unravel_index(idx, CELL_SHAPE)).T
+    out = pd.DataFrame(codes, columns=[d for d, _ in CELL_DIMS])
+    out["prev_end"] = np.asarray(CK.PREV_END_LEVELS, dtype=object)[out["prev_end"]]
+    out["r2_bucket"] = np.asarray(CK.R2_SR_LABELS, dtype=object)[out["r2_bucket"]]
+    out["period_group"] = np.asarray(PERIOD_KEYS, dtype=object)[out["period_group"]]
+    out["n"] = tot["n"][idx]
+    out["mean_consumed"] = tot["sum_consumed"][idx] / tot["n"][idx]
+    out["mean_intended"] = tot["sum_intended"][idx] / tot["n"][idx]
+    out["sum_consumed"] = tot["sum_consumed"][idx]
     return out

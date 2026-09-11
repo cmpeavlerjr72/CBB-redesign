@@ -1437,3 +1437,171 @@ rows, whose 6.48 s actual against a 19.31 s model-implied mean biases the count
 the other way. Round 4 is a duration-LEVEL question, not a state-parametrisation
 one, and the state question is now closed: P2 and P3 tie, both beat P1 by 0.42,
 and the cell-based family is preferred on responsiveness as well as on binning.
+
+---
+
+## 14. Round 4 pre-registration -- the mean-duration shortfall (2026-09-11)
+
+Appended VERBATIM BEFORE any round-4 arm was fitted or run, and committed on its
+own together with the diagnosis it is written against. Sections 8, 10 and 12
+(the round-3, 3b and 3c pre-registrations) are STATIC and are NOT edited.
+
+Diagnosis: `docs/tests/clock_duration_shortfall_2026-09-11.md`. It fits no model
+and scores no arm, and it revises L31's account of the residual:
+
+- The train/serve quantity is CORRECT. The data's possessions tile each period
+  exactly (`duration_s == start_clock - end_clock` on 768,834 of 768,834 rows;
+  clock-complete regulation periods sum to 1199.58 s of 1200; 11 of 270,541
+  clock-complete regulation possessions fall outside the design, worth -0.0036 s
+  of the mean), and `loop.py` subtracts exactly `min(draw, seconds_remaining)`.
+  There is no missing inbound component, no stoppage time, no OREB-split and no
+  rounding term. Every one of those hypotheses is closed by the tiling identity.
+- The shortfall is NOT uniform. On the 159 clock-complete subset games, 10
+  seeds: total -0.2368 s = state COMPOSITION -0.1557, interaction -0.0580,
+  the model's own LAW -0.0713, and +0.0482 given back by cells the engine
+  reaches that these 159 real games never did.
+- The composition term is ENTIRELY the `prev_end` mix (-0.158 of -0.156 on the
+  joint grid): the engine starts 2.50 pp fewer possessions after a made field
+  goal and 2.10 pp more after a defensive rebound, states whose durations differ
+  by 7.5 s. **That is an upstream defect and round 4 does not touch it.**
+- The clock's own share splits again: the `srfloor` floor in the 20-59 s band
+  (2.9% of possessions, 37.5% of the offline law gap) and a SEASON-LEVEL drift
+  the pooled cell fit under-tracks (2025 clock-complete mean 17.653 s against
+  17.510 / 17.584 / 17.547 for 2024 / 2023 / 2022, and 17.374 in November
+  against 17.836 in February). It is not cell sparsity: 99.0-100.0% of rows are
+  served at the full five-dimension grid.
+
+### 14.1 What round 4 decides, and what it does not
+
+DECIDES: whether a cell-based clock arm that carries the CURRENT season's
+duration level closes the law term without losing a gate. Family (cell-based),
+censoring (L20/L26), state parametrisation (P3; closed by round 3c) and scheme
+(S1; L21) are settled and are NOT reopened.
+
+DOES NOT DECIDE, and is explicitly out of scope: the `prev_end` composition
+term. Moving the clock to compensate for an upstream mix error is the pattern
+`CLAUDE.md`'s bottom-up rule bans ("never accept a downstream stage that
+compensates for a known upstream bias"). It is measured on every arm so that no
+arm can pass by accidentally moving the mix, and it is logged for the event /
+fg_make lane.
+
+STATED IN ADVANCE: the law term is worth about 0.28 possessions per team-game in
+the engine. An arm that removes ALL of it still lands near +0.6 to +0.9 on G1,
+inside a gate that demands +/- 1.0 but only because the composition term does
+not grow. A round-4 pass is therefore possible and a round-4 failure would not
+be a surprise; neither outcome is allowed to move a gate.
+
+### 14.2 Arms
+
+All arms: cell-based, `P3` state, `S1` monthly walk-forward, censoring flag and
+Kaplan-Meier tail rule exactly as round 3 (section 8.3). They differ only in how
+the fit weights or partitions CALENDAR TIME, and in the clock-bucket floor.
+
+| id | `ENGINE_CLOCK` | what it is |
+|---|---|---|
+| R | `v3c_srfloor_P3_s1` | **THE REFERENCE**, the arm served today. Re-run under round 4's own sub-model pinning, because round 3c ran `ENGINE_FG_MAKE=round2b_S_C_s1` and the interim served model is now `round3_shooter_S_C_s1` (L29); a table that mixed the two would not be a paired comparison |
+| A1 | `v4_recency_P3_s1` | the same arm with EXPONENTIALLY RECENCY-WEIGHTED training rows: a row `d` days before the refit date carries weight `0.5 ** (d / H)` through a weighted discrete-time Kaplan-Meier. `H` is chosen on **F1 ONLY** from {120, 365, 730} days and recorded before F2 is touched. Fixes cross-season AND within-season level with one parameter |
+| A2 | `v4_curseason_P3_s1` | the same arm with a two-level CALENDAR dimension appended LAST to the cell grid (0 = the season being simulated, 1 = prior seasons). The existing hierarchical fallback then serves a cell from the current season's own rows when it has >= 300 rows and >= 100 uncensored exits, and from the pooled cell otherwise. No new knob: `EMPIRICAL_MIN_CELL` and `EMPIRICAL_MIN_EVENTS` are round 3's |
+| A3 | `v4_calpart_P3_s1` | the same arm with a three-level SEASON-PART dimension appended last, coded from the calendar month ({11,12} -> 0, {1} -> 1, {2,3,4} -> 2), pooling across seasons within a part. Fixes the within-season trend (L5) and not the cross-season level, so A1 vs A2 vs A3 separates the two causes |
+| A4 | `v4_nofloor_P3_s1` | `empirical_km3` (NOT `srfloor`) under P3 + S1: the clock-bucket floor removed and nothing else changed. Prices the floor's own contribution to the law term inside the engine, which round 3 could only price offline |
+
+A1's weight enters ONLY the fit. Nothing multiplies, scales, caps or offsets a
+predicted duration or a simulated one; `docs/SIM_GUARDRAILS.md`'s core principle
+and the standing no-hand-tuning rule forbid a multiplicative duration scaling,
+and no arm here contains one.
+
+### 14.3 Decision 10
+
+No round-4 arm introduces a SIMULATION-PRODUCED state feature. A recency weight,
+a season index and a calendar month are all known before tipoff and are
+constants of the game, so a "frozen" arm and its "refit-without" counterpart are
+the same object and the pair is VACUOUS. That is stated here rather than
+silently skipped. The margin question -- the one Decision 10 exists for -- was
+decided in round 3c with both arms run (frozen `gamma|P1` and the
+refit-without-margin `gamma|P2`), and every round-4 arm inherits its answer, P3.
+If any arm acquires an engine-produced state column before it is scored, BOTH
+Decision-10 arms run for it and the arm is not read until they do.
+
+### 14.4 Universe, folds, seal, subset, seeds, pairing
+
+Unchanged from rounds 3 and 3c. D-I, hoopR not truncated, CBBD points-complete,
+`DURATION_CAP = 90`; F1 trains {2022, 2023} and tests 2024, F2 trains
+{2022, 2023, 2024} and tests 2025 and is the SELECTION fold; 2026 SEALED.
+Closed loop: the F2 2025 slate sorted by `game_id` ascending, every 11th row,
+first 500 games (159 clock-complete), 5 seeds screening and 25 seeds deciding,
+paired by construction through the (seed, game_id, family) streams. Every other
+sub-model pinned by explicit environment value on EVERY run and written into
+`run_meta.json`: `ENGINE_EVENT=round2_s1`,
+`ENGINE_FG_MAKE=round3_shooter_S_C_s1`, `ENGINE_FG3=decision8`,
+`ENGINE_ROTATION=reference`. Each run records `git rev-parse HEAD` for `loop.py`
+in `run_meta.json` (`loop_commit`).
+
+### 14.5 Metrics
+
+OFFLINE, exactly round 3's (section 8.4): CRPS_trunc on uncensored test
+possessions with the pmf renormalised onto the reachable durations (PRIMARY
+offline), censored log-likelihood, PIT K-S D per powered cell, the
+`chain_halves` emergent G1 on clock-complete games, and the end-of-half pair.
+
+CLOSED LOOP, the round-4 additions, on both game sets (the 159 clock-complete
+games and all 500):
+
+| id | metric |
+|---|---|
+| M1 | possessions per team-game, mean and SD, clock-complete games |
+| M2 | possessions per team-game, mean and SD, all 500 games |
+| M3 | margin SD across all (game, seed) rows |
+| M4 | corr(home points, away points) |
+| M5 | total bias against verified finals |
+| M6 | points per possession |
+| M7 | end-of-half: share of period-ending possessions starting inside 35 s, and their mean duration (the LAST-POSSESSION duration) |
+| M8 | **mean regulation possession duration BY CELL** (previous end type x fine bucket x period x bonus x tempo tercile), and the law / composition / interaction decomposition against the same games' actual |
+| M9 | possessions per team-game by pregame tempo quintile, with the Decision-8 slope ratio |
+
+M8 is the round's own instrument and is reported for every arm including R. An
+arm whose G1 improves through the COMPOSITION term rather than the LAW term has
+not fixed the clock and is disqualified on that ground, stated here before any
+arm exists.
+
+### 14.6 Noise floor
+
+The engine floor is the same arm re-run with `--seed-offset 1000`, computed for
+R and for the leading candidate; the larger absolute delta per metric is the
+floor for that metric. Round 3c's floors on the same subset and seed count are
+carried as the prior expectation (G1 cc 0.089, G1 all 0.055, margin SD 0.158,
+correlation 0.008, total bias 0.261) and are RE-MEASURED, not assumed. Offline,
+the deterministic cell arms take the game-block bootstrap SE of mean CRPS_trunc.
+
+### 14.7 Decision rule
+
+Adopt the SIMPLEST arm satisfying BOTH:
+
+1. G1 mean within +/- 1.0 and G1 SD within +/- 0.75 of the same games' actual on
+   BOTH game sets (M1 and M2); and
+2. margin SD (M3) within +/- 0.75 of the ACTUAL margin SD on the same games, and
+   corr(home, away) reported. **This restates criterion 2 against the actual**,
+   which section 13.2 recorded as a mis-specification in round 3c's
+   pre-registration: a floor measured on seed-to-seed noise in margin SD would
+   only be satisfiable by a clock arm that did nothing.
+
+Simplicity order, fixed here: `R` (no calendar term at all) < `A4` (one fewer
+cell dimension than R) < `A2` (one two-level dimension) < `A3` (one three-level
+dimension) < `A1` (a fitted continuous weight). A tie is a gap inside the
+measured floor and goes to the simpler arm. F1 is robustness only. If NO arm
+qualifies, adopt nothing, report the diagnosis, and do not soften a gate. If the
+leading arm fails only because the composition term did not move, say so and
+leave `v3c_srfloor_P3_s1` served.
+
+### 14.8 Execution and artifacts
+
+New trainer `scripts/train_clock_v4.py`; new module
+`src/cbb_sim/models/clock_v4.py` importing everything shared from `clock.py` and
+`clock_v3.py`, so no round-3 object or pickle changes. Artifacts take a `v4_`
+prefix in `data/processed/models/clock/` and are GITIGNORED and HF-synced.
+Engine modes are added to the mode table in
+`src/cbb_sim/engine/clock_adapter_v3.py`; `adapters.py`'s `_load_clock` hook
+dispatches on prefix and is extended by one condition, nothing else. Engine
+results: `results/engine_v0/clock4_<arm>/`, not committed. Threads capped at 4
+and the engine pool at 8 workers; three other workers share the machine. Results
+and the decision are appended to this file as section 15, `model.md` is updated
+once, and a row goes to `docs/models/change_ledger.md`.

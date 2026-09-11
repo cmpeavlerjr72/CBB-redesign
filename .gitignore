@@ -86,3 +86,7 @@ data/processed/models/usage_s1/
 data/processed/models/**/design_*.parquet
 data/processed/models/fg_make/events_v2_shotshooter.parquet
 data/processed/models/engine_fgm4/
+
+# clock round 4 (docs/models/clock/experiments.md section 14): fitted schedules,
+# diagnosis cell tables and the v4_diag dumps. Bulk, HF-synced, never committed.
+data/processed/models/clock/v4_*
