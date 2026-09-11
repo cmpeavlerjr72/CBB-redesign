@@ -1049,3 +1049,230 @@ are the one piece of Decision 9c this sub-model still owes.
    noise-floor cell -- the same spec under seed 1 -- which the ladder builder does not filter out.
    It is left in deliberately: it puts the seed spread (0.000113 log loss, 0.076 pp conf4,
    0.133 pp non-conference) on the same rows as the gains it has to be compared against.
+
+---
+
+## 8. Round 4 pre-registration: early-season shrinkage of the as-of style rates, plus the two alignment cells round 3 did not run -- 2026-09-11, written and COMMITTED before any round-4 modelling
+
+Authority and scope. Two things are open after round 3 and this round closes what the clock allows
+of both.
+
+1. **The residual structure round 3 localised is a SEASON-START effect, not a conference-regime
+   effect.** The Stage-A diagnostic
+   (`docs/tests/possession_outcome_conference_regime_2026-09-10.md`) found calendar week explains
+   more residual structure than conference-relative alignment, and round 3's own grid confirms it:
+   under every one of the 21 measured `first` cells the first-four-season-weeks gap
+   (`first4_season_gap_pp`, 3.48-4.36 pp on the tree arm) is the worst segment in the table -- worse
+   than the first four conference weeks (1.16-1.45 pp) and worse than non-conference as a whole
+   (2.39-3.00 pp), all against a 2.0 pp gate. Nothing in rounds 1-3 addressed it. The mechanism is
+   named and testable: in season weeks 0-3 a team's as-of style rate is a ratio over a handful of
+   possessions, so `off_{rate}_c` is mostly sampling noise around the league mean, and a tree fed an
+   unshrunk noisy deviation will act on it.
+2. **No tree ALIGNMENT cell finished in round 3** (section 7.6). `S1_conf_aligned` and `S1_weekly`
+   on the `first` population are the one piece of Decision 9c this sub-model still owes, and
+   Decision 9 cannot be resolved for possession-outcome until they are measured.
+
+Held fixed from rounds 2 and 3, and NOT reopened: the model class per population (`lgbm` on
+`first`, `cascade` on `cont`), the event layer (possessions v2, rim override, first-chance style
+sources), the universe (`pbp_complete`), the folds, the seal on 2025-26, and the scoring function.
+`R1.score()` is imported and called, as rounds 2 and 3 imported it, and round 3's
+`conf_window_calibration` and `responsiveness_by` are imported from
+`scripts/train_possession_outcome_v3.py` **unmodified** so all four rounds go through one scorer.
+The reference cell's own predictions are re-scored through the round-4 grader as a check that the
+grader change is additive (see 8.5).
+
+### 8.1 The shrinkage arms
+
+Every arm is a transformation of ROUND 2's OWN centred style column, built from the same
+strictly-before accumulations, so the arms differ by the shrinkage and by nothing else. For a rate
+`r` with numerator `n` and denominator `d` (`RATE_DEFS`: 3pa = fga_3/poss, rim = fga_rim/fga,
+tov = tov/poss, ftr = fta/fga), round 2's column is
+
+```
+raw_c(i, t)  =  scale * N_i(<t)/D_i(<t)  -  scale * N_league(<t)/D_league(<t)
+```
+
+with `D_i(<t)` the team's own accumulated denominator mass strictly before its own game. All eight
+style columns (four rates x offence own-form and opponent defence-allowed) are transformed
+together; the two ridge rating columns are NOT touched (they are already regularised, L21) and no
+state, site or season column is touched.
+
+| arm | definition | complexity rank |
+|---|---|---|
+| `G0` | round 2's `C_plus_state`, character for character. **The reference** (identical to round 3's `F0`) | 0 |
+| `G1` | `w * raw_c`, `w = D_i(<t) / (D_i(<t) + k_r)` -- empirical-Bayes shrinkage toward the LEAGUE MEAN (a centred column's prior mean is 0 by construction) | 1 |
+| `G2` | `w * raw_c + (1 - w) * prior_c`, same `w`, where `prior_c` is the SAME TEAM's full prior-season centred rate (0 -- the league mean -- if the team has no prior season in the panel) | 2 |
+| `G3` | `w * raw_c + (1 - w) * w2 * prior_c`, `w2 = D_i(prev season) / (D_i(prev season) + k_r)` -- a two-level empirical Bayes in which the prior-season target is itself shrunk by its own reliability before it is used as a prior | 3 |
+| `G4` | `G0` + `off_n_prior` and `def_n_prior`, the number of completed games behind each side's as-of rate, as FEATURES -- the weeks-since-season-start interaction expressed so the model discounts a thin rate itself rather than being told how much to discount it. `days_since_start` is already in `C_plus_state`; what is missing is the RELIABILITY of the rate, not the date | 1 |
+
+`G4` is ranked 1 rather than 4 deliberately: it adds two columns and no arithmetic on an existing
+one, and under "ties go to the simpler model" a two-column addition is simpler than a refitted
+two-level prior. `G1` and `G4` are tied at rank 1; if both beat the reference and are within the
+floor of each other, `G1` wins the tie as the arm that adds no columns at all. That tie-break is
+fixed here, before the run.
+
+**Why there is no external-preseason arm.** The lane asked for an arm shrinking toward "the
+preseason prior from the existing preseason work". `data/raw/preseason/` holds 2027 only -- roster,
+portal, recruiting and conference-change tables pulled for the upcoming season. There is no
+preseason artifact for 2024 or 2025, the two test seasons, and building one retroactively is a
+separate pull and a separate leak test, not something to improvise inside this round. `G2` and `G3`
+are the constructible preseason priors: the prior season's own realised style, used before the new
+season has produced any. This substitution is recorded here rather than discovered in the results.
+
+**How the shrinkage weight is fitted, and why it is a model choice and not a post-hoc adjustment.**
+`k_r` is a fitted parameter of the FEATURE BUILDER, estimated per rate and per side (offence form,
+defence-allowed) from **completed PRIOR SEASONS ONLY** -- for a game in season `s`, from seasons
+earlier than `s` in the panel, never from season `s` and never from the game. It is a
+method-of-moments empirical-Bayes ratio of within-team sampling dispersion to between-team true
+dispersion:
+
+```
+s2_r   = weighted mean over prior-season team-games of  D_g * (rate_g - rate_team_season)^2
+         (the per-unit-of-denominator sampling variance)
+tau2_r = weighted variance over prior-season teams of  rate_team_season - rate_league_season
+         MINUS  mean_i( s2_r / D_i_season )       (between-team variance net of sampling noise)
+k_r    = s2_r / max(tau2_r, eps)
+```
+
+so `w = D/(D + k_r)` is the posterior weight on the team's own observation under a normal-normal
+model. `k_r` has units of denominator mass and is reported for every (rate, side, season) in the
+results. Season 2022 has no prior season in the panel; its `k_r` falls back to the pooled estimate
+over the seasons that do, and 2022 is a TRAIN-ONLY season in both folds, so no test row depends on
+that fallback. No `k_r` is chosen by looking at a score, no value is tuned, no cap or clip is
+applied to the output of any arm, and nothing downstream of the model is touched -- this is a
+feature definition fitted walk-forward, which `docs/SIM_GUARDRAILS.md` allows and which the
+no-hand-tuning rule is explicitly about NOT being.
+
+**Verification that the arms differ only by the shrinkage.** The builder recomputes `raw_c` from the
+same boxes and asserts it reproduces the cached round-3 design column to 1e-3 on every one of the
+eight style columns before any shrunk column is written. A failure of that assertion aborts the run.
+
+### 8.2 The alignment cells round 3 did not run
+
+Unchanged in definition from round 3 section 6.1 -- same `refit_dates`, same S1 contract, same
+`CF.conference_boundary_dates` from the published schedule:
+
+| cell | population | arm | fold | features | scheme | n_fits |
+|---|---|---|---|---|---|---|
+| `A1` | first | lgbm | F2 | `G0` | `S1_conf_aligned` | ~29 |
+| `A2` | first | lgbm | F2 | `G0` | `S1_weekly` | ~23 |
+
+`S1_conf_aligned_weekly` on the tree stays out of this round: round 3 dropped it first by design and
+nothing since has raised its prior. These two cells are read against round 3's recorded reference
+(`G0 x S1_monthly`, log loss 1.515428) and round 4's own noise floor.
+
+### 8.3 Folds, populations, metrics
+
+Folds unchanged: F1 trains 2022 and 2023 and tests 2024; **F2 trains 2022, 2023 and 2024 and tests
+2025 and is the SELECTION fold**. 2025-26 stays sealed. Populations `first` and `cont` fitted and
+scored separately; `first` is the selection population for the tree arm, `cont` the selection
+population for `cascade`.
+
+Primary metric, as in round 3: **multiclass log loss on fold 2**, through the imported `R1.score`.
+Reported for every cell, unchanged: per-class Brier, the worst gated decile calibration gap (classes
+with share at least 5%, gate 2.0 pp) split into level and shape, the step-monotonicity
+responsiveness reading, by-state calibration, and round 3's segment gaps `conf4_gap_pp`,
+`nonconf_gap_pp`, `first4_season_gap_pp`.
+
+Round 4's DECISION cells, both pre-registered here:
+
+1. **Weeks 0-3 of the season** -- `first4_season_gap_pp`, the worst gated decile calibration gap
+   over chances in the first four calendar weeks of the test season. This already exists in round
+   3's grader and is the segment this round targets.
+2. **Non-conference** -- `nonconf_gap_pp`, unchanged from round 3. It stays a decision cell because
+   round 3 failed it under every arm (2.39-3.00 pp against a 2.0 pp gate) and because the two
+   segments overlap without nesting.
+
+`conf4_gap_pp` remains reported EVIDENCE, not a round-4 decision cell: round 3 measured it at
+1.16-1.45 pp on the tree, inside the gate, so there is nothing there to fix.
+
+Round 4 ADDS one evidence cell to the grader, and adds it as a new function rather than by editing
+anything round 3 scored through: a **per-week-of-season calibration and residual table** (weeks 0,
+1, 2, 3, 4-7, 8+ measured from the first game of the test season) giving n, the worst gated decile
+gap, and the signed mean residual per class. Every arm is graded through it, **including the
+reference**, which is re-scored from round 3's stored `ref_pred_first_F2_seed0.npy` and must
+reproduce round 3's recorded log loss 1.515428 to 1e-6 before that re-score is read (8.5).
+
+**Responsiveness** is read under Decision 8 exactly as round 3 read it, on round 2's own drivers and
+on `ncss`, and round 4 reports the **team-quintile slope ratio** for each arm as a headline column:
+predictions bucketed by the offence team's own prior quintile must slope with actuals. A driver
+whose realised quintile span is under 2 pp is exempt from both clauses and recorded as exempt.
+
+### 8.4 Noise floor
+
+The reference cell `G0 x S1_monthly` is refit on fold 2 under a **second seed**, spec-identical
+including the whole refit calendar, for the tree population; `cascade` is deterministic and its seed
+spread is 0 by construction, which is reported as such and never presented as a small floor. The
+applied floor is the larger of that seed spread and a 200-replicate GAME-BLOCK bootstrap SE of the
+reference cell's fold-2 log loss. A SEGMENT gap improvement must exceed **0.25 pp** to count, the
+same threshold round 3 fixed, and the second-seed cell reports its own weeks-0-3 and non-conference
+gaps so that threshold is checked against a measured spread rather than asserted. Two seeds against
+the five round 1 pre-registered is PARTIAL and is labelled PARTIAL wherever it is used.
+
+### 8.5 Decision rule
+
+**The simplest arm stands** (`G0` < `G1` = `G4` < `G2` < `G3`, and `S1_monthly` < `S1_conf_aligned` <
+`S1_weekly`) **unless a more complex arm, while passing round 1's calibration and responsiveness
+gates, beats it beyond the noise floor on fold-2 log loss OR by more than 0.25 pp on the weeks-0-3
+gap OR by more than 0.25 pp on the non-conference gap.** Where several arms beat the reference, the
+simplest whose log loss is within the floor of the best beater's wins. `G1` beats `G4` on an exact
+tie.
+
+An adopted arm must ALSO not regress the other pre-registered segment by more than the same 0.25 pp:
+an arm that buys 0.4 pp in weeks 0-3 and gives back 0.4 pp on non-conference has moved error around
+and is not adopted. That clause is fixed here because this round's whole premise is that a segment
+is where the damage is.
+
+**If nothing beats the reference, the reference stands, and that is a RESULT and is reported as
+one.** For the alignment cells specifically: this round REPORTS whether `A1` or `A2` changes the
+Decision 9 reading for possession-outcome. It does not amend Decision 9. The PM does that.
+
+The grader is round 3's, unchanged, and every arm is scored blind through it in one pass; the added
+per-week cell is applied to every arm including the re-scored reference.
+
+### 8.6 Leak test
+
+`off_n_prior` and `def_n_prior` (the only new RAW columns; the shrunk style columns are functions of
+columns round 3 already cleared) go through the standing INV-45 change-form leak test
+(`cbb_sim.analysis.leak_test`, absolute as-joined change-form correlation at most 0.15) BEFORE they
+are read as a result, alongside round 2's raw-centred columns and the `G1`-`G3` outputs so the
+shrunk numbers are read against columns already accepted. The numbers go in the results section.
+
+### 8.7 Staging, budget, and the drop order
+
+Same discipline as round 3: the stage order IS the drop order, the budget is checked before each
+tree cell, a cell that starts finishes, and **anything the clock does not reach is written to the
+results as NOT RUN and never as a result.** This round runs under a hard external deadline of
+**12:15 ET on 2026-09-11** with a six-thread total cap shared across two concurrent processes
+(three threads each), on a machine shared with other workers.
+
+| stage | cells | arm | est. cost |
+|---|---|---|---|
+| 0 | reference re-score from round 3's stored predictions, plus the grader-additivity check | -- | seconds |
+| 1 | `cascade` cross: `G0`-`G4` x `S1_monthly` on `cont` folds 1 and 2 (the `cont` selection grid) and on `first` fold 2 as an interaction probe, plus `G0` x {`S1_conf_aligned`, `S1_weekly`} on both populations | cascade | ~15 min |
+| 2 | tree `G1` x `S1_monthly`, fold 2 | lgbm | ~15 min |
+| 3 | tree `G4` x `S1_monthly`, fold 2 | lgbm | ~15 min |
+| 4 | tree `G2` x `S1_monthly`, fold 2 | lgbm | ~15 min |
+| 5 | tree `G3` x `S1_monthly`, fold 2 | lgbm | ~15 min |
+| 6 | tree noise floor: `G0` x `S1_monthly`, fold 2, seed 1 | lgbm | ~15 min |
+| 7 | tree `A1` = `G0` x `S1_conf_aligned`, fold 2 (Decision 9c) | lgbm | ~75 min |
+| 8 | tree `A2` = `G0` x `S1_weekly`, fold 2 (Decision 9c) | lgbm | ~60 min |
+| 9 | tree fold-1 confirmation of whichever arm stages 2-5 select | lgbm | ~15 min |
+
+Stages 7 and 8 run in a SECOND process concurrently with stages 1-6 in the first, each at three
+threads, so the alignment cells are attempted against the clock rather than queued behind the
+shrinkage ladder that is this lane's headline. Both processes write separate checkpoints and a
+third pass merges them, applies the floor and the decision rule, and writes the results section.
+On the measured round-3 cost (150 s per tree refit on a quiet machine at four threads) stage 7 is
+expected to be marginal and stages 8 and 9 unlikely; that is recorded in advance.
+
+### 8.8 Artifacts
+
+Trainer: `scripts/train_possession_outcome_v4.py` (v1, v2 and v3 untouched; v3's grading functions
+imported, not edited). Artifacts: `data/processed/models/possession_outcome/round4/` -- over 20 MB,
+so gitignored and synced to the HF dataset under the `engine_inputs` bulk key per the CLAUDE.md
+data rule. Round 3's `design_v3.parquet` and `boxes_first_chance.parquet` are READ, never rewritten
+(worker discipline: a versioned sibling `design_v4.parquet` holds the round-4 columns). Test doc:
+`docs/tests/possession_outcome_early_season_2026-09-11.md`.
+
+<!-- ROUND 4 RESULTS APPENDED BELOW BY scripts/train_possession_outcome_v4.py -->
