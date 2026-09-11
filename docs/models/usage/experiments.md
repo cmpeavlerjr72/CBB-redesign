@@ -1791,3 +1791,111 @@ ABOVE `live`'s on every one). Conditions (b) and (c) of the pre-registered
 decision rule both fail -> the state-carrying tree is not wired. Recommended
 follow-up: a separately pre-registered offline-then-closed-loop round for the
 `nostate` architecture against U1, which this round did not decide.
+
+---
+
+## 12. Round 3 (this round): `tree_v3_nostate` vs the served U1 allocator --
+adoption bake-off (pre-registered 2026-09-11, BEFORE any grading number below
+was written to this file)
+
+Author: Sonnet worker (usage round-3 lane), 2026-09-11, 11:55-12:45 ET. Trigger:
+section 11's recommendation ("Open a new, separately pre-registered round
+treating `tree_v3_nostate`'s architecture ... as a fresh U-series candidate
+against U1") and `docs/tests/usage_decision10_gate_2026-09-11.md` section 7
+item 3. Scope: this round decides ONLY whether `tree_v3_nostate` (a LightGBM
+tree over the five usage classes, `LGBM_ALT_FEATURES` only, no engine-produced
+state, live otherwise) is adopted to replace the served `ENGINE_USAGE=reference`
+(U1 proportional) default. It does not reopen the state-feature question
+(section 11, DO NOT WIRE, stands) and does not touch `adapters.py`'s default.
+
+### 12.1 Arms
+
+| arm | `ENGINE_USAGE` | what it is |
+|---|---|---|
+| `reference` | `reference` | served U1 proportional allocator (`usage.draw_player`), unchanged |
+| `tree_v3_nostate` | `tree_v3_nostate` | round-3 corrected-`score_diff` lineage LightGBM tree, refit with NO engine-produced state feature at all, live otherwise (section 11's L31/L33 refit-without arm) |
+
+### 12.2 Population, seeds, and reuse of section 11's closed-loop runs
+
+F2 2025 slate, the same 500-game stride subset every closed-loop report on
+this engine uses (sorted by `game_id` ascending, every 11th row, first 500),
+25 seeds, 6 engine workers, the same pinned sub-models as section 11
+(`ENGINE_EVENT=round2_s1`, `ENGINE_FG_MAKE=round4_B1`,
+`ENGINE_CLOCK=v3c_srfloor_P3_s1`, `ENGINE_REBOUND=s1_weekly`,
+`ENGINE_FREE_THROW=s1_conf_aligned`, `ENGINE_ROTATION=reference`).
+
+**Config-match check (required before reuse):** `results/engine_v0/usage_reference_s25/run_meta.json`
+and `results/engine_v0/usage_tree_v3_nostate_s25/run_meta.json` were diffed
+field-for-field: identical `pinned_submodels`, identical `seeds` (0-24),
+identical `game_ids` (500/500), identical `subset_rule`, `fold`, `season`.
+**The section-11 25-seed runs ARE reused byte-identical as this round's
+closed-loop evidence; no new engine run is executed in this round.** Raw
+files: `results/engine_v0/usage_reference_s25/{games,players}.parquet`,
+`results/engine_v0/usage_tree_v3_nostate_s25/{games,players}.parquet`.
+
+### 12.3 Gate lines (adoption requires ALL of the following)
+
+(a) **Per-player FGA-share calibration vs truth, F2 2025, Decision-8 slope
+    ratio.** Bucket players into quintiles of pregame `rate_total` (the same
+    driver section 11 used), using bin edges fixed from the REALISED
+    (truth) side (`data/processed/truth/player_game_v1.parquet`, season
+    2025, restricted to the 500-game subset, joined to `asof_v2_shotshooter`
+    on `cbbd_player_id`/`game_id`). `slope_ratio = predicted_span_pp /
+    realised_span_pp` for each arm. Gate: **slope ratio in [0.85, 1.15]**
+    for `tree_v3_nostate` (a tighter band than the standing Decision-8
+    [0.8, 1.2] in `ARCHITECTURE_DECISIONS.md`; both bands are reported so a
+    borderline read is visible under either).
+
+(b) **Top-1 and top-3 usage-share gap vs actual**, same truth table and same
+    500-game subset, `usage_events = fga + fta` on both sides (truth has no
+    per-player TOV-attribution comparable to the sim's; both sides therefore
+    drop TOV from the usage-event count for this comparison only -- this
+    does not touch `usage.build_usage_events`, which keeps `TOV` as its own
+    credited-event class). Gate: `tree_v3_nostate`'s gap-vs-actual must not
+    be worse than `reference`'s by more than the paired noise (below) on
+    EITHER top-1 or top-3.
+
+(c) **No regression on G1-G9 vs truth beyond the paired noise**, read from
+    `scripts/eval_gates.py --results results/engine_v0/usage_reference_s25
+    --season 2025` and the same command against `usage_tree_v3_nostate_s25`
+    (new output paths: `docs/tests/gates_usage_reference_s25_2026-09-11.md`,
+    `docs/tests/gates_usage_tree_v3_nostate_s25_2026-09-11.md`; neither
+    existing engine-v1 gate doc is overwritten). Gate: every gate's
+    PASS/FAIL/NEEDS-INSTRUMENTATION status matches between the two arms, and
+    every numeric line differs by less than the section-11 aggregate noise
+    band (|z| < 1, established in section 11.5 on margin SD, home/away
+    correlation, possessions, total -- the same paired seeds and subset, so
+    the same noise band applies here without re-derivation).
+
+(d) **Config-reuse honesty.** Stated in 12.2: config matches field-for-field,
+    so the section-11 25-seed runs are used as-is; NO new 500x25 engine run
+    is executed in this round.
+
+### 12.4 Noise floor
+
+Seed-offset paired noise for the aggregate reads (margin SD, home/away
+correlation, possessions, total): the section-11.5 band, |z| < 1 (25 seeds,
+one exception at z = 0.98). For the top-1/top-3 gap-vs-actual reads in (b):
+the actual (truth) side is a fixed historical quantity with no seed
+variation, so the only source of noise is the simulated side's seed SE
+(`SD / sqrt(25)`); reported per arm in section 12.6. For the slope ratio in
+(a): no seed-resampled noise floor exists for this exact statistic at engine
+scale (this round is the first computation of it); the standing round-2
+offline noise floor (section 8.10, R16: 1.0e-05 to 6.8e-05 log-loss SD) is a
+different metric and is NOT substituted here -- this is recorded as a gap,
+not papered over.
+
+### 12.5 Decision rule
+
+Adopt `tree_v3_nostate` (recommend the PM switch the served default) only if
+it clears (a), (b) and (c) in 12.3. If (a) passes but (b) shows
+`tree_v3_nostate` moving FURTHER from truth than `reference` on top-1 or
+top-3 share by more than the seed-SE noise, that is a fail of (b) regardless
+of (a) or of section 11's arm-vs-arm concentration finding -- section 11
+compared the tree arms to `reference`'s OWN simulated distribution, not to
+ground truth, and this round exists specifically to close that gap (section
+11 item 2, "does not run eval_gates.py's full G1-G9 against season truth").
+Ties (both arms clear every gate, no arm strictly closer to truth on (a) and
+(b) combined) go to the simpler model, `reference`, per `CLAUDE.md`'s
+standing bake-off rule. The served default is changed only by the PM; this
+round recommends, it does not switch `adapters.py`.
