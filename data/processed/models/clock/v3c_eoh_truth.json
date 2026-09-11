@@ -1,0 +1,7 @@
+{
+  "n_clock_complete_halves": 926,
+  "actual_share_last_poss_under_35s": 0.8758099352051836,
+  "actual_mean_last_poss_duration_s": 11.890258939580765,
+  "definition": "clock-complete regulation halves of the 500-game round-3c subset; clock.eoh_stats on clock_v3.actual_end_of_half_cc, the same functions the offline gate uses",
+  "subset_rule": "F2 2025 slate sorted by game_id ascending, every 11th row, first 500"
+}

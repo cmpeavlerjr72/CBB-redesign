@@ -1306,3 +1306,134 @@ has not removed it.
 - New S1 schedules for the arms round 3b did not fit (`gamma_aft` under P1 and P2, `srfloor` under P1 and P3) are written by `scripts/train_clock_v3c_s1.py` into `data/processed/models/clock/v3c_s1/`, each with its own manifest. `v3b_s1/` is READ, never written: `gamma_aft|P3` reuses round 3b's artifacts verbatim so that arm is byte-identical to the one round 3b scored.
 - Artifact selection per game goes through `cbb_sim.engine.manifest.ArtifactManifest`, which enforces refit date at or before the game date AND last training date strictly before it, at load. The clock manifest format is translated into that object's format; the selection rule is not re-implemented.
 - Engine results: `results/engine_v0/clock3c_<arm>/`. Tables: `docs/tests/clock_round3c_closed_loop_2026-09-10.md`. Results and the decision are appended to this file as section 13.
+
+---
+
+## 13. Run R6 -- the round-3c closed-loop grid (2026-09-11)
+
+`scripts/run_clk3c_closed_loop.py` and `scripts/grade_clk3c_closed_loop.py`,
+pre-registration section 12 committed a08635f BEFORE the harness existed
+(1450faf). Full evidence, every table and the multi-level reads:
+`docs/tests/clock_round3c_closed_loop_2026-09-10.md`. Artifacts `v3c_*`;
+`v3b_s1/` was read and never written, so `gamma_aft|P3` is byte-identical to the
+schedule round 3b scored.
+
+Sub-models pinned by explicit environment value on EVERY run and recorded in
+each `run_meta.json`: `ENGINE_EVENT=round2_s1`,
+`ENGINE_FG_MAKE=round2b_S_C_s1`, `ENGINE_FG3=decision8`,
+`ENGINE_ROTATION=reference`. Subset: the F2 2025 slate sorted by `game_id`
+ascending, every 11th row, first 500 games; 159 clock-complete. Actual on that
+subset: 68.530 possessions per team-game clock-complete, 68.328 all, margin SD
+15.472, home/away score correlation 0.237, PPP 1.0705.
+
+### 13.1 The deciding read (25 seeds, paired streams)
+
+| id | arm | G1 cc mean | G1 cc SD | G1 all mean | G1 all SD | margin SD | corr(h,a) | total bias | PPP |
+|---|---|---:|---:|---:|---:|---:|---:|---:|---:|
+| I | incumbent `reference` | +2.697 | -0.058 | +3.411 | -0.090 | 16.255 | 0.069 | +2.830 | 1.0391 |
+| B3 | srfloor P3 + S1 | **+1.161** | -0.493 | **+1.666** | -0.582 | 15.878 | 0.018 | -0.934 | 1.0385 |
+| B1 | srfloor P1 + S1 | +1.243 | -0.285 | +1.741 | -0.417 | 15.806 | 0.033 | -0.737 | 1.0388 |
+| A3 | gamma P3 + S1 | +1.469 | +0.133 | +1.921 | +0.068 | 16.074 | 0.075 | -0.136 | 1.0402 |
+| A2 | gamma P2 + S1 | +1.458 | +0.146 | +1.872 | +0.105 | 16.070 | 0.079 | -0.262 | 1.0400 |
+| A1 | gamma P1 + S1 | +1.876 | +0.363 | +2.245 | +0.294 | 15.895 | 0.109 | +0.549 | 1.0402 |
+| F | gamma P1, margin FROZEN | -2.592 | -0.329 | -2.176 | -0.352 | 15.724 | 0.045 | -9.381 | 1.0347 |
+
+The 5-seed screening read agrees with every one of these to within 0.12
+possessions. Noise floor (same arm, seeds +1000): G1 cc **0.089**, G1 all 0.055,
+margin SD 0.158, correlation 0.008, total bias 0.261.
+
+### 13.2 Verdict
+
+**NO ARM ADOPTED. 0 of 6 pass criterion 1** (G1 mean inside +/- 1.0 on BOTH game
+sets). The SD half of G1 passes for every arm; the MEAN half fails for every
+arm, which is where G1 has been since round 1.
+
+Criterion 2 (margin SD and correlation within the floor of the incumbent) is
+reported in the evidence doc and is recorded as a **mis-specification in the
+pre-registration**, not repaired: the floor measures seed-to-seed noise in margin
+SD (0.158 on 12,500 rows) while any real clock change moves the possession count
+and therefore the score variance, so a clock arm that satisfied it would be a
+clock arm that did nothing. It changes no verdict -- criterion 1 already fails
+everywhere -- so no gate was softened and nothing was adopted. The next
+pre-registration states criterion 2 against the ACTUAL, or confines it to the
+frozen-versus-live contrast it was borrowed from.
+
+`ENGINE_CLOCK` stays `reference`; `provisional_clock` stays True. The best arm
+the project has produced inside the engine is `empirical_km3_srfloor|P3|S1`, and
+the pre-registered ordering would have chosen exactly it had it passed.
+
+### 13.3 The question round 3b could not answer, answered
+
+| contrast | offline (3b, G1-CC) | ENGINE (25 seeds, G1-CC) |
+|---|---:|---:|
+| gamma P1 -> P3 | -0.227 | **-0.407** |
+| gamma P1 -> P2 | -0.038 | **-0.418** |
+| gamma P2 -> P3 | -0.189 | +0.011 (tie, floor 0.089) |
+| srfloor P1 -> P3 | -- | -0.082 (tie) |
+
+Removing the simulation's own margin from the clock is worth about **0.42
+possessions per team-game**, roughly double what the offline chain could see and
+ten times what deleting it offline appeared to be worth. **P2 and P3 tie**: the
+engine-safe end-game window buys nothing over deleting the margin outright, so
+the late-game behaviour P3 exists to preserve is not reaching the possession
+count. On the cell-based arm the P1/P3 gap is inside the floor, consistent with
+L26's preference for cell-based arms.
+
+### 13.4 The frozen arm over-corrects, and that revises how a Decision-10 ablation is read
+
+Freezing the margin at zero swings the count by **4.468** possessions and the
+game total by 9.9 points and lands 2.6 possessions and 9.4 points BELOW actual;
+refitting the same family without the margin (P2) swings it by **0.418**. A
+freeze feeds a model trained WITH the feature a value it barely saw in the states
+that matter -- `score_diff = 0` with forty seconds left is a tie game, whose
+fitted regime is "play normally" -- so the frozen model stops producing the short
+intentional-foul possessions that end close games (its last-possession duration
+goes to 15.34 s against an actual 11.89). **The freeze is a valid DETECTOR of a
+loop and an invalid MEASUREMENT of one**; both it and a refit-without-the-feature
+arm must run before a magnitude is quoted. L23 stands (fg_make's five refit state
+arms agreed with its freeze), but the "+3.8 possessions of clock loop" quoted
+from that ablation is an overstatement of what a refit recovers. The honest
+engine figure is 0.42.
+
+### 13.5 End of half, responsiveness, and what is left
+
+- **End of half** (926 clock-complete regulation halves; truth from
+  `actual_end_of_half_cc` + `eoh_stats`, the offline gate's own functions). The
+  incumbent's mean last-possession duration is 5.88 s against an actual 11.89
+  (**-6.01 s**); every round-3 arm cuts that to **-0.29 to -0.72 s**. That is the
+  censoring fix (L20) arriving in the engine and it is the largest single
+  improvement in the round. The SHARE is still high everywhere (0.94-0.99 vs
+  0.876).
+- **Responsiveness.** All six arms are monotone 4 of 4 across pregame
+  tempo-prior quintiles, so nothing is flat. But the gamma family (1.376-1.400)
+  and the incumbent (1.432) sit OUTSIDE Decision 8's [0.8, 1.2] band -- they
+  spread fast and slow games 38-43% wider than reality -- while the two
+  cell-based arms (1.061, 1.079) are inside it. A second axis, independent of
+  G1, on which the cell arm is the better object; the offline read could not see
+  it because the chain replays the real sequence of previous-end types.
+- **The residual has an exact account.** Actual mean regulation possession
+  duration on the subset is 17.555 s (clock-complete, 21,722 possessions). B3
+  produces 17.216 s, -0.339 s = -1.93%, which implies +1.35 possessions against
+  an observed +1.161; A3 -0.402 s implies +1.61 against +1.469; the incumbent
+  -0.720 s implies +2.93 against +2.697. **The overshoot IS a uniform
+  mean-duration shortfall of about a third of a second on ordinary possessions**
+  -- not the horn (now within 0.3-0.7 s), not the margin loop (0.42, and removing
+  it entirely leaves +1.46), not binning (cell arms are exact), not
+  responsiveness.
+- **Total bias inside +/- 1.0 is not a pass.** Every candidate runs +2.4 to +2.8%
+  on possessions and -2.8 to -3.0% on PPP, and the two cancel. PPP is -0.03 on
+  every arm INCLUDING the incumbent, so the per-possession shortfall is not the
+  clock's and is not moved by any clock arm.
+
+### 13.6 What round 4 must attack
+
+A stated, measurable target: the conditional MEAN of the duration law is about
+2% short across ordinary possessions. Candidates, in the order the evidence
+supports: (a) time the engine never spends -- dead-ball and administrative
+seconds the possession segmentation merges into ordinary possessions; (b) the
+overtime gap, sim OT rate 2.6-4.2% against an actual 6.8%, which shortens
+simulated games and is already an open defect; (c) NOT the `unknown`-terminal
+rows, whose 6.48 s actual against a 19.31 s model-implied mean biases the count
+the other way. Round 4 is a duration-LEVEL question, not a state-parametrisation
+one, and the state question is now closed: P2 and P3 tie, both beat P1 by 0.42,
+and the cell-based family is preferred on responsiveness as well as on binning.

@@ -767,3 +767,72 @@ hypotheses, not competing ones. Round 3b (`experiments.md` section 10) crosses
 the censoring fix with three state parametrisations -- as designed, `score_diff`
 removed, and engine-safe end-game indicators -- adds the Decision-10 closed-loop
 paired-stream gate inside the engine, and then confirms the S1 training scheme.
+
+## 12. Round 3c (2026-09-11) -- the Decision-10 closed-loop run
+
+Pre-registration: `experiments.md` section 12, committed (a08635f) BEFORE any
+round-3c code existed. Results and decision: `experiments.md` section 13. Full
+evidence: `docs/tests/clock_round3c_closed_loop_2026-09-10.md`. Engine module:
+`src/cbb_sim/engine/clock_adapter_v3.py` (new; `adapters.py` carries an
+eleven-line hook and every pre-existing `ENGINE_CLOCK` value is unchanged).
+Trainer: `scripts/train_clock_v3c_s1.py`. Runner:
+`scripts/run_clk3c_closed_loop.py`. Artifacts `v3c_*`; round 3b's `v3b_s1/` was
+read, never written.
+
+### 12.1 Status
+
+**NO ARM ADOPTED, third round running.** `ENGINE_CLOCK` stays `reference` and
+`provisional_clock` stays True. 0 of 6 candidates pass the G1 mean on either
+game set; every one passes the G1 SD.
+
+Trajectory of the emergent overshoot, one line per decided change, now measured
+INSIDE the engine on 500 games x 25 seeds rather than on the offline chain:
+
+| state | G1-CC mean delta | measured where |
+|---|---:|---|
+| round 2 (old flag, static) | +1.516 | offline chain |
+| round 3 (horn censoring) | +1.130 | offline chain |
+| round 3b P3 + S1 | +0.885 | offline chain |
+| **incumbent in the engine** | **+2.697** | engine, 25 seeds |
+| **round 3c best, `srfloor|P3|S1`** | **+1.161** | engine, 25 seeds |
+
+The offline and engine numbers are not the same quantity and are not comparable
+row for row: the chain replays the real sequence of previous-end types and the
+real score, the engine simulates both. The engine reading is the one Decision 10
+governs.
+
+### 12.2 What round 3c decided
+
+1. **The state parametrisation question is CLOSED.** P2 (margin deleted) and P3
+   (engine-safe end-game indicators) TIE at +1.458 / +1.469 against a
+   0.089-possession floor, and both beat P1 (margin live, +1.876) by **0.42
+   possessions**. Offline, the same contrast read 0.038-0.227 -- round 3b was
+   right that only the engine can price it, and the engine prices it at roughly
+   double.
+2. **The cell-based family is preferred on a second axis.** Pregame tempo-prior
+   quintile slope ratio: `srfloor` 1.061-1.079, INSIDE Decision 8's [0.8, 1.2];
+   gamma 1.376-1.400 and the incumbent 1.432, OUTSIDE it. Every arm is monotone
+   4 of 4, so nothing is flat -- the gamma family over-responds. This adds to
+   L26's binning-error argument.
+3. **The censoring fix arrives in the engine.** Mean last-possession duration:
+   incumbent 5.88 s against an actual 11.89 (-6.01 s); every round-3 arm
+   -0.29 to -0.72 s.
+4. **A freeze is not a measurement.** Holding the margin at zero for a model
+   trained WITH it swings the count 4.47 possessions and the total 9.9 points and
+   lands BELOW actual on both, because `score_diff = 0` late is a tie game and
+   the frozen model stops producing end-game intentional-foul possessions. A
+   refit without the feature moves 0.42. The freeze detects a loop; it does not
+   size one. See section 13.4 of `experiments.md`.
+
+### 12.3 The open defect, restated precisely
+
+Not the horn, not the margin loop, not binning, not responsiveness. Actual mean
+regulation possession duration on the subset is **17.555 s**; the best arm
+produces **17.216 s**. A 1.93% shortfall in the conditional MEAN implies +1.35
+possessions and +1.161 is observed. **The remaining G1 miss is a uniform
+duration-level bias of about a third of a second on ordinary possessions**, and
+round 4 is a duration-level question, not a state one.
+
+Also visible and NOT the clock's: PPP is -0.03 on every arm including the
+incumbent, so the candidates' near-zero total bias is two errors cancelling, and
+the sim OT rate is 2.6-4.2% against an actual 6.8%.
