@@ -1,0 +1,174 @@
+{
+  "exit_check_200g_seed0": {
+    "K1_cond_class": {
+      "n_waves_by_size": [
+        5504,
+        2079,
+        614
+      ],
+      "starter_share_of_leavers_by_size": [
+        0.4564,
+        0.5142,
+        0.5496
+      ],
+      "starter_share_of_entrants_by_size": [
+        0.4373,
+        0.4305,
+        0.4284
+      ],
+      "p_any_starter_out_by_size": [
+        0.4564,
+        0.721,
+        0.8208
+      ],
+      "starter_share_of_leavers_overall": 0.4927,
+      "starter_share_of_entrants_overall": 0.4334,
+      "p_starter_in_given_bench_out": 0.6344,
+      "p_starter_in_given_starter_out": 0.2026,
+      "n_bench_out": 2992,
+      "n_starter_out": 2512,
+      "underpowered_sizes": [
+        false,
+        false,
+        false
+      ],
+      "spread_pp": 43.2
+    },
+    "X1_exit_class": {
+      "n_waves_by_size": [
+        5546,
+        2091,
+        746
+      ],
+      "starter_share_of_leavers_by_size": [
+        0.6013,
+        0.5648,
+        0.4616
+      ],
+      "starter_share_of_entrants_by_size": [
+        0.4544,
+        0.4971,
+        0.551
+      ],
+      "p_any_starter_out_by_size": [
+        0.6013,
+        0.7724,
+        0.6903
+      ],
+      "starter_share_of_leavers_overall": 0.5611,
+      "starter_share_of_entrants_overall": 0.4882,
+      "p_starter_in_given_bench_out": 0.6762,
+      "p_starter_in_given_starter_out": 0.3073,
+      "n_bench_out": 2211,
+      "n_starter_out": 3335,
+      "underpowered_sizes": [
+        false,
+        false,
+        false
+      ],
+      "spread_pp": 36.9
+    },
+    "X2_exit_class_foul": {
+      "n_waves_by_size": [
+        5544,
+        2102,
+        747
+      ],
+      "starter_share_of_leavers_by_size": [
+        0.5979,
+        0.5609,
+        0.4662
+      ],
+      "starter_share_of_entrants_by_size": [
+        0.4544,
+        0.4986,
+        0.5442
+      ],
+      "p_any_starter_out_by_size": [
+        0.5979,
+        0.7759,
+        0.6961
+      ],
+      "starter_share_of_leavers_overall": 0.5591,
+      "starter_share_of_entrants_overall": 0.4874,
+      "p_starter_in_given_bench_out": 0.6765,
+      "p_starter_in_given_starter_out": 0.305,
+      "n_bench_out": 2229,
+      "n_starter_out": 3315,
+      "underpowered_sizes": [
+        false,
+        false,
+        false
+      ],
+      "spread_pp": 37.1
+    },
+    "X3_exit_class_prev": {
+      "n_waves_by_size": [
+        5598,
+        2093,
+        740
+      ],
+      "starter_share_of_leavers_by_size": [
+        0.5938,
+        0.5552,
+        0.4805
+      ],
+      "starter_share_of_entrants_by_size": [
+        0.4607,
+        0.4976,
+        0.5364
+      ],
+      "p_any_starter_out_by_size": [
+        0.5938,
+        0.775,
+        0.7284
+      ],
+      "starter_share_of_leavers_overall": 0.5585,
+      "starter_share_of_entrants_overall": 0.4881,
+      "p_starter_in_given_bench_out": 0.6917,
+      "p_starter_in_given_starter_out": 0.3026,
+      "n_bench_out": 2274,
+      "n_starter_out": 3324,
+      "underpowered_sizes": [
+        false,
+        false,
+        false
+      ],
+      "spread_pp": 38.9
+    },
+    "ACTUAL_asof_starters": {
+      "n_waves_by_size": [
+        5282,
+        1980,
+        738
+      ],
+      "starter_share_of_leavers_by_size": [
+        0.5867,
+        0.5576,
+        0.4931
+      ],
+      "starter_share_of_entrants_by_size": [
+        0.4852,
+        0.5028,
+        0.5145
+      ],
+      "p_any_starter_out_by_size": [
+        0.5867,
+        0.753,
+        0.7791
+      ],
+      "starter_share_of_leavers_overall": 0.5576,
+      "starter_share_of_entrants_overall": 0.4972,
+      "p_starter_in_given_bench_out": 0.6848,
+      "p_starter_in_given_starter_out": 0.3446,
+      "n_bench_out": 2183,
+      "n_starter_out": 3099,
+      "underpowered_sizes": [
+        false,
+        false,
+        false
+      ],
+      "spread_pp": 34.0
+    }
+  }
+}

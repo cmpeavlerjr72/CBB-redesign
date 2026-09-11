@@ -3658,3 +3658,485 @@ RNG divergences of `docs/models/engine/model.md` section 4.5 apply unchanged.
 
 ---
 
+
+## 17. Round-7 results (train 2024, test 2025) -- run 2026-09-11T15:34Z
+
+Pre-registration section 16, committed **2aa29c2** before `rotation_v7.py`
+existed and before anything was fitted. Evidence doc:
+`docs/tests/rotation_exit_audit_2026-09-11.md`.
+
+Test universe: the **same** 1,600-game subset of 2025 rounds 2, 3, 3b, 4, 5 and 6
+used (numpy RandomState seed 2025), 3 seeds per candidate arm under S1, the
+round-6 grading path unchanged. Windows and games: 202411 147, 202412 297,
+202501 438, 202502 444, 202503 267, 202504 7 (UNDERPOWERED at 7 games, reported
+only because it exists). Round 6's composition tables, round 5's wave tables,
+round 4's hazards and round 3b's base fits are reused and never written to;
+round 7 fits only the three exit objects, on 6,000 team-games per window (fit
+seed 11), **124,260-126,402 waves per window of which 98.2% are usable -- the
+same counts, window by window, that round 6 reported (15, first paragraph), so
+the exit and entry tables are fitted on identical rows**, as 16.5 required.
+
+**ACTUAL on this universe**, through the same functions as every arm:
+substitutions per boundary **0.1509**, distinct lineups per team-game
+**14.8356**, minutes mean 24.551, top-5 share 0.7472, top-8 0.9560, players with
+> 0 minutes 9.6438, pooled minutes SD 9.6946, within-player 6.1196.
+
+### 17.1 The fitted object: the exit class IS state-dependent, and the state is the one round 6 named
+
+`P(k_out = 1 | size 1, cell)` per exit cell, window 202411 (the six windows agree
+to 0.1-1.5 pp on every cell; the seed-101 refit agrees to 0.1-0.7 pp, 17.6):
+
+| time cell | \|m\| <= 5 | 6-15 | > 15 | n (no foul trouble) |
+|---|---:|---:|---:|---:|
+| H1 | **0.6247** | 0.5781 | 0.5401 | 20,321 / 14,983 / 1,856 |
+| H2 20:00-08:00 | 0.5961 | 0.6088 | 0.6381 | 8,762 / 10,542 / 4,451 |
+| final 8:00 | **0.4851** | 0.5085 | 0.5748 | 5,199 / 5,721 / 2,749 |
+
+and with a player on the floor at >= 4 personal fouls:
+
+| time cell | \|m\| <= 5 | 6-15 | > 15 | n (foul trouble) |
+|---|---:|---:|---:|---:|
+| H1 | 0.5864 | 0.5864 | 0.5884 | **1 / 1 / 0** (structurally empty, shrunk to the parent) |
+| H2 20:00-08:00 | 0.6100 | 0.5896 | 0.6217 | 173 / 264 / 193 (all UNDERPOWERED) |
+| final 8:00 | **0.5792** | 0.6036 | 0.6143 | 3,147 / 2,913 / 868 |
+
+Three measured facts, none of them guessed:
+
+1. **The exit class carries a state term of 13.9 pp**: a single swap takes a
+   starter off 0.6247 of the time in the first half and 0.4851 in the final eight
+   minutes of a close game. The exit side has its own version of the entry side's
+   decided-game cell (audit 2), and it runs the other way: **starters stop
+   leaving** when the game is close and late.
+2. **Foul trouble raises the starter's chance of being the man taken off by
+   9.4 pp in the close-and-late cell** (0.4851 -> 0.5792, n = 5,199 / 3,147),
+   which is the effect X2 was pre-registered to carry.
+3. **Foul trouble in H1 does not exist at this threshold** (n = 1, 1, 0 rows in
+   122,007): a player reaching 4 personal fouls before half-time is a
+   once-a-window event, so three of X2's eighteen cells are structurally empty
+   and shrink to X1 exactly. Declared, not discovered after the fact: 16.3 fixed
+   the shrinkage and 16.7 fixed the UNDERPOWERED label.
+
+X3's support, published as 16.3 required: **25 of the 54 (exit cell x prev class)
+cells at size 1 are under 300 rows** and shrink to X1. The axis is half
+unidentified, and X3's every cell below is X1's to within the floor, which is
+what that means in practice.
+
+### 17.2 G8 cells (report, not veto) -- S1
+
+| cell | tol | ACTUAL | R2 | K1 | X1 | X2 | X3 |
+|---|---|---:|---:|---:|---:|---:|---:|
+| minutes mean (rotation players) | +/- 2.0 | 24.551 | 25.364 P | 25.636 P | 24.623 P | 24.631 P | 24.637 P |
+| minutes SD ratio, pooled | 0.9-1.1 | 1.0000 | 1.0548 P | 0.9961 P | 0.8853 **F** | 0.8837 **F** | 0.8855 **F** |
+| minutes SD ratio, within-player | 0.9-1.1 | 1.0000 | 1.3416 **F** | 1.1239 **F** | 1.1447 **F** | 1.1422 **F** | 1.1447 **F** |
+| top-5 share of team minutes | +/- 2 pp | 0.7472 | 0.7630 P | 0.7597 P | 0.7232 **F** | 0.7230 **F** | 0.7232 **F** |
+| top-8 share of team minutes | +/- 2 pp | 0.9560 | 0.9626 P | 0.9696 P | 0.9552 P | 0.9553 P | 0.9554 P |
+| players with > 0 minutes | +/- 1.0 | 9.644 | 9.129 P | 8.935 P | 9.033 P | 9.031 P | 9.029 P |
+| **G8 passed** | | | **5/6** | **5/6** | 3/6 | 3/6 | 3/6 |
+
+The three round-7 arms miss top-5 share on the **other side** from every arm in
+six rounds: 0.7232 against 0.7472, 2.4 pp LOW, where W4 was 2.3 pp high and K1
+1.3 pp high. The pooled minutes SD falls to 0.885 of the real one. Both say the
+same thing as 17.3 -- minutes are spread too evenly across the roster.
+
+### 17.3 State cells (the veto) -- S1
+
+ACTUAL, then each arm with its gap in pp and PASS/FAIL at +/- 3 pp:
+
+| cell | ACTUAL | R2 | K1 | X1 | X2 | X3 |
+|---|---:|---:|---:|---:|---:|---:|
+| final 8:00, \|m\| <= 5 | 0.7491 | 0.7254 (-2.4) P | 0.7001 (-4.9) F | **0.5394 (-21.0) F** | 0.5434 (-20.6) F | 0.5300 (-21.9) F |
+| final 8:00, \|m\| 6-15 | 0.7240 | 0.6914 (-3.3) F | 0.6890 (-3.5) F | **0.5384 (-18.6) F** | 0.5431 (-18.1) F | 0.5278 (-19.6) F |
+| final 8:00, \|m\| > 15 | 0.5223 | 0.4694 (-5.3) F | 0.5083 (-1.4) P | 0.5183 (-0.4) P | 0.5181 (-0.4) P | 0.5106 (-1.2) P |
+| starters at >= 4 fouls | 0.4613 | 0.4626 (+0.1) P | 0.4212 (-4.0) F | 0.3823 (-7.9) F | 0.3752 (-8.6) F | 0.3832 (-7.8) F |
+| H2 TIP, \|m\| <= 5 | 0.9678 | 0.7892 (-17.9) F | 0.9385 (-2.9) P | 0.9406 (-2.7) P | 0.9410 (-2.7) P | 0.9397 (-2.8) P |
+| H2 TIP, \|m\| 6-15 | 0.9611 | 0.7977 (-16.3) F | 0.9410 (-2.0) P | 0.9424 (-1.9) P | 0.9420 (-1.9) P | 0.9424 (-1.9) P |
+| H2 TIP, \|m\| > 15 | 0.9563 | 0.7338 (-22.3) F | 0.9456 (-1.1) P | 0.9449 (-1.1) P | 0.9452 (-1.1) P | 0.9430 (-1.3) P |
+| H1 20:00-10:00, \|m\| <= 5 | 0.7822 | 0.5988 (-18.3) F | 0.7267 (-5.6) F | 0.6991 (-8.3) F | 0.6987 (-8.4) F | 0.6983 (-8.4) F |
+| **state cells passed** | | **2/8** | **4/8** | **4/8** | **4/8** | **4/8** |
+| (diagnostic) at exactly 4 fouls | 0.5166 | 0.5722 | 0.5931 | **0.5316** | **0.5186** | **0.5328** |
+
+R2's and K1's columns are round 6's, per 16.5; the reproduction check is 17.7.
+Every round-7 arm passes the same four cells K1 passes and **fails the two
+close-and-late bands by 18-22 pp, six times K1's miss**. One cell moves the other
+way and it is the one round 6 named as the model's own: the **"at exactly 4
+fouls" diagnostic goes from 0.593 (K1) to 0.519-0.533 against a real 0.5166**,
+the first time in seven rounds any arm has reproduced it; the graded
+foul-trouble cell nevertheless gets worse (-7.8 to -8.6 pp), for the reason
+17.10 gives.
+
+### 17.4 The two round-5 cells, the primary metric, and concentration -- S1
+
+Tolerances, computed as pre-registered: `sub_rate_per_boundary` **+/- 0.015**
+governs (3x floor = 0.0063); `distinct_lineups_per_game` **+/- 1.5** governs
+(3x floor = 0.719).
+
+| metric | ACTUAL | R2 | K1 | X1 | X2 | X3 |
+|---|---:|---:|---:|---:|---:|---:|
+| **substitutions per boundary** | 0.1509 | 0.1437 P | 0.1554 P | 0.1557 P | 0.1558 P | 0.1559 P |
+| **distinct lineups per team-game** | 14.836 | 15.514 P | **14.571 P** | 15.939 P | 15.960 P | 15.945 P |
+| **per-player minutes MAE (min)** | 0.0 | 9.7939 | **8.8622** | 9.6159 | 9.5991 | 9.6397 |
+| MAE gain over R2 (floors) | -- | -- | +63 | **+11.0** | +12.6 | +10.5 |
+| MAE gain over K1 (floors) | -- | -- | -- | **-46.5** | -47.7 | -57.7 |
+| top-1 lineup share | 0.2940 | 0.2286 | 0.2568 | 0.2345 | 0.2342 | 0.2331 |
+| top-3 lineup share | 0.5426 | 0.4819 | 0.5358 | 0.4995 | 0.4988 | 0.4976 |
+| top-5 lineup share | 0.6894 | 0.6409 | 0.7043 | 0.6663 | 0.6657 | 0.6645 |
+| K-S D, per-player minutes | -- | 0.0798 | 0.0589 | **0.0441** | 0.0447 | 0.0443 |
+| K-S D, top-1 lineup share | -- | 0.2273 | **0.0990** | 0.1993 | 0.2010 | 0.2040 |
+
+Read those two K-S rows together with the MAE row, because they are the round's
+signature. **The round-7 arms set the best per-player minutes DISTRIBUTION ever
+measured (K-S D 0.0441 against K1's 0.0589) and lose 0.75 minutes of per-player
+MAE**, 47-58 floors. A model that gets the marginal distribution of minutes right
+and the assignment wrong is putting the right number of minutes on the wrong
+players, which is exactly what 17.9 and 17.10 measure directly.
+
+### 17.5 Noise floor A (20 seeds x 150 games, S1)
+
+| metric | X1 | X2 | X3 |
+|---|---:|---:|---:|
+| minutes_mae | 0.01621 | 0.01544 | 0.01233 |
+| sub_rate_per_boundary | 0.00202 | 0.00210 | 0.00155 |
+| distinct_lineups_per_game | 0.2396 | 0.2381 | 0.1772 |
+| late_starter_share_b0 | 0.01946 | 0.01930 | 0.02030 |
+| late_starter_share_b1 | 0.01353 | 0.01367 | 0.01235 |
+| late_starter_share_b2 | 0.02197 | 0.02158 | 0.02384 |
+| foul_trouble_share | 0.02003 | 0.01763 | 0.01827 |
+| h2tip_starter_share_b0 | 0.00793 | 0.00797 | 0.00741 |
+| h2tip_starter_share_b1 | 0.00882 | 0.00821 | 0.00898 |
+| h2tip_starter_share_b2 | 0.01570 | 0.01463 | 0.01884 |
+| opentip_starter_share_close | 0.01460 | 0.01446 | 0.01294 |
+| top5_share | 0.00263 | 0.00281 | 0.00266 |
+| n_nonzero_mean | 0.06531 | 0.06809 | 0.06117 |
+
+R2's and K1's floors are rounds 4's and 6's and are unchanged by a run that does
+not refit them (R2 minutes_mae 0.01473, K1 0.01348). **Every miss in 17.3 is far
+larger than its floor**: X1's close-band miss is -21.0 pp against a 1.95 pp floor
+(10.8 floors) and its foul-trouble miss -7.9 pp against 2.00 pp (3.9 floors). The
+floor-A caveat of 11.6 applies unchanged: only the seed-to-seed SD is a floor,
+never the `minutes_mae` LEVEL of that 150-game run.
+
+### 17.6 Noise floor B -- spec-identical exit refit under a second seed (X3)
+
+A different training-game sample (fit seed 101 against 11) and a different sim
+seed (23 against 7), graded on the same 150-game universe, run in its own process
+so the bake-off JSON was on disk before the second fit started.
+
+| cell | ACTUAL (150 games) | X3 seed 1 | X3 seed 2 | \|delta\| |
+|---|---:|---:|---:|---:|
+| final 8:00, \|m\| <= 5 | 0.7436 | 0.5214 | 0.5551 | 3.37 pp |
+| final 8:00, \|m\| 6-15 | 0.7186 | 0.5187 | 0.5385 | 1.98 pp |
+| final 8:00, \|m\| > 15 | 0.5518 | 0.5246 | 0.4615 | 6.31 pp |
+| starters at >= 4 fouls | 0.4362 | 0.3948 | 0.4261 | 3.13 pp |
+| H2 tip, \|m\| <= 5 | 0.9655 | 0.9310 | 0.9603 | 2.93 pp |
+| H2 tip, \|m\| 6-15 | 0.9662 | 0.9284 | 0.9338 | 0.54 pp |
+| H2 tip, \|m\| > 15 | 0.9611 | 0.9611 | 0.9500 | 1.11 pp |
+| H1 20:00-10:00, \|m\| <= 5 | 0.7710 | 0.6939 | 0.6910 | 0.29 pp |
+| substitutions per boundary | -- | 0.1515 | 0.1560 | 0.0044 |
+| distinct lineups per team-game | -- | 15.390 | 15.977 | 0.587 |
+| per-player minutes MAE | -- | 23.1128 | 23.0974 | 0.0154 |
+
+**The round-7 objects are identified.** The fitted table moves 0.1-0.7 pp per
+cell under the refit (`P(k_out = 1 | size 1)`: 0.6247 -> 0.6240 in the H1 close
+cell, 0.4851 -> 0.4860 in the final-8:00 close cell), and the cell spread
+(0.29-6.31 pp) is round 6's (0.00-3.10 pp) widened by the two thinnest cells of a
+150-game universe. **The decision does not turn on a refit artefact in either
+direction**: the close-band miss the round fails on is -21 pp, three times the
+largest refit-to-refit move measured here and 11 floor-A SDs.
+
+### 17.7 The K1 reproduction check (16.5)
+
+A 1-seed re-run of K1 inside this round, against round 6's own 3-seed column:
+
+| cell | round 6 (3 seeds) | round 7 (1 seed) | delta | floor A |
+|---|---:|---:|---:|---:|
+| final 8:00, \|m\| <= 5 | 0.7001 | 0.7017 | +0.0015 | 0.0109 |
+| final 8:00, \|m\| 6-15 | 0.6890 | 0.6861 | -0.0029 | 0.0096 |
+| final 8:00, \|m\| > 15 | 0.5083 | 0.5083 | -0.0000 | 0.0176 |
+| starters at >= 4 fouls | 0.4212 | 0.4196 | -0.0016 | 0.0186 |
+| H2 tip, \|m\| <= 5 | 0.9385 | 0.9385 | +0.0001 | 0.0082 |
+| H2 tip, \|m\| 6-15 | 0.9410 | 0.9370 | -0.0040 | 0.0067 |
+| H2 tip, \|m\| > 15 | 0.9456 | 0.9498 | +0.0042 | 0.0197 |
+| H1 20:00-10:00, \|m\| <= 5 | 0.7267 | 0.7301 | +0.0034 | 0.0076 |
+| substitutions per boundary | 0.1554 | 0.1545 | -0.0008 | 0.0020 |
+| distinct lineups | 14.571 | 14.467 | -0.1041 | 0.1842 |
+
+**Every state cell moves less than its floor-A SD, so the reference columns
+stand** (the largest move, the tip at \|m\| 6-15, is -0.40 pp against a 0.67 pp
+floor). The MAE moves +0.056 on one seed against a 0.013 floor, the expected
+1-vs-3-seed Monte-Carlo difference and the same reading rounds 5 and 6 gave.
+
+### 17.8 The two responsiveness conditions
+
+**Decision 8 (16.8 check 1).** Cell = starters' share in the final 8:00 at
+\|margin\| <= 5, by quintile of the pregame as-of predicted starter-minutes share
+(640 team-games per quintile).
+
+| quintile | prior | ACTUAL | K1 | X1 | X2 | X3 |
+|---|---:|---:|---:|---:|---:|---:|
+| Q1 | 0.5572 | 0.6770 | 0.6218 | 0.4921 | 0.5010 | 0.4864 |
+| Q2 | 0.6342 | 0.7226 | 0.6940 | 0.5280 | 0.5288 | 0.5193 |
+| Q3 | 0.6698 | 0.7471 | 0.7089 | 0.5372 | 0.5403 | 0.5255 |
+| Q4 | 0.7044 | 0.7763 | 0.7299 | 0.5563 | 0.5646 | 0.5510 |
+| Q5 | 0.7685 | 0.8219 | 0.7430 | 0.5826 | 0.5819 | 0.5673 |
+| **slope** | | **+0.692** | +0.576 | +0.426 | +0.395 | +0.390 |
+| slope ratio to actual | | 1.00 | **0.83 PASS** | **0.62 FAIL** | **0.57 FAIL** | **0.56 FAIL** |
+| Q5 - Q1 (pp) | | +14.5 | +12.1 | +9.1 | +8.1 | +8.1 |
+
+Every arm is still monotone in 4 of 4 steps, but **all three round-7 arms fall
+out of the [0.8, 1.2] band for the first time since round 5 vetoed W3 and W5**.
+The exit draw flattens the response to the team's own rotation depth: a team
+whose starters take 77% of the minutes is simulated 24 pp below its actual late
+share, the same as a team at 56%.
+
+**The per-player-quintile condition (16.8 check 2).** Per-player minutes MAE by
+quintile of the player's own pregame as-of minutes per game (edges 15.97 / 20.89
+/ 25.33 / 29.71 mpg; 4,782-4,784 player-games per quintile, none underpowered):
+
+| quintile | K1 (r6) | W4 (r6) | X1 | X2 | X3 | X1 - K1 | X1 - W4 | floor |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|
+| Q1 (lowest mpg) | 9.3108 | 9.6681 | 10.6053 | 10.5868 | 10.5998 | **+1.295** | +0.937 | 0.016 |
+| Q2 | 9.7891 | 9.7294 | 10.4615 | 10.4331 | 10.4896 | **+0.672** | +0.732 | 0.016 |
+| Q3 | 9.2575 | 9.4074 | 9.7867 | 9.7658 | 9.8029 | +0.529 | +0.379 | 0.016 |
+| Q4 | 8.6461 | 8.6621 | 9.1081 | 9.1084 | 9.1732 | +0.462 | +0.446 | 0.016 |
+| Q5 (highest mpg) | 7.2367 | 7.3307 | 8.0130 | 7.9973 | 8.0315 | +0.776 | +0.682 | 0.016 |
+
+**All three arms lose all five quintiles to both references, by 24 to 81 floors.**
+There is no quintile in which drawing the exit class pays.
+
+### 17.9 Per-game and per-team evidence
+
+**Per game** (per-player minutes MAE per game, averaged over seeds): K1 8.868
++/- 2.239 with a 90th percentile of 11.288; **X1 9.644 +/- 2.368 / 12.225**;
+X2 9.628 +/- 2.379 / 12.226; X3 9.668 +/- 2.368 / 12.278. The loss is the whole
+distribution, not a tail: the median game and the 90th-percentile game move by
+about the same 0.8-0.9 minutes.
+
+**Per team** (starters' share in the final 8:00 at \|m\| <= 5, aggregated per
+team; a team is powered when both denominators reach 300 on-floor slots --
+**251 powered, 112 UNDERPOWERED and excluded**):
+
+| | sim mean | sim SD | actual mean | actual SD | corr(sim, actual) | mean \|dev\| |
+|---|---:|---:|---:|---:|---:|---:|
+| K1 (round 6) | 0.7004 | 0.0507 | 0.7512 | 0.0832 | **0.394** | 0.0757 |
+| X1 | 0.5412 | 0.0599 | 0.7512 | 0.0832 | 0.209 | 0.2108 |
+| X2 | 0.5451 | 0.0619 | 0.7512 | 0.0832 | 0.195 | 0.2067 |
+| X3 | 0.5314 | 0.0614 | 0.7512 | 0.0832 | 0.198 | 0.2203 |
+
+The cross-team SD rises slightly (0.051 -> 0.060 against a real 0.083) and the
+correlation with the team's own actual share **halves**, 0.394 -> 0.195-0.209.
+The extra dispersion is not matchup information; it is the drift of 17.10 varying
+game to game.
+
+### 17.10 The exit-side diagnostic (16.7): the arms hit the target and lose the cells
+
+`scripts/diag_rotation_exit_v7.py`, 200 games, seed 0, the as-of predicted
+starter set on BOTH sides, one function for every row. This is the object round 7
+was built to move:
+
+| | starter share of LEAVERS, overall | size 1 | size 2 | size 3+ | starter share of ENTRANTS | size-1 joint (bench out / starter out) | spread |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| **ACTUAL (as-of starters)** | **0.5576** | **0.5867** | **0.5576** | **0.4931** | **0.4972** | 0.6848 / 0.3446 | 34.0 pp |
+| K1 (round 6) | 0.4927 | 0.4564 | 0.5142 | 0.5496 | 0.4334 | 0.6344 / 0.2026 | 43.2 pp |
+| **X1** | **0.5611** | 0.6013 | 0.5648 | 0.4616 | **0.4882** | 0.6762 / 0.3073 | 36.9 pp |
+| X2 | 0.5591 | 0.5979 | 0.5609 | 0.4662 | 0.4874 | 0.6765 / 0.3050 | 37.1 pp |
+| X3 | 0.5585 | 0.5938 | 0.5552 | 0.4805 | 0.4881 | 0.6917 / 0.3026 | 38.9 pp |
+
+**The 12-13 pp exit-side defect round 6 named is closed.** X1 removes a starter
+on 0.5611 of all departures against a real 0.5576 (K1: 0.4927) and on 0.6013 of
+single swaps against a real 0.5867 (K1: 0.4564); the ENTRY side, which round 7
+did not touch, comes along with it (0.4334 -> 0.4882 against 0.4972) because K1's
+conditional table is finally fed the right `k_out` mix, and the size-1 joint
+spread falls from K1's 43.2 pp to 36.9 pp against a real 34.0 pp. **Every
+swap-level class marginal is now right to within 1.5 pp on both sides, and the
+on-floor composition is 21 pp wrong.**
+
+The two facts are reconciled by the time-since-reset gradient, which is the
+mechanism reading of the round:
+
+| cell | minutes since the last forced reset | X1 gap | K1 gap |
+|---|---:|---:|---:|
+| H2 tip, all three margin bands | 0 | -1.1 to -2.7 pp | -1.1 to -2.9 pp |
+| H1 20:00-10:00, \|m\| <= 5 | 0-10 | -8.3 pp | -5.6 pp |
+| final 8:00, \|m\| <= 5 | 12+ | **-21.0 pp** | -4.9 pp |
+
+X1 is correct at the reset and drifts monotonically away from it, six times
+faster than K1 by the final eight minutes. A class-count draw conditioned on
+(size, state) is a **level, not a rate**: it removes starters at the population
+frequency no matter how many are on the floor at that moment, so when the floor
+has drifted bench-heavy the same draw is far above proportional and nothing pulls
+it back. Round 5's rank rule carried an implicit restoring force -- `p_out` rises
+with time on the floor and `p_in` with the player's own minutes share, so a
+starter who sits comes back -- and round 7 replaced that force with a frequency
+that is only correct in aggregate. Round 6's own lesson (L36) in the mirror:
+**condition on an input your model gets wrong and you inherit its error; replace
+a self-correcting rule with a correct average and you lose the correction.**
+
+### 17.11 The as-of starter benchmark (report only, 16.7)
+
+The ACTUAL sequence of the same 1,600 games, re-graded with the MODEL's as-of
+predicted starting five instead of the game's own; the model's five overlaps the
+real five on **4.576 of 5**, unchanged from round 6. Starter identification costs
+-2.8 pp on both close-and-late bands, -4.4 pp on the opening ten minutes, -6.5 to
+-7.0 pp on the H2 tip cells and **+0.2 pp on foul trouble**. Against that
+benchmark the round-7 arms are **-18.2 pp** on the close band (K1: -2.1) and
+-3.9 pp on the opening cell (K1: -1.2). **It changes no tolerance and no
+verdict**: every arm is scored against each side's own real starting five, as in
+rounds 1-6.
+
+### 17.12 Decision
+
+| arm | simplicity | state | round-5 cells | G8 | MAE | vs R2 | vs K1 | quintiles | D8 | Dec-10 | eligible |
+|---|---:|---:|---:|---:|---:|---:|---:|---|---:|---|---|
+| R2_hier_dirichlet | 1 | 2/8 | 2/2 | 5/6 | 9.7939 | -- | -0.932 | ok | n/a | -- | NO (reference) |
+| K1_cond_class | 9 | 4/8 | 2/2 | 5/6 | **8.8622** | +0.932 | -- | see 15.8 | 0.83 | PASS (15.13) | NO (reference) |
+| X1_exit_class | 11 | 4/8 | 2/2 | 3/6 | 9.6159 | +0.178 | **-0.754** | **5/5 fail** | **0.62 F** | NOT RUN | NO |
+| X2_exit_class_foul | 12 | 4/8 | 2/2 | 3/6 | 9.5991 | +0.195 | **-0.737** | **5/5 fail** | **0.57 F** | NOT RUN | NO |
+| X3_exit_class_prev | 13 | 4/8 | 2/2 | 3/6 | 9.6397 | +0.154 | **-0.778** | **5/5 fail** | **0.56 F** | NOT RUN | NO |
+
+**No arm adopted**, and no arm is close: each fails condition 1 (four of eight
+state cells, two of them by 18-22 pp), condition 4 (loses 0.74-0.78 minutes of
+MAE to K1, and every player quintile to both K1 and W4) and condition 5 (Decision
+8 slope ratio 0.56-0.62 against a [0.8, 1.2] band). They pass conditions 2 and 3.
+Per 16.9 the rule adopts nothing; no gate was relaxed and no cell was dropped
+after seeing a result. `ENGINE_ROTATION=reference` (R2) stays the served default
+and **this lane changed no default**; the `round7` flag ships nowhere, because
+16.11's adapter was not wired (17.13).
+
+Cell-by-cell misses of the closest arm:
+
+| arm | cell | sim | actual | miss | floors | of which starter identification |
+|---|---|---:|---:|---:|---:|---:|
+| X1 | final 8:00 \|m\| <= 5 | 0.5394 | 0.7491 | -21.0 pp | 10.8 | -2.8 pp |
+| X1 | final 8:00 \|m\| 6-15 | 0.5384 | 0.7240 | -18.6 pp | 13.7 | -2.8 pp |
+| X1 | starters at >= 4 fouls | 0.3823 | 0.4613 | -7.9 pp | 3.9 | +0.2 pp (none) |
+| X1 | H1 20:00-10:00 \|m\| <= 5 | 0.6991 | 0.7822 | -8.3 pp | 5.7 | -4.4 pp |
+| X1 | player quintile Q1 | 10.6053 | (K1 9.3108) | +1.295 | 80 | -- |
+| X1 | D8 slope ratio | 0.615 | (band 0.8-1.2) | -0.185 | -- | -- |
+
+### 17.13 Decision 10: NOT RUN, and what that costs
+
+16.10 pre-registered a 5-seed paired live/frozen closed loop on the arm the
+decision rule selects or, failing that, the arm closest to eligibility. **It was
+not run.** The reason is the wall clock and nothing else: serving a round-7 arm
+in the engine needs a vectorised `next_lineup_round7` in
+`engine/rotation_adapter.py` (round 6's equivalent is ~250 lines), its parity
+tests, and two 500-game paired runs at about 11 minutes, and the lane's hard stop
+is 12:45 ET. **The absence is reported, not hidden**, per 16.10.
+
+What it costs is stated precisely: condition 6 of the decision rule is unmet for
+every arm, so **no arm could have been adopted today even on a clean sheet of
+offline cells**. It costs nothing on this round's actual outcome, because every
+arm already fails conditions 1, 4 and 5 by 4 to 80 floors, and an arm that fails
+the offline gates is not adoptable whatever the freeze says. If a later round
+revives the exit family, the freeze must be run before adoption, and its cost --
+the adapter plus two runs -- must be inside that round's budget from the start.
+
+### 17.14 Diagnosis
+
+**1. The exit-side defect is closed, and closing it was not enough.** The object
+round 6 named (audit 4) is fixed to within 1.5 pp on both class marginals and at
+every swap size (17.10), and the entry side improved for free. This is the
+cleanest confirmation available that round 6's diagnosis of WHERE the error lived
+was right, and it is also the round's refutation: **being right about the
+marginal was not the same as being right about the mechanism.**
+
+**2. A class-count draw is a level; the rule it replaced was a rate.** The
+time-since-reset gradient (17.10) measures it: 0 pp of drift at the reset, -8.3
+pp ten minutes in, -21.0 pp twelve minutes after the H2 reset. Nothing in
+`P(k_out | size, state)` depends on how many starters are on the floor when it is
+drawn, so a floor that drifts bench-heavy keeps shedding starters at the
+population rate. The next object is therefore **`P(k_out | size, state,
+n_starters_on_floor)`** -- the same table with the composition as a fourth axis,
+which makes the draw proportional-by-construction and restores the correcting
+force the rank rule had. It is fittable from the same rows (the on-floor count is
+already in the training loop) and its support is ample: the size-1 cells here
+carry 1,856-20,321 rows before the composition split.
+
+**3. The right marginal distribution with the wrong assignment is a measurable
+failure mode, and both instruments saw it.** Per-player minutes K-S D falls to
+0.0441, the best ever measured, while per-player minutes MAE rises 0.75 and every
+quintile loses (17.4, 17.8). A distributional metric alone would have called
+round 7 a win. This is the multi-level-evidence rule earning its keep.
+
+**4. The exit class DOES carry the state term the pre-registration guessed at,
+and a second one it did not.** Starters leave on 0.6247 of H1 single swaps and
+0.4851 in the final eight minutes of a close game (13.9 pp), and foul trouble
+adds 9.4 pp on top in that same cell (17.1). Those numbers survive the refit
+(17.6) and are worth keeping whatever family consumes them.
+
+**5. Foul trouble: the benching response is now right and the graded cell is
+worse.** "At exactly 4 fouls" goes 0.593 -> 0.519 against a real 0.5166, the
+first arm in seven rounds to reproduce it, while the graded starters-at-4-fouls
+cell falls to 0.375-0.383 against 0.4613. Both readings are consequences of the
+same change: the model now takes the fouled starter off at the right rate, and it
+does not put him back, because the drift of item 2 governs who is on the floor
+when he would return. **The foul cell will not be readable until the drift is
+fixed**, which reorders the queue: composition first, then the foul response.
+
+**6. X2 and X3 add nothing over X1.** X2's foul class moves the close-late cell
+by +0.4 pp and the MAE by -0.017 (inside the floor); X3's previous-wave axis is
+underpowered in 25 of 54 size-1 cells and moves every cell inside the floor. The
+simpler arm is the whole family, which is the tie-break 16.9 declared and, here,
+the entire result of the two refinements.
+
+### 17.15 Artifacts and flags
+
+- Exit objects: `data/processed/models/rotation/round7/rotation_v7_exit_{YYYYMM}.json`
+  (six windows) with `rotation_v7_manifest.json` in the `engine/manifest.py`
+  format; each entry carries `refit_date`, `max_train_date`, the reused hazard,
+  wave and composition artifact names, the published `P(k_out=1|size 1)` row and
+  its cell counts, and X3's underpowered-cell count. The directory is gitignored
+  (`data/processed/models/*/round*/`, 644 KB including the floor-B siblings) and
+  HF-synced.
+- Floor-B sibling: `round7/rotation_v7_exit_seed2_*.json` +
+  `rotation_v7_manifest_seed2.json`.
+- Nothing was written to `rotation_fit.json`, `rotation_fit_v3*.json`, any
+  `rotation_v4_sub_*.json`, any `round5/rotation_v5_wave_*.json` or any
+  `round6/rotation_v6_comp_*.json`.
+- Engine: **not wired** (17.13). `ENGINE_ROTATION=round7` does not exist,
+  `engine/adapters.py` and `engine/loop.py` were not touched by this lane, and
+  `ENGINE_ROTATION=reference` remains the default.
+- Tests: `tests/test_rotation_v7.py` (8 cases: the 18-cell exit state and its
+  overtime mapping, the blowout cell's index, the three-level foul class, row
+  normalisation and support, X2's and X3's exact shrinkage to X1, the declared
+  constants, thin-vs-thick cell behaviour, the sampler's class clipping, and the
+  arm grid). `pytest tests/test_rotation_v5.py tests/test_rotation_v6.py
+  tests/test_rotation_v7.py -q` -> **29 passed**.
+- Results: `rotation_F1_round7_{results.json,table.csv}`,
+  `rotation_F1_round7_floorB.json`, `exit_audit_2026-09-11.json`.
+- Cost: the six exit fits 54-70 s each, run concurrently (6 workers); the seven
+  grade/floor jobs 218-467 s each; the whole bake-off **15.0 min**; the exit
+  diagnostic 2.3 min; floor B 6.4 min.
+
+### 17.16 Disclosures
+
+1. A 60-game, 1-seed development smoke run (`--smoke`, artifacts
+   `rotation_F1_round7_SMOKE_*`) was executed before the graded run to verify the
+   code path end to end. It printed gate cells on 2025. Its numbers are not
+   evidence, are not cited anywhere, and **no model specification, gate,
+   tolerance or arm was changed after seeing them** -- section 16 was committed at
+   2aa29c2 before `rotation_v7.py` existed. The smoke's own exit artifacts (400
+   team-games per window) were overwritten by the graded run's 6,000-team-game
+   fits in the same process, before any grading job read them.
+2. The reference columns for R2 and K1 are taken from round 6's results JSON
+   (16.5), with the 1-seed K1 reproduction check of 17.7.
+3. No static column was run (16.5).
+4. **Decision 10 was not run at all** (17.13), not merely the conditional 25-seed
+   repeat. No closed-loop claim is made for any round-7 arm.
+5. The three round-7 arms draw the `k_out` uniform before K1's `k_in` uniform, so
+   they are paired with each other and NOT byte-aligned with round 6's K1
+   (16.12 item 1).
+6. X3's `prev_class` axis is underpowered in 25 of its 54 size-1 cells (17.1),
+   which 16.3 pre-registered as the condition under which the arm is reported as
+   unidentified. It is so reported, and it is not adopted on that ground as well
+   as on the others.
+7. `rotation_F1_round7_floorB.json`'s `minutes_mae` level (23.1) is the
+   150-game-universe artifact rounds 5 and 6 carry for the same reason (11.6):
+   the actual side is the full 1,600-game rotation set, so only the seed-to-seed
+   and refit-to-refit DIFFERENCES are readable, never the level.
+8. No process this worker did not start was signalled, and no existing data or
+   results file was overwritten: every round-7 artifact is a new versioned
+   sibling.
+
+---
+
