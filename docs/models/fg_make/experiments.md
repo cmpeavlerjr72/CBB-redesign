@@ -1794,3 +1794,331 @@ serves one round directory for all three.
   cause. It is NOT grounds for re-reading the 2.0 pp exemption threshold.
 
 <!-- RESULTS FOR ROUND 4 APPEND BELOW THIS LINE -->
+
+---
+
+## 20. ROUND 4 RESULTS (`scripts/train_fg_make_v4_shooter_block.py`, run 2026-09-10/11)
+
+Executes section 19. No arm was added, dropped or re-specified after any number
+below existed; the one repair that happened mid-round was to a FEATURE'S
+CONSTRUCTION and is reported in full in 20.2, with the pre-repair reading kept
+on record and declared ineligible on data-integrity grounds, the same
+precedence round 2 applied to the leaked S-A and L29 applied to the mislabelled
+round-3 reference.
+
+Engine code pin: every closed-loop run in this section (and the interim
+round-3 runs of 20.0) was produced with `src/cbb_sim/engine/loop.py` and
+`src/cbb_sim/engine/rotation_adapter.py` **byte-identical to commit
+`6431772`** (the rotation lane's `push_lineups()` move and `rotation_sub` RNG
+family), verified with `git diff 6431772 --`. The file reached the working tree
+at 22:09 EDT on 2026-09-10 and the earliest run in this section started at
+22:47 EDT, so no arm straddles that change and no re-run was needed.
+
+Artifacts: `data/processed/models/fg_make/round4/{m_fitted.json, leak_test.json,
+run_report.json, closed_loop.json, closed_loop_interim.json,
+run_report_v1_leaked_assisted.json, <arm>/}`.
+
+### 20.0 FIRST: the interim model's missing Decision-10 closed-loop gate
+
+Section 18.5 left `round3_shooter_S_C_s1` -- the model L29 made the INTERIM
+SERVED model -- without a closed-loop read, because `FgMakeAdapter` had no
+branch for `round3_shooter/`. That branch now exists
+(`_load_round2b` generalised to `_load_dated`, driven by `_FG_DATED_ROUNDS`;
+every pre-existing `ENGINE_FG_MAKE` value resolves to the same files, 15 engine
+tests pass), and the gate has been run.
+
+**It also surfaced a train/serve skew that had to be closed first.**
+`scripts/build_engine_inputs.py` builds the engine's per-slot fg_make shooter
+block from `events_v2.parquet`, keyed on `participant_1_id`. Serving a
+`shot_shooter_id`-trained model against it is the L27 pattern again. Measured
+on the engine's own arrays: `shooter_make_c__three` correlates **0.3315**
+between the two keyings (`__rim` 0.7133, `__jump2` 0.8135), reproducing the
+offline audit's 0.335 / 0.694 / 0.802 inside the engine. Team columns are
+**identical** under both keys, verified numerically rather than asserted.
+`scripts/build_engine_inputs_shotshooter.py` rebuilds only the shooter slot
+columns into a new directory, `data/processed/models/engine_fgm4/`, copying
+every other array through byte for byte with an assertion.
+
+500 games x 5 seeds, paired streams, `ENGINE_EVENT=round2_s1`,
+`ENGINE_CLOCK=reference`, `ENGINE_ROTATION=reference`, `ENGINE_FG3=decision8`,
+all set explicitly. The round-2b reference was **re-run, not cited**, because
+the engine has changed since section 16.3 (the eFG% contract extension and the
+rotation lane's loop change) -- and it moved: margin SD 13.981 here against
+14.002 on record, total bias +3.805 against +3.912.
+
+| run | `ENGINE_FG_MAKE` | inputs | margin SD | d | corr | d | poss/gm | d | total bias | d | PPP | gate |
+|---|---|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---|
+| `fgm4_cl_r2b_ref` | `round2b_S_C_s1` | stock | 13.981 | -- | +0.229 | -- | 70.762 | -- | +3.805 | -- | 1.0545 | **PASS** (reference) |
+| `fgm4_cl_r3_stockinputs` | `round3_shooter_S_C_s1` | stock (**skewed**) | 14.075 | +0.093 | +0.233 | +0.004 | 70.874 | +0.112 | +2.942 | -0.863 | 1.0467 | PASS |
+| `fgm4_cl_r3_fixedinputs` | `round3_shooter_S_C_s1` | `engine_fgm4` | 14.054 | +0.072 | +0.214 | -0.015 | 70.866 | +0.104 | +3.907 | +0.102 | 1.0538 | **PASS** |
+| ACTUAL | -- | -- | 12.127 | -- | +0.423 | -- | 67.503 | -- | 0.000 | -- | 1.0775 | -- |
+
+eFG% and make rate by class on the same runs:
+
+| run | eFG% | rim% | jump2% | three% | FT% |
+|---|---:|---:|---:|---:|---:|
+| `fgm4_cl_r2b_ref` | 50.098 | 57.354 | 38.661 | 33.508 | 72.577 |
+| `fgm4_cl_r3_stockinputs` (skewed) | 49.544 | 57.510 | 38.791 | **32.414** | 72.470 |
+| `fgm4_cl_r3_fixedinputs` | 49.989 | 57.103 | 38.867 | **33.387** | 72.422 |
+| ACTUAL | 50.239 | 58.475 | 37.845 | 33.483 | 72.298 |
+
+> **The interim model PASSES CL1-CL4.** Its missing gate is closed.
+
+The middle row is the price of the skew, and it is not small: serving the
+corrected-label model against `participant_1_id`-keyed slot features costs
+**0.97 pp of three-point make rate** (32.414 vs 33.387; actual 33.483), 0.45 pp
+of eFG% and nearly a full point of total bias -- all of it from the one feature
+whose two keyings correlate 0.33. **Correct engine inputs are part of the
+model, not a detail of the harness.**
+
+### 20.1 The one fitted parameter, and an independent confirmation
+
+`m` fitted on FOLD 1's test season (2024) only, per 19.3, then frozen:
+
+| class | **fitted `m`** (F1 test) | F1-test log loss at the optimum | method-of-moments `m` (2022-2025, NOT used) |
+|---|---:|---:|---:|
+| `FGA_rim` | **75** | 0.679297 | 50.8 |
+| `FGA_jump2` | **200** | 0.674847 | 152.77 |
+| `FGA_3` | **300** | 0.643012 | 298.94 |
+
+The two estimates were produced by completely different procedures on
+different data (a fold-1 held-out log-loss grid against a pooled beta-binomial
+moment estimator) and agree to within one grid step on the jumper and to the
+grid point itself on threes. That is the step-2 evidence confirming itself.
+
+### 20.2 THE MID-ROUND REPAIR: `sh_assisted_share` carried a POST-OUTCOME leak through its MISSINGNESS
+
+The first build of `sh_assisted_share` aggregated the feed's `shot_assisted`
+flag over **made field goals only**, one row per (game, shooter). A design row
+therefore found a match if and only if **its shooter made at least one field
+goal in that game**, and the 3.55% of rows that missed fell back to the
+"no history" value 0.0.
+
+Measured directly off the design, with no model:
+
+| class | design rows with no panel row | realised make rate on those rows | on all other rows |
+|---|---:|---:|---:|
+| `FGA_rim` | 2.50% | **0.00000** | 0.60046 |
+| `FGA_jump2` | 3.46% | **0.00000** | 0.39862 |
+| `FGA_3` | 4.62% | **0.00000** | 0.35427 |
+| pooled | 79,510 of 2,239,678 (3.55%) | **0.00000** | 0.45641 |
+
+Exactly zero, by construction. What it was worth, B3/B4 leaked vs repaired on
+the identical fold:
+
+| class | B3 leaked | B3 repaired | delta | floors |
+|---|---:|---:|---:|---:|
+| `FGA_rim` | 0.650152 | 0.664426 | +0.014274 | **+325** |
+| `FGA_jump2` | 0.655727 | 0.665719 | +0.009992 | **+89** |
+| `FGA_3` | 0.622800 | 0.637216 | +0.014416 | **+795** |
+
+**Every value the feature held was honest, and the pre-registered change-form
+leak test passed it at |corr| <= 0.026.** The outcome travelled through the
+PRESENCE OF THE ROW. A value-based leak test cannot see that, and neither can
+calibration (B3 leaked read 1.44 / 1.41 / 1.41 pp, better than the repaired
+arm on two classes) or Decision 8 (B3 leaked PASSED on `FGA_3`, where the
+repaired arm fails).
+
+Repair: build the panel over every **attempt**, so a row exists exactly when
+the shooter took a field goal in that game -- which is precisely the condition
+under which the design has a row to join. `mk` is then allowed to be 0, which
+is what a 0-for-N night is. Coverage goes 96.45% -> **100.0000%**, and the
+trainer now RAISES if the residual miss rate exceeds 0.1%, so the defect cannot
+return silently. The pre-repair reading is kept at
+`round4/run_report_v1_leaked_assisted.json` and `round4/B3_leaked_assisted/`,
+`round4/B4_leaked_assisted/`, and is INELIGIBLE. B0, B1, B2 and BR do not carry
+the feature and were carried forward unchanged (the trainer asserts each
+carried arm's shooter block is unchanged before reusing it).
+
+### 20.3 OFFLINE, F2 (selection), all six arms
+
+Noise floor (second-seed refit of B1's whole S1 schedule): **4.386e-5 /
+1.1216e-4 / 1.813e-5** (rim / jumper / three). Round 3's own second-seed floors
+(8e-5 / 4.2e-5 / 6e-6) and round 1's game-block bootstrap floors (5.39e-4 /
+5.78e-4 / 8.49e-4) are the alternatives; **no conclusion below changes under
+any of the three**, because every decisive gap is either a gate flip or more
+than 60 floors under the largest of them.
+
+| arm | feats | `FGA_rim` ll | cal | D8 | `FGA_jump2` ll | cal | D8 | `FGA_3` ll | cal | D8 |
+|---|---:|---:|---:|---|---:|---:|---|---:|---:|---|
+| **B0** no shooter | 15 | 0.669948 | 1.41 | **FAIL** | 0.666717 | **2.02 FAIL** | **FAIL** | 0.638005 | 1.67 | **FAIL** |
+| **B1** shrunk rate | 16 | 0.667252 | 1.13 | **PASS** | **0.666385** | 1.49 | **PASS** | 0.637738 | 1.82 | **PASS** |
+| **B2** + prior/counts | 20 | 0.665857 | 1.37 | PASS | 0.666074 | **2.03 FAIL** | **FAIL** | 0.637311 | 1.78 | **FAIL** |
+| **BR** incumbent block | 24 | **0.664419** | 1.45 | PASS | 0.665679 | 1.62 | **FAIL** | 0.637237 | 1.61 | **FAIL** |
+| **B3** + mix/assisted | 24 | 0.664426 | 1.13 | PASS | 0.665719 | 1.73 | **FAIL** | 0.637216 | **2.10 FAIL** | **FAIL** |
+| **B4** + spacing | 26 | 0.664557 | 1.57 | PASS | 0.665859 | 1.50 | **FAIL** | 0.637344 | **2.31 FAIL** | **FAIL** |
+
+`cal` is the worst gated decile gap in pp, gate 2.00.
+
+### 20.4 THE HEADLINE: only the SHRUNK rate makes the model track the shooter
+
+Decision 8 on the `shooter_make_c` driver, `low_span_exempt` reading applied
+**as written**. The realised driver spans are a property of the test data and
+are identical for every arm: **10.238 / 4.343 / 2.802 pp**. All three exceed
+the 2.0 pp threshold, so **no class is exempt on the shooter driver** and all
+three need 4 of 4 monotone steps plus a slope ratio in [0.8, 1.2]. The
+`def_allow_c` driver's `FGA_3` span is 1.378 pp and IS exempt on that class;
+its spans on rim (4.955) and the jumper (3.339) are not, and every arm passes
+them.
+
+| arm | rim: steps / slope | jumper: steps / slope | three: steps / slope |
+|---|---|---|---|
+| **B0** | 4/4, **0.283** | 4/4, **0.289** | 4/4, **0.305** |
+| **B1** | 4/4, **1.040** | 4/4, **0.838** | 4/4, **0.924** |
+| **B2** | 4/4, 1.045 | **3/4**, 0.826 | **3/4**, 0.932 |
+| **BR** | 4/4, 1.053 | **3/4**, 0.877 | **3/4**, 0.919 |
+| **B3** | 4/4, 1.035 | **3/4**, 0.823 | **3/4**, 0.922 |
+| **B4** | 4/4, 1.040 | **3/4**, 0.840 | **3/4**, 0.966 |
+
+Two things, and they are the round:
+
+1. **B0's slope is 0.28-0.31 on every class.** A model with no shooter block
+   is flat at the mean against a driver with a 10.2 pp realised span at the
+   rim. The shooter block is not optional; the honest floor fails the standing
+   matchup-specific rule outright, which answers 19.8's first falsification
+   branch in the negative.
+2. **B1 is the ONLY arm that is monotone in 4 of 4 steps on all three
+   classes.** One shrunk column moves the shooter slope from 0.283 to 1.040
+   (rim), 0.289 to 0.838 (jumper) and **0.305 to 0.924 (threes -- the class
+   L29 left open)**. Every richer arm falls back to 3 of 4 steps on the jumper
+   and the three. The step that breaks is an interior one, and the mechanism is
+   visible in the ladder: B2 is B1 plus `shooter_att_c` and the prior-season
+   block, i.e. the raw sample size, which lets the tree partially **un-shrink**
+   the rate it was just handed shrunk. Feeding a model both a calibrated
+   estimate and the ingredients to undo it is what costs the interior step.
+
+So step-2's under-shrinkage reading (`docs/tests/fg_make_shooter_skill_2026-09-10.md`)
+is confirmed inside the model, not only in the raw slope profile: the fix for a
+noise-dominated as-of rate is to shrink it, and the fix works.
+
+### 20.5 The closed-loop gate (19.6)
+
+`ENGINE_FG_MAKE=round4_<arm>`, `--input-dir data/processed/models/engine_fgm4`,
+same 500 games, same five seeds, paired streams, same reference.
+
+| run | margin SD | d | corr | d | poss/gm | d | total bias | d | PPP | gate |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---|
+| `fgm4_cl_r2b_ref` (reference) | 13.981 | -- | +0.229 | -- | 70.762 | -- | +3.805 | -- | 1.0545 | PASS |
+| `fgm4_cl_r3_fixedinputs` (interim) | 14.054 | +0.072 | +0.214 | -0.015 | 70.866 | +0.104 | +3.907 | +0.102 | 1.0538 | PASS |
+| **`fgm4_cl_r4_B1`** | **13.757** | -0.224 | **+0.242** | +0.012 | 70.871 | +0.109 | **+3.734** | -0.071 | 1.0524 | **PASS** |
+| `fgm4_cl_r4_BR` | 14.102 | +0.121 | +0.204 | -0.025 | 70.817 | +0.055 | +3.928 | +0.123 | 1.0547 | PASS |
+| ACTUAL | 12.127 | -- | +0.423 | -- | 67.503 | -- | 0.000 | -- | 1.0775 | -- |
+
+| run | eFG% | rim% | jump2% | three% | FT% |
+|---|---:|---:|---:|---:|---:|
+| `fgm4_cl_r2b_ref` | 50.098 | 57.354 | 38.661 | 33.508 | 72.577 |
+| `fgm4_cl_r3_fixedinputs` | 49.989 | 57.103 | 38.867 | 33.387 | 72.422 |
+| **`fgm4_cl_r4_B1`** | 49.967 | 57.206 | 38.999 | 33.227 | 72.466 |
+| `fgm4_cl_r4_BR` | 50.080 | 57.256 | 38.816 | 33.476 | 72.422 |
+| ACTUAL | 50.239 | 58.475 | 37.845 | 33.483 | 72.298 |
+
+All four arms PASS CL1-CL4. B1 is the **best arm in either round** on the two
+quantities Decision 10 exists to protect: margin SD 13.757 (the closest of any
+fg_make arm ever run to the realised 12.127) and home/away correlation +0.242
+(the closest to +0.423). It is 0.28 pp worse than BR on engine three-point make
+rate (33.227 vs 33.476, actual 33.483) and 0.11 pp worse on eFG%; those are
+real and are recorded rather than argued away.
+
+### 20.6 THE DECISION, by section 19.7
+
+| class | eligible arms (calib + D8) | offline winner | why | closed loop |
+|---|---|---|---|---|
+| `FGA_rim` | B1, B2, BR, B3, B4 | **BR** | lowest log loss; B1 is 64.6 floors behind, B3 0.16 floors behind BR but SIMPLER-order 4 > BR's 3 | PASS |
+| `FGA_jump2` | **B1 only** | **B1** | every other arm fails D8 (and B0/B2 fail calibration) | PASS |
+| `FGA_3` | B1 | **B1** | B2, BR, B3, B4 all fail D8; B0 fails D8 | PASS |
+
+> ### **B1 `R4_B1_shrunk` is the round-4 winner.**
+> It is the only arm that passes calibration and Decision 8 on **all three
+> classes**, it wins `FGA_jump2` and `FGA_3` outright under the pre-registered
+> rule, and it passes the Decision-10 closed loop with the best margin SD and
+> home/away correlation of any fg_make arm to date. Shooter block: one column,
+> `shooter_shrunk_dev_c`, with `m` = 75 / 200 / 300 fitted on fold 1.
+> Artifacts: `data/processed/models/fg_make/round4/B1/` (18 joblibs + three
+> manifests). Engine flag: `ENGINE_FG_MAKE=round4_B1`.
+
+**The cost, stated plainly: B1 gives up 64.6 floors of `FGA_rim` log loss to
+BR.** `FGA_rim` is the one class where the incumbent's richer raw block is both
+eligible and better, and B1 is served there only because the adapter resolves
+ONE round directory for all three classes. A per-class split (BR on rim, B1 on
+the other two) is a better model on paper and needs an adapter that can resolve
+a directory per shot class; that is a real open item, not a rhetorical one
+(20.8 item 2).
+
+### 20.7 THE DEFAULT FLAG IS NOT MOVED, and exactly why
+
+**`ENGINE_FG_MAKE` stays at `round3_shooter_S_C_s1`.** This is a hard
+blocker, verified in code, not a judgement call:
+
+```
+engine       (stock inputs)  round4_B1  -> RAISES "engine inputs do not carry
+                                          feature(s) ['shooter_shrunk_dev_c']"
+engine_fgm4  (this lane)     round4_B1  -> OK
+```
+
+`shooter_shrunk_dev_c__{rim,jump2,three}` and `prior_season_att_c__{...}` exist
+only in `data/processed/models/engine_fgm4/`. Putting them into the shared
+`data/processed/models/engine/arrays_F2_2025.npz` means rewriting an array six
+other workers are reading right now, which `CLAUDE.md`'s worker-discipline rule
+forbids. **Switching the default today would break every other lane's engine
+run on its next start.** The named step that unblocks it: fold
+`build_engine_inputs_shotshooter.py`'s two blocks into
+`scripts/build_engine_inputs.py` (shooter key `shot_shooter_id` for the shooter
+slot block, plus the round-4 columns) and regenerate the shared inputs at a
+quiet moment, then set the default.
+
+What DID change as a default this round: the fg_make default moved
+`round2b_S_C_s1` -> **`round3_shooter_S_C_s1`** (the L29 interim decision,
+which had never been wired), now backed by the closed-loop gate of 20.0. The
+adapter change is backward compatible: `winner`, `round2_S_*` and
+`round2b_S_C_s1` all resolve to the same files as before, and 15 engine tests
+pass.
+
+### 20.8 Open items this round produced
+
+1. **`FGA_jump2` and `FGA_3` cannot pass Decision 8 with any feature-rich
+   shooter block.** Only the single shrunk column does. The likeliest cause is
+   named in 20.4 (the tree un-shrinks when given the sample size), and it is a
+   hypothesis, not a measurement: a round 5 could test it directly with a
+   monotone constraint on the shrunk column or by removing `shooter_att_c` from
+   B2 alone.
+2. **Per-class arm serving.** `FgMakeAdapter` resolves one round directory for
+   all three classes; `FGA_rim`'s own winner is BR. An adapter that resolves a
+   directory per shot class would take the 64.6 floors back. Not attempted
+   here: it is a serving change with its own closed-loop obligations.
+3. **B4 (spacing) is UNDERPOWERED and unservable.** Only **2.14 of 4**
+   teammates resolve to an as-of history on average and **44.94% of rows have
+   none**, because `onFloor` coverage begins in 2024. Its numbers are reported
+   for the record and are read as neither evidence for nor against a spacing
+   effect. It is also unservable by construction (19.6): the engine gathers one
+   slot row per attempt and has no lineup aggregate.
+4. **BR does not exactly reproduce round 3's own number** on what should be an
+   identical spec: 0.664419 here against 0.664284 in section 18.2, +0.000135 =
+   3.1 floors. Both were seed 0, the same S1 partition, the same frozen
+   parameters and the same `shot_shooter_id` design. The gap is small and
+   changes nothing in 20.6 (BR's rim win is 64.6 floors), but it is unexplained
+   and is logged rather than rounded away.
+5. **G4's defence tercile** (section 14.7) and the engine's -1.3 pp rim make
+   rate against the event-layer truth are both untouched by this round.
+
+### 20.9 Leak tests
+
+Change-form correlation with the shooter's own game margin (verified finals,
+signed from the shooting team's side -- NOT the design's post-outcome
+`score_diff`), grouped on the SHOOTER, per season and pooled. Gate `|corr| <= 0.15`:
+
+| feature | worst |corr| over the three classes | verdict |
+|---|---:|---|
+| `shooter_shrunk_dev_c` | 0.0014 | pass |
+| `prior_season_att_c` | 0.0000 | pass (static within a season) |
+| `sh_share_rim` | 0.0050 | pass |
+| `sh_share_jump2` | 0.0178 | pass |
+| `sh_share_three` | 0.0124 | pass |
+| `sh_assisted_share` (repaired) | 0.0081 | pass |
+| `five_shrunk_dev_rim` | 0.0033 | pass |
+| `five_shrunk_dev_three` | 0.0053 | pass |
+
+Every feature clears the gate by an order of magnitude. **And 20.2 is the
+reason that is not sufficient**: the leaked `sh_assisted_share` passed this
+same test at 0.0260 while carrying a column that was exactly 0 on a population
+with a 0.00000 make rate. A value-based leak test cannot see a missingness
+leak. A join-coverage assertion can, and the trainer now carries one.

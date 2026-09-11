@@ -77,3 +77,12 @@ data/processed/models/*/*_s1/
 !data/processed/models/clock/v3b_s1/
 data/processed/models/usage_v2/
 data/processed/models/usage_s1/
+
+# fg_make rounds 3-4 (2026-09-10): the shot_shooter_id event/design caches and
+# the corrected engine-input sibling. All rebuildable from
+# scripts/train_fg_make_v3_shooter.py, scripts/train_fg_make_v4_shooter_block.py
+# and scripts/build_engine_inputs_shotshooter.py; 25-90MB each, so they follow
+# the >20MB model-artifact rule in CLAUDE.md and sync via hf_sync_data.py.
+data/processed/models/**/design_*.parquet
+data/processed/models/fg_make/events_v2_shotshooter.parquet
+data/processed/models/engine_fgm4/

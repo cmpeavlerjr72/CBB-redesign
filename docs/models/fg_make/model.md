@@ -31,17 +31,41 @@ executes: `docs/models/fg_make/experiments.md`. Feature provenance:
 > in-season walk-forward refit) for the same arm: no gate regressed, log loss
 > improved by 0.19-0.60 floors, and the closed-loop gate passed.
 >
-> **The shipping model is therefore `ENGINE_FG_MAKE=round2b_S_C_s1`**, served
-> from `data/processed/models/fg_make/round2b/S_C_s1/` through
-> `cbb_sim.engine.manifest`. The engine DEFAULT is still `winner` (round 1's
-> artifacts, byte for byte); switching it is the PM's step. Sections 4-8 below
-> describe ROUND 1 and are left exactly as they were written.
+> **Round 3 (sections 17-18) re-keyed the shooter on `shot_shooter_id`** and
+> found the `FGA_3` shooter-quintile span collapse from 35.9 pp to 2.8 pp. Its
+> pre-registered rule read "not adopted"; L29 overrode that on data-integrity
+> precedence (a model trained on a wrong label is ineligible to be served) and
+> made the corrected arm the INTERIM served model.
 >
-> **Still open and blocking a round 3:** this model is STILL keyed on
-> `participant_1_id` for the shooter, which the change ledger records as the
-> assister on ~49% of assisted made field goals. Rounds 2 and 2b share that
-> defect equally across every arm, so it cannot have decided anything here, but
-> the adopted artifacts carry it. See section 9 item 8.
+> **Round 4 (sections 19-20) re-baked the shooter block from scratch on the
+> correct label and its winner is `B1 R4_B1_shrunk`**: the team block, the S-C
+> engine-safe state block and **one** shooter column,
+> `shooter_shrunk_dev_c` -- the shooter's as-of rate shrunk to his own team's
+> as-of rate with `m` = 75 / 200 / 300 attempts fitted on fold 1. It is the only
+> arm that passes calibration and Decision 8 on all three classes, and the one
+> column moves the Decision-8 shooter slope from 0.28/0.29/0.31 (no shooter
+> block) to **1.04 / 0.84 / 0.92**, closing the `FGA_jump2` and `FGA_3` failures
+> L29 left open. It passes the Decision-10 closed loop with the best margin SD
+> (13.757 vs 12.127 actual) and home/away correlation (+0.242 vs +0.423) of any
+> fg_make arm to date.
+>
+> **THE SERVED MODEL AND THE DEFAULT ARE `ENGINE_FG_MAKE=round3_shooter_S_C_s1`**
+> (`data/processed/models/fg_make/round3_shooter/S_C_s1/`, through
+> `cbb_sim.engine.manifest`), whose own missing Decision-10 closed-loop gate was
+> run and PASSED this round (section 20.0). **The round-4 winner is not yet
+> servable from the shared engine inputs**: `round4_B1` needs the slot columns
+> `shooter_shrunk_dev_c__{class}`, which exist only in
+> `data/processed/models/engine_fgm4/`; writing them into the shared
+> `data/processed/models/engine/` means rewriting an array other workers are
+> reading. Section 20.7 names the unblocking step. Sections 4-8 below describe
+> ROUND 1 and are left exactly as they were written.
+>
+> **The engine's own shooter inputs carried a train/serve skew** and it was
+> worth 0.97 pp of three-point make rate: `scripts/build_engine_inputs.py`
+> builds the shooter slot block from the `participant_1_id`-keyed events, whose
+> `shooter_make_c__three` correlates only 0.33 with the corrected one.
+> `scripts/build_engine_inputs_shotshooter.py` closes it into a sibling
+> directory (section 20.0).
 
 **Headline (round 1, as written).** All three shot classes go to **LightGBM on the full bundle**
 (`C_plus_state`), each with calibration inside the gate and with the shooter
@@ -410,6 +434,13 @@ p_make = p[:, FG.CLASS_INDEX["MAKE"]]
 | `data/processed/models/fg_make/round2/<arm>/fg_make_<class>_F2.joblib` | ROUND 2: one fitted LightGBM per (arm, class). `S_C`'s three carry `adopted=True` |
 | `data/processed/models/fg_make/round2b/S_C_s1/<class>_<refit_date>.joblib` + `manifest_<class>.json` | ROUND 2b: the S1 schedule, 18 artifacts and three `cbb_sim.engine.manifest`-format manifests, all `adopted=True`. **This is the shipping model** |
 | `results/engine_v0/fgmake_r2_<arm>/` | The six paired closed-loop engine runs |
+| `data/processed/models/fg_make/round3_shooter/S_C_s1/` | ROUND 3: the corrected-label S-C-S1 schedule. **This is the SERVED model** (`ENGINE_FG_MAKE=round3_shooter_S_C_s1`, the engine default) |
+| `data/processed/models/fg_make/round4/{m_fitted,leak_test,run_report,closed_loop,closed_loop_interim}.json` | ROUND 4: the fold-1 `m` grid, the change-form leak table, all six arms, and both closed-loop tables |
+| `data/processed/models/fg_make/round4/<arm>/` | ROUND 4: one S1 schedule per arm (18 joblibs + three manifests). **`B1/` is the round-4 WINNER**, not yet the default (section 20.7) |
+| `data/processed/models/fg_make/round4/run_report_v1_leaked_assisted.json`, `round4/B{3,4}_leaked_assisted/` | ROUND 4: the pre-repair reading of `sh_assisted_share`, kept on record and INELIGIBLE (section 20.2) |
+| `data/processed/models/fg_make/shooter_skill_v1.json` | ROUND 4 step 2: the between-shooter skill evidence (`docs/tests/fg_make_shooter_skill_2026-09-10.md`) |
+| `data/processed/models/engine_fgm4/` | The engine inputs with the fg_make shooter slot block keyed on `shot_shooter_id` plus the round-4 columns. Gitignored, rebuildable with `scripts/build_engine_inputs_shotshooter.py` |
+| `results/engine_v0/fgm4_cl_*/` | The five paired round-3/round-4 closed-loop runs (engine code pinned to commit `6431772`) |
 
 ## 9. Known gaps / followups
 
@@ -436,15 +467,13 @@ p_make = p[:, FG.CLASS_INDEX["MAKE"]]
    on three-point makes was never plausible on its own; it is the size the
    mislabelling produces when ~half of assisted makes are credited to the
    team's primary ball-handler, whose contaminated history then reads as a
-   near-perfect proxy for team shot quality. The round-2b artifacts
-   (`ENGINE_FG_MAKE=round2b_S_C_s1`, still keyed on `participant_1_id`) remain
-   served; nothing under `round2b/` was touched. **Open item for a round 4**:
-   re-run the shooter-block bake-off (feature set and the EB-shrinkage
-   arm) from scratch on `shot_shooter_id`, since S-C's spec was itself chosen
-   against the contaminated label and a straight data swap under an unchanged
-   spec is not expected to be the right model. The Decision-10 closed-loop for
-   the corrected arm is still pending an `adapters.py` change
-   (`experiments.md` section 17.4/18.5) neither this nor the prior round made.
+   near-perfect proxy for team shot quality. **CLOSED BY ROUND 4
+   (sections 19-20).** L29 overrode round 3's mechanical "not adopted" on
+   data-integrity precedence and made the corrected arm the interim served
+   model; round 4 added the `adapters.py` branch, ran the interim model's
+   missing Decision-10 closed loop (PASS, section 20.0), and re-baked the
+   shooter block on the correct label. Winner: **B1**, a single shrunk column.
+   Nothing under `round2b/` was touched.
 
 9. **G4's defence tercile regressed under the honest arms** (1.066 pp for S-C
    against a 1.0 pp tolerance, where the round-1 leaked trio read 0.914 pp).

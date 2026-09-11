@@ -1,0 +1,881 @@
+{
+  "created_at": "2026-09-11T02:54:23.904256+00:00",
+  "design": "data\\processed\\models\\fg_make\\design_v2_shotshooter.parquet",
+  "shooter_key": "shot_shooter_id",
+  "seasons": [
+    2022,
+    2023,
+    2024,
+    2025
+  ],
+  "n_rows": 2239678,
+  "by_class": {
+    "FGA_rim": {
+      "n_attempts": 817199,
+      "mom_pooled": {
+        "n_clusters": 17841,
+        "n_trials": 817199.0,
+        "mean_rate": 0.585456,
+        "S": 8233.8106,
+        "expected_binomial_S": 4329.7195,
+        "denom": 817109.842,
+        "sigma2": 0.00477793,
+        "between_sd_pp": 6.9123,
+        "skill_share_of_observed_spread": 0.4742,
+        "m_shrinkage_attempts": 50.8,
+        "implied_quintile_span_pp": 19.352
+      },
+      "mom_by_season": {
+        "2022": {
+          "n_clusters": 4414,
+          "n_trials": 171610.0,
+          "mean_rate": 0.589441,
+          "S": 1939.2007,
+          "expected_binomial_S": 1067.9472,
+          "denom": 171532.6787,
+          "sigma2": 0.00507923,
+          "between_sd_pp": 7.1269,
+          "skill_share_of_observed_spread": 0.4493,
+          "m_shrinkage_attempts": 47.65,
+          "implied_quintile_span_pp": 19.952
+        },
+        "2023": {
+          "n_clusters": 4401,
+          "n_trials": 185327.0,
+          "mean_rate": 0.588382,
+          "S": 1950.3392,
+          "expected_binomial_S": 1065.6302,
+          "denom": 185246.1804,
+          "sigma2": 0.00477586,
+          "between_sd_pp": 6.9108,
+          "skill_share_of_observed_spread": 0.4536,
+          "m_shrinkage_attempts": 50.71,
+          "implied_quintile_span_pp": 19.347
+        },
+        "2024": {
+          "n_clusters": 4484,
+          "n_trials": 224914.0,
+          "mean_rate": 0.581133,
+          "S": 2173.42,
+          "expected_binomial_S": 1091.2402,
+          "denom": 224817.5961,
+          "sigma2": 0.00481359,
+          "between_sd_pp": 6.938,
+          "skill_share_of_observed_spread": 0.4979,
+          "m_shrinkage_attempts": 50.57,
+          "implied_quintile_span_pp": 19.424
+        },
+        "2025": {
+          "n_clusters": 4542,
+          "n_trials": 235348.0,
+          "mean_rate": 0.584377,
+          "S": 2162.0623,
+          "expected_binomial_S": 1102.9203,
+          "denom": 235250.5695,
+          "sigma2": 0.00450219,
+          "between_sd_pp": 6.7098,
+          "skill_share_of_observed_spread": 0.4899,
+          "m_shrinkage_attempts": 53.95,
+          "implied_quintile_span_pp": 18.785
+        }
+      },
+      "mom_min_att": {
+        "10": {
+          "n_clusters": 13564,
+          "n_trials": 800526.0,
+          "mean_rate": 0.586795,
+          "S": 6994.195,
+          "expected_binomial_S": 3288.5739,
+          "denom": 800435.1021,
+          "sigma2": 0.00462951,
+          "between_sd_pp": 6.804,
+          "skill_share_of_observed_spread": 0.5298,
+          "m_shrinkage_attempts": 52.37,
+          "implied_quintile_span_pp": 19.049
+        },
+        "25": {
+          "n_clusters": 10302,
+          "n_trials": 746735.0,
+          "mean_rate": 0.589705,
+          "S": 5827.2903,
+          "expected_binomial_S": 2492.3589,
+          "denom": 746638.8233,
+          "sigma2": 0.00446659,
+          "between_sd_pp": 6.6833,
+          "skill_share_of_observed_spread": 0.5723,
+          "m_shrinkage_attempts": 54.17,
+          "implied_quintile_span_pp": 18.71
+        },
+        "50": {
+          "n_clusters": 6495,
+          "n_trials": 608339.0,
+          "mean_rate": 0.595548,
+          "S": 4174.9709,
+          "expected_binomial_S": 1564.2137,
+          "denom": 608229.5325,
+          "sigma2": 0.00429239,
+          "between_sd_pp": 6.5516,
+          "skill_share_of_observed_spread": 0.6253,
+          "m_shrinkage_attempts": 56.12,
+          "implied_quintile_span_pp": 18.342
+        }
+      },
+      "reliability_of_asof_rate": {
+        "25": 0.3298,
+        "50": 0.496,
+        "100": 0.6631,
+        "200": 0.7974
+      },
+      "reliability_note": "reliability(n) = n / (n + m), m = p(1-p)/sigma^2 from mom_pooled",
+      "prior_to_current": {
+        "1": {
+          "n": 8339,
+          "mean_att_prev": 46.2,
+          "mean_att_cur": 58.6,
+          "corr_raw": 0.1835,
+          "reliability_prev": 0.4762,
+          "reliability_cur": 0.5356,
+          "corr_disattenuated": 0.3633,
+          "ols_slope_cur_on_prev": 0.165,
+          "slope_se": 0.0097,
+          "verdict": "ok"
+        },
+        "25": {
+          "n": 4361,
+          "mean_att_prev": 72.0,
+          "mean_att_cur": 85.8,
+          "corr_raw": 0.4751,
+          "reliability_prev": 0.5863,
+          "reliability_cur": 0.6282,
+          "corr_disattenuated": 0.7829,
+          "ols_slope_cur_on_prev": 0.449,
+          "slope_se": 0.0126,
+          "verdict": "ok"
+        },
+        "50": {
+          "n": 2398,
+          "mean_att_prev": 93.6,
+          "mean_att_cur": 108.3,
+          "corr_raw": 0.5455,
+          "reliability_prev": 0.6481,
+          "reliability_cur": 0.6808,
+          "corr_disattenuated": 0.8212,
+          "ols_slope_cur_on_prev": 0.5167,
+          "slope_se": 0.0162,
+          "verdict": "ok"
+        },
+        "100": {
+          "n": 550,
+          "mean_att_prev": 140.9,
+          "mean_att_cur": 151.4,
+          "corr_raw": 0.6542,
+          "reliability_prev": 0.735,
+          "reliability_cur": 0.7488,
+          "corr_disattenuated": 0.8819,
+          "ols_slope_cur_on_prev": 0.6321,
+          "slope_se": 0.0312,
+          "verdict": "ok"
+        }
+      },
+      "slope_by_attempt_bucket": {
+        "0": {
+          "n": 43960,
+          "share_of_class_pct": 5.379,
+          "mean_asof_dev_pp": 0.0,
+          "sd_asof_dev_pp": 0.0,
+          "realised_rate": 0.57507,
+          "slope_realised_on_asof": NaN,
+          "slope_se": NaN,
+          "slope_t": null,
+          "quintile_realised_rate": [
+            NaN,
+            NaN,
+            NaN,
+            NaN,
+            NaN
+          ],
+          "quintile_span_pp": NaN,
+          "verdict": "ok"
+        },
+        "1-24": {
+          "n": 300590,
+          "share_of_class_pct": 36.783,
+          "mean_asof_dev_pp": -0.91,
+          "sd_asof_dev_pp": 21.593,
+          "realised_rate": 0.57653,
+          "slope_realised_on_asof": 0.1172,
+          "slope_se": 0.0042,
+          "slope_t": 28.12,
+          "quintile_realised_rate": [
+            0.53468,
+            0.5593,
+            0.57524,
+            0.60034,
+            0.61309
+          ],
+          "quintile_span_pp": 7.841,
+          "verdict": "ok"
+        },
+        "25-49": {
+          "n": 202025,
+          "share_of_class_pct": 24.722,
+          "mean_asof_dev_pp": 0.411,
+          "sd_asof_dev_pp": 10.783,
+          "realised_rate": 0.58418,
+          "slope_realised_on_asof": 0.3764,
+          "slope_se": 0.0101,
+          "slope_t": 37.14,
+          "quintile_realised_rate": [
+            0.53122,
+            0.55622,
+            0.58359,
+            0.60609,
+            0.64378
+          ],
+          "quintile_span_pp": 11.256,
+          "verdict": "ok"
+        },
+        "50-99": {
+          "n": 193579,
+          "share_of_class_pct": 23.688,
+          "mean_asof_dev_pp": 1.499,
+          "sd_asof_dev_pp": 8.947,
+          "realised_rate": 0.59409,
+          "slope_realised_on_asof": 0.5367,
+          "slope_se": 0.0124,
+          "slope_t": 43.23,
+          "quintile_realised_rate": [
+            0.52968,
+            0.56377,
+            0.59056,
+            0.61856,
+            0.66791
+          ],
+          "quintile_span_pp": 13.823,
+          "verdict": "ok"
+        },
+        "100-199": {
+          "n": 74513,
+          "share_of_class_pct": 9.118,
+          "mean_asof_dev_pp": 3.245,
+          "sd_asof_dev_pp": 7.732,
+          "realised_rate": 0.60736,
+          "slope_realised_on_asof": 0.6574,
+          "slope_se": 0.023,
+          "slope_t": 28.57,
+          "quintile_realised_rate": [
+            0.53774,
+            0.57257,
+            0.6126,
+            0.63585,
+            0.67803
+          ],
+          "quintile_span_pp": 14.029,
+          "verdict": "ok"
+        },
+        "200+": {
+          "n": 2532,
+          "share_of_class_pct": 0.31,
+          "mean_asof_dev_pp": 5.905,
+          "sd_asof_dev_pp": 7.783,
+          "realised_rate": 0.62243,
+          "slope_realised_on_asof": 0.621,
+          "slope_se": 0.1232,
+          "slope_t": 5.04,
+          "quintile_realised_rate": [
+            0.55424,
+            0.60277,
+            0.62722,
+            0.63043,
+            0.69763
+          ],
+          "quintile_span_pp": 14.339,
+          "verdict": "ok"
+        }
+      },
+      "slope_all_defined": {
+        "n": 773239,
+        "slope": 0.2037,
+        "se": 0.0036
+      }
+    },
+    "FGA_jump2": {
+      "n_attempts": 571838,
+      "mom_pooled": {
+        "n_clusters": 17325,
+        "n_trials": 571838.0,
+        "mean_rate": 0.384836,
+        "S": 4987.2484,
+        "expected_binomial_S": 4101.2372,
+        "denom": 571765.5828,
+        "sigma2": 0.00154961,
+        "between_sd_pp": 3.9365,
+        "skill_share_of_observed_spread": 0.1777,
+        "m_shrinkage_attempts": 152.77,
+        "implied_quintile_span_pp": 11.021
+      },
+      "mom_by_season": {
+        "2022": {
+          "n_clusters": 4300,
+          "n_trials": 132069.0,
+          "mean_rate": 0.37725,
+          "S": 1194.5483,
+          "expected_binomial_S": 1009.9743,
+          "denom": 132000.9752,
+          "sigma2": 0.00139828,
+          "between_sd_pp": 3.7394,
+          "skill_share_of_observed_spread": 0.1545,
+          "m_shrinkage_attempts": 168.02,
+          "implied_quintile_span_pp": 10.469
+        },
+        "2023": {
+          "n_clusters": 4295,
+          "n_trials": 137709.0,
+          "mean_rate": 0.383149,
+          "S": 1217.0632,
+          "expected_binomial_S": 1014.8686,
+          "denom": 137639.8418,
+          "sigma2": 0.00146901,
+          "between_sd_pp": 3.8328,
+          "skill_share_of_observed_spread": 0.1661,
+          "m_shrinkage_attempts": 160.89,
+          "implied_quintile_span_pp": 10.73
+        },
+        "2024": {
+          "n_clusters": 4362,
+          "n_trials": 153287.0,
+          "mean_rate": 0.387352,
+          "S": 1256.9435,
+          "expected_binomial_S": 1034.9106,
+          "denom": 153210.3999,
+          "sigma2": 0.0014492,
+          "between_sd_pp": 3.8068,
+          "skill_share_of_observed_spread": 0.1766,
+          "m_shrinkage_attempts": 163.75,
+          "implied_quintile_span_pp": 10.658
+        },
+        "2025": {
+          "n_clusters": 4368,
+          "n_trials": 148773.0,
+          "mean_rate": 0.390541,
+          "S": 1304.8878,
+          "expected_binomial_S": 1039.4281,
+          "denom": 148697.9768,
+          "sigma2": 0.00178523,
+          "between_sd_pp": 4.2252,
+          "skill_share_of_observed_spread": 0.2034,
+          "m_shrinkage_attempts": 133.33,
+          "implied_quintile_span_pp": 11.829
+        }
+      },
+      "mom_min_att": {
+        "10": {
+          "n_clusters": 11719,
+          "n_trials": 549408.0,
+          "mean_rate": 0.387392,
+          "S": 3657.5848,
+          "expected_binomial_S": 2780.9079,
+          "denom": 549332.8593,
+          "sigma2": 0.00159589,
+          "between_sd_pp": 3.9949,
+          "skill_share_of_observed_spread": 0.2397,
+          "m_shrinkage_attempts": 148.71,
+          "implied_quintile_span_pp": 11.184
+        },
+        "25": {
+          "n_clusters": 7790,
+          "n_trials": 485290.0,
+          "mean_rate": 0.391844,
+          "S": 2582.1939,
+          "expected_binomial_S": 1856.1365,
+          "denom": 485207.2397,
+          "sigma2": 0.00149639,
+          "between_sd_pp": 3.8683,
+          "skill_share_of_observed_spread": 0.2812,
+          "m_shrinkage_attempts": 159.25,
+          "implied_quintile_span_pp": 10.83
+        },
+        "50": {
+          "n_clusters": 4115,
+          "n_trials": 354570.0,
+          "mean_rate": 0.399839,
+          "S": 1452.862,
+          "expected_binomial_S": 987.2276,
+          "denom": 354470.3687,
+          "sigma2": 0.00131361,
+          "between_sd_pp": 3.6244,
+          "skill_share_of_observed_spread": 0.3205,
+          "m_shrinkage_attempts": 182.68,
+          "implied_quintile_span_pp": 10.147
+        }
+      },
+      "reliability_of_asof_rate": {
+        "25": 0.1406,
+        "50": 0.2466,
+        "100": 0.3956,
+        "200": 0.5669
+      },
+      "reliability_note": "reliability(n) = n / (n + m), m = p(1-p)/sigma^2 from mom_pooled",
+      "prior_to_current": {
+        "1": {
+          "n": 8032,
+          "mean_att_prev": 33.5,
+          "mean_att_cur": 41.6,
+          "corr_raw": 0.0752,
+          "reliability_prev": 0.1799,
+          "reliability_cur": 0.2139,
+          "corr_disattenuated": 0.3833,
+          "ols_slope_cur_on_prev": 0.0689,
+          "slope_se": 0.0102,
+          "verdict": "ok"
+        },
+        "25": {
+          "n": 3018,
+          "mean_att_prev": 62.7,
+          "mean_att_cur": 73.6,
+          "corr_raw": 0.2401,
+          "reliability_prev": 0.2911,
+          "reliability_cur": 0.325,
+          "corr_disattenuated": 0.7807,
+          "ols_slope_cur_on_prev": 0.2284,
+          "slope_se": 0.0168,
+          "verdict": "ok"
+        },
+        "50": {
+          "n": 1285,
+          "mean_att_prev": 87.7,
+          "mean_att_cur": 99.7,
+          "corr_raw": 0.2732,
+          "reliability_prev": 0.3646,
+          "reliability_cur": 0.3949,
+          "corr_disattenuated": 0.7201,
+          "ols_slope_cur_on_prev": 0.2644,
+          "slope_se": 0.026,
+          "verdict": "ok"
+        },
+        "100": {
+          "n": 216,
+          "mean_att_prev": 136.6,
+          "mean_att_cur": 150.2,
+          "corr_raw": 0.3239,
+          "reliability_prev": 0.472,
+          "reliability_cur": 0.4958,
+          "corr_disattenuated": 0.6695,
+          "ols_slope_cur_on_prev": 0.3135,
+          "slope_se": 0.0626,
+          "verdict": "UNDERPOWERED"
+        }
+      },
+      "slope_by_attempt_bucket": {
+        "0": {
+          "n": 34203,
+          "share_of_class_pct": 5.981,
+          "mean_asof_dev_pp": 0.0,
+          "sd_asof_dev_pp": 0.0,
+          "realised_rate": 0.35953,
+          "slope_realised_on_asof": NaN,
+          "slope_se": NaN,
+          "slope_t": null,
+          "quintile_realised_rate": [
+            NaN,
+            NaN,
+            NaN,
+            NaN,
+            NaN
+          ],
+          "quintile_span_pp": NaN,
+          "verdict": "ok"
+        },
+        "1-24": {
+          "n": 257534,
+          "share_of_class_pct": 45.036,
+          "mean_asof_dev_pp": -1.078,
+          "sd_asof_dev_pp": 20.815,
+          "realised_rate": 0.37611,
+          "slope_realised_on_asof": 0.0359,
+          "slope_se": 0.0046,
+          "slope_t": 7.83,
+          "quintile_realised_rate": [
+            0.36213,
+            0.36789,
+            0.37841,
+            0.38573,
+            0.3864
+          ],
+          "quintile_span_pp": 2.428,
+          "verdict": "ok"
+        },
+        "25-49": {
+          "n": 138630,
+          "share_of_class_pct": 24.243,
+          "mean_asof_dev_pp": 0.799,
+          "sd_asof_dev_pp": 9.317,
+          "realised_rate": 0.39024,
+          "slope_realised_on_asof": 0.1871,
+          "slope_se": 0.0141,
+          "slope_t": 13.31,
+          "quintile_realised_rate": [
+            0.3694,
+            0.37741,
+            0.38816,
+            0.39779,
+            0.41845
+          ],
+          "quintile_span_pp": 4.905,
+          "verdict": "ok"
+        },
+        "50-99": {
+          "n": 109297,
+          "share_of_class_pct": 19.113,
+          "mean_asof_dev_pp": 1.957,
+          "sd_asof_dev_pp": 7.07,
+          "realised_rate": 0.3998,
+          "slope_realised_on_asof": 0.2632,
+          "slope_se": 0.0209,
+          "slope_t": 12.57,
+          "quintile_realised_rate": [
+            0.38033,
+            0.38863,
+            0.39236,
+            0.40825,
+            0.42943
+          ],
+          "quintile_span_pp": 4.91,
+          "verdict": "ok"
+        },
+        "100-199": {
+          "n": 31029,
+          "share_of_class_pct": 5.426,
+          "mean_asof_dev_pp": 3.517,
+          "sd_asof_dev_pp": 5.481,
+          "realised_rate": 0.40733,
+          "slope_realised_on_asof": 0.4079,
+          "slope_se": 0.0509,
+          "slope_t": 8.02,
+          "quintile_realised_rate": [
+            0.37464,
+            0.40461,
+            0.39558,
+            0.42491,
+            0.43691
+          ],
+          "quintile_span_pp": 6.227,
+          "verdict": "ok"
+        },
+        "200+": {
+          "n": 1145,
+          "share_of_class_pct": 0.2,
+          "mean_asof_dev_pp": 4.52,
+          "sd_asof_dev_pp": 3.547,
+          "realised_rate": 0.41048,
+          "slope_realised_on_asof": -0.0759,
+          "slope_se": 0.4101,
+          "slope_t": -0.19,
+          "quintile_realised_rate": [
+            0.44541,
+            0.38428,
+            0.42358,
+            0.40175,
+            0.39738
+          ],
+          "quintile_span_pp": -4.803,
+          "verdict": "ok"
+        }
+      },
+      "slope_all_defined": {
+        "n": 537635,
+        "slope": 0.0664,
+        "se": 0.0043
+      }
+    },
+    "FGA_3": {
+      "n_attempts": 850641,
+      "mom_pooled": {
+        "n_clusters": 16565,
+        "n_trials": 850641.0,
+        "mean_rate": 0.337897,
+        "S": 4342.2782,
+        "expected_binomial_S": 3705.7412,
+        "denom": 850535.1246,
+        "sigma2": 0.0007484,
+        "between_sd_pp": 2.7357,
+        "skill_share_of_observed_spread": 0.1466,
+        "m_shrinkage_attempts": 298.94,
+        "implied_quintile_span_pp": 7.659
+      },
+      "mom_by_season": {
+        "2022": {
+          "n_clusters": 4090,
+          "n_trials": 184771.0,
+          "mean_rate": 0.335458,
+          "S": 1049.9252,
+          "expected_binomial_S": 911.5448,
+          "denom": 184677.4217,
+          "sigma2": 0.00074931,
+          "between_sd_pp": 2.7374,
+          "skill_share_of_observed_spread": 0.1318,
+          "m_shrinkage_attempts": 297.51,
+          "implied_quintile_span_pp": 7.663
+        },
+        "2023": {
+          "n_clusters": 4031,
+          "n_trials": 193439.0,
+          "mean_rate": 0.339802,
+          "S": 1010.1317,
+          "expected_binomial_S": 904.0768,
+          "denom": 193340.9697,
+          "sigma2": 0.00054854,
+          "between_sd_pp": 2.3421,
+          "skill_share_of_observed_spread": 0.105,
+          "m_shrinkage_attempts": 408.97,
+          "implied_quintile_span_pp": 6.557
+        },
+        "2024": {
+          "n_clusters": 4181,
+          "n_trials": 225648.0,
+          "mean_rate": 0.338412,
+          "S": 1131.3796,
+          "expected_binomial_S": 935.8574,
+          "denom": 225536.0319,
+          "sigma2": 0.00086692,
+          "between_sd_pp": 2.9444,
+          "skill_share_of_observed_spread": 0.1728,
+          "m_shrinkage_attempts": 258.26,
+          "implied_quintile_span_pp": 8.243
+        },
+        "2025": {
+          "n_clusters": 4263,
+          "n_trials": 246783.0,
+          "mean_rate": 0.337758,
+          "S": 1148.9763,
+          "expected_binomial_S": 953.314,
+          "denom": 246667.3393,
+          "sigma2": 0.00079322,
+          "between_sd_pp": 2.8164,
+          "skill_share_of_observed_spread": 0.1703,
+          "m_shrinkage_attempts": 281.99,
+          "implied_quintile_span_pp": 7.885
+        }
+      },
+      "mom_min_att": {
+        "10": {
+          "n_clusters": 11994,
+          "n_trials": 834516.0,
+          "mean_rate": 0.340045,
+          "S": 3362.1735,
+          "expected_binomial_S": 2691.4019,
+          "denom": 834408.1823,
+          "sigma2": 0.00080389,
+          "between_sd_pp": 2.8353,
+          "skill_share_of_observed_spread": 0.1995,
+          "m_shrinkage_attempts": 279.16,
+          "implied_quintile_span_pp": 7.938
+        },
+        "25": {
+          "n_clusters": 9492,
+          "n_trials": 793660.0,
+          "mean_rate": 0.343346,
+          "S": 2663.7306,
+          "expected_binomial_S": 2139.8364,
+          "denom": 793547.5326,
+          "sigma2": 0.00066019,
+          "between_sd_pp": 2.5694,
+          "skill_share_of_observed_spread": 0.1967,
+          "m_shrinkage_attempts": 341.51,
+          "implied_quintile_span_pp": 7.193
+        },
+        "50": {
+          "n_clusters": 6604,
+          "n_trials": 688824.0,
+          "mean_rate": 0.348947,
+          "S": 1837.3948,
+          "expected_binomial_S": 1500.0891,
+          "denom": 688700.1653,
+          "sigma2": 0.00048977,
+          "between_sd_pp": 2.2131,
+          "skill_share_of_observed_spread": 0.1836,
+          "m_shrinkage_attempts": 463.85,
+          "implied_quintile_span_pp": 6.196
+        }
+      },
+      "reliability_of_asof_rate": {
+        "25": 0.0772,
+        "50": 0.1433,
+        "100": 0.2507,
+        "200": 0.4008
+      },
+      "reliability_note": "reliability(n) = n / (n + m), m = p(1-p)/sigma^2 from mom_pooled",
+      "prior_to_current": {
+        "1": {
+          "n": 7482,
+          "mean_att_prev": 52.0,
+          "mean_att_cur": 67.2,
+          "corr_raw": 0.1081,
+          "reliability_prev": 0.1481,
+          "reliability_cur": 0.1836,
+          "corr_disattenuated": 0.6557,
+          "ols_slope_cur_on_prev": 0.0978,
+          "slope_se": 0.0104,
+          "verdict": "ok"
+        },
+        "25": {
+          "n": 4065,
+          "mean_att_prev": 81.4,
+          "mean_att_cur": 100.5,
+          "corr_raw": 0.1642,
+          "reliability_prev": 0.2141,
+          "reliability_cur": 0.2516,
+          "corr_disattenuated": 0.7073,
+          "ols_slope_cur_on_prev": 0.1527,
+          "slope_se": 0.0144,
+          "verdict": "ok"
+        },
+        "50": {
+          "n": 2549,
+          "mean_att_prev": 102.9,
+          "mean_att_cur": 122.1,
+          "corr_raw": 0.1691,
+          "reliability_prev": 0.2561,
+          "reliability_cur": 0.29,
+          "corr_disattenuated": 0.6204,
+          "ols_slope_cur_on_prev": 0.16,
+          "slope_se": 0.0185,
+          "verdict": "ok"
+        },
+        "100": {
+          "n": 890,
+          "mean_att_prev": 143.9,
+          "mean_att_cur": 163.3,
+          "corr_raw": 0.1379,
+          "reliability_prev": 0.3249,
+          "reliability_cur": 0.3532,
+          "corr_disattenuated": 0.407,
+          "ols_slope_cur_on_prev": 0.136,
+          "slope_se": 0.0328,
+          "verdict": "ok"
+        }
+      },
+      "slope_by_attempt_bucket": {
+        "0": {
+          "n": 43654,
+          "share_of_class_pct": 5.132,
+          "mean_asof_dev_pp": 0.0,
+          "sd_asof_dev_pp": 0.0,
+          "realised_rate": 0.31138,
+          "slope_realised_on_asof": NaN,
+          "slope_se": NaN,
+          "slope_t": null,
+          "quintile_realised_rate": [
+            NaN,
+            NaN,
+            NaN,
+            NaN,
+            NaN
+          ],
+          "quintile_span_pp": NaN,
+          "verdict": "ok"
+        },
+        "1-24": {
+          "n": 267215,
+          "share_of_class_pct": 31.413,
+          "mean_asof_dev_pp": -2.036,
+          "sd_asof_dev_pp": 18.316,
+          "realised_rate": 0.32307,
+          "slope_realised_on_asof": 0.0429,
+          "slope_se": 0.0049,
+          "slope_t": 8.68,
+          "quintile_realised_rate": [
+            0.30548,
+            0.32283,
+            0.32466,
+            0.33284,
+            0.32955
+          ],
+          "quintile_span_pp": 2.406,
+          "verdict": "ok"
+        },
+        "25-49": {
+          "n": 194744,
+          "share_of_class_pct": 22.894,
+          "mean_asof_dev_pp": 0.456,
+          "sd_asof_dev_pp": 8.341,
+          "realised_rate": 0.33995,
+          "slope_realised_on_asof": 0.1132,
+          "slope_se": 0.0129,
+          "slope_t": 8.8,
+          "quintile_realised_rate": [
+            0.32892,
+            0.33518,
+            0.34224,
+            0.34209,
+            0.35134
+          ],
+          "quintile_span_pp": 2.242,
+          "verdict": "ok"
+        },
+        "50-99": {
+          "n": 222260,
+          "share_of_class_pct": 26.129,
+          "mean_asof_dev_pp": 1.598,
+          "sd_asof_dev_pp": 6.122,
+          "realised_rate": 0.34958,
+          "slope_realised_on_asof": 0.1479,
+          "slope_se": 0.0165,
+          "slope_t": 8.95,
+          "quintile_realised_rate": [
+            0.33875,
+            0.34489,
+            0.34624,
+            0.35474,
+            0.36329
+          ],
+          "quintile_span_pp": 2.454,
+          "verdict": "ok"
+        },
+        "100-199": {
+          "n": 115613,
+          "share_of_class_pct": 13.591,
+          "mean_asof_dev_pp": 2.677,
+          "sd_asof_dev_pp": 4.609,
+          "realised_rate": 0.35516,
+          "slope_realised_on_asof": 0.2294,
+          "slope_se": 0.0305,
+          "slope_t": 7.52,
+          "quintile_realised_rate": [
+            0.33906,
+            0.34995,
+            0.35395,
+            0.36314,
+            0.36969
+          ],
+          "quintile_span_pp": 3.063,
+          "verdict": "ok"
+        },
+        "200+": {
+          "n": 7155,
+          "share_of_class_pct": 0.841,
+          "mean_asof_dev_pp": 3.024,
+          "sd_asof_dev_pp": 3.457,
+          "realised_rate": 0.35542,
+          "slope_realised_on_asof": -0.0378,
+          "slope_se": 0.1637,
+          "slope_t": -0.23,
+          "quintile_realised_rate": [
+            0.355,
+            0.35989,
+            0.34102,
+            0.37806,
+            0.34312
+          ],
+          "quintile_span_pp": -1.188,
+          "verdict": "ok"
+        }
+      },
+      "slope_all_defined": {
+        "n": 806987,
+        "slope": 0.0737,
+        "se": 0.0044
+      }
+    }
+  }
+}

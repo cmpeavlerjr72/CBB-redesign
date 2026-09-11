@@ -29,11 +29,16 @@ is **wide in the source table and selected per row for that row's own class**
 | `site_home` | float32 | `data/processed/games_universe.parquet` | 1 when the shooting team is home and the game is not neutral | 0.0 | Neutral is the reference level (`CLAUDE.md`: home/away/neutral is first-class in every scoring-stage model) |
 | `site_away` | float32 | same | 1 when the shooting team is away and the game is not neutral | 0.0 | |
 | `season_idx` | float32 | universe | `season - 2022` | — | The season-level term L11 requires be present and reported, not assumed to work |
-| `shooter_make_c` | float32 | pbp `participant_1_id` (default) or `shot_shooter_id` (`build_fg_events(shooter_key=...)`, round 3) via `shooter_form` | the shooter's expanding make rate on this class over his games strictly before this one, minus the league as-of rate | **exactly 0.0** when he has no prior attempt of the class | The first responsiveness driver. Rows where it is undefined are reported as their own cell, never bucketed on the imputation. **`participant_1_id` is the ASSISTER on 47.7-50.2% of assisted made FGAs (`docs/tests/shooter_key_audit_2026-09-10.md`); every SERVED artifact (`winner_*`, `round2/`, `round2b/`) still uses it.** Round 3 (`experiments.md` sections 17-18) measured the correction and found the reference arm's `FGA_3` Decision-8 quintile span (35.9 pp) collapses to 2.8 pp once corrected -- NOT ADOPTED per the pre-registered rule; `docs/models/fg_make/model.md` item 8 |
+| `shooter_make_c` | float32 | pbp `participant_1_id` (default) or `shot_shooter_id` (`build_fg_events(shooter_key=...)`, round 3) via `shooter_form` | the shooter's expanding make rate on this class over his games strictly before this one, minus the league as-of rate | **exactly 0.0** when he has no prior attempt of the class | The first responsiveness driver. Rows where it is undefined are reported as their own cell, never bucketed on the imputation. **`participant_1_id` is the ASSISTER on 47.7-50.2% of assisted made FGAs (`docs/tests/shooter_key_audit_2026-09-10.md`); every SERVED artifact (`winner_*`, `round2/`, `round2b/`) still uses it.** Round 3 (`experiments.md` sections 17-18) measured the correction and found the reference arm's `FGA_3` Decision-8 quintile span (35.9 pp) collapses to 2.8 pp once corrected; L29 made the corrected arm the SERVED model. **Round 4 (sections 19-20) retired this column from the winning arm**: its Decision-8 slope on the corrected label is 0.07-0.20 because the raw rate is 85-92% binomial noise, and `shooter_shrunk_dev_c` replaces it. It survives only as the driver Decision 8 buckets on, which is a property of the data and not of any arm |
 | `shooter_att_c` | float32 | same | the shooter's attempts of this class to date, this season | 0.0 | Also the `defined` gate for the shooter responsiveness driver |
 | `prior_season_make_c` | float32 | same | the shooter's COMPLETED previous season's make rate on this class, centred | exactly 0.0 when there is no prior season | Entirely in the past by construction |
 | `has_prior_season` | float32 | same | 1 when the shooter has a completed prior season in the data | 0.0 | Makes the fallback above legible to a linear arm |
 | `pos_G` / `pos_F` / `pos_C` | float32 | `data/raw/cbbd/rosters/roster_{season}.parquet` via `free_throw.load_positions` | roster position mapped to guard / forward / centre | all three 0 (`UNK` is the reference level) | Rosters exist for 2024-2026 only; the CBBD player id is stable across seasons, so a player on any of those rosters carries his position back to 2022. Coverage is a reported number |
+| `shooter_shrunk_dev_c` | float32 | pbp `shot_shooter_id` via `shooter_form` + `team_shot_form`, assembled in `scripts/train_fg_make_v4_shooter_block.py` | `(m * team_asof_rate + shooter_makes_asof) / (m + shooter_attempts_asof) - team_asof_rate`: the shooter's as-of make rate on this class shrunk to HIS OWN TEAM's as-of rate on the same class, expressed as a deviation from it. `m` = **75 / 200 / 300** attempts (rim / jumper / three), fitted on FOLD 1's test season only and frozen (`experiments.md` 19.3, `round4/m_fitted.json`) | **exactly 0.0 by identity**, not by a branch: with no prior attempts the shrunk rate IS the team rate | **ROUND 4 WINNER's only shooter column.** Replaces `shooter_make_c`, whose raw form is 85-92% binomial noise on threes. Moves the Decision-8 shooter slope from 0.28/0.29/0.31 (no shooter block) to 1.04/0.84/0.92. Evidence for `m` and for the noise share: `docs/tests/fg_make_shooter_skill_2026-09-10.md`. The team prior contains the shooter's own prior attempts -- as-of, so not a leak, but a mild shrink-toward-self, recorded in 19.3 |
+| `prior_season_att_c` | float32 | `shooter_form` | the shooter's COMPLETED prior season's attempts on this class | 0.0 | Round-4 arms B2+ only; carries the sample size the prior-season RATE has to be weighted by |
+| `sh_share_rim` / `sh_share_jump2` / `sh_share_three` | float32 | `shooter_form` | the shooter's as-of attempt share by class (sums to 1 where he has history) | 0.0 (all three) | Round-4 arms B3/B4 only. Style, not outcome; strictly prior games |
+| `sh_assisted_share` | float32 | pbp `shot_assisted` keyed on `shot_shooter_id`, per (game, shooter) | as-of share of the shooter's MADE field goals that were assisted, over games strictly before this one | 0.0 when he has no prior make | Round-4 arms B3/B4 only. **Its first build aggregated MADE field goals only, so the join missed on exactly the 3.55% of rows whose shooter went 0-for-the-game -- rows with a 0.00000 make rate -- and the MISSINGNESS was a post-outcome leak worth 325-795 noise floors while every VALUE was honest and the change-form leak test passed at 0.026.** Repaired to aggregate over every ATTEMPT (100.0000% coverage) with a join-coverage assertion in the trainer. `experiments.md` 20.2 |
+| `five_shrunk_dev_rim` / `five_shrunk_dev_three` | float32 | as above, over the offensive five on the floor | mean `shooter_shrunk_dev_c` of the OTHER FOUR offensive players on the floor | 0.0 when none resolves | Round-4 arm B4 only. **UNDERPOWERED and UNSERVABLE**: only 2.14 of 4 teammates resolve on average and 44.94% of rows have none (`onFloor` coverage starts 2024), and the engine gathers one slot row per attempt so it has no lineup aggregate |
 | `shooter_games_asof` | float32 | `shooter_form` | games this season in which the shooter attempted a field goal, strictly before this one | 0.0 | Stand-in for `minutes-to-date`, section 3 |
 | `shooter_fga_asof` | float32 | `shooter_form` | the shooter's total field-goal attempts to date this season, all classes | 0.0 | Same |
 | `period` | float32 | pbp | period index | — | Kept alongside `seconds_remaining`, which is PER PERIOD in the feed (1200 in halves, 300 in overtime) and does not identify late-game without it |
@@ -197,3 +202,36 @@ pins them bit for bit.
 
 Full evidence, including the confound decomposition and the threshold grids:
 `docs/tests/fg_make_state_confound_2026-09-10.md`.
+
+
+---
+
+## 6. Round 4: the shooter block is one shrunk column, and a missingness leak
+
+`experiments.md` sections 19-20. Two things belong in a features document.
+
+**1. The raw as-of rate was the wrong parametrisation, and the evidence is
+model-free.** On the corrected `shot_shooter_id` label the method-of-moments
+between-shooter SD of make rate is 6.91 / 3.94 / 2.74 pp (rim / jumper /
+three), so only 47 / 18 / **15%** of the observed spread in shooter season
+rates is skill; the rest is binomial noise. The implied shrinkage strength is
+`m = p(1-p)/sigma^2` = 50.8 / 152.8 / 298.9 attempts, and the slope of the
+realised make rate on the raw as-of rate, bucketed by prior attempts, tracks
+`n / (n + m)` bucket for bucket (`FGA_3`: 0.043 at 1-24 attempts, 0.229 at
+100-199). A model fed that raw rate is right to distrust it; the flat
+prediction is the model behaving correctly on a broken feature. `m` fitted
+independently on fold 1 came out 75 / 200 / 300 -- one grid step from the
+moment estimator, by a completely different procedure. Full evidence:
+`docs/tests/fg_make_shooter_skill_2026-09-10.md`.
+
+**2. A leak can live in a join's COVERAGE rather than in a column's values.**
+The first `sh_assisted_share` was aggregated over made field goals only, so a
+design row matched if and only if its shooter made a field goal in that game.
+The 3.55% of rows that missed fell back to 0.0 and had a realised make rate of
+exactly 0.00000. Every value in the column was honest and strictly as-of; the
+pre-registered change-form leak test passed it at |corr| <= 0.026; calibration
+and Decision 8 both improved. It was worth 325 / 89 / 795 noise floors.
+**Therefore: every as-of feature joined onto this design declares its join
+coverage, and a coverage miss above 0.1% raises rather than filling.** The
+population a join misses on is not random when the panel is built from
+outcomes.
