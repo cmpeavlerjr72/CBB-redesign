@@ -3,12 +3,14 @@
 Lane: clock. **Nothing here changes a served default.** The engine default
 stays `ENGINE_CLOCK=v3c_srfloor_P3_s1`; an offline winner is a CANDIDATE and
 `CLAUDE.md` requires a paired-seed sim run showing no gate regressed before
-anything ships. No closed-loop run was possible in this session (section 9),
-so **no arm is adopted**.
+anything ships. A 5-seed paired closed loop DID run (section 11, added 11:30
+ET) and it moved every line two independent diagnostics predicted it would --
+and regressed the possession-count MEAN. **No arm is adopted.**
 
 Pre-registration: `docs/models/clock/experiments.md` section 16, committed at
 `28b5f17` BEFORE `src/cbb_sim/models/clock_v5.py` or any fit existed.
-Results and verdict: the same file, section 17.
+Results and verdict: the same file, sections 17 (offline), 19 (the amendment
+answering the engine lane's proposed section 18) and 20 (the closed loop).
 
 Inputs:
 
@@ -512,16 +514,9 @@ mis-specified and why, in the same commit as the result.
 
 ## 10. What this round does NOT establish
 
-1. **There is no closed-loop evidence.** Everything above is offline. Wiring a
-   per-(seed, game) latent into the engine needs one extra uniform at
-   `loop.py`'s clock call site: the adapter's `draw(team, state, u, gidx)`
-   receives no seed and no stream key, so it cannot draw a per-simulation
-   latent, and `StreamBook` lives in `loop.py`. That is about 40 lines --
-   `book.keys["clock"]` read at a reserved high ordinal (no new RNG family, no
-   change to `rng.py`), a `v5_` prefix in `adapters.py::_load_clock`, and a
-   mode-table entry -- but `loop.py` is being edited concurrently by the
-   rotation lane and this worker will not race it. **The engine numbers in the
-   engine diagnostic (3.743 -> a predicted ~4.97) are NOT confirmed here.**
+1. **The closed loop is 5 seeds with NO measured floor** (section 11). The
+   25-seed gate the engine lane proposed (experiments.md section 18.2), with a
+   seed-offset floor for `corr(P, eFG%)` and a full G1-G9 read, has not run.
 2. **Every counterfactual is arithmetic on a measured decomposition.** Widening
    the possession draw in the engine changes the event mix, which changes the
    state composition, which changes the very conditional variances the algebra
@@ -541,3 +536,49 @@ mis-specified and why, in the same commit as the result.
    assigned upstream, or the `end_period` / `unknown` conditional-law cells
    (ratios 0.53 and 0.50 on 1.2% of rows), which are logged for whoever owns
    the horn-censoring boundary.
+
+---
+
+## 11. The closed loop (5 seeds, paired) -- added 2026-09-11 11:30 ET
+
+Full table and reading: `docs/models/clock/experiments.md` section 20.
+Scope fixed in advance by section 19.3. **This is NOT the 25-seed gate the
+engine lane proposed in section 18.2, which remains open; no floor was measured
+at 5 seeds; nothing is adopted and the served default is unchanged.**
+
+`results/engine_v0/clk5_REF` and `clk5_A1`: 500 games of the section-14.4
+subset, 5 seeds, 6 workers, paired streams, every other sub-model pinned by
+explicit environment value. `sigma` frozen at its F2-training 0.047248.
+
+| line | R served | **A1 latent** | actual | predicted move | measured move |
+|---|---:|---:|---:|---:|---:|
+| within-game possession SD (clock-complete) | 3.3796 | **4.6536** | -- | -- | **+1.2740** |
+| **G5-definition possession SD ratio** | 0.6616 | **0.9067** | 1.000 | (offline 0.688 -> 1.004) | **+0.2451** |
+| **G5 total SD ratio** | 0.6577 | **0.7471** | 1.000 | **+0.0877** | **+0.0894** |
+| **`corr(home pts, away pts)`** | 0.0010 | **0.1106** | 0.2374 | **+0.0836** | **+0.1096** |
+| within-game `corr(P, eFG%)` (report-only) | -0.2269 | **-0.1088** | ~0.000 | +0.074 | **+0.1181** |
+| G5 margin SD ratio | 0.8488 | 0.8516 | 1.000 | ~0 | +0.0028 |
+| PPP | 1.0386 | 1.0383 | 1.0705 | -- | -0.0003 |
+| responsiveness slope ratio | 1.000 | 0.996 | 1.000 | -- | -0.004 |
+| **G1 possessions mean, all 500 (COST)** | **+1.610** | **+1.840** | -- | -- | **+0.230** |
+| G1 possessions mean, clock-complete | +1.052 | +1.147 | -- | -- | +0.095 |
+
+Every "predicted" figure is the engine lane's own arithmetic, published before
+this run (`engine_v1_variance_ot_diag_2026-09-11.md` sections 3.3/3.5 and the
+PROPOSED experiments.md section 18.2). **Three independent predictions from two
+lanes all land**, and the margin SD ratio correctly does not move.
+
+**The cost is mechanical and nobody predicted it.** `P = 1200/Dbar` is convex,
+so `E[P]` rises with `Var(Dbar)` by about `Pbar * Var(Dbar) / mu^2 = 0.14`
+possessions -- the same order as the +0.23 measured. **Adding correct
+dispersion necessarily adds possessions, so the possession-count MEAN and
+VARIANCE cannot be calibrated independently**; round 4 tuned the mean against a
+law that was 31% under-dispersed. The offline read could not see this: it
+measured `E[min(T,R)]`, which the latent moves the other way, and Jensen's term
+lives in the reciprocal.
+
+**Verdict unchanged: no arm adopted**, now on three grounds -- the Q2
+responsiveness band (section 9), the unrun 25-seed gate, and a G1 mean
+regression of +0.230 against a round-4 25-seed floor of 0.074 on a gate already
+failing at +1.61. A1 remains the leading candidate and the trade-off is handed
+to the PM as an adjudication, not resolved here.

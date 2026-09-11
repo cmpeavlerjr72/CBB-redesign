@@ -48,8 +48,11 @@ def score(d: Path, act: pd.DataFrame, cc: set[int]) -> dict:
     meta = json.loads((d / "run_meta.json").read_text(encoding="utf-8"))
     raw = pd.read_parquet(d / "games.parquet")
     raw["poss"] = raw["possessions"].astype(float)
-    raw["total"] = raw["total"].astype(float)
-    raw["margin"] = raw["margin"].astype(float)
+    # `games.parquet` carries the two scores; total and margin are derived here
+    # exactly as `grade_clk3c_closed_loop.py` derives them, so the two graders
+    # cannot disagree about what a "total" is.
+    raw["total"] = raw["home_pts"].astype(float) + raw["away_pts"].astype(float)
+    raw["margin"] = raw["home_pts"].astype(float) - raw["away_pts"].astype(float)
     g = raw.groupby("game_id")
     per = pd.DataFrame({
         "n_seeds": g.size(),

@@ -2565,3 +2565,135 @@ prints "0 dated artifacts routed per game" for a `v5_` arm because
 ROUTING is not, since the wrapped adapter loads all six entries and dispatches
 per game itself; and arm `A2 v5_glat_team`'s per-offence latent is NOT wired,
 because it needs the offensive side at the call site, so A2 stays offline.
+
+---
+
+## 20. Run R9 -- the round-5 closed loop, 5 seeds, paired (2026-09-11)
+
+Scope and limits are section 19.3's, fixed before these numbers were read.
+**This is NOT section 18.2's 25-seed gate, which remains OPEN and unrun, and
+nothing is adopted here. `ENGINE_CLOCK` stays `v3c_srfloor_P3_s1`.**
+
+`scripts/run_clk4_closed_loop.py --arm {v3c_srfloor_P3_s1, v5_glat_shared}
+--seeds 5 --workers 6 --no-diag`, 500 games of the section 14.4 subset (159
+clock-complete), paired by construction through the `(seed, game_id, family)`
+streams, `ENGINE_EVENT=round2_s1`, `ENGINE_FG_MAKE=round3_shooter_S_C_s1`,
+`ENGINE_FG3=decision8`, `ENGINE_ROTATION=reference` on both runs.
+`sigma = 0.047248`, frozen at its F2-training value. Results
+`results/engine_v0/clk5_REF` and `clk5_A1` (not committed). Graded by
+`scripts/grade_clk3c_closed_loop.py` (unedited, the round-3c/4 path) and
+`scripts/grade_clk5_dispersion_loop.py` (the dispersion and pace-efficiency
+lines section 19.1 accepted), both reading the arm's identity from
+`run_meta.json` only to label the row.
+
+**NO FLOOR WAS MEASURED AT 5 SEEDS.** Round 4's 25-seed floors are carried as a
+scale reference only (G1 cc 0.180, G1 all 0.074, margin SD 0.101, corr 0.013);
+a 5-seed floor on a Monte-Carlo-noise line is roughly `sqrt(25/5) = 2.2x`
+those, which is the band every "moved / did not move" word below is read
+against and is explicitly NOT a measured floor.
+
+### 20.1 The line round 5 exists to move
+
+| line (500 games, 5 seeds) | R served | **A1 latent** | actual | move |
+|---|---:|---:|---:|---:|
+| **within-game possessions/team-game SD, clock-complete** | **3.3796** | **4.6536** | -- | **+1.2740** |
+| `SD(actual - sim per-game mean)`, clock-complete | 5.1084 | 5.1323 | -- | |
+| **G5-definition possession SD ratio** | **0.6616** | **0.9067** | 1.000 | **+0.2451** |
+| within-game possessions/team-game SD, all 500 | 3.3837 | 4.5113 | -- | +1.1276 |
+| within-game `Var(P)` | 10.890 | 18.884 | -- | +73% |
+
+**The offline prediction was 0.688 -> 1.004 and the engine delivered
+0.662 -> 0.907.** Both halves of that comparison were labelled in advance
+(section 17.1): the engine's "produced" baseline is HIGHER than the offline one
+(3.380 against 2.943) because the engine's own across-seed state composition
+adds dispersion the offline algebra holds fixed, and the engine's "needed" side
+is a different estimator (the box possession estimate on a 500-game subset,
+5.11, against the tiling residual on 1,991 clock-complete games, 4.28). The arm
+under-delivers against its own offline number by about 10% and closes **72% of
+the gap** the engine diagnostic opened.
+
+### 20.2 The three engine lines the variance diagnostic said this would move
+
+Every "predicted" column is the engine lane's own arithmetic on its measured
+decomposition, published BEFORE this run
+(`docs/tests/engine_v1_variance_ot_diag_2026-09-11.md` section 3.3 / 3.5 and
+the PROPOSED section 18.2), not a forecast made here.
+
+| line | R | **A1** | measured move | predicted move | actual |
+|---|---:|---:|---:|---:|---:|
+| **G5 total SD ratio** | 0.6577 | **0.7471** | **+0.0894** | **+0.0877** | 1.000 |
+| **`corr(home pts, away pts)`** | 0.0010 | **0.1106** | **+0.1096** | **+0.0836** | 0.2374 |
+| **within-game `corr(P, eFG%)`** | -0.2269 | **-0.1088** | **+0.1181** (52% of the way to 0) | +0.074 (37%) | ~0.000 |
+| G5 margin SD ratio | 0.8488 | 0.8516 | +0.0028 | ~0 | 1.000 |
+| PPP | 1.0386 | 1.0383 | -0.0003 | -- | 1.0705 |
+
+**Three independent predictions, two lanes, one arm, and all three land.** The
+total SD ratio moved +0.0894 against a predicted +0.0877 (a 2% miss); the
+home/away correlation moved +0.1096 against a predicted +0.0836 (more than
+predicted); `corr(P, eFG%)` moved +0.1181 against the engine lane's +0.074 and
+landed at -0.109 against its "about -0.124" expectation, comfortably inside its
+own pre-registered reading that "A1 is expected to IMPROVE the line and NOT to
+close it". The margin SD ratio did not move, which is what section 3.2 of the
+variance diagnostic says must happen: the possession channel is 0.2% of the
+margin's within-game variance and 29.8% of the total's.
+
+`corr(P, eFG%)` is **REPORT-ONLY** per section 19.1: no seed-offset floor exists
+for it, and section 18.2 item 4 forbids calling movement in it a finding until
+one does. It is printed because it was asked for, and it is not read as a pass.
+
+### 20.3 The cost, which is real and was not predicted by anyone
+
+| line | R | A1 | move | round-4 25-seed floor |
+|---|---:|---:|---:|---:|
+| G1 possessions/team-game mean, clock-complete | +1.052 | +1.147 | **+0.095** | 0.180 |
+| **G1 possessions/team-game mean, all 500** | **+1.610** | **+1.840** | **+0.230** | 0.074 |
+| total bias | -1.052 | -0.610 | +0.442 | 0.377 |
+| end-of-half mean last-possession duration | 11.229 | 11.186 | -0.043 | -- |
+| responsiveness slope ratio | 1.000 | 0.996 | -0.004 | -- |
+
+**The possession MEAN gets worse, and it is mechanical rather than a defect of
+the fit.** `P = 1200 / Dbar` is CONVEX, so `E[P] = E[1200/Dbar]` rises with
+`Var(Dbar)` by about `Pbar * Var(Dbar) / mu^2` -- here
+`68 * 0.651 / 17.65^2 = 0.14` possessions, the same order as the +0.23
+measured. **Adding correct dispersion necessarily adds possessions.** The
+offline read could not see this: it measured `E[min(T,R)]`, which the latent
+moves the OTHER way (17.4965 -> 17.5041, section 17.2), and Jensen's term lives
+in the reciprocal, not in the mean duration.
+
+That is the round's most transferable result and it is stated as a general one:
+**the possession-count MEAN and the possession-count VARIANCE cannot be
+calibrated independently.** Round 4 tuned the mean against a law that was 31%
+under-dispersed; a correctly dispersed clock needs a conditional mean about
+0.14 possessions SLOWER than round 4's to land the same mean. Any future clock
+round must gate the two together, and the +1.0 to +1.7 mean overshoot that
+round 4 assigned to the upstream `prev_end` mix is now bounded slightly
+differently: about 0.14 of it is the missing dispersion and the rest is still
+upstream.
+
+### 20.4 Verdict, unchanged
+
+**NO ARM ADOPTED. `ENGINE_CLOCK` stays `v3c_srfloor_P3_s1` and
+`provisional_clock` stays True.** Section 17.5's two grounds stand and the
+closed loop adds a third:
+
+1. every arm that passes the offline primary is outside the [0.85, 1.15]
+   per-quintile band at tempo quintile Q2 (section 17.4);
+2. section 18.2's gate -- 25 seeds, a measured seed-offset floor for
+   `corr(P, eFG%)`, a full G1-G9 read -- has not run; and
+3. **G1's possession MEAN regresses by +0.230 on the 500-game set**, about
+   3 times round 4's 25-seed floor for that line and roughly 1.4 times a
+   seed-count-scaled one, on a gate that is already failing at +1.61. An arm
+   that improves four dispersion lines and worsens the line the previous round
+   was about is a PM adjudication, not a worker's, and it is handed over as
+   one.
+
+**A1 `v5_glat_shared` remains the leading CANDIDATE**, now with closed-loop
+evidence that it moves every line two independent diagnostics predicted it
+would, by approximately the predicted amounts, and with a named, quantified,
+mechanical cost. The engine wiring is committed, default-off, and reachable
+only by an explicit `ENGINE_CLOCK=v5_glat_shared` (section 19.4).
+
+**What a round 6 should do, in order**: measure the 5-seed and 25-seed floors
+for `corr(P, eFG%)` and for the within-game possession SD; re-run section
+18.2's gate at 25 seeds; and pre-register the MEAN and the VARIANCE as one
+joint target, since section 20.3 shows they are not separable.
