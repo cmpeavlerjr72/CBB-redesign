@@ -1126,7 +1126,8 @@ class EmpiricalArmV3P(EmpiricalArmV3):
         return codes
 
 
-def _fit_empirical_p(tr: pd.DataFrame, fs: str, parametrisation: str) -> EmpiricalArmV3P:
+def _fit_empirical_p(tr: pd.DataFrame, fs: str, parametrisation: str,
+                     sr_floor_bucket: int = 0) -> EmpiricalArmV3P:
     dims = ck.EMPIRICAL_DIMS[fs]
     sizes = tuple(ck.EMPIRICAL_DIM_SIZES[d] for d in dims)
     tempo = tr["tempo_prior_game"].to_numpy(dtype="float64")
@@ -1135,7 +1136,9 @@ def _fit_empirical_p(tr: pd.DataFrame, fs: str, parametrisation: str) -> Empiric
         level_pmfs=[], level_counts=[], level_events=[],
         tempo_edges=(float(np.quantile(tempo, 1 / 3)), float(np.quantile(tempo, 2 / 3))),
         season_map={s: i for i, s in enumerate(sorted(int(x) for x in tr["season"].unique()))},
-        features=ck.feature_set(fs), name=f"empirical_km3_{parametrisation}")
+        sr_floor_bucket=sr_floor_bucket, features=ck.feature_set(fs),
+        name=("empirical_km3_srfloor" if sr_floor_bucket else "empirical_km3")
+             + f"_{parametrisation}")
     codes = arm._codes(tr)
     y = tr["duration_s"].to_numpy(dtype="int64")
     cen = tr["censored"].to_numpy(dtype=bool)
@@ -1165,9 +1168,17 @@ def fit_arm_v3b(base_arm: str, parametrisation: str, train: pd.DataFrame,
     """Fit `base_arm` under `parametrisation`, returning a chain-safe object."""
     fs = P_FEATURES[parametrisation]
     tr = train if parametrisation == "P1" else add_p_state(train.copy())
-    if base_arm == "empirical_km3":
-        inner = (fit_empirical_v3(tr, fs) if parametrisation == "P1"
-                 else _fit_empirical_p(tr, fs, parametrisation))
+    if base_arm in ("empirical_km3", "empirical_km3_srfloor"):
+        # ROUND 3c (experiments.md section 12.1): `empirical_km3_srfloor` is
+        # arm A2 -- the same cell grid with the fine clock bucket FLOORED at
+        # 45-59 s -- crossed with a parametrisation. The floor is a property of
+        # the CELL CODING, so it has to be set before the levels are built;
+        # this argument is additive and every round-3b call, which passes none,
+        # is byte-identical to what it was.
+        floor_b = SR_FLOOR_BUCKET if base_arm == "empirical_km3_srfloor" else 0
+        inner = (fit_empirical_v3(tr, fs, sr_floor_bucket=floor_b)
+                 if parametrisation == "P1"
+                 else _fit_empirical_p(tr, fs, parametrisation, sr_floor_bucket=floor_b))
     elif base_arm == "gamma_aft":
         inner = ck.fit_parametric(tr, fs, family="gamma", seed=seed)
     else:

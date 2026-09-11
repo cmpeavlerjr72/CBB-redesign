@@ -635,6 +635,16 @@ def ROT_NORMALISE(r: np.ndarray) -> np.ndarray:          # noqa: N802
     return normalise(r)
 
 
+def _load_clock(inp: EngineInputs, mode: str, season: int):
+    """Round-3c clock arms live in `clock_adapter_v3`; everything else is
+    unchanged. `docs/models/clock/experiments.md` section 12. The import is
+    deferred so this module has no new import-time dependency."""
+    if mode.startswith("v3c_"):
+        from cbb_sim.engine.clock_adapter_v3 import ClockAdapterV3
+        return ClockAdapterV3.load(inp, mode, season)
+    return ClockAdapter.load(inp, mode, season)
+
+
 def _scheme_flags(event, clock, fg, ft, reb, usage) -> dict:
     """`scheme_static_<model>` per sub-model.
 
@@ -678,7 +688,7 @@ class Adapters:
                 "the rotation bake-off adopted nothing; ENGINE_ROTATION=reference "
                 "(R2 hierarchical Dirichlet + the fitted scheduler) is the only wired mode")
         event = EventAdapter.load(inp, ev_mode, fold, season)
-        clock = ClockAdapter.load(inp, ck_mode, season)
+        clock = _load_clock(inp, ck_mode, season)
         fg = FgMakeAdapter.load(inp, fold, fg3, fg_mode)
         ft = FreeThrowAdapter.load(inp, fold)
         reb = ReboundAdapter.load(inp, fold)
