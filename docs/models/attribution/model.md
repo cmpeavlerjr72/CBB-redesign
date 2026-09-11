@@ -2,22 +2,41 @@
 
 Pre-registration and the full grid: [`experiments.md`](experiments.md). Feature
 provenance: [`features.md`](features.md). Code:
-`src/cbb_sim/models/attribution.py`. Trainer:
-`scripts/train_attribution_v1.py`. Tests: `tests/test_attribution.py`.
+`src/cbb_sim/models/attribution.py`. Trainers:
+`scripts/train_attribution_v1.py` (round 1), `scripts/train_attribution_v2_s1.py`
+(round 2, the `score_diff` fix + S1). Tests: `tests/test_attribution.py`.
 
-> **Status: BAKE-OFF COMPLETE 2026-09-10.** Both folds (F1 selection, within-2025
-> robustness) ran to completion on all eight targets with the full
-> pre-registered grid (3 LightGBM rungs, 3 F1 seed refits, 40 game-level draws,
-> 200 bootstrap reps); no runtime lever was needed (wall time 682.4 s). A
-> `build_team_asof` construction bug (found while resuming; every team's league
-> as-of rate for the three binaries was silently zero/NaN) was fixed first --
-> `docs/tests/attribution_team_asof_lg_defect_2026-09-10.md`. Winners: 6 of 8
-> targets adopt an arm on F1 (`REB_off`->cond_logit, `REB_def`->lgbm,
-> `steal`->proportional, `block`->lgbm, `assisted`->aware_ridge,
+> **Status: ROUND 2 COMPLETE 2026-09-10** (round 1: BAKE-OFF COMPLETE, same
+> day). Round 1: both folds ran to completion on all eight targets with the
+> full pre-registered grid (3 LightGBM rungs, 3 F1 seed refits, 40 game-level
+> draws, 200 bootstrap reps); no runtime lever was needed (wall time 682.4 s).
+> A `build_team_asof` construction bug (found while resuming; every team's
+> league as-of rate for the three binaries was silently zero/NaN) was fixed
+> first -- `docs/tests/attribution_team_asof_lg_defect_2026-09-10.md`. Round-1
+> winners: 6 of 8 targets adopt an arm on F1 (`REB_off`->cond_logit,
+> `REB_def`->lgbm, `steal`->proportional, `block`->lgbm, `assisted`->aware_ridge,
 > `blocked`->aware_ridge); `assist` and `stolen` adopt NO WINNER on F1
 > (`assist` recovers a winner, `lgbm`, on the within-2025 fold; `stolen` fails
 > calibration on every arm on both folds).
-> Full per-target table, both folds: `experiments.md` section 3.
+>
+> Round 2 (`docs/tests/attribution_score_diff_leak_2026-09-10.md`,
+> `experiments.md` sections 4-5): `score_diff` was built from the candidate's
+> own-row `homeScore`/`awayScore`, the SAME post-outcome construction L27 found
+> in fg_make; the own-row delta test proves it reaches exactly TWO of the eight
+> targets (`assist`, `assisted` -- both keyed on the `made_fga` population,
+> the only one that is a scoring play on its own row), manufacturing 18.6% of
+> `assisted`'s raw outcome-rate decile span. Fixed
+> (`attribution.py`'s `score_diff_mode`, `"pre_play"` default, `"leaked"`
+> selectable). Under the fix plus a per-target S1-vs-static-fixed comparison
+> (wall time 49.5 min): `REB_def` and `block` move to `s1_fixed` (L21's
+> calibration-not-log-loss pattern, a FOURTH sub-model); `REB_off`, `steal`,
+> `blocked` and `assisted` stay `static_fixed` (S1 does not clear the floor, or
+> for `assisted` fails its own F1 gate); `assist` and `stolen` remain NO WINNER
+> (reference only). `assisted`'s within-2025 calibration miss narrows from
+> 6.081 to 4.331 pp under S1 but still fails the 2.00 pp gate, so the shipped
+> arm is round 1's `aware_ridge`, bit-identical on F1, now fit on the corrected
+> feature. Full per-target table, both folds: `experiments.md` section 3
+> (round 1), section 5 (round 2).
 
 ---
 
@@ -145,6 +164,50 @@ slope check and the noise-floor SD for every decision: `experiments.md`
 section 3. `stolen` is the one target that fails calibration on every arm on
 both folds -- reported as a clean "not usably modellable with the
 pre-registered feature set" result, not patched.
+
+### 4.4 Round 2: the `score_diff` leak fix and the S1 scheme (2026-09-10)
+
+`_state_block`'s `score_diff` was built from the candidate's own-row
+`homeScore`/`awayScore` -- the score AFTER the row's own play in the CBBD feed,
+the identical construction L27 found in fg_make. The own-row delta test
+(`docs/tests/attribution_score_diff_leak_2026-09-10.md`) proves it reaches
+exactly `assist` and `assisted` (both keyed on `made_fga`, the only population
+whose own row is itself a scoring play); the other six targets are provably
+untouched. Fixed: `attribution.py`'s `_state_block` / `build_attr_events` take
+a `score_diff_mode` parameter, `"pre_play"` the new default, `"leaked"`
+selectable for reproduction.
+
+Round 2 (`experiments.md` section 4-5) then re-ran every target's own
+pre-registered arm class under (a) the fix alone (static) and (b) the fix plus
+S1 monthly refit, both folds:
+
+| target | arm class | round-2 decision | note |
+|---|---|---|---|
+| `REB_off` | `cond_logit` | `static_fixed` | control: F1 log loss bit-identical to round 1 |
+| `REB_def` | `lgbm` | **`s1_fixed`** | WF2025 calib 1.350 -> 1.051 pp; L21's pattern on a 4th sub-model |
+| `assist` | `lgbm` (reference) | NO WINNER | still fails F1 top1/top3, same cause as round 1 |
+| `steal` | `proportional` | `static_fixed` | control: bit-identical to round 1 on both folds |
+| `block` | `lgbm` | **`s1_fixed`** | WF2025 calib 2.216 -> 1.857 pp, now clears the 2.00 pp gate |
+| `assisted` | `aware_ridge` | `static_fixed` | see below -- the fix + S1 narrow but do not close the WF2025 miss |
+| `stolen` | `lgbm` (reference) | NO WINNER | still fails calibration on every arm/fold |
+| `blocked` | `aware_ridge` | `static_fixed` | control: bit-identical to round 1 on F1 |
+
+**`assisted`'s within-2025 calibration miss (the number this round targeted):**
+the fix alone moves it from 6.075 to 6.081 pp (noise); S1 narrows it to 4.331
+pp (a 29% reduction) but that still fails the 2.00 pp gate, and S1 additionally
+fails its OWN F1 calibration (2.32 pp), so it is not eligible for adoption.
+Round 1's `aware_ridge`, bit-identical on F1, ships unchanged. The fix barely
+moving `assisted`'s own fitted numbers despite touching 100% of its rows is
+explained, not just observed: for the `made_fga` population the correction
+(`own_points = 2 + 1{three}`) is an exact affine function of two features
+`aware_ridge` already carries (`score_diff`, `sc_three`), so the ridge fit
+recovers almost all of the removed leak through those existing coefficients --
+a real marginal leak (18.6% of `assisted`'s raw decile span, section 4/5) and a
+near-fully-recoverable conditional one are not a contradiction. Full detail,
+both bugs found and fixed while running (a joblib pickling defect in the new
+persistence path and a decision-eligibility misread in the round-2 script
+itself, neither in shipped `attribution.py` code): `experiments.md` section
+5.
 
 ## 5. Robustness
 
@@ -325,7 +388,11 @@ who = AT.draw_block(def_five, state, p_block)                  # -> id or None
    `CLAUDE.md` forbids live model calls in the sim loop. The samplers serve the
    rate-table arm (P1) directly; a tree or logit winner needs its per-event scores
    materialised against the pregame feature bins first. Same open item `usage`
-   carries.
+   carries. Round 2 (section 4.4) produced the dated-artifact HALF of this --
+   one joblib per S1 refit month plus an `engine.manifest`-format manifest for
+   every target, the same schedule format `fg_make`'s `round2b_S_C_s1` engine
+   path already consumes -- but no attribution engine adapter reads them yet;
+   wiring one is the natural next step for whoever picks this up.
 8. **`shot_class` on a rebound row is the previous row's class, not the chance
    table's.** It is read off the immediately preceding miss in the stream. That is
    correct by construction once the block rows are dropped, but it is a stream

@@ -725,3 +725,146 @@ for the full three-arm, eight-target, two-fold grid; this round fits ONE arm
 class per target (not three) but adds six S1 refits per target on top of the
 static fit, so the pre-registered expectation is "about an hour."
 
+---
+
+## 5. Round 2 results (2026-09-10, run to completion)
+
+Wall time **2,969.0 s (49.5 min)**, inside the pre-registered "about an hour."
+Both arms ran on all eight targets: (a) the static-fixed tri-arm rerun (full
+`run_choice_fold` / `run_binary_fold`, unmodified, both folds -- free
+cross-checking) and (b) the S1-fixed single-arm monthly refit (six refits per
+target on the F1 2025 test season, a second LightGBM seed for the four
+`lgbm`-class targets' floor). Sanity check on the fix itself, off the rebuilt
+tables directly (not the model): 100.0% of `made_fga` rows' `score_diff`
+changed by exactly 2 or 3 (mean 2.2926), row-for-row aligned against round 1's
+cached table; every other population's rows are provably untouched (section 4
+/ the leak doc), which the numbers below confirm rather than assume --
+`REB_off`, `steal`, `blocked` reproduce round 1's leaked F1 log loss to the
+6th decimal place.
+
+### 5.1 Two bugs found and fixed WHILE running this round (neither changes what is compared)
+
+1. **A pickling defect in the new persistence path, not in `attribution.py`.**
+   `LgbmChoiceArm.fit` passes a Python closure
+   (`group_softmax_objective(k_alt)`'s inner `_obj`) to LightGBM as
+   `objective=`, and the sklearn wrapper keeps a reference to it that
+   `joblib`/`pickle` cannot serialise
+   (`PicklingError: Can't pickle <function group_softmax_objective.<locals>._obj ...>`),
+   surfacing on the FIRST choice-lgbm target persisted (`block`). The fitted
+   booster itself carries no such reference, so `REB_def`/`assist`/`block`'s
+   monthly S1 artifacts persist the booster's own portable text dump
+   (`model.clf_.booster_.model_to_string()`) instead of the wrapper;
+   `BinaryLgbmArm` (used by `stolen`) has no custom objective and pickles
+   directly, confirmed unaffected. `scripts/train_attribution_v2_s1.py`'s
+   `_persist_payload`.
+2. **This round's own `eligible()` helper, not `attribution.py`'s `decide()`.**
+   `binary_game_level_check` carries an `sd_pass` key too (alongside
+   `gt0_pass`/`top_pass` set to `None`, "not applicable" -- section 3.2's
+   documented design), so sniffing `"sd_pass" in gl` sent every BINARY target
+   down the CHOICE branch, where `bool(None)` forced `gt0_pass`/`top_pass` to
+   always fail -- every binary came back "neither arm passes" on the first
+   pass regardless of its real numbers (`blocked`, whose static-fixed number
+   is bit-identical to round 1's adopted, eligible `aware_ridge`, is the
+   control case that caught it). Fixed by branching on `target in
+   A.CHOICE_TARGETS` instead, exactly `train_attribution_v1.decide`'s own
+   branch. Recomputed from the ALREADY-SAVED scores (no retraining) once
+   found. A second reading question was resolved the same way: the
+   pre-registration's "adopt the simplest of the arms that pass every gate...
+   unless a more complex arm beats it... on the within-2025 calibration gap"
+   gates ADOPTION on the SELECTION fold (F1), exactly as round 1's own
+   `decide()` gates one fold at a time; WF2025 is the robustness read and
+   feeds only the tie-break clause, never a second hard requirement layered on
+   top of F1 eligibility.
+
+### 5.2 Per-target table
+
+`floor` = `max(static bootstrap SE, S1's own floor)`, S1's own floor =
+`max(S1 bootstrap SE, seed-refit |delta|)` on the four `lgbm`-class targets
+(`REB_def`, `assist`, `block`, `stolen`), bootstrap SE alone elsewhere.
+Calibration columns are the worst-decile gap in pp (gate <= 2.00 pp).
+
+| target (arm class) | round1 leaked F1 ll | static-fixed F1 ll | S1-fixed F1 ll | floor | WF2025 calib: leaked -> static-fixed -> S1-fixed (pp) | decision |
+|---|---:|---:|---:|---:|---|---|
+| `REB_off` (cond_logit) | 1.431192 | 1.431192 | 1.431002 | 0.002208 | 0.864 -> 0.864 -> 0.887 | **static_fixed** |
+| `REB_def` (lgbm) | 1.559167 | 1.559167 | 1.558938 | 0.000756 | 1.350 -> 1.350 -> 1.051 | **s1_fixed** |
+| `assist` (lgbm, REFERENCE) | 1.292465 | 1.292525 | 1.291976 | 0.001450 | 1.403 -> 1.397 -> 0.848 | NO WINNER (both fail F1 top1/top3, as round 1) |
+| `steal` (proportional) | 1.586249 | 1.586249 | 1.586249 | 0.000908 | 0.978 -> 0.978 -> 0.978 | **static_fixed** |
+| `block` (lgbm) | 1.273376 | 1.273376 | 1.267503 | 0.004830 | 2.216 -> 2.216 -> 1.857 | **s1_fixed** |
+| `assisted` (aware_ridge) | 0.558057 | 0.558057 | 0.559226 | 0.000966 | 6.075 -> 6.081 -> 4.331 | **static_fixed** (S1 fails its own F1 calib gate, 2.32 pp) |
+| `stolen` (lgbm, REFERENCE) | 0.642243 | 0.642243 | 0.640197 | 0.000890 | 9.253 -> 9.253 -> 6.494 | NO WINNER (fails calibration on every arm/fold, as round 1) |
+| `blocked` (aware_ridge) | 0.264337 | 0.264337 | 0.264343 | 0.001088 | 1.033 -> 1.033 -> 1.246 | **static_fixed** |
+
+**The six control targets** (`REB_off`, `REB_def`, `steal`, `stolen`, `block`,
+`blocked`) reproduce round 1's leaked F1 log loss EXACTLY under static-fixed --
+their populations are untouched by the fix (section 4 / the leak doc), and
+this is the run confirming it rather than assuming it. `REB_def` and `block`
+move to `s1_fixed`, reproducing L21's own pattern (S1 is a calibration win, not
+a log-loss win) on a FOURTH sub-model after possession_outcome, fg_make and
+clock: `REB_def`'s WF2025 gap closes 1.350 -> 1.051 pp for a log-loss gain of
+only 0.000229 (0.3 floors); `block`'s WF2025 gap crosses the 2.00 pp gate
+outright, 2.216 -> 1.857 pp (round 1 had flagged this cell "underpowered, not
+a reversal" at 17,234 rows -- S1 resolves it rather than the sample size).
+
+### 5.3 What happened to the assisted binary's within-2025 calibration miss
+
+This is the number the pre-registration named as the one expected to move.
+**It moves, substantially, but not enough to pass the gate.** The pre-play fix
+alone (static-fixed) does essentially nothing to it (6.075 -> 6.081 pp,
+log loss unchanged to the 6th decimal, 0.558057 both ways). S1 alone narrows it
+from 6.081 to **4.331 pp** -- a 29% reduction -- but 4.331 pp still fails the
+2.00 pp gate, and S1 additionally fails its OWN F1-fold calibration (2.32 pp,
+worse than static-fixed's 1.947 pp), so S1 is not eligible for adoption even
+though it is the more robust arm on the metric this round targeted. Round 2's
+decision is therefore **`static_fixed`**, i.e. round 1's `aware_ridge` stands
+unchanged (bit-identical F1 number), with the pre-play fix now the shipped
+construction rather than the leaked one.
+
+**Why the fix barely moves `assisted`'s own numbers despite reaching 100% of
+its rows**: `assisted`'s population is entirely made field goals, so the
+correction (`own_points = 2 + 1{three}`) is an EXACT, deterministic affine
+function of two columns `aware_ridge` already carries as separate features --
+`score_diff` and `sc_three`. Replacing `score_diff` with `score_diff_pre` in
+that feature set is a change of basis, not a change of information content;
+the ridge fit can (and evidently does) recover almost all of the removed
+"leak" by re-splitting it between its `score_diff` and `sc_three`
+coefficients. This is consistent with, and does not contradict, the leak doc's
+own finding that the LEAKED construction manufactures 18.6% of `assisted`'s
+RAW, unconditional (no other regressors) outcome-rate decile span: a marginal
+effect can be real and a model-conditional effect can be nearly fully
+recoverable through an existing feature at the same time, and both numbers are
+reported here rather than the more striking one alone.
+
+`stolen` (reference; round 1 adopted nothing) shows the same qualitative
+pattern at a coarser scale: static-fixed is identical to leaked (its
+population, turnovers, is untouched by the fix per section 4), and S1 alone
+closes its WF2025 gap from 9.253 to 6.494 pp -- better, still nowhere near the
+gate. `assist` (reference; also carries `sc_three`-style redundancy in its
+choice design, and its own population is `made_fga`) shows the fix moving its
+F1 log loss by +0.00006 (static) / -0.00049 (S1), both inside the floor, and
+its WF2025 top1/top3 game-level failure (round 1's binding constraint) is
+untouched by either the fix or S1 -- it remains NO WINNER for the same reason
+round 1 found, not a new one.
+
+### 5.4 Artifacts
+
+`data/processed/models/attribution/round2_s1/` (gitignored, not `git add`-ed):
+`events_{pop}_v2.parquet` x5, `asof_v2.parquet` / `team_asof_v2.parquet`
+(rebuilt, confirmed byte-identical in content to round 1's -- neither reads
+`score_diff`), `static_results.json` / `static_report.md`, `{target}_s1/
+<refit_date>.joblib` (24 files: 6 refits x 4 targets whose S1 arm was
+persisted with a real per-month artifact -- `REB_off`, `REB_def`, `assist`,
+`steal`, `block`, `assisted`, `stolen`, `blocked` each contribute one
+`manifest_{target}.json`, 8 total), `round2_summary.json` (the table above,
+machine-readable), `train_log_v2.txt`.
+
+### 5.5 Deviations from the pre-registration
+
+None on the grid itself (arm class fixed per target, both folds, 3-rung LGBM
+params frozen at round 1's F1 search rather than re-searched -- stated in
+section 4.1 as the design, not a deviation). The static-fixed arm's report
+(`static_report.md`) additionally carries the other two (non-adopted) arms per
+target as a byproduct of reusing `run_choice_fold`/`run_binary_fold` verbatim;
+this is extra information, not a change to the decision rule, which reads only
+the pre-registered arm class's own row. The composed per-player diagnostic
+remains unwired in the trainer (section 3.2's pre-existing gap); not touched
+here, out of scope for this round.

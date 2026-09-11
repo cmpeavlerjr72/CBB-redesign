@@ -522,30 +522,68 @@ def _credit_slot(cand: np.ndarray, credited: np.ndarray, ok: np.ndarray
     return in_set, np.where(in_set, eq.argmax(axis=1), -1).astype("int8")
 
 
-def _state_block(s: pd.DataFrame, cand_is_home: np.ndarray) -> dict:
+#: L27 / `docs/tests/attribution_score_diff_leak_2026-09-10.md`: CBBD's
+#: `homeScore`/`awayScore` are the score AFTER the row's own play, exactly the
+#: fg_make defect this ports the fix from. Of the five populations built here,
+#: `made_fga` is the ONLY one whose own row is itself a scoring play (a live
+#: rebound, a turnover and a missed/blocked attempt never change the score on
+#: their own row), so it is the only population the leak can reach -- proved by
+#: the own-row delta test in that doc, not assumed.
+SCORE_DIFF_MODES: tuple[str, ...] = ("pre_play", "leaked")
+
+
+def _state_block(s: pd.DataFrame, cand_is_home: np.ndarray, pop: str,
+                 score_diff_mode: str = "pre_play") -> dict:
+    """The event's state: `period`, `sec_remaining` and `score_diff`.
+
+    `score_diff_mode`:
+      - `"pre_play"` (default): the candidate team's margin BEFORE this row's
+        own event. Ported from `fg_make.add_round2_state`'s `score_diff_pre`
+        repair: subtract the row's own points when the row is a MADE field
+        goal (`made_fga`'s own population), zero everywhere else, since a
+        miss (or a rebound, or a turnover) is unchanged by construction --
+        the correction can only remove outcome information, never add it.
+      - `"leaked"`: the score AFTER the row's own play, the construction this
+        replaces. Kept selectable for reproducing round 1's numbers; never
+        the default.
+    """
+    if score_diff_mode not in SCORE_DIFF_MODES:
+        raise ValueError(f"unknown score_diff_mode {score_diff_mode!r}, "
+                         f"expected one of {SCORE_DIFF_MODES}")
     period = s["period"].to_numpy()
     sec = s["sec"].to_numpy()
     hs = s["home_score"].to_numpy()
     as_ = s["away_score"].to_numpy()
+    score_diff = np.where(cand_is_home, hs - as_, as_ - hs).astype("int16")
+    if score_diff_mode == "pre_play" and pop == "made_fga":
+        made = s["made"].to_numpy().astype(bool)
+        pts = np.where(s["cls"].to_numpy(dtype=object) == "FGA_3", 3, 2)
+        own_points = np.where(made, pts, 0).astype("int16")
+        score_diff = (score_diff - own_points).astype("int16")
     return {
         "period": period.astype("int16"),
         "sec_remaining": np.where(period <= 2, (2 - period) * 1200 + sec,
                                   sec).astype("int32"),
-        "score_diff": np.where(cand_is_home, hs - as_, as_ - hs).astype("int16"),
+        "score_diff": score_diff,
     }
 
 
 def build_attr_events(season: int, universe: pd.DataFrame,
                       rim_override_max_ft: float = 0.0,
                       pbp_dir: Path | str = ES.DEFAULT_PBP_DIR,
-                      stream: pd.DataFrame | None = None
+                      stream: pd.DataFrame | None = None,
+                      score_diff_mode: str = "pre_play",
                       ) -> dict[str, pd.DataFrame]:
     """The five population tables of one season, keyed by `POPULATIONS`.
 
     Rows whose candidate five is incomplete, or whose credited player is not in
     it, are KEPT with `five_ok` / `in_five` False so `coverage_report` can
     report the loss instead of it happening silently; `usable` applies the
-    filter."""
+    filter.
+
+    `score_diff_mode` ("pre_play" default, "leaked" selectable for
+    reproduction) controls `_state_block`'s `score_diff` construction -- see
+    `docs/tests/attribution_score_diff_leak_2026-09-10.md`."""
     st = build_attr_stream(season, universe, rim_override_max_ft, pbp_dir) \
         if stream is None else stream
     cls = st["cls"].to_numpy(dtype=object)
@@ -639,7 +677,7 @@ def build_attr_events(season: int, universe: pd.DataFrame,
             "credited_id": credited,
             "off_player_id": off_player,
             "blocked_flag": s["blocked"].to_numpy(),
-            **_state_block(s, cand_is_home),
+            **_state_block(s, cand_is_home, pop, score_diff_mode=score_diff_mode),
         })
         for k in range(5):
             d[f"cand_{k + 1}"] = cand_srt[:, k]
