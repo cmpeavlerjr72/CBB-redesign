@@ -1777,4 +1777,17 @@ as a pass.
 
 ### 11.5 Results
 
-See `docs/tests/usage_decision10_gate_2026-09-11.md`.
+**DO NOT WIRE.** Full evidence: `docs/tests/usage_decision10_gate_2026-09-11.md`.
+5-seed smoke then 25 seeds, all four arms, F2 2025 500-game stride subset. No
+arm regresses margin SD, home/away correlation, possessions or total (every
+pairwise |z| < 1 except one line at 0.98). All three tree variants beat U1 on
+usage concentration (top-1/top-3 share, quintile span; z = 4.8-13.5 vs
+`reference`) -- a real finding, but not what this round decides. Live and
+frozen differ from each other beyond the paired-seed noise (top-1/top-3 share
+z = 7.3-7.8), the closed-loop signature Decision 10 exists to catch, at a much
+smaller amplitude than fg_make's; live does not beat the refit-without-state
+arm (|z| < 1.3 on every usage read; `nostate`'s point estimate sits slightly
+ABOVE `live`'s on every one). Conditions (b) and (c) of the pre-registered
+decision rule both fail -> the state-carrying tree is not wired. Recommended
+follow-up: a separately pre-registered offline-then-closed-loop round for the
+`nostate` architecture against U1, which this round did not decide.
