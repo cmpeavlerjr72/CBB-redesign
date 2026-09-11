@@ -49,3 +49,19 @@ Decided today and not to be reopened: Decisions 1-8; learnings L1-L19; winners f
 S1 (in-season monthly walk-forward refit) is the standing default for every sub-model (docs/models/README.md "Standing result", L21), but rebound, free throw, fg_make, usage round 1-2 and attribution were decided under static fits. Each needs a pre-registered "S1 scheme confirmation" round: winner refit under S1 vs static on the selection fold, same gates and floor, adopt S1 unless a gate regresses beyond the floor; persist per-month artifacts in a versioned directory with a manifest (refit_date -> path) for the engine's generic per-game selector. Usage (round 2b), rotation (round 3b) and clock (round 3b) workers were told on 2026-09-10 evening. Still to dispatch, after the current workers finish and the machine is free: rebound, free throw, fg_make (one Sonnet runner), attribution (second, since its assisted binary already shows a 4-7 pp within-season calibration miss under the static fit, L22).
 
 Watch items added 2026-09-10 evening (from truth tables v1, `docs/tests/truth_tables_v1_2026-09-10.md`): (1) RESOLVED same evening (L24): the FTA/FTM disagreement is technical free throws, excluded from the event layer on purpose and included in the box; `ft_trip_ambiguous` refuted as a cause. Truth tables v2 add technical FTA/FTM columns and reconcile with them added back; the engine needs a technical-FT rule (0.14-0.22 pts/team-game low), queued. (2) Player crosswalk to CBBD ids is 0% for 2022-23 (no CBBD rosters pulled for those seasons); any player-level truth for those seasons is box-only. (3) 2025's 4 flagged finals settled by ESPN game pages (`data/processed/truth/diag_finals_resolution_2025.json`): hoopR right on 3, CBBD on 1 (401722537, where hoopR carries the side-flip); truth tables v2 apply the resolution.
+
+## OVERNIGHT PLAN 2026-09-10 21:50 EDT -> 2026-09-11 04:00 EDT (PM, user away)
+
+User decisions at 21:40 EDT: AWS box approved (spot, terminate when idle); CBBD API free to use without waste; CBBD lines acceptable as the free lines source; PM prioritises; maximise parallelism; real wall clock only.
+
+Running at 21:50 (nine workers): usage round 2/2b (shooter fix + S1); possession-outcome round 3 (conference regime diagnostic, cadence x opponent-adjustment cross); rotation round 4 (substitution-hazard family); clock round 3c (closed-loop state parametrisation in the engine); fg_make round 3 (shooter re-key); rebound + free-throw S1/cadence confirmation; attribution round 2 (S1 + score_diff leak fix); CBBD lines pull/validation + 2022-23 rosters; AWS bring-up with Linux parity then terminate.
+
+Plan-vs-actual (PM fills the "actual" column as reports land):
+| window (EDT) | planned | actual |
+|---|---|---|
+| 22:00-00:00 | usage, fg_make r3, rebound/FT, attribution, lines, AWS parity report; commit each; engine adapters pointed at every adopted manifest | |
+| 00:00-01:30 | clock 3c and rotation r4 decide; possession-outcome r3 decides cadence and opponent adjustment; engine rewired with all winners; 200-seed gate read G1-G9 vs Control on AWS if parity held, else local | |
+| 01:30-03:00 | gate report reviewed; worst failing gate gets its next pre-registered round; market scorecard on CBBD close lines 2023-2025 if lines validated (calibration vs de-vigged market, edge buckets, no ROI below 2,000 seeds) | |
+| 03:00-04:00 | PROJECT_STATUS.md and this file updated; all results committed and pushed; HF synced; instance terminated; summary for the user at the top of this file | |
+
+Not to be done without the user: unseal 2026; reopen Decisions 1-10; paid data; scraping; history rewrites; killing others' processes.
