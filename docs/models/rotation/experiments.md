@@ -4939,3 +4939,56 @@ for X2 and X3.
    sibling under `round8/` or a new `_round8_` stem.
 
 ---
+
+### 19.16 Floor B -- run AFTER 19.12 was written and committed
+
+**19.12 stands as written**: it was true when it was written, at 12:19 ET, and
+this file is append-only. After committing section 19 the lane had 23 minutes of
+wall clock left, which was enough for floor B (18.9) and not for the Decision 10
+freeze (18.10, which needs an engine adapter this lane did not write). Floor B
+was therefore run and this subsection supersedes 19.12 **on floor B only**;
+**Decision 10 remains NOT RUN and condition 6 remains unmet for every arm.**
+
+Floor B on `Y1_exit_rate`: a different training-game sample (fit seed 101 against
+11) and a different sim seed (23 against 7), graded on the same 150-game
+universe, run in its own process after the bake-off JSON was on disk, 2.1 min.
+
+| cell | ACTUAL (150 games) | Y1 seed 1 | Y1 seed 2 | \|delta\| |
+|---|---:|---:|---:|---:|
+| final 8:00, \|m\| <= 5 | 0.7436 | 0.5672 | 0.5889 | 2.17 pp |
+| final 8:00, \|m\| 6-15 | 0.7186 | 0.5646 | 0.5539 | 1.08 pp |
+| final 8:00, \|m\| > 15 | 0.5518 | 0.5299 | 0.4822 | 4.77 pp |
+| starters at >= 4 fouls | 0.4362 | 0.4271 | 0.4228 | 0.43 pp |
+| H2 tip, \|m\| <= 5 | 0.9655 | 0.9414 | 0.9621 | 2.07 pp |
+| H2 tip, \|m\| 6-15 | 0.9662 | 0.9324 | 0.9432 | 1.08 pp |
+| H2 tip, \|m\| > 15 | 0.9611 | 0.9556 | 0.9500 | 0.56 pp |
+| H1 20:00-10:00, \|m\| <= 5 | 0.7710 | 0.7058 | 0.7101 | 0.44 pp |
+| substitutions per boundary | -- | 0.1500 | 0.1570 | 0.0071 |
+| distinct lineups per team-game | -- | 15.233 | 16.067 | 0.833 |
+| per-player minutes MAE | -- | 23.0877 | 23.0644 | 0.0232 |
+
+**The round-8 objects are identified.** The fitted table moves **0.15-0.17 pp per
+composition level** under the refit (window 202411,
+`P(k_out = 1 | size 1, n_st)`: 0.5202 -> 0.5217 at one starter on the floor,
+0.6316 -> 0.6299 at four; the six seed-101 windows agree with each other to
+0.1-1.1 pp, as the seed-11 windows do) and the under-300 cell count moves
+63 -> 65 of 108. The cell spread (0.43-4.77 pp) is round 7's (0.29-6.31 pp) on
+the same thin universe.
+
+**The decision does not turn on a refit artefact in either direction**: the
+close-band miss Y1 fails on is -17.5 pp, **eight times** the largest
+refit-to-refit move on that cell (2.17 pp) and 10 floor-A SDs, and the axis
+attenuation 19.13 item 3 names is 15 pp at one starter against a 0.15 pp
+refit move. `rotation_F1_round8_floorB_Y1.json`'s `minutes_mae` level (23.1) is
+the 150-game-universe artifact rounds 5-7 carry for the same reason (11.6): only
+the seed-to-seed and refit-to-refit DIFFERENCES are readable, never the level.
+
+Artifacts: `round8/rotation_v8_exit_seed2_{YYYYMM}.json` +
+`rotation_v8_manifest_seed2.json` (new versioned siblings; nothing was
+overwritten), `rotation_F1_round8_floorB_Y1.json`.
+
+**Amendment to 19.15 item 4:** floor B was run, as recorded here; Decision 10 was
+not. The identification claim of 19.1 now rests on a measured refit-to-refit
+spread as well as on the six-window agreement.
+
+---

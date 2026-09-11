@@ -56,13 +56,13 @@ band; top-5 share 0.7232 -> 0.7338 against a real 0.7472). It leaves the arm
 0.01734, middle band 0.01307, foul trouble 0.02342, opening cell 0.01199. Every
 miss below is larger than its own floor by 3-12 SDs.
 
-**Floor B and the Decision 10 freeze were NOT RUN** -- both pre-registered as
-conditional on the lane's 12:45 ET hard stop (18.9, 18.10) and neither fitted
-inside it after the bake-off finished at 12:14. Condition 6 of the decision rule
-is therefore unmet for every arm. The identification claim below rests on the
-**six-window agreement of the fitted table** (0.1-1.1 pp per level across six
-independent training windows) and on round 7's floor B for the same object family
-under the same shrinkage constant, and is labelled as such.
+**Floor B WAS run** (section 6 below), after section 19 of `experiments.md` had
+been written and committed saying it would not be; the correction is recorded in
+19.16 rather than by editing 19.12, which stands as it was true when written.
+**The Decision 10 freeze was NOT run** -- pre-registered as conditional on the
+lane's 12:45 ET hard stop (18.10) and it needs an engine adapter this lane did
+not write. Condition 6 of the decision rule is therefore unmet for every arm, and
+no round-8 arm may be served.
 
 ---
 
@@ -228,13 +228,42 @@ the H2 tip at \|m\| 6-15, -0.65 pp against a 0.88 pp floor); MAE +0.035 on one
 seed against a 0.016 floor, the expected 1-vs-3-seed difference. **The reference
 columns stand.**
 
-**Established.** The composition axis is real, is identified where it is powered,
-moves the sim's own exit rate in the right direction at every step, repairs both
-broken G8 cells, buys 14 floors of MAE and flattens 17% of the drift gradient.
+**Floor B (18.9): the round-8 objects are identified.** A different training-game
+sample (fit seed 101 against 11) and a different sim seed (23 against 7), graded
+on the same 150-game universe, run on Y1 in its own process after the bake-off
+JSON was on disk.
 
-**Not established.** No refit-to-refit spread was measured for the round-8
-objects (floor B not run) and no closed-loop freeze was run, so **no round-8 arm
-may be served**, and none is proposed for serving.
+| cell | ACTUAL (150 games) | Y1 seed 1 | Y1 seed 2 | \|delta\| |
+|---|---:|---:|---:|---:|
+| final 8:00, \|m\| <= 5 | 0.7436 | 0.5672 | 0.5889 | 2.17 pp |
+| final 8:00, \|m\| 6-15 | 0.7186 | 0.5646 | 0.5539 | 1.08 pp |
+| final 8:00, \|m\| > 15 | 0.5518 | 0.5299 | 0.4822 | 4.77 pp |
+| starters at >= 4 fouls | 0.4362 | 0.4271 | 0.4228 | 0.43 pp |
+| H2 tip, \|m\| <= 5 | 0.9655 | 0.9414 | 0.9621 | 2.07 pp |
+| H2 tip, \|m\| 6-15 | 0.9662 | 0.9324 | 0.9432 | 1.08 pp |
+| H2 tip, \|m\| > 15 | 0.9611 | 0.9556 | 0.9500 | 0.56 pp |
+| H1 20:00-10:00, \|m\| <= 5 | 0.7710 | 0.7058 | 0.7101 | 0.44 pp |
+| substitutions per boundary | -- | 0.1500 | 0.1570 | 0.0071 |
+| distinct lineups per team-game | -- | 15.233 | 16.067 | 0.833 |
+| per-player minutes MAE | -- | 23.0877 | 23.0644 | 0.0232 |
+
+The fitted table moves **0.15-0.17 pp per composition level** under the refit
+(window 202411, `P(k_out = 1 | size 1, n_st)`: 0.5202 -> 0.5217 at one starter,
+0.6316 -> 0.6299 at four) and the under-300 cell count moves 63 -> 65. The cell
+spread (0.43-4.77 pp) is round 7's (0.29-6.31 pp) on the same thin universe.
+**The decision does not turn on a refit artefact in either direction**: the
+close-band miss Y1 fails on is -17.5 pp, eight times the largest refit-to-refit
+move on that cell and 10 floor-A SDs. The `minutes_mae` LEVEL (23.1) is the
+150-game-universe artifact rounds 5-7 carry for the same reason (11.6) and only
+the differences are readable.
+
+**Established.** The composition axis is real, is identified under a refit and
+across six independent training windows, moves the sim's own exit rate in the
+right direction at every step, repairs both broken G8 cells, buys 14 floors of
+MAE and flattens 17% of the drift gradient.
+
+**Not established.** No closed-loop freeze was run, so **no round-8 arm may be
+served**, and none is proposed for serving.
 
 ---
 
@@ -253,5 +282,8 @@ may be served**, and none is proposed for serving.
 3. **Foul trouble stays queued behind the drift** (round 7's ordering, unchanged):
    the graded cell improved 0.3823 -> 0.3925, is still -6.9 pp, and Y2's foul
    class added 0.05 pp.
-4. **Floor B and the Decision 10 freeze are now two rounds overdue** and must be
-   inside the next round's budget from the start.
+4. **The Decision 10 freeze is now two rounds overdue** -- round 7 could not fit
+   it and neither could round 8, because it needs a vectorised
+   `next_lineup_round8` in `engine/rotation_adapter.py` that no lane has written.
+   It must be inside the next round's budget from the start, adapter included, or
+   this family can never be served however well it grades offline.
