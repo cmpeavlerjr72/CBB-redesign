@@ -4194,3 +4194,278 @@ pre-registration is the PM's, not this lane's.
 
 ---
 
+
+## 18. Round 8 pre-registration -- the exit count as a RATE, `P(k_out | size, state, n_starters_on_floor)` (PM-directed, worker-authored 2026-09-11)
+
+Written and committed BEFORE any round-8 object was fitted and before any arm
+was run. Evidence it is built on: round 7's own results (section 17, commits
+2aa29c2 / 2815cfe / 8599142), `docs/tests/rotation_exit_audit_2026-09-11.md`,
+and the post-round support measurement 17.17.
+
+### 18.1 Why round 8 adds ONE axis and nothing else
+
+Round 7 closed the exit-side class marginal (17.10: starter share of leavers
+0.5611 against a real 0.5576, K1 0.4927) and **lost 46-58 floors of per-player
+minutes MAE and 18-22 pp on both close-and-late state cells**. 17.14 item 2 and
+17.17 name the mechanism arithmetically and neither is an interpretation:
+
+* the real exit rate runs **0.37 / 0.44 / 0.52 / 0.66 / 1.00** by the number of
+  predicted starters on the floor (2025; 2024 agrees to 0.8-1.3 pp; 4,072-48,261
+  leavers per cell, every cell powered), a **29 pp span**, against the 13.9 pp
+  span of the time-and-margin term round 7 did model;
+* with the round-6 entry joint (0.737 / 0.323) that rate gives a **fixed point at
+  three starters on the floor** (E[change] -0.191 at four, +0.000 at three,
+  +0.119 at two), while X1's level form has a constant drift of -0.071 per swap
+  at every composition and therefore no fixed point at all;
+* X1's measured drift is -0.073 per leaver-slot and its late floor settles at
+  2.70 starters, which is the -21.0 pp close-band miss and the
+  0 / -8.3 / -21.0 pp time-since-reset gradient of 17.10.
+
+**A class count over `(size, state)` is a LEVEL; the object the sim needs is a
+RATE.** Round 8 therefore keeps
+
+* round 3b's **base fits**, round 4's **hazards**, round 5's **wave tables**,
+  round 6's **K1 entry rule** and the **hard second-half reset** byte for byte,
+* round 7's exit **mechanism** byte for byte -- draw `k_out` first, then round
+  5's rank rule WITHIN class, then K1's `k_in` conditioned on the realised
+  `k_out`, with the same uniforms in the same order,
+
+and changes **only the conditioning set of the `k_out` table**, by one axis.
+Consequence, stated so it cannot be read as a coincidence later: any difference
+between a round-8 arm and X1 is a difference in **that one axis alone**.
+
+### 18.2 The new axis, declared before it is fitted
+
+`n_starters_on_floor` = the number of the model's own **predicted** starting five
+among the five players on the floor at the substitution boundary, **before** the
+swap, six levels `0..5`. It is the same quantity offline and in the sampler, it
+is already computed in both loops (`is_st[on_idx].sum()`), and it is NOT a game
+state: it is the model's own composition. No other axis is added, no axis is
+dropped, and `prev_end` stays out of the exit cell (16.2).
+
+### 18.3 The two candidate exit rules
+
+**Y1 `exit_rate` -- X1 with the composition axis.**
+`P(k_out | size, exit_cell, n_starters_on_floor)` fitted as counts over the same
+training rows, with **one-level shrinkage to X1's own row**
+`P(k_out | size, exit_cell)` at the project's `k = 300`, so a composition cell
+with no signal is X1 exactly and the round is a strict extension. X1's parent
+row is recomputed inside the round-8 object from the same counts and the same
+fit seed, so it is X1's table by construction, not a re-fit of it. Table shape
+(5, 18, 6, 6).
+
+**Y2 `exit_rate_foul` -- Y1 with round 7's three-level foul class.**
+`P(k_out | size, time_cell * margin_bucket, foul_class, n_starters_on_floor)`
+with `foul_class` exactly X2's (`0` nobody on the floor at >= 4 PF, `1` somebody
+but no predicted starter, `2` a predicted STARTER at >= 4 PF), shrunk **to Y1's
+own row** at the matching `foul_state` (`0` for class 0, `1` for classes 1 and 2)
+at `k = 300`, so a foul class with no signal is Y1 exactly. Table shape
+(5, 9, 3, 6).
+
+**Minimum cell size, declared here: `n = 300` fitted rows**, the project's
+UNDERPOWERED threshold since round 5, unchanged and not tuned. Every
+(size, cell, n_st) and (size, cell, foul_class, n_st) count is published in the
+results table; **every cell under 300 rows is labelled UNDERPOWERED and shrinks
+to its parent by construction.** Y2 is **conditional on support** in the sense
+16.3 fixed for X3: if the foul-class axis is underpowered in more than half its
+size-1 cells the arm is reported as unidentified and is not adopted on that
+ground. Y1's support is the measured one of 17.17 (4,072-48,261 leavers per
+composition cell before the 18-way state split) and is not conditional.
+
+Both are lookup tables; neither makes a model call in the sim loop.
+
+### 18.4 Arms
+
+| arm | exit rule | new fitted object | simplicity | status |
+|---|---|---|---:|---|
+| `R2_hier_dirichlet` (S1) | -- | -- | 1 | reference (incumbent, SERVED) |
+| `K1_cond_class` (S1) | rank | -- | 9 | reference (round 6's best; NOT adoptable here) |
+| `X1_exit_class` (S1) | class LEVEL, then rank in class | -- | 11 | reference (round 7's best; NOT adoptable here) |
+| `Y1_exit_rate` | class RATE in the composition, then rank in class | (5, 18, 6, 6) table | 14 | candidate |
+| `Y2_exit_rate_foul` | Y1 with the 3-level foul class | (5, 9, 3, 6) table | 15 | candidate |
+
+The simplicity order `R2 < K1 < X1 < Y1 < Y2` is fixed here. **K1, X1 and R2 are
+references and none is adoptable in round 8** -- they are unchanged from the
+rounds that produced them.
+
+### 18.5 Scheme, folds, and what is refitted
+
+**Scheme: S1 for every arm**, per rounds 3b-7. Windows are the calendar months of
+the 2024-25 season; the first window trains on 2024 alone. No static column.
+
+**Folds.** F1 = train 2024, test 2025, which IS the standing fold 2 (L13: CBBD
+carries no on-floor data before 2023-24). 2026 stays sealed
+(`seal.assert_not_sealed` guards the trainer).
+
+**Round 8 fits the two exit objects per window and nothing else**, on the **same
+rows** as rounds 6 and 7 (`--wave-team-games 6000`, fit seed 11), so the exit,
+entry and wave tables cannot drift apart. `rotation_fit_v3*.json`,
+`rotation_v4_sub_*.json`, `round5/rotation_v5_wave_*.json`,
+`round6/rotation_v6_comp_*.json` and `round7/rotation_v7_exit_*.json` are REUSED
+or recomputed-identically and **nothing is written to any of them**; the round-8
+artifacts are new versioned siblings under `round8/`.
+
+**The three reference columns (R2, K1, X1) are taken from the round-6 and
+round-7 results JSONs**, not re-simulated: same 1,600-game universe, same subset
+seed 2025, same sim seeds 0-2, same base fits, hazards, wave and composition
+tables and grading functions. A **1-seed re-run of X1 is executed inside this
+round as a reproduction check** and its cells are reported next to round 7's;
+**if any state cell moves by more than its floor-A SD the reference columns are
+discarded and the round is re-run in full.** Declared in advance, as 16.5
+declared it for K1 and 14.4 for W4.
+
+### 18.6 Test universe and grading path
+
+The **same** 1,600-game subset of 2025 that rounds 2-7 used (numpy RandomState
+seed 2025), **3 seeds per candidate arm** under S1, **the round-7 grading path
+unchanged** (`train_rotation_v1.build_row` / `verdict` /
+`rotation.aggregate_stats`, extended by `train_rotation_v4.extra_cells` /
+`.minutes_mae` and `train_rotation_v5.wave_cells`, with round 6's
+`quintile_mae`). No gate cell is added, so no grader line changes and the
+reference columns stay comparable byte for byte. Any cell with n < 300
+player-games, possessions or fitted rows is labelled UNDERPOWERED and is never
+read as signal or as absence of signal.
+
+### 18.7 Gates -- every round-7 gate, unchanged, nothing added or relaxed
+
+*G8 cells (report, not veto):* minutes mean +/- 2.0; minutes SD ratio pooled and
+within-player 0.9-1.1; top-5 and top-8 share of team minutes +/- 2 pp; players
+with > 0 minutes +/- 1.0.
+
+*The eight state cells (the veto), each +/- 3 pp:* starters' share of on-floor
+slots in the final 8:00 at |m| <= 5 / 6-15 / > 15; starters' share while
+carrying >= 4 fouls; the second-half TIP starter share in each of the three
+margin bands; starters' share over H1 20:00-10:00 at |m| <= 5. **An arm missing
+ANY of the eight is ineligible regardless of G8 or of MAE.**
+
+*The two round-5 cells (also veto):* `sub_rate_per_boundary` +/- 0.015 or 3x the
+floor-A seed SD if larger; `distinct_lineups_per_game` +/- 1.5 or 3x the floor-A
+seed SD if larger. The governing number is named in the results table.
+
+*Report only:* the "at exactly 4 fouls" diagnostic; top-1 / top-3 / top-5
+five-man lineup share; K-S D of the top-1 lineup share and of per-player minutes;
+mean wave size; the as-of starter benchmark of 14.6 on all eight state cells;
+**the exit-side starter share of 16.7** (200 games, seed 0, the as-of predicted
+starter set on both sides, one function for every row: ACTUAL 0.5576 overall,
+K1 0.4927, X1 0.5611); **the time-since-reset gradient of 17.10** (the H2 tip at
+0 minutes, H1 20:00-10:00 at 0-10, the final 8:00 close band at 12+), quoted at
+twelve minutes as the round's headline drift number; and, added here because it
+is the object the round exists to move, **the realised exit rate by
+`n_starters_on_floor` in the SIM against the same rate on the ACTUAL sequences**
+(17.17's table, measured through one function on both sides).
+
+### 18.8 Primary metric and the two responsiveness checks
+
+**Primary metric: per-player minutes MAE**, unchanged from rounds 4-7.
+
+**Responsiveness check 1 (Decision 8), unchanged from 16.8:** team-games bucketed
+into quintiles of the pregame as-of share of team minutes going to the predicted
+starting five; the close-and-late cell per quintile for ACTUAL and every arm,
+with slope and Q5 - Q1. An arm whose slope ratio to actual falls outside
+**[0.8, 1.2]**, or whose sign disagrees, is not adoptable. (ACTUAL +0.692;
+K1 0.83 PASS; X1 0.62 FAIL.)
+
+**Responsiveness check 2, per-player minutes MAE by PLAYER quintile, carried
+forward unchanged from 16.8.** Players in the as-of rotation set are bucketed
+into quintiles of their own pregame as-of minutes per game. An arm is adoptable
+only if it beats K1 beyond the floor in the pooled MAE **and loses beyond the
+floor in no single quintile to EITHER reference it is measured against -- K1
+(rounds 6-8's base) or W4 (round 5's, whose Q2 column vetoed round 6's arms)**.
+Both columns are read from the round-6 results JSON, as in round 7. Carrying W4
+forward is deliberate: round 8 must not become adoptable by dropping a column.
+Underpowered quintiles are labelled.
+
+### 18.9 Noise floors and the decision rule
+
+**Floor A, seed-varied sim runs:** 20 seeds x 150 games per candidate arm, the SD
+of every G8 cell, every state cell, both round-5 cells and the MAE -- the rounds
+3/4/5/6/7 configuration, so six rounds' floors are comparable. R2's, K1's and
+X1's floors are rounds 4's, 6's and 7's and are unchanged by a run that does not
+refit them.
+
+**Floor B, spec-identical refit under a second seed:** the round-8 exit objects
+refitted from a different training-game sample (fit seed 101 vs 11) and simulated
+under a different sim seed (23 vs 7), graded on the same 150-game universe, run
+on the arm the decision rule selects or, failing that, on **Y1**, the arm the
+round is built on. An arm counts as beating a reference on a cell only if its
+improvement exceeds the refit-to-refit spread on that cell. **Floor B is
+pre-registered as CONDITIONAL ON THE WALL CLOCK** -- the lane's hard stop is
+12:45 ET -- and its absence, if it is absent, is reported and not hidden.
+
+**Decision rule.** Adopt the **simplest** arm that
+
+1. passes **every** one of the eight state cells at +/- 3 pp, AND
+2. passes **both** round-5 cells at the tolerances of 18.7, AND
+3. beats `R2_hier_dirichlet` on per-player minutes MAE by more than the floor, AND
+4. beats `K1_cond_class` on per-player minutes MAE by more than the floor and
+   loses beyond the floor to neither K1 nor W4 in any player quintile (18.8), AND
+5. satisfies the Decision 8 slope check, AND
+6. passes the Decision 10 freeze of 18.10.
+
+Ties go to the simpler model in the order `R2 < K1 < X1 < Y1 < Y2`. An arm whose
+improvement on the cell it was built to fix does not clear floor B is not adopted
+on that cell. **If no arm is eligible, adopt nothing**, report which cell fails
+and by how much, name the diagnosis, and name the next structure. No gate is
+relaxed to produce a winner and no cell is dropped after seeing a result.
+**The served default is not changed by this lane in any case**; the PM switches
+it.
+
+### 18.10 Decision 10: the closed loop
+
+The round-8 exit rule carries a state term by design (the exit cell's time and
+margin bands) exactly as round 7's did, so the freeze is the right instrument
+and is required before any arm is served. Paired-stream runs over the fixed
+**500-game subset** of the F2 2025 slate (sorted by `game_id` ascending, every
+11th row, the first 500), with `ENGINE_EVENT=round2_s1`,
+`ENGINE_FG_MAKE=round3_shooter_S_C_s1`, `ENGINE_CLOCK=reference` pinned and
+recorded in every `run_meta.json`, reporting margin SD ratio, home/away score
+correlation, possessions per game and per-player minutes MAE, live against
+`ENGINE_ROTATION_FREEZE=1`, **5 seeds**, on the arm the decision rule selects.
+
+**This requires a vectorised `next_lineup_round8` in
+`engine/rotation_adapter.py` plus its parity tests and two 500-game paired runs
+(~11 min), which round 7 could not fit inside its budget (17.13). It is
+pre-registered here as REQUIRED BEFORE SERVING and CONDITIONAL ON THE WALL CLOCK
+WITHIN THIS LANE.** If an arm passes conditions 1-5 offline and the freeze cannot
+be run by the hard stop, the arm is reported as **PASSES OFFLINE, FREEZE
+OUTSTANDING**, condition 6 is recorded as unmet, the arm is **not adopted**, and
+the served default is left untouched. That is a reporting outcome, not a relaxed
+gate.
+
+An arm that moves margin SD ratio, home/away correlation or possessions outside
+the G1/G2 tolerances between live and frozen is not adopted, and no magnitude for
+the loop is quoted from the freeze alone (L31).
+
+### 18.11 Engine expressibility (a condition on adoption)
+
+The new axis is one integer the sampler already computes: `n_st` is
+`is_st[on_idx].sum()`, a value in `0..5` gathered as a fourth index into the same
+CDF table, so Y1 is one wider gather than X1 and adds no operation to the
+(2N, S) roster block. Y2 adds X2's existing foul-class bincount. Both ship behind
+**`ENGINE_ROTATION=round8`** plus **`ENGINE_ROTATION_ARM=Y1|Y2`**, wired in
+`engine/rotation_adapter.py` with S1 artifacts per month and a manifest in the
+`engine/manifest.py` format under `data/processed/models/rotation/round8/`.
+`ENGINE_ROTATION=reference` remains the default and `engine/adapters.py` is **not
+touched by this lane**.
+
+### 18.12 Disclosures
+
+1. **Y1 and Y2 draw the same uniforms as X1, in the same order** (round 5's
+   coupling draw, the wave draw, the size draw, the `k_out` uniform, K1's `k_in`
+   uniform, then the bench race vector), so the round-8 arms are byte-aligned
+   with round 7's X1 and with each other. X1's column is nevertheless taken from
+   round 7's own JSON and checked by the 1-seed reproduction re-run of 18.5.
+2. `k = 300` is the project's UNDERPOWERED threshold, identical to rounds 5-7,
+   fixed here before any fit and never tuned. The foul-class boundary (>= 4
+   personal fouls) is round 5's own, not a new constant.
+3. `n_starters_on_floor` is the model's own predicted five, not the game's; the
+   as-of starter benchmark of 14.6 measures what that identification costs and
+   is reported, as in every round since 4.
+4. No static column is run; floor B and the Decision 10 freeze are both
+   conditional on the wall clock (18.9, 18.10) and their absence is reported.
+5. The support for the new axis was measured BEFORE this pre-registration, in
+   17.17, on the ACTUAL sequences of both seasons, and is published there.
+6. Y2 is conditional on table support (18.3) and its cell counts are published
+   whether or not it is adopted.
+
+---
