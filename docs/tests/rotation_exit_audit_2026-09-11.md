@@ -86,7 +86,7 @@ windows agree to 0.1-1.5 pp on every cell and the seed-101 refit to 0.1-0.7 pp.
 
 ## 2. The mechanism check: the arms hit the object they were built to move
 
-`scripts/diag_rotation_exit_v7.py`, 200 games, seed 0, the as-of predicted
+`scripts/diag_rotation_exit_v7.py --sim-games 200`, seed 0, the as-of predicted
 starter set on BOTH sides, one function for every row -- the round-6 table
 extended to every swap size and to the entry side.
 
@@ -264,16 +264,63 @@ MAE, quintile and slope conditions by 4 to 80 floors.
 
 ---
 
-## 8. What this audit hands round 8
+## 8. The support check for the next object (measured after the decision)
+
+`scripts/diag_rotation_exit_v7.py --by-composition`, run AFTER the round's
+decision was read and written, on the ACTUAL sequences of both seasons with each
+game's OWN starting five -- the descriptive convention of the round-6
+composition audit. **It changes no verdict, no tolerance and no arm**; it exists
+because section 9 names an object for round 8 and the project does not
+pre-register an object whose support has not been measured.
+
+`P(a starter is the man who leaves | single swap, starters on the floor)`:
+
+| starters on the floor | 2024 | n | 2025 | n | proportional | 2025 / proportional |
+|---:|---:|---:|---:|---:|---:|---:|
+| 1 | 0.3689 | 4,072 | 0.3697 | 5,981 | 0.20 | **1.85** |
+| 2 | 0.4295 | 17,101 | 0.4374 | 23,159 | 0.40 | 1.09 |
+| 3 | 0.5173 | 38,567 | 0.5209 | 48,014 | 0.60 | 0.87 |
+| 4 | 0.6433 | 41,296 | 0.6562 | 48,261 | 0.80 | 0.82 |
+| 5 | 1.0000 | 17,418 | 1.0000 | 19,996 | 1.00 | 1.00 |
+
+Every cell is powered (4,072-48,261 leavers), the two seasons agree to 0.8-1.3 pp
+on all five, and the shape survives the time split (2024, three starters on the
+floor: 0.5396 H1, 0.4487 H2 20:00-08:00, 0.4500 final 8:00; four starters:
+0.7405 / 0.6836 / 0.6537).
+
+**The composition axis is worth 29 pp -- twice the 13.9 pp time-and-margin term
+round 7 did model** -- and round 7's table is a mixture over it: the 0.5576
+marginal X1 reproduces is the average of 0.37 at one starter on the floor and
+0.66 at four.
+
+With the round-6 audit's measured entry joint (P(starter in | bench out) 0.737,
+P(starter in | starter out) 0.323 on 2025), the expected change in starters on
+the floor per single swap is:
+
+| starters on the floor | REAL exit rate | E[change] | LEVEL form (X1) | E[change] |
+|---:|---:|---:|---:|---:|
+| 4 | 0.656 | **-0.191** | 0.558 | -0.071 |
+| 3 | 0.521 | **+0.000** | 0.558 | -0.071 |
+| 2 | 0.437 | **+0.119** | 0.558 | -0.071 |
+
+**The real process has a fixed point at three starters between swaps; the level
+form has none** -- its drift is constant in the composition by construction, so
+it walks down until the support clip binds. X1's measured drift is -0.073 per
+leaver-slot (0.5611 out, 0.4882 in, section 2) against the predicted -0.071, and
+its late floor settles at 2.70 starters (0.5394, section 3). **The mechanism of
+section 3 is arithmetic, not interpretation.**
+
+---
+
+## 9. What this audit hands round 8
 
 1. **The next object is `P(k_out | size, state, n_starters_on_floor)`** -- the
    same table with the current composition as a fourth axis, which makes the draw
-   proportional by construction and restores the correcting force the rank rule
-   had. It is fittable from the same rows (the on-floor count is already in the
-   training loop) and the support is there: the size-1 cells carry 1,856-20,321
-   rows before the composition split, so a 3- to 5-level composition axis stays
-   above 300 in the cells that matter. The same argument applies to the entry
-   table, which is also a level today.
+   proportional-by-construction and restores the correcting force the rank rule
+   had. Section 8 measures its support (4,072-48,261 leavers per composition
+   cell, both seasons agreeing to 1.3 pp) and its size (29 pp). It is fittable
+   from the same rows: the on-floor count is already in the training loop. The
+   same argument applies to the entry table, which is also a level today.
 2. **Keep the two measured state terms** (section 1): -13.9 pp from H1 to the
    close-and-late cell, +9.4 pp for foul trouble inside it. They survive the
    refit and they are not the reason round 7 failed.
@@ -288,7 +335,7 @@ MAE, quintile and slope conditions by 4 to 80 floors.
 
 ---
 
-## 9. Provenance
+## 10. Provenance
 
 - Pre-registration `docs/models/rotation/experiments.md` section 16, commit
   2aa29c2, written before `rotation_v7.py` existed. Results section 17.

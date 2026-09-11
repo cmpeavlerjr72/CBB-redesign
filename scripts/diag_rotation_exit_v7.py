@@ -38,6 +38,16 @@ OUT = ROOT / "data" / "processed" / "models" / "rotation" / "exit_audit_2026-09-
 ARMS = ["K1_cond_class", "X1_exit_class", "X2_exit_class_foul", "X3_exit_class_prev"]
 
 
+def wilson(k: float, n: float) -> float:
+    """95% Wilson half-width, the interval every descriptive rate in the round-6
+    and round-7 audits carries."""
+    if n <= 0:
+        return float("nan")
+    p = k / n
+    z = 1.96
+    return float(z * np.sqrt(p * (1 - p) / n + z * z / (4 * n * n)) / (1 + z * z / n))
+
+
 def _walk(lu: np.ndarray, starters: set) -> dict:
     """Exit- and entry-side class counts over one on-floor sequence, by swap
     size. `lu` is (npos, 5) of player ids; `starters` is the as-of predicted
@@ -158,7 +168,29 @@ def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--sim-games", type=int, default=200)
     ap.add_argument("--sim-seed", type=int, default=0)
+    ap.add_argument("--by-composition", action="store_true")
+    ap.add_argument("--seasons", type=int, nargs="+", default=[2024, 2025])
     args = ap.parse_args()
+    if args.by_composition:
+        prev = json.loads(OUT.read_text(encoding="utf-8")) if OUT.exists() else {}
+        for s in args.seasons:
+            r = by_composition(s)
+            prev.setdefault(str(s), {})["by_composition"] = r
+            print(f"--- season {s}: P(a starter leaves | size, starters on floor)")
+            for row in r["by_size"]:
+                flag = "  UNDERPOWERED" if row["underpowered"] else ""
+                print(f"  size {row['size']} on {row['starters_on_floor']} "
+                      f"n {row['n_leavers']:>7} p {row['p_starter_leaves']:.4f} "
+                      f"+/-{row['ci']:.4f} prop {row['proportional']:.2f} "
+                      f"ratio {row['ratio_to_proportional']}{flag}")
+            for row in r["by_time"]:
+                flag = "  UNDERPOWERED" if row["underpowered"] else ""
+                print(f"  {row['time']:<16} on {row['starters_on_floor']} "
+                      f"n {row['n_leavers']:>7} p {row['p_starter_leaves']:.4f} "
+                      f"prop {row['proportional']:.2f}{flag}")
+        OUT.write_text(json.dumps(prev, indent=2), encoding="utf-8")
+        print("wrote", OUT)
+        return
     res = sim_check(args.sim_games, args.sim_seed)
     print(f"--- exit side, {args.sim_games} games, seed {args.sim_seed}")
     print("    (as-of predicted starters on BOTH sides, so like for like)")
@@ -173,6 +205,70 @@ def main() -> None:
     prev[f"exit_check_{args.sim_games}g_seed{args.sim_seed}"] = res
     OUT.write_text(json.dumps(prev, indent=2), encoding="utf-8")
     print("wrote", OUT)
+
+
+
+
+# ===========================================================================
+# Descriptive: does the exit class depend on the COMPOSITION on the floor?
+# ===========================================================================
+def by_composition(season: int) -> dict:
+    """P(a starter leaves | size 1, starters on the floor) on the ACTUAL
+    sequences, with the game's OWN starting five and its own participant pool --
+    the descriptive convention of the round-6 composition audit, a measurement of
+    coaching behaviour and never a bake-off result.
+
+    This is the support check for the object round 7's failure names: an exit
+    class count that does not know how many starters are on the floor is a level,
+    not a rate. `prop` is the proportional (composition-neutral) rate the draw
+    would need if leaving were independent of class.
+    """
+    tp = R.load_team_possessions(season)
+    cells = {}
+    tcells = {}
+    for _key, g in tp.groupby(["game_id", "team_id"], sort=False):
+        lu = g[R.SLOTS].to_numpy(dtype="int64")
+        if lu.shape[0] < 20:
+            continue
+        per = g["period"].to_numpy(dtype="int64")
+        clk = g["start_clock"].to_numpy(dtype="int64")
+        starters = set(int(x) for x in lu[0])
+        prev = set(int(x) for x in lu[0])
+        for i in range(1, lu.shape[0]):
+            cur = set(int(x) for x in lu[i])
+            if cur == prev:
+                continue
+            off, on_ = prev - cur, cur - prev
+            s = len(off)
+            if s and s == len(on_):
+                n_on = sum(1 for p in prev if p in starters)
+                ko = sum(1 for p in off if p in starters)
+                c = cells.setdefault((s if s <= 3 else 3, n_on), [0, 0])
+                c[0] += ko
+                c[1] += s
+                late = 2 if (per[i] >= 2 and clk[i] <= 480) else (0 if per[i] == 1 else 1)
+                t = tcells.setdefault((late, n_on), [0, 0])
+                t[0] += ko
+                t[1] += s
+            prev = cur
+    rows = []
+    for (s, n_on), (num, den) in sorted(cells.items()):
+        rows.append({"size": s, "starters_on_floor": n_on, "n_leavers": den,
+                     "p_starter_leaves": round(num / den, 4) if den else float("nan"),
+                     "proportional": round(n_on / 5.0, 4),
+                     "ratio_to_proportional": round((num / den) / (n_on / 5.0), 4)
+                     if den and n_on else float("nan"),
+                     "ci": round(wilson(num, den), 4),
+                     "underpowered": bool(den < 300)})
+    trows = []
+    names = {0: "H1", 1: "H2 20:00-08:00", 2: "final 8:00"}
+    for (t, n_on), (num, den) in sorted(tcells.items()):
+        trows.append({"time": names[t], "starters_on_floor": n_on, "n_leavers": den,
+                      "p_starter_leaves": round(num / den, 4) if den else float("nan"),
+                      "proportional": round(n_on / 5.0, 4),
+                      "ci": round(wilson(num, den), 4),
+                      "underpowered": bool(den < 300)})
+    return {"by_size": rows, "by_time": trows}
 
 
 if __name__ == "__main__":

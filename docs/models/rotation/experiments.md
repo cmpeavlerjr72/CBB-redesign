@@ -4140,3 +4140,57 @@ the entire result of the two refinements.
 
 ---
 
+
+### 17.17 Post-round descriptive measurement: the support check for the next object
+
+Measured AFTER the round's decision was read and written, on the ACTUAL
+sequences of both seasons with each game's OWN starting five and its own
+participant pool -- the descriptive convention of the round-6 composition audit
+(`scripts/diag_rotation_exit_v7.py --by-composition`). **It is a measurement of
+coaching behaviour, not a bake-off result; it changes no verdict, no tolerance
+and no arm above.** It exists because 17.14 item 2 names an object and the
+project does not pre-register an object whose support has not been measured.
+
+`P(a starter is the man who leaves | single swap, starters on the floor)`:
+
+| starters on the floor | 2024 | n | 2025 | n | proportional | 2025 / proportional |
+|---:|---:|---:|---:|---:|---:|---:|
+| 1 | 0.3689 | 4,072 | 0.3697 | 5,981 | 0.20 | **1.85** |
+| 2 | 0.4295 | 17,101 | 0.4374 | 23,159 | 0.40 | 1.09 |
+| 3 | 0.5173 | 38,567 | 0.5209 | 48,014 | 0.60 | 0.87 |
+| 4 | 0.6433 | 41,296 | 0.6562 | 48,261 | 0.80 | 0.82 |
+| 5 | 1.0000 | 17,418 | 1.0000 | 19,996 | 1.00 | 1.00 |
+
+Every cell is powered (4,072-48,261 leavers) and the two seasons agree to
+0.8-1.3 pp on all five. The same split by time cell holds the shape at every
+point of the game (2024: at three starters on the floor, 0.5396 in H1, 0.4487 in
+H2 20:00-08:00, 0.4500 in the final 8:00; at four, 0.7405 / 0.6836 / 0.6537).
+
+**The composition axis is worth 29 pp, twice the 13.9 pp time-and-margin term
+round 7 did model**, and round 7's own table is a mixture over it: the 0.5576
+marginal X1 reproduces is the average of 0.37 at one starter and 0.66 at four.
+
+The arithmetic that closes 17.14 item 2, using the measured entry joint of the
+round-6 audit (P(starter in \| bench out) 0.737, P(starter in \| starter out)
+0.323 on 2025) and the exit rates above. Expected change in starters on the
+floor per single swap:
+
+| starters on the floor | REAL exit rate | E[change] | LEVEL form (X1) | E[change] |
+|---:|---:|---:|---:|---:|
+| 4 | 0.656 | **-0.191** | 0.558 | -0.071 |
+| 3 | 0.521 | **+0.000** | 0.558 | -0.071 |
+| 2 | 0.437 | **+0.119** | 0.558 | -0.071 |
+
+**The real process has a fixed point at three starters between swaps and the
+level form has none**: its drift is constant in the composition by construction,
+so it walks down until the support clip binds. X1's measured drift is -0.073 per
+leaver-slot (0.5611 out, 0.4882 in, 17.10) against the predicted -0.071, and its
+late floor settles at 2.70 starters (0.5394, 17.3). The mechanism reading of
+17.10 and 17.14 item 2 is therefore arithmetic, not interpretation.
+
+The object for round 8 -- `P(k_out | size, state, n_starters_on_floor)` -- has
+its support measured here and is fittable from the same rows. Its
+pre-registration is the PM's, not this lane's.
+
+---
+
