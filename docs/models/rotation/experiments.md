@@ -2524,3 +2524,330 @@ code path end to end. It printed gate cells on 2025. Its numbers are not
 evidence, are not cited anywhere, and **no model specification, gate, tolerance
 or arm was changed after seeing them** -- the arm list, the cell definition and
 `k = 300` were fixed in section 12, committed at a14a569 before the smoke ran.
+
+---
+
+## 14. Round 6 pre-registration -- the composition conditioned on WHO LEFT (PM-directed, worker-authored 2026-09-11)
+
+Written and committed BEFORE any round-6 object was fitted and before any arm
+was run. Evidence it is built on: round 5's own results (section 13),
+`docs/tests/rotation_wave_audit_2026-09-11.md` sections 4 and 6, and L33.
+
+Numbering note: the PM's lane brief called this "section 12"; sections 12 and 13
+are round 5's and `experiments.md` is append-only, so round 6 is section 14.
+
+### 14.1 Why round 6 changes the ENTRY RULE and nothing else
+
+Round 5 changed the draw and fixed the joint structure it modelled (L33):
+
+* substitutions per boundary 0.2058 (round 4) -> **0.1568-0.1575** against a real
+  0.1509, inside a tolerance derived from a 0.0011-0.0020 floor (13.4);
+* the close-and-late band, which no hazard-family arm had ever passed, passes on
+  W1 (-2.1 pp) and W3 (-2.0 pp), and the \|m\| 6-15 band, which NO arm in five
+  rounds had passed, passes at -0.9 and -1.2 pp (13.3).
+
+And it left exactly one thing open, which round 5 named before it was measured
+and then measured (13.11 item 3): **WHO comes in.** The four knob-free
+composition rules trade two gate families against each other and no member of
+the grid is on both sides of the trade:
+
+| | ranked entry (W1, W3, W5) | drawn entry (W2, W4) |
+|---|---|---|
+| close-and-late starters' share | 0.7281 / 0.7288 (PASS) | 0.6494 / 0.7135 (FAIL) |
+| distinct lineups per team-game | 11.50-11.52 (FAIL, -3.3) | 16.96 / **14.47** |
+| players with > 0 minutes | 8.08 against a real 9.64 | 8.74 / 8.80 |
+| top-5 share of team minutes | 0.800 against a real 0.747 | 0.743 / 0.770 |
+
+A rank rule is a race at zero temperature and a draw rule is a race at
+temperature one. The data says the truth is between them, and **no knob-free
+rule can express that** (13.11 item 3-4). Round 6 therefore keeps
+
+* round 5's **wave tables byte for byte** (`p_wave`, `p_size`, per S1 window),
+* round 4's **hazards byte for byte** (`rotation_v4_sub_*.json`),
+* round 5's **rank exit rule** (W1/W3/W4's, the side the two round-5 readings
+  agree on),
+* the **hard second-half reset**, closed in round 4 and again in round 5,
+
+and changes **only how the `size` entrants are chosen off the bench**.
+Consequence, stated so it cannot be read as a coincidence later: any difference
+between a round-6 arm and W4 is a difference in the **entry composition alone**.
+
+### 14.2 The three candidate entry rules
+
+Baseline (W4's, the incumbent): an Efraimidis-Spirakis race over the eligible
+bench with weights `w_j = p_in_j / (1 - p_in_j)`, i.e. weighted sampling without
+replacement at temperature 1, where `p_in` is round 4's fitted entry hazard.
+
+**T1 `tau_entry` -- one fitted temperature (13.11 item 4a).**
+`w_j = (p_in_j / (1 - p_in_j))^tau`. `tau = 1` is W4 and `tau -> inf` is W1, so
+the single scalar spans the interior of the composition grid the probe
+bracketed. **`tau` is fitted on the training window by maximum likelihood of the
+observed entrant sets**, never against a gate cell: for every training wave of
+size `s` with eligible bench pool `B`, the contribution is the
+independent-choice (multinomial) approximation
+`sum_{j in entrants} [ tau*log w_j - log sum_{b in B} w_b^tau ]`, maximised over
+the declared grid `tau in {0.25, 0.50, ..., 5.00}` (20 points, step 0.25). The
+grid, the estimator and the likelihood are fixed here. `tau` is reported per S1
+window; a scalar that moves across windows is not identified and is reported as
+such (the `rho` test of 13.1).
+
+**K1 `cond_class` -- the entry CLASS COUNT conditioned on who left.**
+The audit measures the marginals and not the joint: at size 1 a starter leaves
+61% of the time and a starter enters 48% of the time; at size 2 the
+starters-out split is 0.25 / 0.37 / 0.37 and the starters-in split 0.29 / 0.37 /
+0.34 (audit 4.1). K1 fits the **joint**: `P(k_in | size, k_out)`, where `k_out`
+is the number of the model's own predicted starters among the `size` leavers and
+`k_in` the number among the entrants, as counts over the training window with
+one-level shrinkage to `P(k_in | size)` at the project's `k = 300`. At
+simulation time the leavers are drawn first (rank rule), `k_out` is read off
+them, `k_in` is drawn from the fitted row (clipped to what the bench can
+supply), and the `k_in` starters and `size - k_in` non-starters are then drawn
+by the SAME temperature-1 race within their own class. Nothing else changes.
+
+**A1 `tier_affinity` -- the entry WEIGHT conditioned on who left.**
+Each candidate's entry log-weight gets a fitted additive term that depends on
+the departing players' as-of tiers:
+`log w_j = log(p_in_j/(1-p_in_j)) + mean_{l in leavers} logA[tier(l), tier(j)]`,
+with **tiers from the as-of start rank** -- T0 = predicted starters (rank 1-5),
+T1 = rank 6-7, T2 = rank 8-9, T3 = rank 10+ -- so `logA` is a 4x4 table. It is
+fitted by **moment matching on the training window's own counts**, not by an
+optimiser and not by a grid:
+`logA[a, b] = log((obs[a, b] + k) / (exp[a, b] + k))` with `k = 300`, where
+`obs[a, b]` counts observed (leaver of tier a, entrant of tier b) pairs and
+`exp[a, b]` is the same count's expectation under the BASELINE (W4) entry
+weights on the same rows, `exp[a, b] += s * sum_{j: tier(j)=b} w_j / sum_B w`.
+A cell with no signal shrinks to `logA = 0`, i.e. to W4 exactly. `k = 300` is
+the project's UNDERPOWERED threshold, declared here, not tuned, and identical to
+round 5's.
+
+All three are lookup objects (one scalar, one 15-row table, one 4x4 table);
+none makes a model call in the sim loop, and none contains a margin, clock or
+foul term (14.9).
+
+### 14.3 Arms
+
+| arm | entry rule | new fitted object | simplicity | status |
+|---|---|---|---:|---|
+| `R2_hier_dirichlet` (S1) | -- | -- | 1 | reference (incumbent, served) |
+| `W1_wave_rank` (S1) | rank | -- | 3 | reference (round 5's best state cells) |
+| `W4_wave_rank_draw` (S1) | temperature-1 race | -- | 5 | reference (round 5's only 2/2 arm with a passing D8 slope) |
+| `T1_tau_entry` | race at fitted `tau` | 1 scalar | 8 | candidate |
+| `K1_cond_class` | class count conditioned on `k_out`, then within-class race | 15-row table | 9 | candidate |
+| `A1_tier_affinity` | race with a fitted 4x4 tier-pair log-affinity | 16-cell table | 10 | candidate |
+
+The simplicity order `R2 < W1 < W4 < T1 < K1 < A1` is fixed here: one scalar is
+simpler than a table over (size, k_out), which is simpler than a table over tier
+pairs. **W1 and W4 are references and are not adoptable in round 6** -- they are
+unchanged from round 5, where each failed at least one pre-registered cell.
+
+### 14.4 Scheme, folds, and what is refitted
+
+**Scheme: S1 for every arm**, per round 3b (9.4), round 4 (10.4) and round 5
+(12.4). Windows are the calendar months of the 2024-25 season, a game uses the
+parameter set whose window closed before its tipoff, and the first window trains
+on 2024 alone. **No static column is run for any arm**; that is a stated
+deviation from round 4, taken to keep the round inside its wall clock, and it
+costs nothing that round 3b's scheme confirmation has not already settled.
+
+**Folds.** F1 = train 2024, test 2025, which IS the standing fold 2; CBBD
+carries no on-floor data before 2023-24 (L13), so no other fold exists. This is
+the selection fold and the only one. 2026 stays sealed
+(`seal.assert_not_sealed` guards the trainer).
+
+**What round 6 fits: the three composition objects, per window, and nothing
+else.** `rotation_fit_v3*.json`, `rotation_v4_sub_*.json` and
+`round5/rotation_v5_wave_*.json` are REUSED and nothing is written to any of
+them.
+
+**The three reference columns (R2, W1, W4) are taken from the round-5 results
+JSON** (`rotation_F1_round5_results.json`), not re-simulated: same 1,600-game
+universe, same subset seed 2025, same sim seeds 0-2, same base fits, same
+hazards, same wave tables, same grading functions. A **1-seed re-run of W4 is
+executed inside this round as a reproduction check** and its cells are reported
+next to round 5's; **if any state cell moves by more than its floor-A SD the
+reference columns are discarded and the round is re-run in full.** Declared in
+advance, exactly as 12.4 declared it for H1.
+
+### 14.5 Test universe and grading path
+
+The **same** 1,600-game subset of 2025 that rounds 2, 3, 3b, 4 and 5 used
+(numpy RandomState seed 2025), **3 seeds per candidate arm** under S1, one blind
+grading path: `train_rotation_v1.build_row` / `verdict` /
+`rotation.aggregate_stats`, extended by `train_rotation_v4.extra_cells` and
+`.minutes_mae` and by `train_rotation_v5.wave_cells`. Sim and actual go through
+identical functions. Any cell with n < 300 player-games or possessions is
+labelled UNDERPOWERED and is never read as signal or as absence of signal.
+
+### 14.6 Gates -- every round-5 gate, unchanged, and nothing added or relaxed
+
+*G8 cells (report, not veto):* minutes mean +/- 2.0; minutes SD ratio pooled and
+within-player 0.9-1.1; top-5 and top-8 share of team minutes +/- 2 pp; players
+with > 0 minutes +/- 1.0.
+
+*The eight state cells (the veto), each +/- 3 pp:* starters' share of on-floor
+slots in the final 8:00 at \|m\| <= 5 / 6-15 / > 15; starters' share while
+carrying >= 4 fouls; the second-half TIP starter share in each of the three
+margin bands; starters' share over H1 20:00-10:00 at \|m\| <= 5. **An arm
+missing ANY of the eight is ineligible regardless of G8 or of MAE.**
+
+*The two round-5 cells (also veto), at the round-5 tolerances:*
+`sub_rate_per_boundary` +/- 0.015 or 3x the floor-A seed SD if larger;
+`distinct_lineups_per_game` +/- 1.5 or 3x the floor-A seed SD if larger. The
+governing number is named in the results table.
+
+*Report only:* the "at exactly 4 fouls" diagnostic; top-1 / top-3 / top-5
+five-man lineup share; K-S D of the top-1 lineup share and of per-player
+minutes; mean wave size.
+
+**One report-only diagnostic is ADDED, and it can only make the round harder to
+pass, never easier.** Round 3 (5.4) measured that the model's as-of starter set
+overlaps the real starting five on 4.57 of 5 and that re-grading the ACTUAL
+on-floor sequence with the MODEL's starter set moves the late cells by -1.6 to
+-2.8 pp. Round 6 computes that benchmark for **all eight** state cells and
+reports it beside every arm, so a cell that no arm can reach because of starter
+identification is visible as such. **It changes no tolerance and no verdict**:
+every arm is still scored against each side's own real starting five, exactly as
+in rounds 1-5.
+
+### 14.7 Primary metric and the two responsiveness checks
+
+**Primary metric: per-player minutes MAE**, unchanged from rounds 4 and 5: outer
+join of simulated and actual minutes on (game_id, team_id, pid) over the as-of
+rotation set (as-of `mpg >= 10`), per seed then averaged over seeds.
+
+**Responsiveness check 1 (Decision 8, a condition on adoption), unchanged from
+13.8:** team-games bucketed into quintiles of the pregame as-of share of team
+minutes going to the predicted starting five; the close-and-late cell per
+quintile for ACTUAL and every arm, with slope and Q5 - Q1. An arm whose slope
+ratio to actual falls outside **[0.8, 1.2]**, or whose sign disagrees, is
+reported as not matchup-specific and is NOT adoptable. (This is the band that
+separated arms for the first time in round 5 and penalised W3 and W5.)
+
+**Responsiveness check 2 (NEW this round, and a condition on adoption):
+per-player minutes MAE by PLAYER quintile.** Players in the as-of rotation set
+are bucketed into quintiles of their own pregame as-of minutes per game; the
+primary metric is reported per quintile for every arm and every reference. The
+round is about WHO comes in, so an arm that improves the pooled MAE by moving
+minutes between the middle of the bench and the end of it, while getting the
+starters' quintile no better than W4, has not fixed what the round exists to
+fix. **The rule, fixed here:** an arm is adoptable only if it beats W4 beyond
+the floor in the pooled MAE **and does not lose to W4 beyond the floor in any
+single quintile**. Underpowered quintiles are labelled.
+
+### 14.8 Noise floors and the decision rule
+
+**Floor A, seed-varied sim runs:** 20 seeds x 150 games per candidate arm, the
+SD of every G8 cell, every state cell, both round-5 cells and the MAE -- the
+rounds 3/4/5 configuration, so four rounds' floors are comparable. R2's, W1's
+and W4's floors are round 5's and are unchanged by a run that does not refit
+them.
+
+**Floor B, spec-identical refit under a second seed:** the round-6 composition
+objects refitted from a different training-game sample (fit seed 101 vs 11) and
+simulated under a different sim seed (23 vs 7), graded on the same 150-game
+universe. Run on **A1**, the largest new object this round adds and the one most
+at risk of being unidentified; run additionally on the arm the decision rule
+selects, if the wall clock allows. An arm counts as beating a reference on a
+cell only if its improvement exceeds the refit-to-refit spread on that cell.
+
+**Decision rule.** Adopt the **simplest** arm that
+
+1. passes **every** one of the eight state cells at +/- 3 pp, AND
+2. passes **both** round-5 cells at the tolerances of 14.6, AND
+3. beats `R2_hier_dirichlet` on per-player minutes MAE by more than the floor,
+   AND
+4. beats `W4_wave_rank_draw` on per-player minutes MAE by more than the floor and
+   loses to it in no player quintile beyond the floor (14.7), AND
+5. satisfies the Decision 8 slope check, AND
+6. passes the Decision 10 checks of 14.9.
+
+Ties go to the simpler model in the order `R2 < W1 < W4 < T1 < K1 < A1`. An arm
+whose improvement on the cell it was built to fix does not clear floor B is not
+adopted on that cell. **If no arm is eligible, adopt nothing**, report which cell
+fails and by how much, name the diagnosis, and name the next structure. No gate
+is relaxed to produce a winner and no cell is dropped after seeing a result.
+
+### 14.9 Decision 10: the closed loop
+
+**What round 6 adds is state-free by construction.** `tau`, `P(k_in|size,k_out)`
+and `logA[tier, tier]` contain no margin, clock or foul term: they are fitted
+over all training waves pooled, and the state enters a round-6 arm only through
+objects round 5 already sized -- the wave cell (`margin band`, `foul state`) and
+round 4's hazards. L31's refit-without-the-feature instrument was run on exactly
+those objects in round 5 (13.12: W4 live/refit-without margin SD ratio 0.9941,
+possessions -0.136) and **that number is quoted as the size of the loop rather
+than re-derived**, because the objects are byte-identical. What round 6 runs is
+the **freeze**, which is the instrument that detects whether the round-6 entry
+rule opens a NEW channel.
+
+Paired-stream runs over the fixed **500-game subset** of the F2 2025 slate
+(sorted by `game_id` ascending, every 11th row, the first 500 -- the subset the
+clock round-3c and the rotation round-4 and round-5 checks use), with
+`ENGINE_EVENT=round2_s1`, `ENGINE_FG_MAKE=round3_shooter_S_C_s1`,
+`ENGINE_CLOCK=reference` pinned and recorded in every `run_meta.json`, reporting
+margin SD ratio, home/away score correlation, possessions per game and
+per-player minutes MAE:
+
+| run | what it is |
+|---|---|
+| round-6 arm, live | the arm as it would be served |
+| round-6 arm, `ENGINE_ROTATION_FREEZE=1` | margin held at 0 and the personal/team-foul counts at 0 FOR THE ROTATION MODEL ONLY; foul accrual, the foul-out eviction and the box-score counters stay live |
+
+**Seed count, declared with its reason.** **5 seeds**, which is the seed count
+rounds 4 and 5 ran and therefore the count that makes the three rounds one
+comparison. A 25-seed repeat is run **only if the wall clock permits it**; the
+lane's hard stop is 12:45 ET and a 25-seed pair costs about 100 minutes on the
+6 workers this lane is capped at, so it is pre-registered as conditional and its
+absence is reported, not hidden. The arm run is **the arm the decision rule
+selects**, or, if no arm is eligible, **the arm closest to eligibility**, which
+is stated to be a diagnostic and not a winner (round 5 did the same with W4).
+
+An arm that moves margin SD ratio, home/away correlation or possessions outside
+the G1/G2 tolerances between live and frozen is not adopted, and no magnitude
+for the loop is quoted from the freeze alone (L31).
+
+### 14.10 Engine expressibility (a condition on adoption)
+
+Every rule is a vectorised array operation over the (2N, S) roster block:
+
+* **T1** is one `**tau` on the weight array -- one line in
+  `next_lineup_round5`'s entry block.
+* **K1** needs `k_out = (leaving & is_starter).sum(axis=1)`, one gathered CDF row
+  from a (5, 6, 6) table, one extra uniform per (team, boundary), and two
+  `_pick_k` calls instead of one (starters and non-starters of the bench).
+* **A1** needs the leavers' tier counts (a (2N, 4) bincount), one `(4, 4)`
+  matmul, and a gather onto each slot's tier -- then the same single `_pick_k`.
+
+All three ship behind **`ENGINE_ROTATION=round6`** plus
+**`ENGINE_ROTATION_ARM=T1|K1|A1`**, wired in `engine/rotation_adapter.py` with
+S1 artifacts per month and a manifest in the `engine/manifest.py` format under
+`data/processed/models/rotation/round6/`. `ENGINE_ROTATION=reference` remains the
+default and `engine/adapters.py` is not touched by this lane. The two stated RNG
+divergences of `docs/models/engine/model.md` section 4.5 apply unchanged.
+
+### 14.11 Disclosures
+
+1. **The three round-6 arms draw the same uniforms whether or not they use
+   them.** K1 needs one extra uniform per wave for `k_in`; T1 and A1 draw and
+   discard it, so the three arms sit at identical stream positions and are
+   paired. The cost, stated: a round-6 arm is NOT byte-aligned with round 5's
+   W4, which is why W4's column comes from round 5's own JSON and is checked by
+   the 1-seed reproduction re-run of 14.4 rather than by re-simulation under the
+   round-6 code path.
+2. `tau`'s likelihood is the independent-choice (multinomial) approximation to
+   the sampling-without-replacement likelihood, declared in 14.2 before the fit.
+   It is exact at `size = 1`, which is 68% of all waves (audit 3.1).
+3. A1's `exp[a, b]` is computed under the baseline entry weights on the training
+   rows themselves, so `logA = 0` is exactly W4 and the table measures a
+   departure from it. Cells with no signal shrink to 0 at `k = 300`.
+4. The reference columns for R2, W1 and W4 are taken from round 5's results JSON
+   (14.4), with a 1-seed W4 reproduction check.
+5. No static column is run (14.4); the 25-seed closed loop is conditional on the
+   wall clock (14.9).
+6. `k = 300` and the tier boundaries (5 / 7 / 9) are fixed here, before any fit,
+   from the same cell-coverage reasoning round 5 used; neither is tuned.
+7. The fitting sample is the same `--wave-team-games 6000` per window round 5
+   used, drawn with the same fit seed, so the composition objects and the wave
+   tables are fitted on the same rows.
+
+---
