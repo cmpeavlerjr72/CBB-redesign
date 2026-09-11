@@ -52,6 +52,47 @@ _PIN = ("OMP_NUM_THREADS", "OPENBLAS_NUM_THREADS", "MKL_NUM_THREADS",
 _W: dict = {}
 
 
+def engine_provenance() -> dict:
+    """The exact code state this run is about to execute.
+
+    WHY THIS IS IN `run_meta.json` AND NOT A NOTE SOMEWHERE. Clock round 3c had
+    to prove, by bisecting on bit-identical reproduction, that six arms did not
+    straddle `loop.py`'s `push_lineups()` move (commit 6431772) -- work that a
+    recorded commit would have made a one-line check. Several lanes share this
+    one checkout, so `HEAD` moves under a running job and the working tree is
+    routinely dirty with ANOTHER lane's in-progress edits. Both facts are
+    recorded, per file, rather than reduced to a boolean:
+
+      `engine_commit`        `git rev-parse HEAD` at run start
+      `engine_tree_dirty`    whether anything tracked differs from it
+      `engine_dirty_paths`   which paths, so a reader can see at a glance
+                             whether the diff touches the engine at all
+      `engine_dirty_src`     the subset under `src/cbb_sim/` or `scripts/`,
+                             i.e. the ones that could actually change a result
+
+    A run whose `engine_dirty_src` is non-empty is NOT reproducible from any
+    commit, and a paired comparison against it must be run from the same tree.
+    Saying so is the point; a dirty tree is not an error here."""
+    import subprocess
+    out: dict = {"engine_commit": None, "engine_tree_dirty": None,
+                 "engine_dirty_paths": [], "engine_dirty_src": []}
+    root = Path(__file__).resolve().parents[1]
+    try:
+        out["engine_commit"] = subprocess.run(
+            ["git", "rev-parse", "HEAD"], cwd=root, capture_output=True,
+            text=True, timeout=30).stdout.strip() or None
+        st = subprocess.run(["git", "status", "--porcelain"], cwd=root,
+                            capture_output=True, text=True, timeout=60).stdout
+        paths = [ln[3:].strip() for ln in st.splitlines() if ln[:2] != "??"]
+        out["engine_dirty_paths"] = paths
+        out["engine_dirty_src"] = [p for p in paths
+                                   if p.startswith(("src/cbb_sim/", "scripts/"))]
+        out["engine_tree_dirty"] = bool(paths)
+    except Exception as exc:                                    # noqa: BLE001
+        out["engine_provenance_error"] = str(exc)
+    return out
+
+
 def _init_worker(tag: str, fold: str, season: int, input_dir: str, flags: dict) -> None:
     for k in _PIN:
         os.environ[k] = "1"
@@ -103,6 +144,9 @@ def main() -> int:
     assert_not_sealed([int(args.season)], context=f"engine_v0 {args.fold}")
 
     t0 = time.time()
+    # Captured BEFORE anything is imported or simulated, so it describes the
+    # code this run is about to execute rather than the tree at write time.
+    prov = engine_provenance()
     for k in _PIN:
         os.environ.setdefault(k, "1")
     from cbb_sim.engine.adapters import Adapters
@@ -216,6 +260,7 @@ def main() -> int:
         "possessions_per_second": round(n_poss / max(elapsed, 1e-9), 1),
         "workers": int(args.workers),
         "ast_is_placeholder": True,
+        **prov,
         "inputs_version": str(inp.meta.get("inputs_version_loaded", "v1")),
         "inputs_tag": str(inp.meta.get("inputs_tag_loaded", in_tag)),
         "input_dir": str(args.input_dir),
