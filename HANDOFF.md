@@ -1,3 +1,41 @@
+# SUMMARY FOR USER, MORNING 2026-09-11 09:53 -> 13:30 EDT
+
+Written by the PM 12:20-12:45 EDT. Every number is in a committed doc; paths in brackets. Twelve worker lanes ran; reports were due 12:45; all delivered.
+
+## What was decided (with evidence)
+
+| lane | decision | evidence |
+|---|---|---|
+| AWS 200-seed read + noise floor | DONE: runs A (seeds 0-199) and B (offset) both complete, 23 min compute, instance 10:00-10:48, ~$1.80, terminated (CLI-verified). Box throughput 1,030-1,200 poss/s/core; last night's 83 was a pool-startup artefact (never size off a <1 min probe). Every gate verdict from the 50-seed read holds and every miss is an order of magnitude outside the A-B band; the 50-seed PROVISIONAL label is retired. Scorecard calibration unlocked: corr(sim margin, close) 0.918; sim colder than market at low p, hotter at high (slope 0.909). ROI still refused (<2,000 seeds; ~4 h, ~$10 on the box). Fixes on the way: posix path normalisation in the digest (parity v5), G8 grader memory blow-up at 200 seeds | `docs/tests/engine_v1_gates_F2_2025_s200_aws_2026-09-11.md`; `docs/ops/aws_launch_chain.md` section 13; commit 5a792ed |
+| Engine variance/OT diagnostic | The 50-seed run already served the v3c clock (my brief was wrong). Paired 20-seed rerun bit-identical; a free 20-seed offset floor; G5/G9 dispersion lines are seed-count dependent by construction (never compare across seed counts). Possession SD 25% short and WITHIN-game; eFG% anti-correlated with pace (-0.198 vs ~0); together 80% of the total-SD gap. OT shortfall = margin shape (ties 47% short, 1-point margins 50% over); OT module itself fine | `docs/tests/engine_v1_variance_ot_diag_2026-09-11.md`; commit 4ea6237 |
+| Pace-efficiency sign | ONE cause for both dispersion defects: `loop.py` had no per-game pace realisation (CLAUDE.md rule violated); 73% of within-game pace variance was i.i.d. clock noise. fg_make cleared (transition lift 1.63x its design; served eFG moves positively with pace); rotation 0.3%. Measurement rule: possessions-table `is_transition`/`duration_s` are post-outcome (5x inflated transition lift); use fg_make's `chance_elapsed_s` | `docs/tests/pace_efficiency_sign_2026-09-11.md`; commit 386a3ee |
+| Clock rounds 5 / 5b | Channel decomposition: 98.9% of the possession-SD gap is a missing within-game level, 1.1% the conditional law (heavier tails failed everything). Shared per-game latent A1: SD ratio 0.688 -> 1.004 (56 floors) but G1 mean +0.23 (Jensen). 5b: mean-preserving B1 (`v5b_glat_pmean`) removes the mean cost (G1 +1.704 -> +1.649, inside floor); closed loop 25 paired seeds: possession SD ratio 0.804 -> 1.032, total SD ratio 0.736 -> 0.823, corr(home,away) 0.003 -> 0.101, corr(P,eFG%) -0.211 -> -0.122. NOT adopted (Q2 responsiveness 1.174 vs [0.85,1.15]; margin SD ratio -1.2 floors, still inside gate). PM DECISION: SERVED PROVISIONALLY (same footing as v3c); `reference` and `v3c` selectable; old arm bit-identical (parity v5). Round 5c = the Q2 band | clock experiments.md sections 16-22; `docs/tests/clock_duration_dispersion_2026-09-11.md`, `clock_mean_consistent_latent_2026-09-11.md`; commits 28b5f17..3ef1abd, e3ccce5 |
+| Rotation rounds 6 / 7 / 8 | r6: entry composition; K1 (entry class count) best MAE in six rounds (+63 floors over R2) but 4/8 cells and Q2 veto; temperature refuted by its own likelihood (tau = 1.00); defect moved to the EXIT side (starter off on 0.46 vs 0.587). r7: exit count P(k_out|size,state) closes the exit share (0.561 vs 0.558) and reproduces the 4-foul diagnostic, but loses 46-58 floors of MAE and collapses close-late cells: a count over state is a LEVEL not a RATE (real exit rates 0.37-0.66 by starters on floor). r8: exit rate conditioned on n_starters_on_floor (Y1): slopes correctly at every level (X1 was flat at 0.58 vs a real 0.31-0.68) and carries 46% of the span, repairs both G8 cells r7 broke, MAE 9.385 (+14 floors over X1, still -39 vs K1), close-late gradient -17.5 pp vs -21.0; fails because the shrinkage PARENT is the level (data weight 0.34 at one starter). Nothing adopted. Next: invert the hierarchy onto the powered composition marginal. Decision-10 freeze two rounds overdue (no round-7/8 adapter written). R2 served throughout | rotation experiments.md sections 12-19; `docs/tests/rotation_composition_audit_2026-09-11.md`, `rotation_exit_audit_2026-09-11.md`, `rotation_exit_rate_2026-09-11.md`; commits 4380a08..8599142, b6a18ec..8e378b5 |
+| Usage Decision-10 gate + round 3 | `score_diff` post-outcome on 99.7%+ of rows (L27 pattern); pre-outcome builder mode added; offline winner unchanged (leak harmless for an identity target). Closed loop 25 seeds: live != frozen (z 7-8, real loop signature) and live does not beat refit-without-state: DO NOT WIRE. Round 3: state-free tree vs U1: passes Decision-8 slope (0.955 vs 0.922) and G1-G9 no-regression but is 0.5/0.9 pp (12-14 floors) FURTHER from truth on top-1/top-3 share: NOT ADOPTED. U1 stays | usage experiments.md sections 10-12; `docs/tests/usage_state_confound_2026-09-11.md`, `usage_decision10_gate_2026-09-11.md`, `usage_nostate_bakeoff_2026-09-11.md`; commits bbc079e, d8a1fb8, c41ec25, 520ea6b |
+| Possession-outcome round 4 | Early-season shrinkage: G1 (EB to league mean) wins the pre-registered spec (weeks 0-3 gap 3.83 -> 2.77 pp) but pushes weeks 4-7 across the 2.0 gate (1.37 -> 2.69); G4 (reliability counters as features) improves weeks 0-3 without cost and improves week 8+ on `first`, fails cont calibration. Nothing ships; round 4b = G4 + G3 + second-seed floor. Round 3's conf-aligned cont win DID NOT REPRODUCE (0.237 pp); tree alignment cells NOT RUN twice (5-6 h here, minutes on the box). Decision 9 amended (still pending, leaning against) | PO experiments.md sections 8-9; `docs/tests/possession_outcome_early_season_2026-09-11.md`; commits 4f6b237..61c81fd; ARCHITECTURE_DECISIONS.md Decision 9 amendment |
+| Market lean, mean-based, 200 seeds (user question) | ATS 0.499 (ROI -5.2%), O/U 0.496 (-5.9%); always-home 0.502, always-over 0.500, Control 0.496/0.494; bands by |sim-line| flat; split-half win rate stable to 0.1 pp. Margin MAE: v1 9.25, Control 9.11, close 8.74. No edge, as expected for an 8/9-gate-failing engine. Probability-based ROI still needs 2,000 seeds (3.5 pp seed error on a cover probability at 200) | `docs/tests/market_lean_mean_based_s200_2026-09-11.md`; commit 26b7516 |
+| HF mirror | model_artifacts 832 files / 1.9 GB, results 332 files / 724 MB synced 12:10; rotation round8 and clk5b_B2_s25 skipped as live, re-sync next session | sync lane report |
+
+## Rules and learnings added
+
+L36-L37 (rotation: conditional rule vs arrival frequency; level vs rate). Decision 9 amended. Measurement rules: never compare G5/G9 dispersion across seed counts; never size a box run off a sub-minute probe; possessions-table transition/duration columns are post-outcome. Clock served arm is now the per-game latent (rule compliance restored).
+
+## Worker incidents (disclosed)
+
+Pace-sign worker stashed five other lanes' uncommitted files for ~30 s during a rebase, then restored them intact (verified by the affected lanes' clean commits). Clock 5b lane ran ~18 engine workers for ~2 min, over its cap. AWS and HF lanes each parked on a background monitor once and had to be told to wait in the foreground. Both PM briefs that named the "reference clock" in the 50-seed run were wrong (it was v3c).
+
+## Open items, in order
+
+1. Box session: 200-seed paired read of the v5b stack; the two PO tree alignment cells; rotation Decision-10 freezes. ~1 h, ~$5.
+2. Clock 5c (Q2 band); then L34 prev_end mix from the event side.
+3. Late-game regime sub-model (tie pile-up).
+4. Rotation round 9: shrink the exit rate toward the powered composition marginal, not the level; write the round-7/8 engine adapter so Decision 10 can run.
+5. PO round 4b (G4, G3, floor).
+6. G4 OREB%/FTA-FGA: unowned; pre-register.
+7. HF token rotation (user).
+
+---
+
 # SUMMARY FOR USER, 2026-09-10 21:50 -> 2026-09-11 04:00 EDT
 
 Written by the PM 03:05-03:48 EDT; final. Every number below is in a committed doc; paths in brackets.
