@@ -55,3 +55,23 @@ data/processed/models/**/*_design.parquet
 # adopts S1. Rebuildable by scripts/build_engine_event_round2.py and synced to
 # the private HF dataset via scripts/hf_sync_data.py (PM decision 2026-09-10).
 data/processed/models/engine/event_round2_s1_*/
+
+# fg_make round-2 bake-off artifacts (grid checkpoints + fitted boosters,
+# ~21-25MB each): rebuildable, gitignored, synced to the private HF dataset
+# via `scripts/hf_sync_data.py --dirs model_artifacts` (PM decision
+# 2026-09-10; see docs/ops/aws_launch_chain.md).
+data/processed/models/fg_make/round2/
+data/processed/models/fg_make/round2b/
+
+# General pattern for future round-N / S1 bake-off artifact sets under any
+# model dir, same rationale as above (rebuildable, synced via
+# `model_artifacts`). Narrowed with negations rather than left as a bare
+# wildcard: `git ls-files` (2026-09-10) shows
+# data/processed/models/possession_outcome/round2/ and
+# data/processed/models/clock/v3b_s1/ are already git-tracked, so those two
+# dirs are carved back out to stay tracked and not silently drop out of
+# future `git add`.
+data/processed/models/*/round*/
+data/processed/models/*/*_s1/
+!data/processed/models/possession_outcome/round2/
+!data/processed/models/clock/v3b_s1/

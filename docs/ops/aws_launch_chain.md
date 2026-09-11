@@ -412,3 +412,39 @@ Local sizes for reference: `data/raw` 1.6 GB, `data/processed` 780 MB,
    risk cfb's own runbook section 9 names for its libm concern) stops
    everything -- no sweep, no upload, back to the PM, never a loosened
    tolerance.
+
+---
+
+## 11. fg_make round-2b artifacts: synced via the new `model_artifacts` HF key (2026-09-10)
+
+`scripts/hf_sync_data.py` gained a fourth bulk dir, `model_artifacts` ->
+`data/processed/models/` (the whole tree). Unlike `engine_inputs` (which
+mirrors the full `engine/` directory, tracked files included, as a
+deliberate simplification -- section 4), `model_artifacts` pushes **only**
+the gitignored subset of `data/processed/models/`, computed fresh each run
+via `git check-ignore --stdin`: most of that tree is git-tracked and must
+never be duplicated onto HF. The `engine/` subtree is explicitly excluded
+from this key's scan (it already has its own dedicated `engine_inputs` path;
+scanning it again here would just re-upload the same S1 artifacts under a
+second prefix).
+
+This is the sync path for `data/processed/models/fg_make/round2/` (~21 MB)
+and `data/processed/models/fg_make/round2b/` (~25 MB) -- the fg_make
+bake-off scratch (grid-search checkpoints and, for round2b, monthly S1
+fitted boosters) added to `.gitignore` this session
+(`data/processed/models/fg_make/round2/`,
+`data/processed/models/fg_make/round2b/`, plus a general
+`data/processed/models/*/round*/` / `data/processed/models/*/*_s1/` pattern
+for future round-N / S1 sets in any model directory, narrowed with `!`
+negations for the two dirs that were already git-tracked at the time --
+`possession_outcome/round2/` and `clock/v3b_s1/`, both of which are
+unaffected and stay tracked as before). If a future `ENGINE_FG3` config
+adopts a round2b fitted model into the engine's read path, pull it with:
+
+```
+.venv\Scripts\python.exe scripts\hf_sync_data.py pull --dirs model_artifacts
+```
+
+`Dockerfile.cbb`'s section-1/section-3 build-time existence checks would
+need a matching entry added if/when that happens -- not done yet, since no
+adopted engine config reads round2b today.

@@ -18,6 +18,21 @@ deliberate simplification -- the duplication of already-tracked files on HF
 costs little and keeps `_root_for` a plain one-directory-in, one-prefix-out
 mapping like `raw` and `results`.
 
+`model_artifacts` maps to the whole `data/processed/models/` tree, but
+-- unlike `engine_inputs` -- only the gitignored subset of it is ever synced
+(`_gitignored_files`, backed by `git check-ignore --stdin`): most of
+`data/processed/models/` is git-tracked (lookup tables, fitted sub-models --
+the unrecoverable state this repo protects), and duplicating all of that
+onto HF would be wasteful and confusing. This is the generic, growing-set
+sync path for round-N / S1 bake-off scratch (e.g.
+`data/processed/models/fg_make/round2{,b}/`) that is gitignored per
+`.gitignore` but has no dedicated bulk key of its own the way `engine_inputs`
+does. Push computes the ignored-file list fresh each run and passes it as
+`allow_patterns`, so a file that becomes tracked later automatically drops
+out of what gets pushed. Pull is unfiltered (`model_artifacts/**`) because
+only ignored files were ever pushed under that prefix, so there is nothing
+tracked to accidentally pull back.
+
 Everything else the sim needs -- other data/processed models+lookups and
 data/reference -- IS tracked in git and arrives with the clone. Do not add
 them here.
@@ -34,6 +49,7 @@ Run: .venv/Scripts/python.exe scripts/hf_sync_data.py pull
 import argparse
 import os
 import re
+import subprocess
 import sys
 import time
 from datetime import datetime
@@ -43,12 +59,13 @@ ROOT = Path(__file__).resolve().parent.parent
 DATA_DIR = ROOT / "data"
 RESULTS_DIR = ROOT / "results"
 ENGINE_INPUTS_DIR = DATA_DIR / "processed" / "models" / "engine"
+MODEL_ARTIFACTS_DIR = DATA_DIR / "processed" / "models"
 REPO_ID = "mvpeav/cbb-sim-data"
-BULK_DIRS = ["raw", "results", "engine_inputs"]
+BULK_DIRS = ["raw", "results", "engine_inputs", "model_artifacts"]
 
 # Single wave -- unlike CFB there is no multi-wave priority split here yet.
 PUSH_WAVES = [
-    ("wave1-all", ["raw/**", "results/**", "engine_inputs/**"]),
+    ("wave1-all", ["raw/**", "results/**", "engine_inputs/**", "model_artifacts/**"]),
 ]
 
 
@@ -102,7 +119,47 @@ def _root_for(d: str) -> Path:
         return RESULTS_DIR
     if d == "engine_inputs":
         return ENGINE_INPUTS_DIR
+    if d == "model_artifacts":
+        return MODEL_ARTIFACTS_DIR
     return DATA_DIR / d
+
+
+def _gitignored_files(root: Path) -> list[Path]:
+    """Files under root that git considers ignored (not the tracked ones).
+
+    Backs the `model_artifacts` bulk dir: `data/processed/models/` is mostly
+    git-tracked, and only the gitignored scratch under it (round-N / S1
+    bake-off artifacts, per `.gitignore`) should ever leave for HF. Uses
+    `git check-ignore --stdin`, which echoes back only the lines that match
+    an ignore rule, so no other filtering is needed.
+    """
+    all_files = [p for p in root.rglob("*") if p.is_file()]
+    if not all_files:
+        return []
+    rels = [p.relative_to(ROOT).as_posix() for p in all_files]
+    # Binary stdin/stdout on purpose: subprocess's text mode translates "\n"
+    # to "\r\n" on Windows when writing to the child's stdin, which corrupts
+    # each path with a trailing \r -- git then C-style-quotes the "unusual"
+    # path back, breaking a plain splitlines() parse. Encode/decode by hand
+    # instead of using text=True.
+    payload = ("\n".join(rels) + "\n").encode("utf-8")
+    proc = subprocess.run(
+        ["git", "check-ignore", "--stdin"],
+        input=payload, capture_output=True, cwd=ROOT,
+    )
+    if proc.returncode not in (0, 1):
+        raise RuntimeError(f"git check-ignore failed: {proc.stderr.decode('utf-8', 'replace').strip()}")
+    ignored = set(proc.stdout.decode("utf-8").splitlines())
+    return [ROOT / r for r in ignored]
+
+
+def _model_artifacts_files(root: Path) -> list[Path]:
+    """Gitignored files under data/processed/models/ for the `model_artifacts`
+    bulk dir -- excluding the engine/ subtree, which is `engine_inputs`'s own
+    dedicated key. Without this exclusion, `event_round2_s1_*/` (gitignored)
+    would get swept up here too and pushed a second time under a different
+    HF prefix, duplicating the same ~45MB for no reason."""
+    return [p for p in _gitignored_files(root) if ENGINE_INPUTS_DIR not in p.parents]
 
 
 def push(dirs: list[str], token: str, max_attempts: int) -> None:
@@ -123,25 +180,37 @@ def push(dirs: list[str], token: str, max_attempts: int) -> None:
         status(token)
         return
 
-    # The three bulk dirs live at different real paths (data/raw, results,
-    # data/processed/models/engine), so push each as its own folder_path
-    # with a matching path_in_repo prefix (_root_for owns that mapping).
+    # The bulk dirs live at different real paths (data/raw, results,
+    # data/processed/models/engine, data/processed/models), so push each as
+    # its own folder_path with a matching path_in_repo prefix (_root_for owns
+    # that mapping).
     failed = []
     for d in dirs:
         root = _root_for(d)
         if not root.is_dir():
             log(f"--- {d}: no local dir, skipping")
             continue
-        log(f"--- {d}: uploading from {root}")
+        upload_kwargs = dict(
+            repo_id=REPO_ID, folder_path=str(root), repo_type="dataset",
+            path_in_repo=d, commit_message=f"sync {d}",
+        )
+        if d == "model_artifacts":
+            # Only the gitignored subset of data/processed/models/ -- the
+            # rest is git-tracked already and must not be duplicated onto HF.
+            patterns = [p.relative_to(root).as_posix() for p in _model_artifacts_files(root)]
+            if not patterns:
+                log(f"--- {d}: no gitignored files under {root}, skipping upload")
+                continue
+            upload_kwargs["allow_patterns"] = patterns
+            log(f"--- {d}: uploading {len(patterns)} gitignored file(s) from {root}")
+        else:
+            log(f"--- {d}: uploading from {root}")
         ok = with_retry(
             f"push-{d}",
             # huggingface-hub >= 1.x dropped path_in_repo from
             # upload_large_folder; upload_folder still supports it and is
             # fine at this size (single commit, ~1-2 GB).
-            lambda d=d, root=root: HfApi(token=token).upload_folder(
-                repo_id=REPO_ID, folder_path=str(root), repo_type="dataset",
-                path_in_repo=d, commit_message=f"sync {d}",
-            ),
+            lambda kwargs=upload_kwargs: HfApi(token=token).upload_folder(**kwargs),
             max_attempts=max_attempts,
         )
         if not ok:
@@ -179,9 +248,16 @@ def local_files(dirs: list[str]) -> set:
     out = set()
     for d in dirs:
         root = _root_for(d)
-        if root.is_dir():
-            out |= {f"{d}/{p.relative_to(root).as_posix()}"
-                    for p in root.rglob("*") if p.is_file()}
+        if not root.is_dir():
+            continue
+        if d == "model_artifacts":
+            # Only the gitignored subset counts as "belongs on HF" here --
+            # the rest of data/processed/models/ is tracked and arrives via
+            # git clone, not this sync path.
+            files = _model_artifacts_files(root)
+        else:
+            files = [p for p in root.rglob("*") if p.is_file()]
+        out |= {f"{d}/{p.relative_to(root).as_posix()}" for p in files}
     return out
 
 
