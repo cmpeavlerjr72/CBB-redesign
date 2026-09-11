@@ -1,165 +1,309 @@
-# ENGINE v0 -- resume state (2026-09-10, 16:35 ET)
+# ENGINE v0 -- resume state (2026-09-10, evening session)
 
-Written at a hard session stop. This file says exactly what exists, what is
-provisional, what is unfinished, and the command to continue. Read
-`docs/models/engine/model.md` first for the architecture;
-`docs/tests/engine_v0_F2_2026-09-10.md` for the gate read.
-
----
-
-## 1. What exists and is complete
-
-| file | state |
-|---|---|
-| `src/cbb_sim/engine/__init__.py` | complete |
-| `src/cbb_sim/engine/state.py` | complete. GameState as a struct of arrays; the rule era (bonus thresholds) read from `bonus_era.json` into state. |
-| `src/cbb_sim/engine/rng.py` | complete. `uniforms_at` (per-row index) + `StreamBook` (one counter per (family, simulation)). Verified bit-identical to `control.rng.uniforms` for a constant index. |
-| `src/cbb_sim/engine/inputs.py` | complete. `EngineInputs` container + `FeaturePlan` static/state splice + save/load. |
-| `src/cbb_sim/engine/adapters.py` | complete. One batched adapter per sub-model + the flag/provenance bundle. |
-| `src/cbb_sim/engine/rotation_adapter.py` | complete. `RotationSampler.next_lineup`'s decision rule vectorised over (2N, 15). |
-| `src/cbb_sim/engine/loop.py` | complete. The possession loop (a)-(g). |
-| `scripts/build_engine_inputs.py` | complete and RUN. Output in `data/processed/models/engine/`. |
-| `scripts/run_engine.py` | complete. Sealed guard, multiprocessing, partial-run handling. |
-| `tests/test_engine.py` | complete. 5 of 10 tests were RUN and PASSED before the stop (`uniforms_at` == `control.rng.uniforms` bit for bit; three consecutive draws differ in every family; team score == sum of player points and team FGA/FG3A/FTA == the player sums; minutes == 5 x game seconds per side; OT length + team-foul carry-over; contract validation of both frames). The other 5 (determinism, batch-independence, five-on-floor, period/OT transitions, allocation spread) were written but NOT executed -- run `pytest tests/test_engine.py -q`. |
-| `docs/models/engine/model.md` | complete. |
-
-Prep artifacts on disk (`data/processed/models/engine/`, built 16:10, 153 s):
-
-    games_F2_2025.parquet      5,710 games (the eval harness's own universe)
-    arrays_F2_2025.npz         team_static (5710, 2, 28), slot_static (5710, 2, 15, 19),
-                               roster/rotation/usage/rebound blocks
-    names_F2_2025.json         column maps, the data-derived rule constants, provenance
-    rebound_F2.joblib          lgbm / C_plus_state refit on 2022-2024
-    free_throw_F2.joblib       lgbm refit on 2022-2024
-    fg_make_FGA_3_decision8_F2.joblib   the Decision-8 LightGBM for FGA_3
-
-Measured at prep time: rotation fallback 1,144 of 11,420 team-games (10.02%);
-ESPN athlete-id coverage 99.98%; 134,707 of 171,300 roster slots are named
-players.
+Supersedes the 16:35 version. Architecture: `docs/models/engine/model.md`.
+Gate read: `docs/tests/engine_v0_F2_2026-09-10.md` (read the **ADDENDUM** at the
+end; everything before it was written when the run had produced no output).
+Seed requirements: `docs/tests/engine_seed_count_2026-09-10.md`.
 
 ---
 
-## 2. What is PROVISIONAL
+## 0. What changed this session
 
-Four adapters stand on sub-models whose own bake-offs adopted nothing. Every flag
-below is written into `results/engine_v0/<tag>/run_meta.json` under
-`adapter_flags`.
-
-| flag | why |
-|---|---|
-| `provisional_event=True` | `possession_outcome` round 1 adopted nothing (0 of 11); round 2 was still running and has written no winner. Engine uses `reference_not_adopted_{first,cont}.pkl` behind `ENGINE_EVENT=reference`. |
-| `provisional_clock=True` | `clock` adopted nothing (0 of 20 eligible). Engine uses the best-CRPS `reference_not_adopted_lgbm_quantile.pkl` behind `ENGINE_CLOCK=reference`. |
-| `provisional_rotation=True` | `rotation` adopted nothing in either round. Engine uses R2 hierarchical Dirichlet + the fitted scheduler from `rotation_fit.json` behind `ENGINE_ROTATION=reference`, vectorised (two stated RNG divergences, model.md section 4.5). |
-| `provisional_usage=True` | the adopted LightGBM choice arm persists no booster anywhere; engine runs `draw_player`'s U1 proportional path with the fitted (prior, m). |
-| `provisional_foul_accrual=True` | the L3 vocabulary has no class for a non-shooting foul that awards no attempt; the engine draws one per possession at the measured rate 0.12335 and bumps TEAM fouls only. Team fouls and personal fouls are NOT reconciled. |
-| `provisional_and_one=True` | and-ones come from a measured rate per made shot class, not a model. |
-| `ENGINE_FG3=decision8` | Decision 8 selects LightGBM for FGA_3; `winner_FGA_3.joblib` predates it and still holds the flat `team_baseline` (shooter slope 0.0086). The engine fits the Decision-8 model into its own directory and never touches `fg_make`'s artifact. `ENGINE_FG3=artifact` runs the stale one. |
-
-Not provisional: `fg_make` rim/jump2 (adopted winners loaded from their
-joblibs), `rebound` and `free_throw` (adopted winners, refit by the engine
-because neither trainer persists a model -- see model.md section 4).
-
----
-
-## 3. What is UNFINISHED
-
-1. **The F2 run produced NOTHING, and the gate scripts were never run on the
-   engine.** A run over all 5,710 games x 50 seeds was launched at 16:22 ET with
-   `--games-per-block 250 --seeds-per-block 25` (6,250 simulations, ~900k
-   possessions per block) on a machine shared with other model workers. No block
-   returned inside the session, and `run_engine.py` only writes after a block
-   returns, so `results/engine_v0/F2_2025/` is EMPTY. A background process may
-   still be running; **do not kill it if another worker owns it, and check
-   whether it has since written before re-launching.**
-
-   The fix is block size, not the engine: blocks must be small enough that
-   several return early. Start with a gradeable smoke pass, confirm
-   `eval_gates.py` reads it, then scale:
-
-       # ~300 simulations per block, ~1 min each -- gradeable in minutes
-       .venv/Scripts/python.exe scripts/run_engine.py --fold F2 --season 2025 \
-           --seeds 5 --workers 16 --games-per-block 60 --seeds-per-block 5 \
-           --tag F2_2025_s5
-
-   Then resume with the full count:
-
-       .venv/Scripts/python.exe scripts/run_engine.py --fold F2 --season 2025 \
-           --seeds 200 --workers 16 --games-per-block 250 --seeds-per-block 25 \
-           --tag F2_2025_s200
-
-   **Expect this to take longer than the 2-hour target.** The MEASURED
-   end-to-end rate at a 6,000-simulation batch on a contended machine is **862
-   possessions/s/core**; 5,710 x 200 x ~145 = 1.66e8 possessions is then 1.93e5
-   core-seconds = **2.7 hours on 20 cores**. The per-model benchmarks (clock
-   4,900 rows/s/core and ~85% of model cost) would project ~3,500 poss/s/core on
-   a free core, i.e. ~40 minutes, but no core was free during the build session
-   so that number is unverified. Re-measure on a quiet box before quoting either.
-
-2. **A seed-count study.** CLAUDE.md requires the minimum seed count be fixed by
-   study before any ROI or gate number is read. Not done. Every gate number in
-   `docs/tests/engine_v0_F2_2026-09-10.md` is therefore a provisional read at
-   whatever seed count the run holds.
-
-3. **The noise-floor / paired-seed run** (`--seed-offset 1000`) that the
-   bake-off rule requires before any adoption. Not done.
-
-4. **The lookup-table export -- now REQUIRED, not optional.** The measured 862
-   poss/s/core misses the throughput target by ~35%, so the deliverable's escape
-   clause applies. The engine runs batched predicts, not binned lookup tables.
-   `ENGINE_CLOCK=reference_empirical` is wired and the empirical arm IS a lookup
-   table (a (n_cells, 91) pmf over 7 binned dims of sizes 6 x 5 x 2 x 3 x 3 x 5 x
-   2), which is the cheapest path; the quantile arm's own binned export, and the
-   binning error the deliverable asks be reported, are **not measured**. Do not
-   assume the error is small. The clock arm is ~85% of model cost, so binning it
-   alone captures nearly all of the available speedup.
-
-5. **`grade_market_props.py`** has not been run. `players.parquet` exists but the
-   prop scorecard was out of time.
-
-6. **`ast` has no model.** `players.parquet` writes 0; `run_meta.json` carries
-   `ast_is_placeholder: true`.
-
-7. **The change ledger** (`docs/models/change_ledger.md`) has no engine-v0 row
-   yet; the PM owns that entry.
+1. **All tests run and pass: 13/13**, in three flag configurations
+   (`reference`; `round2_s1`; `round2_s1` + `reference_empirical`). The five
+   tests that had never been executed -- determinism, batch-independence,
+   five-on-floor, period/OT transitions, allocation spread -- **found no engine
+   bug**. No test was weakened. Three new tests cover dated artifacts.
+2. **`winner_FGA_3.joblib` is no longer stale.** The `fg_make` worker
+   re-exported it at 15:52, after Decision 8 at 15:47. It holds
+   lgbm / C_plus_state and is **bit-identical** to the engine's own Decision-8
+   refit (max |diff| 0.0 over 4,000 probes, same 25 features in the same order,
+   both 400 trees; shooter slope 0.175 against the stale model's 0.0086).
+   `ENGINE_FG3=decision8` and `artifact` now agree and the conflict is closed.
+3. **The possession-outcome ROUND-2 WINNERS ARE WIRED** behind
+   `ENGINE_EVENT=round2_s1` (lgbm+S1 first, cascade+S1 cont).
+   `provisional_event` is **False** under that flag; `reference` still works and
+   still sets it True.
+4. **S1 monthly selection is implemented generically** in
+   `src/cbb_sim/engine/manifest.py`, because S1 is the standing default for
+   EVERY sub-model (L21), not an event-layer special case. Section 2.
+5. **The seed-count study is done** and invalidates most of today's 5-seed
+   market numbers. Section 5.
+6. **`ENGINE_CLOCK=reference_empirical` now actually works** -- it previously
+   failed at adapter load -- so the binning error is measured for the first
+   time. Section 6.
+7. **A first-order defect was found and localised to a named sub-model.**
+   Section 4. It displaces the clock as "the first thing to fix".
 
 ---
 
-## 4. Commands to resume, in order
+## 1. Current gate read (PROVISIONAL, 5 seeds)
 
-    # 1. (only if the prep inputs are stale or the season changes)
-    .venv/Scripts/python.exe scripts/build_engine_inputs.py --fold F2 --season 2025
+`results/engine_v0/F2_2025_s5_r2event`: 5,710 games x 5 seeds, 4,117,924
+possessions, 669 s on 8 workers, `partial=False`.
 
-    # 2. the full run
-    .venv/Scripts/python.exe scripts/run_engine.py --fold F2 --season 2025 --seeds 200 \
-        --workers 16 --games-per-block 250 --seeds-per-block 25 --tag F2_2025_s200
+**PASS 2, FAIL 6, NEEDS-INSTRUMENTATION 4.** Headlines: possessions/game
+**72.118** vs 67.875 (**+4.24**), PPP **1.0090** vs 1.0730, total bias
+**+0.014** (Control -2.826; better than the close), margin SD ratio 1.598,
+home/away score correlation **-0.615** vs +0.253, OT rate 1.21% vs 5.57%,
+per-team-quintile monotone 4/4 but **slope ratio 0.555**, every
+per-possession-type rate within 1.4 pp. Full tables and the G10 scorecard are in
+the test doc's addendum.
 
-    # 3. grade it
-    .venv/Scripts/python.exe scripts/eval_gates.py        --results results/engine_v0/F2_2025_s200 --season 2025
-    .venv/Scripts/python.exe scripts/grade_market_games.py --results results/engine_v0/F2_2025_s200 --season 2025
-    .venv/Scripts/python.exe scripts/grade_market_props.py --results results/engine_v0/F2_2025_s200 --season 2025
+G3, G4 and G8 remain NEEDS-INSTRUMENTATION because of the **truth side**, not
+the engine: G3's rim share needs a pbp shot-location truth table, G4's eFG%
+needs make counts the results contract does not carry (attempts only), G8 needs
+a player truth table. The engine writes all seven box pairs and a 452,618-row
+`players.parquet`. The earlier claim that it makes these gradeable is withdrawn.
 
-    # 4. the noise floor the bake-off rule requires
-    .venv/Scripts/python.exe scripts/run_engine.py --fold F2 --season 2025 --seeds 200 \
-        --seed-offset 1000 --tag F2_2025_s200_seedoff1000
+---
 
-    # 5. tests
+## 2. The dated-artifact mechanism (S1 for every sub-model)
+
+`src/cbb_sim/engine/manifest.py`. One rule in one place that every sub-model
+passes through, so seven adapters cannot implement it seven ways.
+
+**Manifest format (JSON):**
+
+    {
+      "model": "possession_outcome",     # names the run_meta flag
+      "scheme": "S1",                    # "S1" | "static"
+      "fold": "F2", "season": 2025,
+      "key": "first",                    # OPTIONAL: population / class / target
+      "artifacts": [
+        {"refit_date": "2024-11-01",           # required, ISO date
+         "path": "first_2024-11-01.joblib",    # relative to the manifest's dir
+         "max_train_date": "2024-04-08",       # REQUIRED (see below)
+         "n_train": 1908534}                   # optional provenance
+      ]
+    }
+
+Entries need not be sorted. A model with several keys writes one manifest per
+key, or one file whose top level maps key -> that object.
+
+**Selection.** Per game, the artifact with the latest `refit_date` strictly
+before tipoff. `max_train_date` is **required, not optional**: the rule that
+actually binds is `max_train_date < game_date`, asserted at load for every game
+(`CLAUDE.md`: created_at < tipoff, enforced in code). A manifest omitting it is
+rejected unless the caller passes `require_max_train_date=False` and says why.
+
+**A static model is a manifest of length one.** `ArtifactManifest.static(...)`
+sets `is_static`, written to `run_meta.json` as `scheme_static_<model>=True`.
+Today: `possession_outcome` **False**; clock, fg_make, free_throw, rebound,
+usage and rotation all **True** -- i.e. every other sub-model is still S0 and
+the flag says so. That is how a reader tells a deliberately-static model from
+one silently serving a stale S1 artifact, which is the failure the change ledger
+warns about ("a stale artifact degrades toward S0, which fails the gate").
+
+**Two defects the shared rule caught on its first run**, both missed by the
+purpose-built check inside `build_engine_event_round2.py`:
+
+- *A timezone leak.* Comparing a refit date against `tipoff_utc` put every
+  late-evening game in the last days of a month into the NEXT month's artifact
+  (a 19:50 US tip on 31 March carries `tipoff_utc` of 1 April, and the 1 April
+  refit trained through 31 March). Selection now happens on the same calendar
+  the schedule was built on.
+- *An off-by-one-month over-correction.* A strict `refit_date < game_date` would
+  serve November's model to 1 December games. S1's own partition scores a game
+  ON the first with THAT month's refit (fitted strictly before the first), so
+  the engine now reproduces the partition the bake-off actually scored --
+  otherwise the measured calibration would not be the calibration the engine
+  gets.
+
+**Tests** (`tests/test_engine.py`):
+`test_a_game_never_gets_an_artifact_refit_at_or_after_its_own_month` (per-game
+refit-date and max-train-date checks, the month-level form, and an assertion
+that all six artifacts are actually used so a collapsed schedule cannot pass as
+S1); `test_a_static_manifest_is_a_manifest_of_length_one_and_says_so`;
+`test_a_manifest_whose_training_window_reaches_the_game_is_rejected` (the guard
+must fail on a leaky schedule, not merely pass on a clean one).
+
+**For the model workers:** produce dated artifacts under your own versioned
+directory plus a manifest in the format above and hand the PM the path. Do not
+write into `data/processed/models/engine/`.
+
+---
+
+## 3. Artifacts, flags, commands
+
+`data/processed/models/engine/`:
+
+    games_F2_2025.parquet / arrays_F2_2025.npz / names_F2_2025.json
+    rebound_F2.joblib, free_throw_F2.joblib        adopted winners, refit here
+    fg_make_FGA_3_decision8_F2.joblib              now identical to the fg_make winner
+    event_round2_s1_F2_2025/                       46.9 MB, 12 joblibs + team_block.npz + index.json
+
+`event_round2_s1_F2_2025/` is built by `scripts/build_engine_event_round2.py`
+(~8 min) and holds six monthly refits per population (2024-11-01 .. 2025-04-01)
+plus a **round-2 team-form block**. That block is necessary, not incidental:
+round 2 changed the event layer, the style-rate source (`first_chance`) and the
+universe (`pbp_complete`), so matched team-game to team-game on 2025 the same
+feature NAMES correlate only 0.956-0.978 with round 1's and `off_3pa_c`'s own SD
+shrinks 5.25 -> 4.65. Serving round-2 arms round-1 columns would be a silent
+train/serve skew. `arrays_F2_2025.npz` is NOT modified, so `reference` reads
+exactly what it read before. 530 of 11,420 team-games are uncovered by the
+round-2 design; 529 take that team's most recent earlier covered game
+(`merge_asof` backward), 1 falls to the league mean.
+
+**Per PM decision 2026-09-10**, `data/processed/models/engine/event_round2_s1_*/`
+is now in `.gitignore` and syncs to the private HF dataset via
+`scripts/hf_sync_data.py`. On a fresh machine, pull it or rebuild it.
+
+| flag | values | default | effect |
+|---|---|---|---|
+| `ENGINE_EVENT` | `reference` \| `round2_s1` | `reference` | `round2_s1` runs the adopted round-2 winners and clears `provisional_event` |
+| `ENGINE_CLOCK` | `reference` \| `reference_empirical` | `reference` | provisional either way; `reference_empirical` is the binned lookup table and now loads |
+| `ENGINE_ROTATION` | `reference` | `reference` | provisional |
+| `ENGINE_FG3` | `decision8` \| `artifact` | `decision8` | now equivalent |
+
+`run_meta.json` also carries `scheme_static_<model>` for all seven sub-models.
+`CBB_UNSEAL=1` is required for season 2026 and stays unset.
+
+    # build the round-2 S1 event artifacts (once per fold/season, ~8 min)
+    .venv/Scripts/python.exe scripts/build_engine_event_round2.py --fold F2 --season 2025
+
+    # the run (5 seeds ~11 min on 8 workers; 200 seeds ~2.6 h on 20 cores)
+    ENGINE_EVENT=round2_s1 .venv/Scripts/python.exe scripts/run_engine.py \
+        --fold F2 --season 2025 --seeds 200 --workers 8 \
+        --games-per-block 60 --seeds-per-block 25 --tag F2_2025_s200_r2event
+
+    # grade
+    .venv/Scripts/python.exe scripts/eval_gates.py             --results results/engine_v0/<tag> --season 2025
+    .venv/Scripts/python.exe scripts/grade_market_games.py     --results results/engine_v0/<tag> --season 2025
+    .venv/Scripts/python.exe scripts/grade_market_props.py     --results results/engine_v0/<tag> --season 2025
+    .venv/Scripts/python.exe scripts/diag_engine_multilevel.py --results results/engine_v0/<tag> --season 2025
+
+    # the studies
+    .venv/Scripts/python.exe scripts/exp_engine_seed_count.py  --fold F2 --season 2025 --games 300 --seeds 200 --workers 8
+    .venv/Scripts/python.exe scripts/diag_engine_throughput.py --fold F2 --season 2025 --games 300 --seeds 10 --workers 8
+
+    # tests
     .venv/Scripts/python.exe -m pytest tests/test_engine.py -q
 
-Environment flags, all defaulting to the values recorded above:
-`ENGINE_EVENT`, `ENGINE_CLOCK` (`reference` | `reference_empirical`),
-`ENGINE_ROTATION`, `ENGINE_FG3` (`decision8` | `artifact`).
-Pin `OMP_NUM_THREADS=1` (the runner does this in every worker).
-`CBB_UNSEAL=1` is required to touch season 2026 and should stay unset.
+---
+
+## 4. THE FIRST THING TO FIX -- `score_diff` feedback (was: the clock)
+
+The clock is no longer the largest defect. A per-sub-model ablation (60 games x
+20 seeds, paired streams, the `score_diff` and
+`score_diff x seconds_remaining` columns redirected to an always-zero column for
+one adapter at a time; the harness reproduces the baseline exactly):
+
+| arm | margin SD | total SD | per-team pts SD | corr(home,away) | poss/game |
+|---|---|---|---|---|---|
+| baseline | 34.61 | 16.36 | 19.77 | **-0.6363** | 71.61 |
+| clock off | 33.01 | 14.55 | 18.37 | -0.6750 | **67.84** |
+| event off | 39.36 | 16.46 | 22.09 | -0.7041 | 71.48 |
+| **fg_make off** | **11.35** | 17.79 | **10.65** | **+0.4214** | 71.82 |
+| all off | 14.42 | 15.30 | 10.64 | +0.0593 | 68.38 |
+| **actual 2025** | **14.63** | **18.95** | ~11 | **+0.2532** | **67.88** |
+
+**Two separate defects with two separate owners.**
+
+1. **`fg_make` owns the dispersion blow-up.** Its `score_diff` alone triples
+   margin variance and flips the home/away correlation from +0.42 to -0.64.
+   The event model is *damping* the loop, not driving it.
+2. **`clock` owns the possession inflation.** Its `score_diff` alone accounts
+   for the ENTIRE +4.24 G1 miss (71.61 -> 67.84 against an actual 67.88). The
+   clock bake-off's L20 horn-truncation root cause is still real, but it is not
+   what G1 is measuring here.
+
+**Diagnosis.** `score_diff` is a CONSEQUENCE of the outcome being simulated,
+used as a DRIVER of it. In training it is exogenous and carries team-quality
+information, so a shot-make model that sees it learns a coefficient that is
+partly a selection effect. In simulation that closes a loop: a random early lead
+is read as evidence of a strong offence, which scores more, which widens the
+lead. Team strength is already carried by the ratings and shooter features, so
+the engine double-counts it, with feedback.
+
+**What was NOT done.** No shrinkage, clipping, rescaling or recalibration
+(`CLAUDE.md`, "no hand tuning on engine output"). The ablation names the
+responsible sub-model; it is not a fix. Deletion is not the fix either: the "all
+off" row costs 12 points of game total (133.24 vs an actual 145.51), because the
+state block genuinely carries signal -- it cleared its own noise floor by 30-140x
+at L3.
+
+**What needs pre-registering**, for the PM: a bake-off over parametrisations of
+game state that cannot re-encode team strength -- `score_diff` residualised
+against the pregame rating difference and elapsed fraction; a "surprise" term
+(`score_diff` minus its expectation given the matchup and time remaining); or
+dropping it from the scoring-stage models while keeping it in the clock. This
+blocks G5, G7 and every market number, and it is larger than anything currently
+in the clock round-3 queue.
 
 ---
 
-## 5. The first thing to fix
+## 5. Seeds: what may and may not be read
 
-The clock model. The engine's possession count runs about 4.5 too high and its
-points per possession about 6% too low, and the two nearly cancel in the game
-total -- which is exactly the offsetting-error pattern CLAUDE.md's multi-level
-evidence rule exists to catch. The clock bake-off adopted nothing *because* no
-arm passed the emergent G1 gate, and Decision 7 records this as the acknowledged
-risk of making pace emergent. Every other gate reads downstream of it. Round 2 of
-the clock bake-off was still running when this engine was built; re-wire it the
-moment a winner exists, before reading any other gate as a model result.
+`docs/tests/engine_seed_count_2026-09-10.md` (300 games x 200 seeds, 8.6M
+possessions, paired by construction).
+
+| seeds | per-game margin SE | per-game win-prob SE | slate margin SE |
+|---|---|---|---|
+| 5 | **14.85 pt** | **21.6 pp** | 0.772 |
+| 25 | 6.36 | 9.4 pp | 0.272 |
+| 100 | 3.03 | 4.2 pp | 0.112 |
+
+- **Game-level win-prob SE < 1 pp needs ~2,100 seeds** (4,300 for the p90 game).
+  That is mostly a counting requirement, not an engine one: SE is
+  `sqrt(p(1-p)/k) <= 0.5/sqrt(k)`, so no simulator reaches 1 pp under ~1,900.
+- **Minimum for the G1-G9 gate report: 200 seeds** (slate SE ~0.08 pt, an order
+  of magnitude inside every tolerance).
+- **No ROI, Brier or per-game market number may be quoted below ~2,000 seeds.**
+  Today's G10 margin MAE of 16.03 is mostly the 14.85-point MC error, and its
+  calibration deciles show probabilities of exactly 0.2/0.4/0.6/0.8/1.0 -- the
+  5-seed quantisation. G5's PIT is likewise a comb at 5 seeds and unreadable.
+- These requirements are inflated ~6x by the section-4 defect (seed count scales
+  with the square of the within-game SD) and should be **re-measured, not
+  rescaled**, after it is fixed.
+
+---
+
+## 6. Throughput and the lookup table
+
+Contended measurement: 20 logical cores, 76-80% total CPU busy, 12 Python
+processes (four other model workers active).
+
+| arm | poss/s/core |
+|---|---|
+| `ENGINE_CLOCK=reference` (live 9-quantile LightGBM) | 873.7 |
+| `ENGINE_CLOCK=reference_empirical` (binned pmf lookup) | 1,111.6 |
+
+Independent reads: 817.4 poss/s/core (seed study, 8 workers, 8.6M poss) and 769
+(full-slate run, 8 workers). Honest contended rate: **820-880**.
+
+**The lookup table buys 1.27x, not the ~5x the plan assumed.** "The clock is 85%
+of model cost" came from isolated per-model benchmarks; in the real loop the
+cost is dominated by state bookkeeping, matrix assembly and the other six
+adapters. 5,710 x 200 seeds = 1.65e8 possessions: **2.6 h live vs 2.05 h binned
+on 20 cores**, so the export only just reaches the 2-hour target and no further
+clock optimisation can help.
+
+**The binning error, measured for the first time** (paired, same games/seeds):
+possessions/game **-0.980**, per-game possessions **MAE 1.652** (SD 1.847),
+total -2.320, PPP -0.0024. **Not small** -- the MAE alone exceeds G1's +/-1.0
+tolerance. It is an upper bound on a faithful export's error, because the
+empirical arm is a different model rather than the quantile arm binned.
+
+`reference_empirical` previously failed at load, for two reasons now fixed: it
+declares `chance_number_at_start` (identically 1.0 at a possession's start; the
+engine now supplies that constant), and `EmpiricalArm._codes` reads raw
+`prev_end` (string) and `season` columns absent from the arm's own feature list
+(`ClockAdapter` now rebuilds both).
+
+---
+
+## 7. Still unfinished
+
+1. **The 200-seed full-season run** (~2.6 h on 20 cores). Today's read is 5
+   seeds.
+2. **The paired-seed noise floor** (`--seed-offset 1000`).
+3. **The `score_diff` re-parametrisation bake-off** (section 4) -- blocks G5,
+   G7 and every market number.
+4. **A faithful binned export of the quantile arm**, and its own binning error
+   separated from the model difference (section 6).
+5. **`ast` has no model.** `players.parquet` writes 0; `ast_is_placeholder: true`.
+6. **Truth-side instrumentation for G3, G4 and G8** (section 1) -- a pbp
+   shot-location truth table, make counts in the results contract, a player
+   truth table.
+7. **The change ledger** has no engine-v0 row; the PM owns it.

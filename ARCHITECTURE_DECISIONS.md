@@ -105,3 +105,15 @@ Every major design decision, the reasoning, and the alternatives considered. For
 **Alternative considered:** Keep monthly S1 and rely on own_ratings (already opponent-adjusted) to carry quality while style rates stay raw-centred. This is the F0/F1 reference in round 3; if the tree already extracts the schedule-strength correction from own_ratings, the adjusted arms will sit inside the floor and F0/F1 wins by the simplicity rule. That outcome is a legitimate result, not a failure.
 
 **Risk acknowledged:** Per-team aligned refits multiply fitted objects; the trainer refits once per distinct boundary date and shares across teams. Opponent adjustment must be strictly as-of (only games before the date) or it becomes a leak; the leak harness runs on every adjusted feature.
+
+## Decision 10: Closed-loop gate for every engine-produced state feature (2026-09-10)
+
+**Decision:** Any sub-model feature that the engine itself generates during a simulated game (score margin, team fouls, possession index, and any interaction of these with clock) is adopted only after a closed-loop check inside the engine: a paired-stream run with the feature live vs frozen at its pregame value must keep margin SD ratio, home/away score correlation, and possessions per game inside the G1/G2 tolerances. Offline log loss and calibration on real game states remain necessary but are no longer sufficient for state features.
+
+**Why:** L23. fg_make's `score_diff` passed every offline gate and then tripled margin variance in the engine; the clock's `score_diff` produced the whole +4.24 possession miss. Real game states carry a stable confound (the leading team is the better team) that a sim breaks by construction.
+
+**How it is applied:** Prospectively to every bake-off with state features. Retroactively to fg_make and clock, which get pre-registered round-2/round-3 arms that re-parametrise state; usage and rotation are audited for engine-produced inputs and gated the same way in their current rounds. The gate is run with the engine's `diag_engine_multilevel.py` ablation, 5 seeds minimum for the SD ratio, 200 for the final read.
+
+**Alternative considered:** Drop `score_diff` everywhere. Rejected: it removes real end-game effects (12 points of total in the ablation) and is a deletion chosen because it is convenient, which the bake-off rule bans.
+
+**Risk acknowledged:** A closed-loop gate depends on the rest of the engine being right; a feature can fail it because another sub-model is broken. Ablations are therefore run one sub-model at a time with all others frozen, and the attribution of a failure is written with the ablation table, never from the aggregate.

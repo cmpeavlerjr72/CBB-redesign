@@ -49,3 +49,9 @@ Thumbs.db
 data/processed/possessions/
 data/processed/models/**/design.parquet
 data/processed/models/**/*_design.parquet
+
+# Engine S1 artifact schedules: one fitted model per monthly refit per
+# population, ~47MB per (fold, season) and growing with every sub-model that
+# adopts S1. Rebuildable by scripts/build_engine_event_round2.py and synced to
+# the private HF dataset via scripts/hf_sync_data.py (PM decision 2026-09-10).
+data/processed/models/engine/event_round2_s1_*/

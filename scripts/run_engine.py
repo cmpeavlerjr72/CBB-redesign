@@ -52,7 +52,7 @@ _PIN = ("OMP_NUM_THREADS", "OPENBLAS_NUM_THREADS", "MKL_NUM_THREADS",
 _W: dict = {}
 
 
-def _init_worker(tag: str, fold: str, input_dir: str, flags: dict) -> None:
+def _init_worker(tag: str, fold: str, season: int, input_dir: str, flags: dict) -> None:
     for k in _PIN:
         os.environ[k] = "1"
     for k, v in flags.items():
@@ -62,7 +62,7 @@ def _init_worker(tag: str, fold: str, input_dir: str, flags: dict) -> None:
     from cbb_sim.engine.inputs import EngineInputs
     inp = EngineInputs.load(input_dir, tag)
     _W["inp"] = inp
-    _W["ad"] = Adapters.load(inp, fold)
+    _W["ad"] = Adapters.load(inp, fold, season)
 
 
 def _run_block(job: tuple) -> tuple:
@@ -110,7 +110,7 @@ def main() -> int:
 
     in_tag = f"{args.fold}_{args.season}"
     inp = EngineInputs.load(args.input_dir, in_tag)
-    ad = Adapters.load(inp, args.fold)
+    ad = Adapters.load(inp, args.fold, int(args.season))
     flags = {k: ad.flags[k] for k in ("ENGINE_EVENT", "ENGINE_CLOCK", "ENGINE_ROTATION",
                                       "ENGINE_FG3")}
     print(f"engine_v0 {args.fold}/{args.season}: {inp.n_games} games, "
@@ -142,7 +142,8 @@ def main() -> int:
     done = 0
     stopped_early = False
     with ProcessPoolExecutor(max_workers=args.workers, initializer=_init_worker,
-                             initargs=(in_tag, args.fold, args.input_dir, flags)) as ex:
+                             initargs=(in_tag, args.fold, int(args.season),
+                                       args.input_dir, flags)) as ex:
         futs = {ex.submit(_run_block, j): j for j in jobs}
         for fut in futs:
             pass

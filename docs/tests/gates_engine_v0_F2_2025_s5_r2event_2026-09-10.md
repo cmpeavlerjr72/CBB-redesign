@@ -1,0 +1,2057 @@
+# Gate report -- engine_v0/F2_2025_s5_r2event (season 2025)
+
+Generated 2026-09-10 by `scripts/eval_gates.py`. Results: `results/engine_v0/F2_2025_s5_r2event`. Tolerances: `docs\gates.yaml` (provisional until the seed-noise study, `docs/SIM_GUARDRAILS.md` section 3). Every gate line ends in a literal PASS / FAIL / NEEDS-INSTRUMENTATION.
+
+Games graded: 5710 (of 5710 in the run; the difference is games the truth tables exclude as non-D-I or pbp-truncated, or that the run itself does not cover). Seeds per game: 5. run_meta: fold=F2, backtest=True, sealed_touched=False.
+
+## G1 -- Possessions per game, mean and SD (overall, by month)
+
+| quantity | value | target | tolerance | status |
+|---|---|---|---|---|
+| possessions/game mean | 72.118 vs 67.875 | 67.875 | +/-1.0 | FAIL |
+| possessions/game SD | 4.758 vs 5.474 | 5.474 | +/-0.75 | PASS |
+| by month (mean and SD) | 0/5 powered months inside | all inside | see per-month table | FAIL |
+
+1 month(s) below n=300 labelled UNDERPOWERED and not scored.
+
+### by breakdown
+
+| breakdown | group | n_games | sim_mean | actual_mean | ref_mean | sim_sd | actual_sd | ref_sd | d_mean | d_sd | status_mean | status_sd |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| season | all | 5710 | 72.1178 | 67.8753 | 67.8753 | 4.7578 | 5.4741 | 5.4741 | 4.2425 | -0.7163 | FAIL | PASS |
+| month | 1 | 1423 | 71.9810 | 67.4339 | 67.4339 | 4.8127 | 5.4817 | 5.4817 | 4.5471 | -0.6690 | FAIL | PASS |
+| month | 2 | 1367 | 71.7303 | 67.2344 | 67.2344 | 4.6129 | 5.1604 | 5.1604 | 4.4959 | -0.5475 | FAIL | PASS |
+| month | 3 | 765 | 71.2733 | 67.4826 | 67.4826 | 4.6714 | 5.3518 | 5.3518 | 3.7907 | -0.6804 | FAIL | PASS |
+| month | 4 | 17 | 70.1353 | 69.1365 | 69.1365 | 4.1075 | 5.6686 | 5.6686 | 0.9988 | -1.5611 | UNDERPOWERED | UNDERPOWERED |
+| month | 11 | 1222 | 73.0534 | 69.0697 | 69.0697 | 4.7549 | 5.5818 | 5.5818 | 3.9837 | -0.8269 | FAIL | FAIL |
+| month | 12 | 916 | 72.4023 | 68.2291 | 68.2291 | 4.7458 | 5.5994 | 5.5994 | 4.1732 | -0.8536 | FAIL | FAIL |
+
+**G1 overall: FAIL**
+
+## G2 -- Points per possession, by offense tercile x defense tercile
+
+| quantity | value | target | tolerance | status |
+|---|---|---|---|---|
+| PPP by offense x defense tercile (9 cells) | 1/9 powered cells inside +/-0.02 | all inside | +/-0.02 per cell | FAIL |
+
+Terciles are each team's OWN season points-scored / points-allowed average (`reference.team_quality_terciles`), grading-only, never a model feature.
+
+### by tercile cell
+
+| offense_tercile | defense_tercile | n_team_games | sim_ppp | actual_ppp | delta | status |
+|---|---|---|---|---|---|---|
+| bottom_tercile | bottom_tercile | 1275 | 0.9549 | 0.9659 | -0.0110 | PASS |
+| bottom_tercile | middle_tercile | 1247 | 0.9713 | 1.0139 | -0.0426 | FAIL |
+| bottom_tercile | top_tercile | 1147 | 0.9915 | 1.0584 | -0.0669 | FAIL |
+| middle_tercile | bottom_tercile | 1254 | 0.9878 | 1.0189 | -0.0311 | FAIL |
+| middle_tercile | middle_tercile | 1298 | 1.0130 | 1.0737 | -0.0607 | FAIL |
+| middle_tercile | top_tercile | 1262 | 1.0339 | 1.1189 | -0.0850 | FAIL |
+| top_tercile | bottom_tercile | 1429 | 1.0223 | 1.0851 | -0.0628 | FAIL |
+| top_tercile | middle_tercile | 1252 | 1.0453 | 1.1346 | -0.0893 | FAIL |
+| top_tercile | top_tercile | 1236 | 1.0651 | 1.1908 | -0.1257 | FAIL |
+
+**G2 overall: FAIL**
+
+## G3 -- Shot mix per possession: 3PA share, rim share, FTA/FGA (by team)
+
+| quantity | value | target | tolerance | status |
+|---|---|---|---|---|
+| 3PA share & FTA/FGA by team | 0/0 powered team-metrics inside | all inside | +/-1.5pp | NEEDS-INSTRUMENTATION |
+| rim share by team | n/a | n/a | +/-1.5pp | NEEDS-INSTRUMENTATION |
+
+Rim-vs-jump truth requires pbp shot-location classification, out of this task's scope (`data/processed/possessions*` is off-limits here); rim share is always NEEDS-INSTRUMENTATION until that truth table is wired in, even when the sim reports fga2_rim.
+
+### by team-metric
+
+| metric | team_id | n_games | sim | actual | delta_pp | status |
+|---|---|---|---|---|---|---|
+| three_pa_share | 2 | 38 | 0.4217 | 0.4095 | 1.2229 | UNDERPOWERED |
+| three_pa_share | 5 | 36 | 0.3294 | 0.2937 | 3.5724 | UNDERPOWERED |
+| three_pa_share | 6 | 30 | 0.4507 | 0.4568 | -0.6132 | UNDERPOWERED |
+| three_pa_share | 8 | 36 | 0.3702 | 0.3675 | 0.2696 | UNDERPOWERED |
+| three_pa_share | 9 | 33 | 0.4067 | 0.4283 | -2.1597 | UNDERPOWERED |
+| three_pa_share | 12 | 37 | 0.3657 | 0.3475 | 1.8168 | UNDERPOWERED |
+| three_pa_share | 13 | 34 | 0.4465 | 0.5126 | -6.6074 | UNDERPOWERED |
+| three_pa_share | 16 | 28 | 0.4384 | 0.4541 | -1.5733 | UNDERPOWERED |
+| three_pa_share | 21 | 30 | 0.3834 | 0.3980 | -1.4593 | UNDERPOWERED |
+| three_pa_share | 23 | 33 | 0.3825 | 0.4074 | -2.4905 | UNDERPOWERED |
+| three_pa_share | 24 | 35 | 0.4198 | 0.4188 | 0.1028 | UNDERPOWERED |
+| three_pa_share | 25 | 33 | 0.3925 | 0.3772 | 1.5357 | UNDERPOWERED |
+| three_pa_share | 26 | 34 | 0.3691 | 0.3655 | 0.3676 | UNDERPOWERED |
+| three_pa_share | 27 | 30 | 0.4218 | 0.4250 | -0.3113 | UNDERPOWERED |
+| three_pa_share | 28 | 33 | 0.4587 | 0.4944 | -3.5734 | UNDERPOWERED |
+| three_pa_share | 30 | 35 | 0.3626 | 0.3489 | 1.3645 | UNDERPOWERED |
+| three_pa_share | 36 | 36 | 0.4231 | 0.4289 | -0.5742 | UNDERPOWERED |
+| three_pa_share | 38 | 35 | 0.3961 | 0.3745 | 2.1584 | UNDERPOWERED |
+| three_pa_share | 41 | 35 | 0.4391 | 0.4296 | 0.9476 | UNDERPOWERED |
+| three_pa_share | 43 | 29 | 0.3543 | 0.3236 | 3.0701 | UNDERPOWERED |
+| three_pa_share | 44 | 33 | 0.4262 | 0.4527 | -2.6486 | UNDERPOWERED |
+| three_pa_share | 45 | 33 | 0.4350 | 0.4267 | 0.8273 | UNDERPOWERED |
+| three_pa_share | 46 | 34 | 0.3674 | 0.3793 | -1.1835 | UNDERPOWERED |
+| three_pa_share | 47 | 25 | 0.3756 | 0.3890 | -1.3374 | UNDERPOWERED |
+| three_pa_share | 48 | 34 | 0.4123 | 0.4017 | 1.0600 | UNDERPOWERED |
+| three_pa_share | 50 | 28 | 0.4454 | 0.4617 | -1.6335 | UNDERPOWERED |
+| three_pa_share | 52 | 32 | 0.3653 | 0.3386 | 2.6733 | UNDERPOWERED |
+| three_pa_share | 55 | 33 | 0.3819 | 0.3688 | 1.3092 | UNDERPOWERED |
+| three_pa_share | 56 | 27 | 0.3919 | 0.3764 | 1.5534 | UNDERPOWERED |
+| three_pa_share | 57 | 40 | 0.4108 | 0.4395 | -2.8635 | UNDERPOWERED |
+| three_pa_share | 58 | 31 | 0.4069 | 0.3759 | 3.0982 | UNDERPOWERED |
+| three_pa_share | 59 | 34 | 0.3841 | 0.3694 | 1.4699 | UNDERPOWERED |
+| three_pa_share | 61 | 32 | 0.3894 | 0.3727 | 1.6681 | UNDERPOWERED |
+| three_pa_share | 62 | 28 | 0.3918 | 0.3776 | 1.4120 | UNDERPOWERED |
+| three_pa_share | 66 | 34 | 0.3844 | 0.3694 | 1.4962 | UNDERPOWERED |
+| three_pa_share | 68 | 36 | 0.4144 | 0.4305 | -1.6135 | UNDERPOWERED |
+| three_pa_share | 70 | 31 | 0.4402 | 0.4800 | -3.9886 | UNDERPOWERED |
+| three_pa_share | 71 | 35 | 0.4271 | 0.4250 | 0.2115 | UNDERPOWERED |
+| three_pa_share | 77 | 33 | 0.3376 | 0.3443 | -0.6718 | UNDERPOWERED |
+| three_pa_share | 79 | 31 | 0.3569 | 0.3368 | 2.0085 | UNDERPOWERED |
+| three_pa_share | 82 | 29 | 0.4104 | 0.3948 | 1.5605 | UNDERPOWERED |
+| three_pa_share | 84 | 31 | 0.3439 | 0.3339 | 0.9936 | UNDERPOWERED |
+| three_pa_share | 85 | 29 | 0.4612 | 0.4757 | -1.4491 | UNDERPOWERED |
+| three_pa_share | 87 | 33 | 0.3799 | 0.3766 | 0.3286 | UNDERPOWERED |
+| three_pa_share | 88 | 28 | 0.3425 | 0.3335 | 0.9070 | UNDERPOWERED |
+| three_pa_share | 91 | 29 | 0.4320 | 0.4329 | -0.0915 | UNDERPOWERED |
+| three_pa_share | 93 | 32 | 0.4114 | 0.4012 | 1.0273 | UNDERPOWERED |
+| three_pa_share | 94 | 31 | 0.3924 | 0.4028 | -1.0426 | UNDERPOWERED |
+| three_pa_share | 96 | 36 | 0.4202 | 0.4118 | 0.8393 | UNDERPOWERED |
+| three_pa_share | 97 | 35 | 0.4705 | 0.4783 | -0.7883 | UNDERPOWERED |
+| three_pa_share | 98 | 30 | 0.3883 | 0.3968 | -0.8545 | UNDERPOWERED |
+| three_pa_share | 99 | 32 | 0.4445 | 0.4361 | 0.8408 | UNDERPOWERED |
+| three_pa_share | 103 | 31 | 0.3477 | 0.3295 | 1.8212 | UNDERPOWERED |
+| three_pa_share | 104 | 28 | 0.4196 | 0.4152 | 0.4464 | UNDERPOWERED |
+| three_pa_share | 107 | 30 | 0.3975 | 0.4235 | -2.6031 | UNDERPOWERED |
+| three_pa_share | 108 | 25 | 0.3925 | 0.3962 | -0.3714 | UNDERPOWERED |
+| three_pa_share | 111 | 32 | 0.3720 | 0.3509 | 2.1185 | UNDERPOWERED |
+| three_pa_share | 113 | 31 | 0.3642 | 0.3222 | 4.1991 | UNDERPOWERED |
+| three_pa_share | 116 | 34 | 0.3782 | 0.4134 | -3.5145 | UNDERPOWERED |
+| three_pa_share | 119 | 31 | 0.3648 | 0.3719 | -0.7117 | UNDERPOWERED |
+| three_pa_share | 120 | 36 | 0.3790 | 0.3533 | 2.5702 | UNDERPOWERED |
+| three_pa_share | 127 | 37 | 0.3384 | 0.3305 | 0.7985 | UNDERPOWERED |
+| three_pa_share | 130 | 37 | 0.4485 | 0.4218 | 2.6757 | UNDERPOWERED |
+| three_pa_share | 135 | 31 | 0.3876 | 0.3650 | 2.2631 | UNDERPOWERED |
+| three_pa_share | 139 | 32 | 0.4579 | 0.5027 | -4.4797 | UNDERPOWERED |
+| three_pa_share | 140 | 29 | 0.4278 | 0.4392 | -1.1393 | UNDERPOWERED |
+| three_pa_share | 142 | 34 | 0.4039 | 0.4120 | -0.8180 | UNDERPOWERED |
+| three_pa_share | 145 | 36 | 0.4067 | 0.3996 | 0.7134 | UNDERPOWERED |
+| three_pa_share | 147 | 32 | 0.4367 | 0.4291 | 0.7568 | UNDERPOWERED |
+| three_pa_share | 149 | 31 | 0.3825 | 0.3663 | 1.6214 | UNDERPOWERED |
+| three_pa_share | 150 | 39 | 0.4414 | 0.4457 | -0.4279 | UNDERPOWERED |
+| three_pa_share | 151 | 31 | 0.3697 | 0.3524 | 1.7291 | UNDERPOWERED |
+| three_pa_share | 152 | 31 | 0.3525 | 0.3618 | -0.9313 | UNDERPOWERED |
+| three_pa_share | 153 | 37 | 0.3818 | 0.3719 | 0.9878 | UNDERPOWERED |
+| three_pa_share | 154 | 32 | 0.3612 | 0.3487 | 1.2420 | UNDERPOWERED |
+| three_pa_share | 155 | 30 | 0.4212 | 0.3979 | 2.3318 | UNDERPOWERED |
+| three_pa_share | 156 | 36 | 0.4689 | 0.4890 | -2.0087 | UNDERPOWERED |
+| three_pa_share | 158 | 34 | 0.3727 | 0.3885 | -1.5777 | UNDERPOWERED |
+| three_pa_share | 159 | 26 | 0.4286 | 0.4635 | -3.4904 | UNDERPOWERED |
+| three_pa_share | 160 | 29 | 0.3713 | 0.4091 | -3.7822 | UNDERPOWERED |
+| three_pa_share | 161 | 30 | 0.3964 | 0.4133 | -1.6956 | UNDERPOWERED |
+| three_pa_share | 163 | 27 | 0.4271 | 0.4900 | -6.2817 | UNDERPOWERED |
+| three_pa_share | 164 | 32 | 0.3688 | 0.3610 | 0.7882 | UNDERPOWERED |
+| three_pa_share | 166 | 29 | 0.3710 | 0.3694 | 0.1594 | UNDERPOWERED |
+| three_pa_share | 167 | 34 | 0.3526 | 0.3152 | 3.7383 | UNDERPOWERED |
+| three_pa_share | 171 | 24 | 0.4111 | 0.3895 | 2.1582 | UNDERPOWERED |
+| three_pa_share | 172 | 27 | 0.4575 | 0.4830 | -2.5575 | UNDERPOWERED |
+| three_pa_share | 179 | 32 | 0.3671 | 0.3551 | 1.2000 | UNDERPOWERED |
+| three_pa_share | 183 | 33 | 0.3641 | 0.3290 | 3.5102 | UNDERPOWERED |
+| three_pa_share | 189 | 29 | 0.4090 | 0.3955 | 1.3506 | UNDERPOWERED |
+| three_pa_share | 193 | 32 | 0.4235 | 0.4391 | -1.5624 | UNDERPOWERED |
+| three_pa_share | 194 | 32 | 0.3860 | 0.3771 | 0.8982 | UNDERPOWERED |
+| three_pa_share | 195 | 31 | 0.4182 | 0.4033 | 1.4892 | UNDERPOWERED |
+| three_pa_share | 197 | 35 | 0.3675 | 0.3487 | 1.8794 | UNDERPOWERED |
+| three_pa_share | 198 | 25 | 0.4343 | 0.4567 | -2.2392 | UNDERPOWERED |
+| three_pa_share | 201 | 34 | 0.4371 | 0.4165 | 2.0588 | UNDERPOWERED |
+| three_pa_share | 202 | 31 | 0.4184 | 0.4276 | -0.9224 | UNDERPOWERED |
+| three_pa_share | 204 | 32 | 0.3815 | 0.3605 | 2.0991 | UNDERPOWERED |
+| three_pa_share | 213 | 31 | 0.3685 | 0.3643 | 0.4253 | UNDERPOWERED |
+| three_pa_share | 218 | 29 | 0.3364 | 0.3078 | 2.8536 | UNDERPOWERED |
+| three_pa_share | 219 | 26 | 0.4513 | 0.4428 | 0.8502 | UNDERPOWERED |
+| three_pa_share | 221 | 32 | 0.4154 | 0.4121 | 0.3313 | UNDERPOWERED |
+| three_pa_share | 222 | 36 | 0.4203 | 0.4374 | -1.7085 | UNDERPOWERED |
+| three_pa_share | 225 | 24 | 0.4025 | 0.4128 | -1.0334 | UNDERPOWERED |
+| three_pa_share | 227 | 29 | 0.3852 | 0.3797 | 0.5429 | UNDERPOWERED |
+| three_pa_share | 228 | 34 | 0.4146 | 0.3883 | 2.6307 | UNDERPOWERED |
+| three_pa_share | 231 | 32 | 0.4774 | 0.5131 | -3.5702 | UNDERPOWERED |
+| three_pa_share | 232 | 32 | 0.3852 | 0.4007 | -1.5448 | UNDERPOWERED |
+| three_pa_share | 233 | 28 | 0.3915 | 0.3798 | 1.1777 | UNDERPOWERED |
+| three_pa_share | 235 | 35 | 0.3626 | 0.3352 | 2.7446 | UNDERPOWERED |
+| three_pa_share | 236 | 35 | 0.4469 | 0.4536 | -0.6716 | UNDERPOWERED |
+| three_pa_share | 238 | 33 | 0.4078 | 0.4045 | 0.3284 | UNDERPOWERED |
+| three_pa_share | 239 | 34 | 0.4066 | 0.3996 | 0.6942 | UNDERPOWERED |
+| three_pa_share | 242 | 31 | 0.3809 | 0.3888 | -0.7988 | UNDERPOWERED |
+| three_pa_share | 245 | 34 | 0.3724 | 0.3792 | -0.6808 | UNDERPOWERED |
+| three_pa_share | 248 | 40 | 0.3379 | 0.3502 | -1.2249 | UNDERPOWERED |
+| three_pa_share | 249 | 33 | 0.3841 | 0.3692 | 1.4886 | UNDERPOWERED |
+| three_pa_share | 250 | 29 | 0.4111 | 0.4225 | -1.1399 | UNDERPOWERED |
+| three_pa_share | 251 | 35 | 0.3767 | 0.3525 | 2.4143 | UNDERPOWERED |
+| three_pa_share | 252 | 35 | 0.4742 | 0.4781 | -0.3902 | UNDERPOWERED |
+| three_pa_share | 253 | 28 | 0.3518 | 0.3247 | 2.7107 | UNDERPOWERED |
+| three_pa_share | 254 | 33 | 0.4398 | 0.4371 | 0.2739 | UNDERPOWERED |
+| three_pa_share | 256 | 29 | 0.4497 | 0.4507 | -0.0991 | UNDERPOWERED |
+| three_pa_share | 257 | 29 | 0.4310 | 0.4597 | -2.8746 | UNDERPOWERED |
+| three_pa_share | 258 | 32 | 0.4132 | 0.4290 | -1.5793 | UNDERPOWERED |
+| three_pa_share | 259 | 32 | 0.3816 | 0.4039 | -2.2288 | UNDERPOWERED |
+| three_pa_share | 261 | 29 | 0.4168 | 0.4384 | -2.1621 | UNDERPOWERED |
+| three_pa_share | 264 | 30 | 0.3463 | 0.3604 | -1.4138 | UNDERPOWERED |
+| three_pa_share | 265 | 33 | 0.4262 | 0.4133 | 1.2887 | UNDERPOWERED |
+| three_pa_share | 269 | 34 | 0.4501 | 0.4642 | -1.4093 | UNDERPOWERED |
+| three_pa_share | 270 | 30 | 0.3575 | 0.3155 | 4.2009 | UNDERPOWERED |
+| three_pa_share | 275 | 37 | 0.4523 | 0.4827 | -3.0327 | UNDERPOWERED |
+| three_pa_share | 276 | 31 | 0.4116 | 0.3914 | 2.0269 | UNDERPOWERED |
+| three_pa_share | 277 | 32 | 0.4372 | 0.4594 | -2.2169 | UNDERPOWERED |
+| three_pa_share | 278 | 32 | 0.3799 | 0.3559 | 2.3990 | UNDERPOWERED |
+| three_pa_share | 279 | 31 | 0.3949 | 0.3778 | 1.7106 | UNDERPOWERED |
+| three_pa_share | 282 | 30 | 0.4798 | 0.4997 | -1.9839 | UNDERPOWERED |
+| three_pa_share | 284 | 30 | 0.4320 | 0.4475 | -1.5453 | UNDERPOWERED |
+| three_pa_share | 288 | 33 | 0.4570 | 0.4766 | -1.9639 | UNDERPOWERED |
+| three_pa_share | 290 | 32 | 0.4190 | 0.4430 | -2.3925 | UNDERPOWERED |
+| three_pa_share | 292 | 26 | 0.4497 | 0.4825 | -3.2856 | UNDERPOWERED |
+| three_pa_share | 294 | 31 | 0.3747 | 0.3402 | 3.4515 | UNDERPOWERED |
+| three_pa_share | 295 | 33 | 0.3680 | 0.3597 | 0.8350 | UNDERPOWERED |
+| three_pa_share | 299 | 28 | 0.3863 | 0.3713 | 1.5043 | UNDERPOWERED |
+| three_pa_share | 300 | 37 | 0.3526 | 0.3543 | -0.1686 | UNDERPOWERED |
+| three_pa_share | 301 | 32 | 0.3714 | 0.3603 | 1.1188 | UNDERPOWERED |
+| three_pa_share | 302 | 30 | 0.3664 | 0.3571 | 0.9311 | UNDERPOWERED |
+| three_pa_share | 304 | 26 | 0.3678 | 0.3708 | -0.2994 | UNDERPOWERED |
+| three_pa_share | 305 | 34 | 0.4377 | 0.4602 | -2.2495 | UNDERPOWERED |
+| three_pa_share | 309 | 32 | 0.3861 | 0.3839 | 0.2177 | UNDERPOWERED |
+| three_pa_share | 311 | 32 | 0.3407 | 0.3291 | 1.1646 | UNDERPOWERED |
+| three_pa_share | 314 | 34 | 0.3499 | 0.3471 | 0.2787 | UNDERPOWERED |
+| three_pa_share | 315 | 29 | 0.4489 | 0.4331 | 1.5811 | UNDERPOWERED |
+| three_pa_share | 322 | 32 | 0.4176 | 0.4052 | 1.2414 | UNDERPOWERED |
+| three_pa_share | 324 | 30 | 0.3945 | 0.3942 | 0.0265 | UNDERPOWERED |
+| three_pa_share | 325 | 32 | 0.3468 | 0.3208 | 2.5998 | UNDERPOWERED |
+| three_pa_share | 326 | 30 | 0.3213 | 0.2781 | 4.3207 | UNDERPOWERED |
+| three_pa_share | 328 | 33 | 0.4165 | 0.4275 | -1.1073 | UNDERPOWERED |
+| three_pa_share | 331 | 30 | 0.3784 | 0.3790 | -0.0588 | UNDERPOWERED |
+| three_pa_share | 333 | 37 | 0.4554 | 0.4647 | -0.9336 | UNDERPOWERED |
+| three_pa_share | 338 | 30 | 0.4263 | 0.4536 | -2.7355 | UNDERPOWERED |
+| three_pa_share | 339 | 31 | 0.4322 | 0.4057 | 2.6516 | UNDERPOWERED |
+| three_pa_share | 344 | 34 | 0.4065 | 0.4280 | -2.1449 | UNDERPOWERED |
+| three_pa_share | 349 | 29 | 0.4003 | 0.4170 | -1.6664 | UNDERPOWERED |
+| three_pa_share | 350 | 32 | 0.3743 | 0.3634 | 1.0955 | UNDERPOWERED |
+| three_pa_share | 356 | 35 | 0.4639 | 0.4721 | -0.8173 | UNDERPOWERED |
+| three_pa_share | 357 | 29 | 0.3389 | 0.2905 | 4.8385 | UNDERPOWERED |
+| three_pa_share | 399 | 29 | 0.3588 | 0.3568 | 0.2046 | UNDERPOWERED |
+| three_pa_share | 526 | 33 | 0.4199 | 0.3818 | 3.8121 | UNDERPOWERED |
+| three_pa_share | 2000 | 28 | 0.2813 | 0.2566 | 2.4759 | UNDERPOWERED |
+| three_pa_share | 2005 | 32 | 0.4703 | 0.4835 | -1.3258 | UNDERPOWERED |
+| three_pa_share | 2006 | 33 | 0.4338 | 0.4517 | -1.7888 | UNDERPOWERED |
+| three_pa_share | 2010 | 28 | 0.3976 | 0.4141 | -1.6559 | UNDERPOWERED |
+| three_pa_share | 2011 | 35 | 0.4228 | 0.4269 | -0.4117 | UNDERPOWERED |
+| three_pa_share | 2016 | 31 | 0.3236 | 0.2964 | 2.7182 | UNDERPOWERED |
+| three_pa_share | 2026 | 29 | 0.3838 | 0.4109 | -2.7113 | UNDERPOWERED |
+| three_pa_share | 2029 | 29 | 0.4142 | 0.3782 | 3.6035 | UNDERPOWERED |
+| three_pa_share | 2031 | 30 | 0.3456 | 0.2972 | 4.8393 | UNDERPOWERED |
+| three_pa_share | 2032 | 35 | 0.4546 | 0.4440 | 1.0636 | UNDERPOWERED |
+| three_pa_share | 2046 | 31 | 0.4085 | 0.4006 | 0.7935 | UNDERPOWERED |
+| three_pa_share | 2050 | 28 | 0.3921 | 0.3730 | 1.9025 | UNDERPOWERED |
+| three_pa_share | 2057 | 32 | 0.4273 | 0.4466 | -1.9284 | UNDERPOWERED |
+| three_pa_share | 2065 | 33 | 0.3530 | 0.3394 | 1.3595 | UNDERPOWERED |
+| three_pa_share | 2066 | 29 | 0.3829 | 0.3639 | 1.9019 | UNDERPOWERED |
+| three_pa_share | 2083 | 32 | 0.4202 | 0.4055 | 1.4679 | UNDERPOWERED |
+| three_pa_share | 2084 | 29 | 0.4316 | 0.4354 | -0.3807 | UNDERPOWERED |
+| three_pa_share | 2086 | 35 | 0.4043 | 0.4187 | -1.4440 | UNDERPOWERED |
+| three_pa_share | 2097 | 29 | 0.4311 | 0.4169 | 1.4211 | UNDERPOWERED |
+| three_pa_share | 2099 | 30 | 0.4050 | 0.4045 | 0.0446 | UNDERPOWERED |
+| three_pa_share | 2110 | 31 | 0.4432 | 0.4773 | -3.4079 | UNDERPOWERED |
+| three_pa_share | 2115 | 29 | 0.3854 | 0.3549 | 3.0577 | UNDERPOWERED |
+| three_pa_share | 2116 | 37 | 0.4132 | 0.4193 | -0.6085 | UNDERPOWERED |
+| three_pa_share | 2117 | 26 | 0.4046 | 0.3386 | 6.5967 | UNDERPOWERED |
+| three_pa_share | 2127 | 30 | 0.3754 | 0.4228 | -4.7435 | UNDERPOWERED |
+| three_pa_share | 2130 | 32 | 0.3898 | 0.4073 | -1.7520 | UNDERPOWERED |
+| three_pa_share | 2132 | 35 | 0.3727 | 0.3826 | -0.9850 | UNDERPOWERED |
+| three_pa_share | 2142 | 31 | 0.4183 | 0.4210 | -0.2705 | UNDERPOWERED |
+| three_pa_share | 2154 | 29 | 0.3178 | 0.3222 | -0.4336 | UNDERPOWERED |
+| three_pa_share | 2166 | 32 | 0.4168 | 0.4197 | -0.2940 | UNDERPOWERED |
+| three_pa_share | 2168 | 33 | 0.4131 | 0.4093 | 0.3817 | UNDERPOWERED |
+| three_pa_share | 2169 | 25 | 0.2787 | 0.2020 | 7.6655 | UNDERPOWERED |
+| three_pa_share | 2172 | 28 | 0.3799 | 0.3563 | 2.3638 | UNDERPOWERED |
+| three_pa_share | 2174 | 31 | 0.3189 | 0.2880 | 3.0823 | UNDERPOWERED |
+| three_pa_share | 2181 | 33 | 0.3943 | 0.3636 | 3.0708 | UNDERPOWERED |
+| three_pa_share | 2182 | 32 | 0.3980 | 0.3704 | 2.7616 | UNDERPOWERED |
+| three_pa_share | 2184 | 30 | 0.4044 | 0.4333 | -2.8860 | UNDERPOWERED |
+| three_pa_share | 2193 | 30 | 0.4267 | 0.4162 | 1.0441 | UNDERPOWERED |
+| three_pa_share | 2197 | 28 | 0.3148 | 0.2996 | 1.5178 | UNDERPOWERED |
+| three_pa_share | 2198 | 30 | 0.4152 | 0.4232 | -0.8013 | UNDERPOWERED |
+| three_pa_share | 2199 | 31 | 0.3893 | 0.3824 | 0.6872 | UNDERPOWERED |
+| three_pa_share | 2210 | 31 | 0.4120 | 0.4170 | -0.4994 | UNDERPOWERED |
+| three_pa_share | 2217 | 31 | 0.3878 | 0.3810 | 0.6840 | UNDERPOWERED |
+| three_pa_share | 2226 | 33 | 0.4089 | 0.4018 | 0.7144 | UNDERPOWERED |
+| three_pa_share | 2229 | 30 | 0.3400 | 0.3014 | 3.8511 | UNDERPOWERED |
+| three_pa_share | 2230 | 32 | 0.4005 | 0.4158 | -1.5347 | UNDERPOWERED |
+| three_pa_share | 2239 | 30 | 0.3497 | 0.3415 | 0.8242 | UNDERPOWERED |
+| three_pa_share | 2241 | 31 | 0.3400 | 0.3301 | 0.9841 | UNDERPOWERED |
+| three_pa_share | 2244 | 35 | 0.3842 | 0.3652 | 1.8995 | UNDERPOWERED |
+| three_pa_share | 2247 | 32 | 0.3436 | 0.3340 | 0.9601 | UNDERPOWERED |
+| three_pa_share | 2250 | 35 | 0.3490 | 0.3357 | 1.3258 | UNDERPOWERED |
+| three_pa_share | 2253 | 33 | 0.3640 | 0.3377 | 2.6298 | UNDERPOWERED |
+| three_pa_share | 2261 | 30 | 0.3775 | 0.3680 | 0.9447 | UNDERPOWERED |
+| three_pa_share | 2272 | 32 | 0.3870 | 0.3914 | -0.4447 | UNDERPOWERED |
+| three_pa_share | 2275 | 31 | 0.4249 | 0.4247 | 0.0174 | UNDERPOWERED |
+| three_pa_share | 2277 | 29 | 0.4470 | 0.4357 | 1.1306 | UNDERPOWERED |
+| three_pa_share | 2287 | 35 | 0.4300 | 0.4655 | -3.5526 | UNDERPOWERED |
+| three_pa_share | 2294 | 33 | 0.4265 | 0.4126 | 1.3884 | UNDERPOWERED |
+| three_pa_share | 2296 | 34 | 0.3620 | 0.3375 | 2.4512 | UNDERPOWERED |
+| three_pa_share | 2305 | 34 | 0.3425 | 0.3417 | 0.0765 | UNDERPOWERED |
+| three_pa_share | 2306 | 32 | 0.4028 | 0.4037 | -0.0854 | UNDERPOWERED |
+| three_pa_share | 2309 | 34 | 0.4068 | 0.3713 | 3.5521 | UNDERPOWERED |
+| three_pa_share | 2320 | 29 | 0.3531 | 0.3323 | 2.0835 | UNDERPOWERED |
+| three_pa_share | 2325 | 32 | 0.3584 | 0.3313 | 2.7071 | UNDERPOWERED |
+| three_pa_share | 2329 | 27 | 0.3832 | 0.3744 | 0.8812 | UNDERPOWERED |
+| three_pa_share | 2330 | 30 | 0.4306 | 0.4144 | 1.6172 | UNDERPOWERED |
+| three_pa_share | 2335 | 32 | 0.4563 | 0.4835 | -2.7150 | UNDERPOWERED |
+| three_pa_share | 2344 | 29 | 0.3777 | 0.3418 | 3.5898 | UNDERPOWERED |
+| three_pa_share | 2348 | 29 | 0.4126 | 0.4191 | -0.6467 | UNDERPOWERED |
+| three_pa_share | 2349 | 28 | 0.3506 | 0.3467 | 0.3928 | UNDERPOWERED |
+| three_pa_share | 2350 | 36 | 0.3956 | 0.4274 | -3.1790 | UNDERPOWERED |
+| three_pa_share | 2351 | 31 | 0.4157 | 0.4024 | 1.3235 | UNDERPOWERED |
+| three_pa_share | 2352 | 29 | 0.4194 | 0.3921 | 2.7293 | UNDERPOWERED |
+| three_pa_share | 2363 | 30 | 0.4004 | 0.4182 | -1.7746 | UNDERPOWERED |
+| three_pa_share | 2368 | 30 | 0.3883 | 0.3763 | 1.2039 | UNDERPOWERED |
+| three_pa_share | 2377 | 33 | 0.3704 | 0.3646 | 0.5767 | UNDERPOWERED |
+| three_pa_share | 2378 | 28 | 0.3923 | 0.3835 | 0.8850 | UNDERPOWERED |
+| three_pa_share | 2379 | 26 | 0.3728 | 0.3750 | -0.2197 | UNDERPOWERED |
+| three_pa_share | 2382 | 31 | 0.4221 | 0.4019 | 2.0229 | UNDERPOWERED |
+| three_pa_share | 2385 | 28 | 0.3713 | 0.3661 | 0.5219 | UNDERPOWERED |
+| three_pa_share | 2390 | 31 | 0.4383 | 0.3860 | 5.2275 | UNDERPOWERED |
+| three_pa_share | 2393 | 32 | 0.3937 | 0.3961 | -0.2382 | UNDERPOWERED |
+| three_pa_share | 2400 | 28 | 0.3200 | 0.3061 | 1.3877 | UNDERPOWERED |
+| three_pa_share | 2405 | 32 | 0.3498 | 0.3452 | 0.4566 | UNDERPOWERED |
+| three_pa_share | 2413 | 29 | 0.3323 | 0.3440 | -1.1696 | UNDERPOWERED |
+| three_pa_share | 2415 | 28 | 0.2760 | 0.2171 | 5.8941 | UNDERPOWERED |
+| three_pa_share | 2426 | 32 | 0.3783 | 0.3750 | 0.3313 | UNDERPOWERED |
+| three_pa_share | 2427 | 28 | 0.3523 | 0.3492 | 0.3103 | UNDERPOWERED |
+| three_pa_share | 2428 | 29 | 0.3665 | 0.3397 | 2.6832 | UNDERPOWERED |
+| three_pa_share | 2429 | 32 | 0.3850 | 0.4088 | -2.3815 | UNDERPOWERED |
+| three_pa_share | 2430 | 29 | 0.4259 | 0.4225 | 0.3470 | UNDERPOWERED |
+| three_pa_share | 2433 | 30 | 0.3494 | 0.3392 | 1.0221 | UNDERPOWERED |
+| three_pa_share | 2437 | 33 | 0.3825 | 0.3901 | -0.7559 | UNDERPOWERED |
+| three_pa_share | 2439 | 33 | 0.3633 | 0.3469 | 1.6428 | UNDERPOWERED |
+| three_pa_share | 2440 | 33 | 0.3746 | 0.3738 | 0.0763 | UNDERPOWERED |
+| three_pa_share | 2443 | 30 | 0.3453 | 0.3084 | 3.6847 | UNDERPOWERED |
+| three_pa_share | 2447 | 29 | 0.3997 | 0.3700 | 2.9698 | UNDERPOWERED |
+| three_pa_share | 2448 | 31 | 0.3746 | 0.3618 | 1.2854 | UNDERPOWERED |
+| three_pa_share | 2449 | 29 | 0.4942 | 0.5385 | -4.4240 | UNDERPOWERED |
+| three_pa_share | 2450 | 32 | 0.3415 | 0.2770 | 6.4491 | UNDERPOWERED |
+| three_pa_share | 2453 | 32 | 0.3915 | 0.3446 | 4.6966 | UNDERPOWERED |
+| three_pa_share | 2454 | 29 | 0.5038 | 0.5386 | -3.4793 | UNDERPOWERED |
+| three_pa_share | 2458 | 32 | 0.4064 | 0.3748 | 3.1628 | UNDERPOWERED |
+| three_pa_share | 2459 | 26 | 0.4421 | 0.4947 | -5.2548 | UNDERPOWERED |
+| three_pa_share | 2460 | 32 | 0.3859 | 0.3636 | 2.2319 | UNDERPOWERED |
+| three_pa_share | 2463 | 30 | 0.3340 | 0.3118 | 2.2157 | UNDERPOWERED |
+| three_pa_share | 2464 | 30 | 0.3725 | 0.3788 | -0.6280 | UNDERPOWERED |
+| three_pa_share | 2466 | 29 | 0.3517 | 0.3605 | -0.8770 | UNDERPOWERED |
+| three_pa_share | 2473 | 33 | 0.4170 | 0.4233 | -0.6369 | UNDERPOWERED |
+| three_pa_share | 2483 | 35 | 0.3919 | 0.3867 | 0.5222 | UNDERPOWERED |
+| three_pa_share | 2492 | 34 | 0.3630 | 0.3471 | 1.5852 | UNDERPOWERED |
+| three_pa_share | 2501 | 30 | 0.4172 | 0.4377 | -2.0444 | UNDERPOWERED |
+| three_pa_share | 2502 | 29 | 0.3638 | 0.3154 | 4.8417 | UNDERPOWERED |
+| three_pa_share | 2504 | 31 | 0.3560 | 0.3385 | 1.7516 | UNDERPOWERED |
+| three_pa_share | 2506 | 30 | 0.3308 | 0.3383 | -0.7468 | UNDERPOWERED |
+| three_pa_share | 2507 | 31 | 0.4301 | 0.4567 | -2.6566 | UNDERPOWERED |
+| three_pa_share | 2509 | 36 | 0.3715 | 0.3850 | -1.3522 | UNDERPOWERED |
+| three_pa_share | 2511 | 32 | 0.4472 | 0.4331 | 1.4133 | UNDERPOWERED |
+| three_pa_share | 2514 | 32 | 0.3864 | 0.3791 | 0.7264 | UNDERPOWERED |
+| three_pa_share | 2515 | 31 | 0.3831 | 0.3657 | 1.7319 | UNDERPOWERED |
+| three_pa_share | 2520 | 33 | 0.3314 | 0.3008 | 3.0637 | UNDERPOWERED |
+| three_pa_share | 2523 | 33 | 0.3818 | 0.3679 | 1.3901 | UNDERPOWERED |
+| three_pa_share | 2529 | 30 | 0.4142 | 0.4487 | -3.4451 | UNDERPOWERED |
+| three_pa_share | 2534 | 29 | 0.3965 | 0.3859 | 1.0688 | UNDERPOWERED |
+| three_pa_share | 2535 | 30 | 0.4629 | 0.4683 | -0.5354 | UNDERPOWERED |
+| three_pa_share | 2539 | 34 | 0.4181 | 0.4387 | -2.0565 | UNDERPOWERED |
+| three_pa_share | 2540 | 32 | 0.4373 | 0.4739 | -3.6633 | UNDERPOWERED |
+| three_pa_share | 2541 | 33 | 0.4426 | 0.4628 | -2.0197 | UNDERPOWERED |
+| three_pa_share | 2545 | 28 | 0.3488 | 0.3185 | 3.0309 | UNDERPOWERED |
+| three_pa_share | 2546 | 30 | 0.3770 | 0.3595 | 1.7515 | UNDERPOWERED |
+| three_pa_share | 2547 | 30 | 0.3550 | 0.3621 | -0.7097 | UNDERPOWERED |
+| three_pa_share | 2550 | 32 | 0.3305 | 0.3054 | 2.5033 | UNDERPOWERED |
+| three_pa_share | 2561 | 32 | 0.3754 | 0.3980 | -2.2623 | UNDERPOWERED |
+| three_pa_share | 2565 | 31 | 0.3876 | 0.3675 | 2.0102 | UNDERPOWERED |
+| three_pa_share | 2567 | 35 | 0.3839 | 0.3528 | 3.1174 | UNDERPOWERED |
+| three_pa_share | 2569 | 30 | 0.3343 | 0.3342 | 0.0169 | UNDERPOWERED |
+| three_pa_share | 2571 | 29 | 0.4021 | 0.3991 | 0.2950 | UNDERPOWERED |
+| three_pa_share | 2572 | 29 | 0.3693 | 0.3710 | -0.1683 | UNDERPOWERED |
+| three_pa_share | 2579 | 32 | 0.4023 | 0.3896 | 1.2699 | UNDERPOWERED |
+| three_pa_share | 2582 | 28 | 0.3645 | 0.3400 | 2.4499 | UNDERPOWERED |
+| three_pa_share | 2598 | 31 | 0.4026 | 0.4207 | -1.8042 | UNDERPOWERED |
+| three_pa_share | 2599 | 36 | 0.3371 | 0.3130 | 2.4098 | UNDERPOWERED |
+| three_pa_share | 2603 | 34 | 0.4349 | 0.4680 | -3.3061 | UNDERPOWERED |
+| three_pa_share | 2608 | 34 | 0.3544 | 0.3318 | 2.2679 | UNDERPOWERED |
+| three_pa_share | 2612 | 26 | 0.3988 | 0.3879 | 1.0932 | UNDERPOWERED |
+| three_pa_share | 2617 | 27 | 0.3346 | 0.3677 | -3.3166 | UNDERPOWERED |
+| three_pa_share | 2619 | 31 | 0.4032 | 0.3916 | 1.1634 | UNDERPOWERED |
+| three_pa_share | 2623 | 30 | 0.3568 | 0.3723 | -1.5494 | UNDERPOWERED |
+| three_pa_share | 2627 | 29 | 0.2741 | 0.2602 | 1.3884 | UNDERPOWERED |
+| three_pa_share | 2628 | 31 | 0.3799 | 0.3452 | 3.4716 | UNDERPOWERED |
+| three_pa_share | 2630 | 29 | 0.4382 | 0.4690 | -3.0815 | UNDERPOWERED |
+| three_pa_share | 2633 | 38 | 0.4373 | 0.4344 | 0.2876 | UNDERPOWERED |
+| three_pa_share | 2634 | 29 | 0.3564 | 0.3351 | 2.1312 | UNDERPOWERED |
+| three_pa_share | 2635 | 29 | 0.4566 | 0.4651 | -0.8458 | UNDERPOWERED |
+| three_pa_share | 2636 | 29 | 0.4125 | 0.4410 | -2.8533 | UNDERPOWERED |
+| three_pa_share | 2638 | 30 | 0.3685 | 0.3627 | 0.5788 | UNDERPOWERED |
+| three_pa_share | 2640 | 29 | 0.3496 | 0.3572 | -0.7573 | UNDERPOWERED |
+| three_pa_share | 2641 | 37 | 0.4066 | 0.4470 | -4.0457 | UNDERPOWERED |
+| three_pa_share | 2643 | 25 | 0.4456 | 0.4543 | -0.8700 | UNDERPOWERED |
+| three_pa_share | 2649 | 32 | 0.3322 | 0.2854 | 4.6760 | UNDERPOWERED |
+| three_pa_share | 2653 | 32 | 0.4236 | 0.4504 | -2.6878 | UNDERPOWERED |
+| three_pa_share | 2655 | 32 | 0.4082 | 0.3941 | 1.4188 | UNDERPOWERED |
+| three_pa_share | 2670 | 34 | 0.4541 | 0.4821 | -2.7980 | UNDERPOWERED |
+| three_pa_share | 2674 | 32 | 0.3818 | 0.3852 | -0.3399 | UNDERPOWERED |
+| three_pa_share | 2678 | 30 | 0.4291 | 0.4711 | -4.2062 | UNDERPOWERED |
+| three_pa_share | 2681 | 26 | 0.3601 | 0.3793 | -1.9195 | UNDERPOWERED |
+| three_pa_share | 2692 | 31 | 0.3800 | 0.3713 | 0.8729 | UNDERPOWERED |
+| three_pa_share | 2698 | 30 | 0.3340 | 0.3041 | 2.9939 | UNDERPOWERED |
+| three_pa_share | 2710 | 27 | 0.3957 | 0.3781 | 1.7689 | UNDERPOWERED |
+| three_pa_share | 2711 | 31 | 0.3429 | 0.3284 | 1.4567 | UNDERPOWERED |
+| three_pa_share | 2717 | 26 | 0.4637 | 0.4773 | -1.3661 | UNDERPOWERED |
+| three_pa_share | 2724 | 33 | 0.3229 | 0.2843 | 3.8587 | UNDERPOWERED |
+| three_pa_share | 2729 | 30 | 0.4729 | 0.5110 | -3.8100 | UNDERPOWERED |
+| three_pa_share | 2737 | 31 | 0.4070 | 0.3844 | 2.2635 | UNDERPOWERED |
+| three_pa_share | 2739 | 30 | 0.4661 | 0.4610 | 0.5035 | UNDERPOWERED |
+| three_pa_share | 2747 | 31 | 0.4724 | 0.4839 | -1.1469 | UNDERPOWERED |
+| three_pa_share | 2750 | 31 | 0.3792 | 0.3806 | -0.1333 | UNDERPOWERED |
+| three_pa_share | 2751 | 31 | 0.3842 | 0.4083 | -2.4074 | UNDERPOWERED |
+| three_pa_share | 2752 | 34 | 0.3955 | 0.3791 | 1.6350 | UNDERPOWERED |
+| three_pa_share | 2754 | 31 | 0.4346 | 0.4590 | -2.4398 | UNDERPOWERED |
+| three_pa_share | 2755 | 30 | 0.3524 | 0.3481 | 0.4333 | UNDERPOWERED |
+| three_pa_share | 2771 | 32 | 0.4140 | 0.4334 | -1.9377 | UNDERPOWERED |
+| three_pa_share | 2803 | 33 | 0.3614 | 0.3463 | 1.5027 | UNDERPOWERED |
+| three_pa_share | 2815 | 30 | 0.3567 | 0.3451 | 1.1549 | UNDERPOWERED |
+| three_pa_share | 2837 | 31 | 0.4242 | 0.4862 | -6.2006 | UNDERPOWERED |
+| three_pa_share | 2856 | 32 | 0.3771 | 0.3532 | 2.3903 | UNDERPOWERED |
+| three_pa_share | 2870 | 30 | 0.4336 | 0.4574 | -2.3793 | UNDERPOWERED |
+| three_pa_share | 2885 | 28 | 0.3838 | 0.3729 | 1.0817 | UNDERPOWERED |
+| three_pa_share | 2900 | 31 | 0.4478 | 0.4662 | -1.8454 | UNDERPOWERED |
+| three_pa_share | 2908 | 29 | 0.3586 | 0.3693 | -1.0648 | UNDERPOWERED |
+| three_pa_share | 2916 | 31 | 0.3927 | 0.3595 | 3.3143 | UNDERPOWERED |
+| three_pa_share | 2934 | 28 | 0.3136 | 0.2892 | 2.4416 | UNDERPOWERED |
+| three_pa_share | 3084 | 32 | 0.3274 | 0.3136 | 1.3828 | UNDERPOWERED |
+| three_pa_share | 3101 | 30 | 0.3877 | 0.3991 | -1.1415 | UNDERPOWERED |
+| three_pa_share | 112358 | 30 | 0.3554 | 0.3329 | 2.2466 | UNDERPOWERED |
+| fta_per_fga | 2 | 38 | 0.3295 | 0.3435 | -1.3997 | UNDERPOWERED |
+| fta_per_fga | 5 | 36 | 0.3250 | 0.3167 | 0.8350 | UNDERPOWERED |
+| fta_per_fga | 6 | 30 | 0.3346 | 0.3386 | -0.3947 | UNDERPOWERED |
+| fta_per_fga | 8 | 36 | 0.3136 | 0.3624 | -4.8758 | UNDERPOWERED |
+| fta_per_fga | 9 | 33 | 0.3313 | 0.3679 | -3.6599 | UNDERPOWERED |
+| fta_per_fga | 12 | 37 | 0.3315 | 0.3605 | -2.9016 | UNDERPOWERED |
+| fta_per_fga | 13 | 34 | 0.3284 | 0.2714 | 5.7007 | UNDERPOWERED |
+| fta_per_fga | 16 | 28 | 0.3320 | 0.3198 | 1.2218 | UNDERPOWERED |
+| fta_per_fga | 21 | 30 | 0.3275 | 0.3289 | -0.1400 | UNDERPOWERED |
+| fta_per_fga | 23 | 33 | 0.3079 | 0.3260 | -1.8118 | UNDERPOWERED |
+| fta_per_fga | 24 | 35 | 0.3039 | 0.3029 | 0.0960 | UNDERPOWERED |
+| fta_per_fga | 25 | 33 | 0.3256 | 0.3938 | -6.8220 | UNDERPOWERED |
+| fta_per_fga | 26 | 34 | 0.2962 | 0.3280 | -3.1787 | UNDERPOWERED |
+| fta_per_fga | 27 | 30 | 0.2808 | 0.2798 | 0.1065 | UNDERPOWERED |
+| fta_per_fga | 28 | 33 | 0.2968 | 0.3402 | -4.3402 | UNDERPOWERED |
+| fta_per_fga | 30 | 35 | 0.3151 | 0.3634 | -4.8340 | UNDERPOWERED |
+| fta_per_fga | 36 | 36 | 0.2839 | 0.3259 | -4.1941 | UNDERPOWERED |
+| fta_per_fga | 38 | 35 | 0.3140 | 0.3669 | -5.2883 | UNDERPOWERED |
+| fta_per_fga | 41 | 35 | 0.3232 | 0.3143 | 0.8919 | UNDERPOWERED |
+| fta_per_fga | 43 | 29 | 0.3022 | 0.3195 | -1.7318 | UNDERPOWERED |
+| fta_per_fga | 44 | 33 | 0.2820 | 0.2964 | -1.4489 | UNDERPOWERED |
+| fta_per_fga | 45 | 33 | 0.3416 | 0.4204 | -7.8818 | UNDERPOWERED |
+| fta_per_fga | 46 | 34 | 0.2915 | 0.2623 | 2.9130 | UNDERPOWERED |
+| fta_per_fga | 47 | 25 | 0.3415 | 0.3691 | -2.7522 | UNDERPOWERED |
+| fta_per_fga | 48 | 34 | 0.3139 | 0.3057 | 0.8143 | UNDERPOWERED |
+| fta_per_fga | 50 | 28 | 0.3371 | 0.3771 | -3.9994 | UNDERPOWERED |
+| fta_per_fga | 52 | 32 | 0.3319 | 0.4093 | -7.7445 | UNDERPOWERED |
+| fta_per_fga | 55 | 33 | 0.3150 | 0.3219 | -0.6898 | UNDERPOWERED |
+| fta_per_fga | 56 | 27 | 0.3090 | 0.3367 | -2.7704 | UNDERPOWERED |
+| fta_per_fga | 57 | 40 | 0.3398 | 0.3575 | -1.7635 | UNDERPOWERED |
+| fta_per_fga | 58 | 31 | 0.3338 | 0.3503 | -1.6502 | UNDERPOWERED |
+| fta_per_fga | 59 | 34 | 0.3360 | 0.3139 | 2.2059 | UNDERPOWERED |
+| fta_per_fga | 61 | 32 | 0.3359 | 0.4157 | -7.9768 | UNDERPOWERED |
+| fta_per_fga | 62 | 28 | 0.3706 | 0.4125 | -4.1906 | UNDERPOWERED |
+| fta_per_fga | 66 | 34 | 0.3248 | 0.3815 | -5.6738 | UNDERPOWERED |
+| fta_per_fga | 68 | 36 | 0.3248 | 0.3850 | -6.0165 | UNDERPOWERED |
+| fta_per_fga | 70 | 31 | 0.3012 | 0.3445 | -4.3292 | UNDERPOWERED |
+| fta_per_fga | 71 | 35 | 0.2885 | 0.3253 | -3.6859 | UNDERPOWERED |
+| fta_per_fga | 77 | 33 | 0.2828 | 0.3202 | -3.7371 | UNDERPOWERED |
+| fta_per_fga | 79 | 31 | 0.3302 | 0.3473 | -1.7139 | UNDERPOWERED |
+| fta_per_fga | 82 | 29 | 0.3211 | 0.3574 | -3.6308 | UNDERPOWERED |
+| fta_per_fga | 84 | 31 | 0.3525 | 0.3314 | 2.1156 | UNDERPOWERED |
+| fta_per_fga | 85 | 29 | 0.3172 | 0.3427 | -2.5499 | UNDERPOWERED |
+| fta_per_fga | 87 | 33 | 0.2723 | 0.3206 | -4.8247 | UNDERPOWERED |
+| fta_per_fga | 88 | 28 | 0.3351 | 0.3161 | 1.9074 | UNDERPOWERED |
+| fta_per_fga | 91 | 29 | 0.3212 | 0.2692 | 5.2013 | UNDERPOWERED |
+| fta_per_fga | 93 | 32 | 0.3255 | 0.4169 | -9.1384 | UNDERPOWERED |
+| fta_per_fga | 94 | 31 | 0.2964 | 0.3182 | -2.1778 | UNDERPOWERED |
+| fta_per_fga | 96 | 36 | 0.3472 | 0.3614 | -1.4122 | UNDERPOWERED |
+| fta_per_fga | 97 | 35 | 0.2989 | 0.3481 | -4.9241 | UNDERPOWERED |
+| fta_per_fga | 98 | 30 | 0.3587 | 0.3288 | 2.9950 | UNDERPOWERED |
+| fta_per_fga | 99 | 32 | 0.3525 | 0.3335 | 1.9080 | UNDERPOWERED |
+| fta_per_fga | 103 | 31 | 0.3133 | 0.3187 | -0.5413 | UNDERPOWERED |
+| fta_per_fga | 104 | 28 | 0.2860 | 0.2997 | -1.3622 | UNDERPOWERED |
+| fta_per_fga | 107 | 30 | 0.2639 | 0.2241 | 3.9867 | UNDERPOWERED |
+| fta_per_fga | 108 | 25 | 0.2790 | 0.2514 | 2.7610 | UNDERPOWERED |
+| fta_per_fga | 111 | 32 | 0.3125 | 0.2898 | 2.2618 | UNDERPOWERED |
+| fta_per_fga | 113 | 31 | 0.3172 | 0.3458 | -2.8580 | UNDERPOWERED |
+| fta_per_fga | 116 | 34 | 0.3313 | 0.3107 | 2.0678 | UNDERPOWERED |
+| fta_per_fga | 119 | 31 | 0.3172 | 0.2971 | 2.0139 | UNDERPOWERED |
+| fta_per_fga | 120 | 36 | 0.3347 | 0.3373 | -0.2527 | UNDERPOWERED |
+| fta_per_fga | 127 | 37 | 0.3061 | 0.3837 | -7.7594 | UNDERPOWERED |
+| fta_per_fga | 130 | 37 | 0.3177 | 0.3611 | -4.3430 | UNDERPOWERED |
+| fta_per_fga | 135 | 31 | 0.3119 | 0.3193 | -0.7392 | UNDERPOWERED |
+| fta_per_fga | 139 | 32 | 0.3162 | 0.3160 | 0.0224 | UNDERPOWERED |
+| fta_per_fga | 140 | 29 | 0.3404 | 0.3211 | 1.9293 | UNDERPOWERED |
+| fta_per_fga | 142 | 34 | 0.3474 | 0.4817 | -13.4349 | UNDERPOWERED |
+| fta_per_fga | 145 | 36 | 0.3048 | 0.3602 | -5.5481 | UNDERPOWERED |
+| fta_per_fga | 147 | 32 | 0.3070 | 0.3242 | -1.7211 | UNDERPOWERED |
+| fta_per_fga | 149 | 31 | 0.3249 | 0.3677 | -4.2863 | UNDERPOWERED |
+| fta_per_fga | 150 | 39 | 0.3042 | 0.3370 | -3.2840 | UNDERPOWERED |
+| fta_per_fga | 151 | 31 | 0.3431 | 0.3567 | -1.3647 | UNDERPOWERED |
+| fta_per_fga | 152 | 31 | 0.3345 | 0.3266 | 0.7879 | UNDERPOWERED |
+| fta_per_fga | 153 | 37 | 0.3433 | 0.3557 | -1.2394 | UNDERPOWERED |
+| fta_per_fga | 154 | 32 | 0.3256 | 0.3686 | -4.3007 | UNDERPOWERED |
+| fta_per_fga | 155 | 30 | 0.3163 | 0.3425 | -2.6223 | UNDERPOWERED |
+| fta_per_fga | 156 | 36 | 0.2969 | 0.2920 | 0.4894 | UNDERPOWERED |
+| fta_per_fga | 158 | 34 | 0.3310 | 0.3549 | -2.3884 | UNDERPOWERED |
+| fta_per_fga | 159 | 26 | 0.3009 | 0.3134 | -1.2509 | UNDERPOWERED |
+| fta_per_fga | 160 | 29 | 0.2961 | 0.2645 | 3.1635 | UNDERPOWERED |
+| fta_per_fga | 161 | 30 | 0.3194 | 0.3287 | -0.9335 | UNDERPOWERED |
+| fta_per_fga | 163 | 27 | 0.3360 | 0.2498 | 8.6232 | UNDERPOWERED |
+| fta_per_fga | 164 | 32 | 0.3313 | 0.3712 | -3.9911 | UNDERPOWERED |
+| fta_per_fga | 166 | 29 | 0.3436 | 0.3517 | -0.8048 | UNDERPOWERED |
+| fta_per_fga | 167 | 34 | 0.3735 | 0.3826 | -0.9128 | UNDERPOWERED |
+| fta_per_fga | 171 | 24 | 0.3180 | 0.2953 | 2.2648 | UNDERPOWERED |
+| fta_per_fga | 172 | 27 | 0.2990 | 0.2920 | 0.7037 | UNDERPOWERED |
+| fta_per_fga | 179 | 32 | 0.3285 | 0.3071 | 2.1463 | UNDERPOWERED |
+| fta_per_fga | 183 | 33 | 0.3364 | 0.3342 | 0.2224 | UNDERPOWERED |
+| fta_per_fga | 189 | 29 | 0.3537 | 0.3564 | -0.2745 | UNDERPOWERED |
+| fta_per_fga | 193 | 32 | 0.3090 | 0.2886 | 2.0478 | UNDERPOWERED |
+| fta_per_fga | 194 | 32 | 0.2965 | 0.3594 | -6.2915 | UNDERPOWERED |
+| fta_per_fga | 195 | 31 | 0.3259 | 0.3430 | -1.7085 | UNDERPOWERED |
+| fta_per_fga | 197 | 35 | 0.3386 | 0.4170 | -7.8399 | UNDERPOWERED |
+| fta_per_fga | 198 | 25 | 0.3215 | 0.3568 | -3.5314 | UNDERPOWERED |
+| fta_per_fga | 201 | 34 | 0.3553 | 0.4126 | -5.7303 | UNDERPOWERED |
+| fta_per_fga | 202 | 31 | 0.3419 | 0.3450 | -0.3104 | UNDERPOWERED |
+| fta_per_fga | 204 | 32 | 0.3229 | 0.4003 | -7.7479 | UNDERPOWERED |
+| fta_per_fga | 213 | 31 | 0.3238 | 0.3954 | -7.1616 | UNDERPOWERED |
+| fta_per_fga | 218 | 29 | 0.3753 | 0.4607 | -8.5376 | UNDERPOWERED |
+| fta_per_fga | 219 | 26 | 0.2846 | 0.2932 | -0.8660 | UNDERPOWERED |
+| fta_per_fga | 221 | 32 | 0.3220 | 0.3477 | -2.5647 | UNDERPOWERED |
+| fta_per_fga | 222 | 36 | 0.2793 | 0.2984 | -1.9064 | UNDERPOWERED |
+| fta_per_fga | 225 | 24 | 0.2843 | 0.2835 | 0.0832 | UNDERPOWERED |
+| fta_per_fga | 227 | 29 | 0.3509 | 0.4244 | -7.3562 | UNDERPOWERED |
+| fta_per_fga | 228 | 34 | 0.2747 | 0.2874 | -1.2741 | UNDERPOWERED |
+| fta_per_fga | 231 | 32 | 0.2958 | 0.3524 | -5.6600 | UNDERPOWERED |
+| fta_per_fga | 232 | 32 | 0.3532 | 0.3529 | 0.0343 | UNDERPOWERED |
+| fta_per_fga | 233 | 28 | 0.3556 | 0.4546 | -9.9010 | UNDERPOWERED |
+| fta_per_fga | 235 | 35 | 0.3540 | 0.3968 | -4.2789 | UNDERPOWERED |
+| fta_per_fga | 236 | 35 | 0.2952 | 0.3075 | -1.2257 | UNDERPOWERED |
+| fta_per_fga | 238 | 33 | 0.3376 | 0.3402 | -0.2676 | UNDERPOWERED |
+| fta_per_fga | 239 | 34 | 0.3310 | 0.3104 | 2.0596 | UNDERPOWERED |
+| fta_per_fga | 242 | 31 | 0.3607 | 0.4430 | -8.2254 | UNDERPOWERED |
+| fta_per_fga | 245 | 34 | 0.3537 | 0.4200 | -6.6277 | UNDERPOWERED |
+| fta_per_fga | 248 | 40 | 0.3185 | 0.2751 | 4.3364 | UNDERPOWERED |
+| fta_per_fga | 249 | 33 | 0.2945 | 0.3538 | -5.9338 | UNDERPOWERED |
+| fta_per_fga | 250 | 29 | 0.3270 | 0.3867 | -5.9655 | UNDERPOWERED |
+| fta_per_fga | 251 | 35 | 0.3469 | 0.3752 | -2.8301 | UNDERPOWERED |
+| fta_per_fga | 252 | 35 | 0.3157 | 0.3081 | 0.7597 | UNDERPOWERED |
+| fta_per_fga | 253 | 28 | 0.3559 | 0.3772 | -2.1324 | UNDERPOWERED |
+| fta_per_fga | 254 | 33 | 0.3271 | 0.3771 | -4.9970 | UNDERPOWERED |
+| fta_per_fga | 256 | 29 | 0.2861 | 0.2989 | -1.2771 | UNDERPOWERED |
+| fta_per_fga | 257 | 29 | 0.2914 | 0.3023 | -1.0975 | UNDERPOWERED |
+| fta_per_fga | 258 | 32 | 0.2819 | 0.2679 | 1.4066 | UNDERPOWERED |
+| fta_per_fga | 259 | 32 | 0.2880 | 0.3106 | -2.2553 | UNDERPOWERED |
+| fta_per_fga | 261 | 29 | 0.2857 | 0.3016 | -1.5852 | UNDERPOWERED |
+| fta_per_fga | 264 | 30 | 0.3436 | 0.3469 | -0.3328 | UNDERPOWERED |
+| fta_per_fga | 265 | 33 | 0.3234 | 0.3357 | -1.2349 | UNDERPOWERED |
+| fta_per_fga | 269 | 34 | 0.2748 | 0.2627 | 1.2063 | UNDERPOWERED |
+| fta_per_fga | 270 | 30 | 0.3713 | 0.3909 | -1.9645 | UNDERPOWERED |
+| fta_per_fga | 275 | 37 | 0.3352 | 0.3504 | -1.5185 | UNDERPOWERED |
+| fta_per_fga | 276 | 31 | 0.3189 | 0.3632 | -4.4319 | UNDERPOWERED |
+| fta_per_fga | 277 | 32 | 0.3000 | 0.2592 | 4.0824 | UNDERPOWERED |
+| fta_per_fga | 278 | 32 | 0.3558 | 0.3706 | -1.4767 | UNDERPOWERED |
+| fta_per_fga | 279 | 31 | 0.3363 | 0.3343 | 0.1966 | UNDERPOWERED |
+| fta_per_fga | 282 | 30 | 0.3201 | 0.3658 | -4.5726 | UNDERPOWERED |
+| fta_per_fga | 284 | 30 | 0.3139 | 0.3192 | -0.5312 | UNDERPOWERED |
+| fta_per_fga | 288 | 33 | 0.2911 | 0.3284 | -3.7320 | UNDERPOWERED |
+| fta_per_fga | 290 | 32 | 0.3200 | 0.2669 | 5.3066 | UNDERPOWERED |
+| fta_per_fga | 292 | 26 | 0.3177 | 0.2354 | 8.2311 | UNDERPOWERED |
+| fta_per_fga | 294 | 31 | 0.3179 | 0.2905 | 2.7426 | UNDERPOWERED |
+| fta_per_fga | 295 | 33 | 0.3042 | 0.3166 | -1.2351 | UNDERPOWERED |
+| fta_per_fga | 299 | 28 | 0.2971 | 0.3589 | -6.1740 | UNDERPOWERED |
+| fta_per_fga | 300 | 37 | 0.3678 | 0.3551 | 1.2693 | UNDERPOWERED |
+| fta_per_fga | 301 | 32 | 0.3216 | 0.3099 | 1.1635 | UNDERPOWERED |
+| fta_per_fga | 302 | 30 | 0.3475 | 0.3921 | -4.4577 | UNDERPOWERED |
+| fta_per_fga | 304 | 26 | 0.3272 | 0.3546 | -2.7424 | UNDERPOWERED |
+| fta_per_fga | 305 | 34 | 0.3027 | 0.2858 | 1.6932 | UNDERPOWERED |
+| fta_per_fga | 309 | 32 | 0.2833 | 0.2998 | -1.6546 | UNDERPOWERED |
+| fta_per_fga | 311 | 32 | 0.2883 | 0.2868 | 0.1501 | UNDERPOWERED |
+| fta_per_fga | 314 | 34 | 0.3121 | 0.2835 | 2.8609 | UNDERPOWERED |
+| fta_per_fga | 315 | 29 | 0.2866 | 0.3080 | -2.1422 | UNDERPOWERED |
+| fta_per_fga | 322 | 32 | 0.3048 | 0.3089 | -0.4169 | UNDERPOWERED |
+| fta_per_fga | 324 | 30 | 0.3360 | 0.3464 | -1.0386 | UNDERPOWERED |
+| fta_per_fga | 325 | 32 | 0.3014 | 0.3142 | -1.2809 | UNDERPOWERED |
+| fta_per_fga | 326 | 30 | 0.3542 | 0.3818 | -2.7614 | UNDERPOWERED |
+| fta_per_fga | 328 | 33 | 0.3564 | 0.3740 | -1.7592 | UNDERPOWERED |
+| fta_per_fga | 331 | 30 | 0.3226 | 0.3155 | 0.7076 | UNDERPOWERED |
+| fta_per_fga | 333 | 37 | 0.3367 | 0.3994 | -6.2680 | UNDERPOWERED |
+| fta_per_fga | 338 | 30 | 0.3421 | 0.4014 | -5.9311 | UNDERPOWERED |
+| fta_per_fga | 339 | 31 | 0.3181 | 0.3135 | 0.4596 | UNDERPOWERED |
+| fta_per_fga | 344 | 34 | 0.2874 | 0.3210 | -3.3631 | UNDERPOWERED |
+| fta_per_fga | 349 | 29 | 0.2990 | 0.2589 | 4.0143 | UNDERPOWERED |
+| fta_per_fga | 350 | 32 | 0.3334 | 0.3876 | -5.4169 | UNDERPOWERED |
+| fta_per_fga | 356 | 35 | 0.3240 | 0.3498 | -2.5801 | UNDERPOWERED |
+| fta_per_fga | 357 | 29 | 0.3699 | 0.3661 | 0.3831 | UNDERPOWERED |
+| fta_per_fga | 399 | 29 | 0.3238 | 0.3137 | 1.0114 | UNDERPOWERED |
+| fta_per_fga | 526 | 33 | 0.2948 | 0.2350 | 5.9784 | UNDERPOWERED |
+| fta_per_fga | 2000 | 28 | 0.3595 | 0.3860 | -2.6512 | UNDERPOWERED |
+| fta_per_fga | 2005 | 32 | 0.2964 | 0.3664 | -7.0043 | UNDERPOWERED |
+| fta_per_fga | 2006 | 33 | 0.3109 | 0.2763 | 3.4589 | UNDERPOWERED |
+| fta_per_fga | 2010 | 28 | 0.3905 | 0.3864 | 0.4074 | UNDERPOWERED |
+| fta_per_fga | 2011 | 35 | 0.3504 | 0.2965 | 5.3893 | UNDERPOWERED |
+| fta_per_fga | 2016 | 31 | 0.3449 | 0.3120 | 3.2903 | UNDERPOWERED |
+| fta_per_fga | 2026 | 29 | 0.3237 | 0.3560 | -3.2315 | UNDERPOWERED |
+| fta_per_fga | 2029 | 29 | 0.3432 | 0.3338 | 0.9416 | UNDERPOWERED |
+| fta_per_fga | 2031 | 30 | 0.3240 | 0.2947 | 2.9240 | UNDERPOWERED |
+| fta_per_fga | 2032 | 35 | 0.3488 | 0.3416 | 0.7202 | UNDERPOWERED |
+| fta_per_fga | 2046 | 31 | 0.3262 | 0.3022 | 2.3947 | UNDERPOWERED |
+| fta_per_fga | 2050 | 28 | 0.3643 | 0.4535 | -8.9248 | UNDERPOWERED |
+| fta_per_fga | 2057 | 32 | 0.2942 | 0.2634 | 3.0776 | UNDERPOWERED |
+| fta_per_fga | 2065 | 33 | 0.3637 | 0.3686 | -0.4825 | UNDERPOWERED |
+| fta_per_fga | 2066 | 29 | 0.3200 | 0.3409 | -2.0978 | UNDERPOWERED |
+| fta_per_fga | 2083 | 32 | 0.3147 | 0.3671 | -5.2426 | UNDERPOWERED |
+| fta_per_fga | 2084 | 29 | 0.3431 | 0.3344 | 0.8708 | UNDERPOWERED |
+| fta_per_fga | 2086 | 35 | 0.3226 | 0.3797 | -5.7089 | UNDERPOWERED |
+| fta_per_fga | 2097 | 29 | 0.3008 | 0.3062 | -0.5384 | UNDERPOWERED |
+| fta_per_fga | 2099 | 30 | 0.2924 | 0.2403 | 5.2089 | UNDERPOWERED |
+| fta_per_fga | 2110 | 31 | 0.3050 | 0.2952 | 0.9773 | UNDERPOWERED |
+| fta_per_fga | 2115 | 29 | 0.3139 | 0.2601 | 5.3797 | UNDERPOWERED |
+| fta_per_fga | 2116 | 37 | 0.3141 | 0.3664 | -5.2297 | UNDERPOWERED |
+| fta_per_fga | 2117 | 26 | 0.3353 | 0.3720 | -3.6619 | UNDERPOWERED |
+| fta_per_fga | 2127 | 30 | 0.3567 | 0.4465 | -8.9729 | UNDERPOWERED |
+| fta_per_fga | 2130 | 32 | 0.3265 | 0.2752 | 5.1244 | UNDERPOWERED |
+| fta_per_fga | 2132 | 35 | 0.2877 | 0.2320 | 5.5704 | UNDERPOWERED |
+| fta_per_fga | 2142 | 31 | 0.2734 | 0.2324 | 4.1053 | UNDERPOWERED |
+| fta_per_fga | 2154 | 29 | 0.3822 | 0.3770 | 0.5126 | UNDERPOWERED |
+| fta_per_fga | 2166 | 32 | 0.3088 | 0.3013 | 0.7567 | UNDERPOWERED |
+| fta_per_fga | 2168 | 33 | 0.3201 | 0.3833 | -6.3118 | UNDERPOWERED |
+| fta_per_fga | 2169 | 25 | 0.3788 | 0.3704 | 0.8406 | UNDERPOWERED |
+| fta_per_fga | 2172 | 28 | 0.3232 | 0.3285 | -0.5343 | UNDERPOWERED |
+| fta_per_fga | 2174 | 31 | 0.2943 | 0.2939 | 0.0456 | UNDERPOWERED |
+| fta_per_fga | 2181 | 33 | 0.3292 | 0.4323 | -10.3113 | UNDERPOWERED |
+| fta_per_fga | 2182 | 32 | 0.2999 | 0.2475 | 5.2397 | UNDERPOWERED |
+| fta_per_fga | 2184 | 30 | 0.2907 | 0.3132 | -2.2527 | UNDERPOWERED |
+| fta_per_fga | 2193 | 30 | 0.2960 | 0.3466 | -5.0574 | UNDERPOWERED |
+| fta_per_fga | 2197 | 28 | 0.3191 | 0.3349 | -1.5812 | UNDERPOWERED |
+| fta_per_fga | 2198 | 30 | 0.2873 | 0.2626 | 2.4715 | UNDERPOWERED |
+| fta_per_fga | 2199 | 31 | 0.3199 | 0.3356 | -1.5634 | UNDERPOWERED |
+| fta_per_fga | 2210 | 31 | 0.2991 | 0.3919 | -9.2796 | UNDERPOWERED |
+| fta_per_fga | 2217 | 31 | 0.3137 | 0.2575 | 5.6226 | UNDERPOWERED |
+| fta_per_fga | 2226 | 33 | 0.3551 | 0.3427 | 1.2394 | UNDERPOWERED |
+| fta_per_fga | 2229 | 30 | 0.3286 | 0.3654 | -3.6816 | UNDERPOWERED |
+| fta_per_fga | 2230 | 32 | 0.3187 | 0.3263 | -0.7647 | UNDERPOWERED |
+| fta_per_fga | 2239 | 30 | 0.3424 | 0.4066 | -6.4165 | UNDERPOWERED |
+| fta_per_fga | 2241 | 31 | 0.3449 | 0.3676 | -2.2648 | UNDERPOWERED |
+| fta_per_fga | 2244 | 35 | 0.3539 | 0.4374 | -8.3477 | UNDERPOWERED |
+| fta_per_fga | 2247 | 32 | 0.3249 | 0.3479 | -2.2938 | UNDERPOWERED |
+| fta_per_fga | 2250 | 35 | 0.3497 | 0.3105 | 3.9211 | UNDERPOWERED |
+| fta_per_fga | 2253 | 33 | 0.3845 | 0.4470 | -6.2536 | UNDERPOWERED |
+| fta_per_fga | 2261 | 30 | 0.3085 | 0.3096 | -0.1088 | UNDERPOWERED |
+| fta_per_fga | 2272 | 32 | 0.3416 | 0.3716 | -3.0030 | UNDERPOWERED |
+| fta_per_fga | 2275 | 31 | 0.3078 | 0.2589 | 4.8923 | UNDERPOWERED |
+| fta_per_fga | 2277 | 29 | 0.2992 | 0.3062 | -0.7053 | UNDERPOWERED |
+| fta_per_fga | 2287 | 35 | 0.2845 | 0.3246 | -4.0171 | UNDERPOWERED |
+| fta_per_fga | 2294 | 33 | 0.3173 | 0.2645 | 5.2782 | UNDERPOWERED |
+| fta_per_fga | 2296 | 34 | 0.3348 | 0.3808 | -4.6000 | UNDERPOWERED |
+| fta_per_fga | 2305 | 34 | 0.2742 | 0.2509 | 2.3244 | UNDERPOWERED |
+| fta_per_fga | 2306 | 32 | 0.2924 | 0.2825 | 0.9870 | UNDERPOWERED |
+| fta_per_fga | 2309 | 34 | 0.3210 | 0.3085 | 1.2553 | UNDERPOWERED |
+| fta_per_fga | 2320 | 29 | 0.3381 | 0.2965 | 4.1573 | UNDERPOWERED |
+| fta_per_fga | 2325 | 32 | 0.2999 | 0.3237 | -2.3761 | UNDERPOWERED |
+| fta_per_fga | 2329 | 27 | 0.2794 | 0.3237 | -4.4370 | UNDERPOWERED |
+| fta_per_fga | 2330 | 30 | 0.3321 | 0.3893 | -5.7223 | UNDERPOWERED |
+| fta_per_fga | 2335 | 32 | 0.3175 | 0.3101 | 0.7429 | UNDERPOWERED |
+| fta_per_fga | 2344 | 29 | 0.3418 | 0.4666 | -12.4802 | UNDERPOWERED |
+| fta_per_fga | 2348 | 29 | 0.3545 | 0.3549 | -0.0374 | UNDERPOWERED |
+| fta_per_fga | 2349 | 28 | 0.3454 | 0.3246 | 2.0758 | UNDERPOWERED |
+| fta_per_fga | 2350 | 36 | 0.3129 | 0.3187 | -0.5780 | UNDERPOWERED |
+| fta_per_fga | 2351 | 31 | 0.2735 | 0.2957 | -2.2158 | UNDERPOWERED |
+| fta_per_fga | 2352 | 29 | 0.3166 | 0.2914 | 2.5166 | UNDERPOWERED |
+| fta_per_fga | 2363 | 30 | 0.3100 | 0.3208 | -1.0822 | UNDERPOWERED |
+| fta_per_fga | 2368 | 30 | 0.2913 | 0.2284 | 6.2867 | UNDERPOWERED |
+| fta_per_fga | 2377 | 33 | 0.3283 | 0.3636 | -3.5245 | UNDERPOWERED |
+| fta_per_fga | 2378 | 28 | 0.3510 | 0.3258 | 2.5202 | UNDERPOWERED |
+| fta_per_fga | 2379 | 26 | 0.3343 | 0.3714 | -3.7077 | UNDERPOWERED |
+| fta_per_fga | 2382 | 31 | 0.3296 | 0.2975 | 3.2165 | UNDERPOWERED |
+| fta_per_fga | 2385 | 28 | 0.2984 | 0.3126 | -1.4144 | UNDERPOWERED |
+| fta_per_fga | 2390 | 31 | 0.2670 | 0.2726 | -0.5579 | UNDERPOWERED |
+| fta_per_fga | 2393 | 32 | 0.3520 | 0.3276 | 2.4412 | UNDERPOWERED |
+| fta_per_fga | 2400 | 28 | 0.3387 | 0.3190 | 1.9625 | UNDERPOWERED |
+| fta_per_fga | 2405 | 32 | 0.3311 | 0.3769 | -4.5765 | UNDERPOWERED |
+| fta_per_fga | 2413 | 29 | 0.3369 | 0.3839 | -4.7036 | UNDERPOWERED |
+| fta_per_fga | 2415 | 28 | 0.4114 | 0.3630 | 4.8478 | UNDERPOWERED |
+| fta_per_fga | 2426 | 32 | 0.3012 | 0.3551 | -5.3877 | UNDERPOWERED |
+| fta_per_fga | 2427 | 28 | 0.3448 | 0.3497 | -0.4900 | UNDERPOWERED |
+| fta_per_fga | 2428 | 29 | 0.3197 | 0.4001 | -8.0444 | UNDERPOWERED |
+| fta_per_fga | 2429 | 32 | 0.3357 | 0.4323 | -9.6621 | UNDERPOWERED |
+| fta_per_fga | 2430 | 29 | 0.2808 | 0.3025 | -2.1712 | UNDERPOWERED |
+| fta_per_fga | 2433 | 30 | 0.3380 | 0.3162 | 2.1784 | UNDERPOWERED |
+| fta_per_fga | 2437 | 33 | 0.3048 | 0.3697 | -6.4865 | UNDERPOWERED |
+| fta_per_fga | 2439 | 33 | 0.3134 | 0.3674 | -5.3988 | UNDERPOWERED |
+| fta_per_fga | 2440 | 33 | 0.3187 | 0.3820 | -6.3299 | UNDERPOWERED |
+| fta_per_fga | 2443 | 30 | 0.3689 | 0.3513 | 1.7601 | UNDERPOWERED |
+| fta_per_fga | 2447 | 29 | 0.3329 | 0.3428 | -0.9871 | UNDERPOWERED |
+| fta_per_fga | 2448 | 31 | 0.3032 | 0.3166 | -1.3344 | UNDERPOWERED |
+| fta_per_fga | 2449 | 29 | 0.3180 | 0.3336 | -1.5605 | UNDERPOWERED |
+| fta_per_fga | 2450 | 32 | 0.3521 | 0.3970 | -4.4895 | UNDERPOWERED |
+| fta_per_fga | 2453 | 32 | 0.2909 | 0.3132 | -2.2287 | UNDERPOWERED |
+| fta_per_fga | 2454 | 29 | 0.3050 | 0.2480 | 5.6992 | UNDERPOWERED |
+| fta_per_fga | 2458 | 32 | 0.3161 | 0.3442 | -2.8062 | UNDERPOWERED |
+| fta_per_fga | 2459 | 26 | 0.3512 | 0.3256 | 2.5633 | UNDERPOWERED |
+| fta_per_fga | 2460 | 32 | 0.3447 | 0.3535 | -0.8793 | UNDERPOWERED |
+| fta_per_fga | 2463 | 30 | 0.3697 | 0.3658 | 0.3836 | UNDERPOWERED |
+| fta_per_fga | 2464 | 30 | 0.3179 | 0.2910 | 2.6980 | UNDERPOWERED |
+| fta_per_fga | 2466 | 29 | 0.2792 | 0.3241 | -4.4881 | UNDERPOWERED |
+| fta_per_fga | 2473 | 33 | 0.2722 | 0.3229 | -5.0694 | UNDERPOWERED |
+| fta_per_fga | 2483 | 35 | 0.3329 | 0.3360 | -0.3150 | UNDERPOWERED |
+| fta_per_fga | 2492 | 34 | 0.3192 | 0.3233 | -0.4051 | UNDERPOWERED |
+| fta_per_fga | 2501 | 30 | 0.3355 | 0.3267 | 0.8857 | UNDERPOWERED |
+| fta_per_fga | 2502 | 29 | 0.3520 | 0.3493 | 0.2725 | UNDERPOWERED |
+| fta_per_fga | 2504 | 31 | 0.3823 | 0.3474 | 3.4981 | UNDERPOWERED |
+| fta_per_fga | 2506 | 30 | 0.3007 | 0.3181 | -1.7345 | UNDERPOWERED |
+| fta_per_fga | 2507 | 31 | 0.2815 | 0.3123 | -3.0787 | UNDERPOWERED |
+| fta_per_fga | 2509 | 36 | 0.3326 | 0.3537 | -2.1112 | UNDERPOWERED |
+| fta_per_fga | 2511 | 32 | 0.3043 | 0.3480 | -4.3678 | UNDERPOWERED |
+| fta_per_fga | 2514 | 32 | 0.3165 | 0.3131 | 0.3389 | UNDERPOWERED |
+| fta_per_fga | 2515 | 31 | 0.3303 | 0.4157 | -8.5362 | UNDERPOWERED |
+| fta_per_fga | 2520 | 33 | 0.3093 | 0.3041 | 0.5160 | UNDERPOWERED |
+| fta_per_fga | 2523 | 33 | 0.3628 | 0.3840 | -2.1162 | UNDERPOWERED |
+| fta_per_fga | 2529 | 30 | 0.3164 | 0.2671 | 4.9372 | UNDERPOWERED |
+| fta_per_fga | 2534 | 29 | 0.3190 | 0.3687 | -4.9772 | UNDERPOWERED |
+| fta_per_fga | 2535 | 30 | 0.3279 | 0.2952 | 3.2657 | UNDERPOWERED |
+| fta_per_fga | 2539 | 34 | 0.3214 | 0.3516 | -3.0221 | UNDERPOWERED |
+| fta_per_fga | 2540 | 32 | 0.2849 | 0.3031 | -1.8158 | UNDERPOWERED |
+| fta_per_fga | 2541 | 33 | 0.3103 | 0.2936 | 1.6778 | UNDERPOWERED |
+| fta_per_fga | 2545 | 28 | 0.3202 | 0.3418 | -2.1534 | UNDERPOWERED |
+| fta_per_fga | 2546 | 30 | 0.2923 | 0.2954 | -0.3081 | UNDERPOWERED |
+| fta_per_fga | 2547 | 30 | 0.3864 | 0.4350 | -4.8539 | UNDERPOWERED |
+| fta_per_fga | 2550 | 32 | 0.3035 | 0.3361 | -3.2652 | UNDERPOWERED |
+| fta_per_fga | 2561 | 32 | 0.3139 | 0.3827 | -6.8746 | UNDERPOWERED |
+| fta_per_fga | 2565 | 31 | 0.2901 | 0.3453 | -5.5237 | UNDERPOWERED |
+| fta_per_fga | 2567 | 35 | 0.3285 | 0.3708 | -4.2311 | UNDERPOWERED |
+| fta_per_fga | 2569 | 30 | 0.3888 | 0.4403 | -5.1425 | UNDERPOWERED |
+| fta_per_fga | 2571 | 29 | 0.3314 | 0.3151 | 1.6297 | UNDERPOWERED |
+| fta_per_fga | 2572 | 29 | 0.3588 | 0.3519 | 0.6912 | UNDERPOWERED |
+| fta_per_fga | 2579 | 32 | 0.3003 | 0.4370 | -13.6790 | UNDERPOWERED |
+| fta_per_fga | 2582 | 28 | 0.3714 | 0.3945 | -2.3148 | UNDERPOWERED |
+| fta_per_fga | 2598 | 31 | 0.3192 | 0.2456 | 7.3675 | UNDERPOWERED |
+| fta_per_fga | 2599 | 36 | 0.3232 | 0.3135 | 0.9723 | UNDERPOWERED |
+| fta_per_fga | 2603 | 34 | 0.3010 | 0.3254 | -2.4449 | UNDERPOWERED |
+| fta_per_fga | 2608 | 34 | 0.3242 | 0.3172 | 0.6970 | UNDERPOWERED |
+| fta_per_fga | 2612 | 26 | 0.2988 | 0.3519 | -5.3050 | UNDERPOWERED |
+| fta_per_fga | 2617 | 27 | 0.3528 | 0.3422 | 1.0639 | UNDERPOWERED |
+| fta_per_fga | 2619 | 31 | 0.2997 | 0.3213 | -2.1581 | UNDERPOWERED |
+| fta_per_fga | 2623 | 30 | 0.3567 | 0.3428 | 1.3931 | UNDERPOWERED |
+| fta_per_fga | 2627 | 29 | 0.3683 | 0.4215 | -5.3248 | UNDERPOWERED |
+| fta_per_fga | 2628 | 31 | 0.3276 | 0.3444 | -1.6797 | UNDERPOWERED |
+| fta_per_fga | 2630 | 29 | 0.3482 | 0.3442 | 0.4053 | UNDERPOWERED |
+| fta_per_fga | 2633 | 38 | 0.3219 | 0.3625 | -4.0590 | UNDERPOWERED |
+| fta_per_fga | 2634 | 29 | 0.3633 | 0.4315 | -6.8199 | UNDERPOWERED |
+| fta_per_fga | 2635 | 29 | 0.3069 | 0.2962 | 1.0631 | UNDERPOWERED |
+| fta_per_fga | 2636 | 29 | 0.3304 | 0.2945 | 3.5883 | UNDERPOWERED |
+| fta_per_fga | 2638 | 30 | 0.3530 | 0.3767 | -2.3627 | UNDERPOWERED |
+| fta_per_fga | 2640 | 29 | 0.3548 | 0.2937 | 6.1108 | UNDERPOWERED |
+| fta_per_fga | 2641 | 37 | 0.2943 | 0.2970 | -0.2748 | UNDERPOWERED |
+| fta_per_fga | 2643 | 25 | 0.2908 | 0.3378 | -4.7008 | UNDERPOWERED |
+| fta_per_fga | 2649 | 32 | 0.3449 | 0.3566 | -1.1752 | UNDERPOWERED |
+| fta_per_fga | 2653 | 32 | 0.3418 | 0.3801 | -3.8294 | UNDERPOWERED |
+| fta_per_fga | 2655 | 32 | 0.3096 | 0.3553 | -4.5708 | UNDERPOWERED |
+| fta_per_fga | 2670 | 34 | 0.2838 | 0.3231 | -3.9263 | UNDERPOWERED |
+| fta_per_fga | 2674 | 32 | 0.3348 | 0.3424 | -0.7555 | UNDERPOWERED |
+| fta_per_fga | 2678 | 30 | 0.3306 | 0.3855 | -5.4829 | UNDERPOWERED |
+| fta_per_fga | 2681 | 26 | 0.2855 | 0.3043 | -1.8713 | UNDERPOWERED |
+| fta_per_fga | 2692 | 31 | 0.3307 | 0.3500 | -1.9237 | UNDERPOWERED |
+| fta_per_fga | 2698 | 30 | 0.3028 | 0.2936 | 0.9159 | UNDERPOWERED |
+| fta_per_fga | 2710 | 27 | 0.2678 | 0.2853 | -1.7514 | UNDERPOWERED |
+| fta_per_fga | 2711 | 31 | 0.3263 | 0.3153 | 1.0985 | UNDERPOWERED |
+| fta_per_fga | 2717 | 26 | 0.3023 | 0.2755 | 2.6788 | UNDERPOWERED |
+| fta_per_fga | 2724 | 33 | 0.3451 | 0.3528 | -0.7738 | UNDERPOWERED |
+| fta_per_fga | 2729 | 30 | 0.3271 | 0.3669 | -3.9829 | UNDERPOWERED |
+| fta_per_fga | 2737 | 31 | 0.3744 | 0.4863 | -11.1839 | UNDERPOWERED |
+| fta_per_fga | 2739 | 30 | 0.3071 | 0.3753 | -6.8274 | UNDERPOWERED |
+| fta_per_fga | 2747 | 31 | 0.2967 | 0.3231 | -2.6399 | UNDERPOWERED |
+| fta_per_fga | 2750 | 31 | 0.3144 | 0.2742 | 4.0171 | UNDERPOWERED |
+| fta_per_fga | 2751 | 31 | 0.3100 | 0.3069 | 0.3080 | UNDERPOWERED |
+| fta_per_fga | 2752 | 34 | 0.3359 | 0.3819 | -4.6030 | UNDERPOWERED |
+| fta_per_fga | 2754 | 31 | 0.3334 | 0.3724 | -3.9012 | UNDERPOWERED |
+| fta_per_fga | 2755 | 30 | 0.3695 | 0.3543 | 1.5208 | UNDERPOWERED |
+| fta_per_fga | 2771 | 32 | 0.2681 | 0.2465 | 2.1607 | UNDERPOWERED |
+| fta_per_fga | 2803 | 33 | 0.3251 | 0.3039 | 2.1246 | UNDERPOWERED |
+| fta_per_fga | 2815 | 30 | 0.3521 | 0.3699 | -1.7793 | UNDERPOWERED |
+| fta_per_fga | 2837 | 31 | 0.3072 | 0.2864 | 2.0788 | UNDERPOWERED |
+| fta_per_fga | 2856 | 32 | 0.3192 | 0.3075 | 1.1629 | UNDERPOWERED |
+| fta_per_fga | 2870 | 30 | 0.3046 | 0.2937 | 1.0917 | UNDERPOWERED |
+| fta_per_fga | 2885 | 28 | 0.2697 | 0.2787 | -0.9078 | UNDERPOWERED |
+| fta_per_fga | 2900 | 31 | 0.2957 | 0.3512 | -5.5457 | UNDERPOWERED |
+| fta_per_fga | 2908 | 29 | 0.3195 | 0.3106 | 0.8824 | UNDERPOWERED |
+| fta_per_fga | 2916 | 31 | 0.2987 | 0.3035 | -0.4898 | UNDERPOWERED |
+| fta_per_fga | 2934 | 28 | 0.3423 | 0.3542 | -1.1829 | UNDERPOWERED |
+| fta_per_fga | 3084 | 32 | 0.3859 | 0.4321 | -4.6142 | UNDERPOWERED |
+| fta_per_fga | 3101 | 30 | 0.3331 | 0.3451 | -1.2012 | UNDERPOWERED |
+| fta_per_fga | 112358 | 30 | 0.3153 | 0.2828 | 3.2532 | UNDERPOWERED |
+
+**G3 overall: NEEDS-INSTRUMENTATION**
+
+## G4 -- Four factors, offense and defense (by team, by tier)
+
+| quantity | value | target | tolerance | status |
+|---|---|---|---|---|
+| eFG% (offense/defense) | n/a | n/a | +/-1.0pp | NEEDS-INSTRUMENTATION |
+| tov_pct by team | 0/0 powered teams inside | all inside | +/-1.0pp | NEEDS-INSTRUMENTATION |
+| oreb_pct by team | 0/0 powered teams inside | all inside | +/-1.0pp | NEEDS-INSTRUMENTATION |
+| ft_rate by team | 0/0 powered teams inside | all inside | +/-0.015 | NEEDS-INSTRUMENTATION |
+
+eFG% needs MAKE counts (FGM/3PM); the contract's optional box columns are attempt counts only, so eFG% is unconditionally NEEDS-INSTRUMENTATION under the current contract (a documented gap, not a missing-file accident).
+
+### by team-metric
+
+| metric | team_id | n_games | sim | actual | delta | status |
+|---|---|---|---|---|---|---|
+| tov_pct | 2 | 38 | 0.1549 | 0.1385 | 0.0165 | UNDERPOWERED |
+| tov_pct | 5 | 36 | 0.1621 | 0.1388 | 0.0233 | UNDERPOWERED |
+| tov_pct | 6 | 30 | 0.1616 | 0.1475 | 0.0141 | UNDERPOWERED |
+| tov_pct | 8 | 36 | 0.1676 | 0.1645 | 0.0030 | UNDERPOWERED |
+| tov_pct | 9 | 33 | 0.1848 | 0.1783 | 0.0065 | UNDERPOWERED |
+| tov_pct | 12 | 37 | 0.1731 | 0.1624 | 0.0107 | UNDERPOWERED |
+| tov_pct | 13 | 34 | 0.1973 | 0.2075 | -0.0102 | UNDERPOWERED |
+| tov_pct | 16 | 28 | 0.1983 | 0.2065 | -0.0082 | UNDERPOWERED |
+| tov_pct | 21 | 30 | 0.1697 | 0.1683 | 0.0013 | UNDERPOWERED |
+| tov_pct | 23 | 33 | 0.1753 | 0.1741 | 0.0012 | UNDERPOWERED |
+| tov_pct | 24 | 35 | 0.1589 | 0.1570 | 0.0018 | UNDERPOWERED |
+| tov_pct | 25 | 33 | 0.1823 | 0.1679 | 0.0144 | UNDERPOWERED |
+| tov_pct | 26 | 34 | 0.1651 | 0.1605 | 0.0047 | UNDERPOWERED |
+| tov_pct | 27 | 30 | 0.1799 | 0.1624 | 0.0175 | UNDERPOWERED |
+| tov_pct | 28 | 33 | 0.1611 | 0.1345 | 0.0266 | UNDERPOWERED |
+| tov_pct | 30 | 35 | 0.1688 | 0.1781 | -0.0092 | UNDERPOWERED |
+| tov_pct | 36 | 36 | 0.1775 | 0.1735 | 0.0040 | UNDERPOWERED |
+| tov_pct | 38 | 35 | 0.1974 | 0.2108 | -0.0134 | UNDERPOWERED |
+| tov_pct | 41 | 35 | 0.1537 | 0.1698 | -0.0161 | UNDERPOWERED |
+| tov_pct | 43 | 29 | 0.1615 | 0.1466 | 0.0149 | UNDERPOWERED |
+| tov_pct | 44 | 33 | 0.1744 | 0.1698 | 0.0046 | UNDERPOWERED |
+| tov_pct | 45 | 33 | 0.1868 | 0.1867 | 0.0001 | UNDERPOWERED |
+| tov_pct | 46 | 34 | 0.1749 | 0.1718 | 0.0031 | UNDERPOWERED |
+| tov_pct | 47 | 25 | 0.2060 | 0.2115 | -0.0055 | UNDERPOWERED |
+| tov_pct | 48 | 34 | 0.1827 | 0.1659 | 0.0168 | UNDERPOWERED |
+| tov_pct | 50 | 28 | 0.2070 | 0.2086 | -0.0016 | UNDERPOWERED |
+| tov_pct | 52 | 32 | 0.1775 | 0.1763 | 0.0013 | UNDERPOWERED |
+| tov_pct | 55 | 33 | 0.1728 | 0.1596 | 0.0132 | UNDERPOWERED |
+| tov_pct | 56 | 27 | 0.1935 | 0.1919 | 0.0017 | UNDERPOWERED |
+| tov_pct | 57 | 40 | 0.1596 | 0.1588 | 0.0007 | UNDERPOWERED |
+| tov_pct | 58 | 31 | 0.1782 | 0.1635 | 0.0146 | UNDERPOWERED |
+| tov_pct | 59 | 34 | 0.1764 | 0.1749 | 0.0016 | UNDERPOWERED |
+| tov_pct | 61 | 32 | 0.1866 | 0.1906 | -0.0039 | UNDERPOWERED |
+| tov_pct | 62 | 28 | 0.1997 | 0.2098 | -0.0101 | UNDERPOWERED |
+| tov_pct | 66 | 34 | 0.1619 | 0.1733 | -0.0114 | UNDERPOWERED |
+| tov_pct | 68 | 36 | 0.1578 | 0.1670 | -0.0092 | UNDERPOWERED |
+| tov_pct | 70 | 31 | 0.1926 | 0.1789 | 0.0137 | UNDERPOWERED |
+| tov_pct | 71 | 35 | 0.1681 | 0.1740 | -0.0059 | UNDERPOWERED |
+| tov_pct | 77 | 33 | 0.1627 | 0.1501 | 0.0126 | UNDERPOWERED |
+| tov_pct | 79 | 31 | 0.1857 | 0.1856 | 0.0001 | UNDERPOWERED |
+| tov_pct | 82 | 29 | 0.1874 | 0.1773 | 0.0101 | UNDERPOWERED |
+| tov_pct | 84 | 31 | 0.1899 | 0.1669 | 0.0230 | UNDERPOWERED |
+| tov_pct | 85 | 29 | 0.1903 | 0.1586 | 0.0318 | UNDERPOWERED |
+| tov_pct | 87 | 33 | 0.1664 | 0.1680 | -0.0016 | UNDERPOWERED |
+| tov_pct | 88 | 28 | 0.1829 | 0.1737 | 0.0092 | UNDERPOWERED |
+| tov_pct | 91 | 29 | 0.1912 | 0.1753 | 0.0158 | UNDERPOWERED |
+| tov_pct | 93 | 32 | 0.1809 | 0.1720 | 0.0090 | UNDERPOWERED |
+| tov_pct | 94 | 31 | 0.1869 | 0.1730 | 0.0139 | UNDERPOWERED |
+| tov_pct | 96 | 36 | 0.1556 | 0.1516 | 0.0040 | UNDERPOWERED |
+| tov_pct | 97 | 35 | 0.1788 | 0.1645 | 0.0144 | UNDERPOWERED |
+| tov_pct | 98 | 30 | 0.1763 | 0.1556 | 0.0207 | UNDERPOWERED |
+| tov_pct | 99 | 32 | 0.1865 | 0.1867 | -0.0001 | UNDERPOWERED |
+| tov_pct | 103 | 31 | 0.1746 | 0.1745 | 0.0001 | UNDERPOWERED |
+| tov_pct | 104 | 28 | 0.1897 | 0.2067 | -0.0170 | UNDERPOWERED |
+| tov_pct | 107 | 30 | 0.1839 | 0.1795 | 0.0044 | UNDERPOWERED |
+| tov_pct | 108 | 25 | 0.1868 | 0.1818 | 0.0051 | UNDERPOWERED |
+| tov_pct | 111 | 32 | 0.1786 | 0.1861 | -0.0076 | UNDERPOWERED |
+| tov_pct | 113 | 31 | 0.1833 | 0.1629 | 0.0204 | UNDERPOWERED |
+| tov_pct | 116 | 34 | 0.1985 | 0.2143 | -0.0159 | UNDERPOWERED |
+| tov_pct | 119 | 31 | 0.1554 | 0.1478 | 0.0076 | UNDERPOWERED |
+| tov_pct | 120 | 36 | 0.1547 | 0.1453 | 0.0094 | UNDERPOWERED |
+| tov_pct | 127 | 37 | 0.1578 | 0.1659 | -0.0082 | UNDERPOWERED |
+| tov_pct | 130 | 37 | 0.1944 | 0.1976 | -0.0032 | UNDERPOWERED |
+| tov_pct | 135 | 31 | 0.1728 | 0.1668 | 0.0059 | UNDERPOWERED |
+| tov_pct | 139 | 32 | 0.1838 | 0.1884 | -0.0046 | UNDERPOWERED |
+| tov_pct | 140 | 29 | 0.1759 | 0.1873 | -0.0115 | UNDERPOWERED |
+| tov_pct | 142 | 34 | 0.1699 | 0.1568 | 0.0131 | UNDERPOWERED |
+| tov_pct | 145 | 36 | 0.1501 | 0.1299 | 0.0202 | UNDERPOWERED |
+| tov_pct | 147 | 32 | 0.1712 | 0.1525 | 0.0187 | UNDERPOWERED |
+| tov_pct | 149 | 31 | 0.1758 | 0.1617 | 0.0142 | UNDERPOWERED |
+| tov_pct | 150 | 39 | 0.1565 | 0.1414 | 0.0151 | UNDERPOWERED |
+| tov_pct | 151 | 31 | 0.1710 | 0.1567 | 0.0143 | UNDERPOWERED |
+| tov_pct | 152 | 31 | 0.1664 | 0.1453 | 0.0211 | UNDERPOWERED |
+| tov_pct | 153 | 37 | 0.1661 | 0.1524 | 0.0137 | UNDERPOWERED |
+| tov_pct | 154 | 32 | 0.1744 | 0.1685 | 0.0059 | UNDERPOWERED |
+| tov_pct | 155 | 30 | 0.1828 | 0.1666 | 0.0162 | UNDERPOWERED |
+| tov_pct | 156 | 36 | 0.1708 | 0.1802 | -0.0094 | UNDERPOWERED |
+| tov_pct | 158 | 34 | 0.1701 | 0.1636 | 0.0065 | UNDERPOWERED |
+| tov_pct | 159 | 26 | 0.1702 | 0.1630 | 0.0072 | UNDERPOWERED |
+| tov_pct | 160 | 29 | 0.1910 | 0.1949 | -0.0039 | UNDERPOWERED |
+| tov_pct | 161 | 30 | 0.1803 | 0.1735 | 0.0068 | UNDERPOWERED |
+| tov_pct | 163 | 27 | 0.1600 | 0.1549 | 0.0052 | UNDERPOWERED |
+| tov_pct | 164 | 32 | 0.1745 | 0.1567 | 0.0178 | UNDERPOWERED |
+| tov_pct | 166 | 29 | 0.1810 | 0.1551 | 0.0259 | UNDERPOWERED |
+| tov_pct | 167 | 34 | 0.1732 | 0.1584 | 0.0148 | UNDERPOWERED |
+| tov_pct | 171 | 24 | 0.1719 | 0.1554 | 0.0165 | UNDERPOWERED |
+| tov_pct | 172 | 27 | 0.1646 | 0.1689 | -0.0042 | UNDERPOWERED |
+| tov_pct | 179 | 32 | 0.1601 | 0.1604 | -0.0004 | UNDERPOWERED |
+| tov_pct | 183 | 33 | 0.1790 | 0.1813 | -0.0023 | UNDERPOWERED |
+| tov_pct | 189 | 29 | 0.1731 | 0.1764 | -0.0033 | UNDERPOWERED |
+| tov_pct | 193 | 32 | 0.1758 | 0.1755 | 0.0003 | UNDERPOWERED |
+| tov_pct | 194 | 32 | 0.1608 | 0.1579 | 0.0028 | UNDERPOWERED |
+| tov_pct | 195 | 31 | 0.1746 | 0.1513 | 0.0233 | UNDERPOWERED |
+| tov_pct | 197 | 35 | 0.1924 | 0.1944 | -0.0020 | UNDERPOWERED |
+| tov_pct | 198 | 25 | 0.1842 | 0.1646 | 0.0196 | UNDERPOWERED |
+| tov_pct | 201 | 34 | 0.1710 | 0.1749 | -0.0039 | UNDERPOWERED |
+| tov_pct | 202 | 31 | 0.1907 | 0.1697 | 0.0210 | UNDERPOWERED |
+| tov_pct | 204 | 32 | 0.1579 | 0.1684 | -0.0105 | UNDERPOWERED |
+| tov_pct | 213 | 31 | 0.1659 | 0.1764 | -0.0105 | UNDERPOWERED |
+| tov_pct | 218 | 29 | 0.1835 | 0.1599 | 0.0236 | UNDERPOWERED |
+| tov_pct | 219 | 26 | 0.1913 | 0.1657 | 0.0256 | UNDERPOWERED |
+| tov_pct | 221 | 32 | 0.1526 | 0.1493 | 0.0033 | UNDERPOWERED |
+| tov_pct | 222 | 36 | 0.1632 | 0.1541 | 0.0091 | UNDERPOWERED |
+| tov_pct | 225 | 24 | 0.1767 | 0.1755 | 0.0012 | UNDERPOWERED |
+| tov_pct | 227 | 29 | 0.1783 | 0.1772 | 0.0011 | UNDERPOWERED |
+| tov_pct | 228 | 34 | 0.1545 | 0.1600 | -0.0055 | UNDERPOWERED |
+| tov_pct | 231 | 32 | 0.1660 | 0.1725 | -0.0065 | UNDERPOWERED |
+| tov_pct | 232 | 32 | 0.1729 | 0.1635 | 0.0095 | UNDERPOWERED |
+| tov_pct | 233 | 28 | 0.1689 | 0.1261 | 0.0427 | UNDERPOWERED |
+| tov_pct | 235 | 35 | 0.1720 | 0.1945 | -0.0225 | UNDERPOWERED |
+| tov_pct | 236 | 35 | 0.1689 | 0.1493 | 0.0195 | UNDERPOWERED |
+| tov_pct | 238 | 33 | 0.1579 | 0.1464 | 0.0114 | UNDERPOWERED |
+| tov_pct | 239 | 34 | 0.1662 | 0.1592 | 0.0071 | UNDERPOWERED |
+| tov_pct | 242 | 31 | 0.1799 | 0.1790 | 0.0010 | UNDERPOWERED |
+| tov_pct | 245 | 34 | 0.1687 | 0.1814 | -0.0127 | UNDERPOWERED |
+| tov_pct | 248 | 40 | 0.1438 | 0.1436 | 0.0002 | UNDERPOWERED |
+| tov_pct | 249 | 33 | 0.1642 | 0.1669 | -0.0027 | UNDERPOWERED |
+| tov_pct | 250 | 29 | 0.1888 | 0.1945 | -0.0057 | UNDERPOWERED |
+| tov_pct | 251 | 35 | 0.1573 | 0.1459 | 0.0113 | UNDERPOWERED |
+| tov_pct | 252 | 35 | 0.1715 | 0.1743 | -0.0028 | UNDERPOWERED |
+| tov_pct | 253 | 28 | 0.2021 | 0.2175 | -0.0153 | UNDERPOWERED |
+| tov_pct | 254 | 33 | 0.1831 | 0.1813 | 0.0019 | UNDERPOWERED |
+| tov_pct | 256 | 29 | 0.1691 | 0.1613 | 0.0077 | UNDERPOWERED |
+| tov_pct | 257 | 29 | 0.1676 | 0.1568 | 0.0108 | UNDERPOWERED |
+| tov_pct | 258 | 32 | 0.1690 | 0.1647 | 0.0043 | UNDERPOWERED |
+| tov_pct | 259 | 32 | 0.1758 | 0.2017 | -0.0258 | UNDERPOWERED |
+| tov_pct | 261 | 29 | 0.1660 | 0.1779 | -0.0119 | UNDERPOWERED |
+| tov_pct | 264 | 30 | 0.1813 | 0.1776 | 0.0037 | UNDERPOWERED |
+| tov_pct | 265 | 33 | 0.1834 | 0.2025 | -0.0190 | UNDERPOWERED |
+| tov_pct | 269 | 34 | 0.1527 | 0.1367 | 0.0160 | UNDERPOWERED |
+| tov_pct | 270 | 30 | 0.1972 | 0.1953 | 0.0019 | UNDERPOWERED |
+| tov_pct | 275 | 37 | 0.1574 | 0.1409 | 0.0165 | UNDERPOWERED |
+| tov_pct | 276 | 31 | 0.1706 | 0.1665 | 0.0041 | UNDERPOWERED |
+| tov_pct | 277 | 32 | 0.1626 | 0.1635 | -0.0009 | UNDERPOWERED |
+| tov_pct | 278 | 32 | 0.1829 | 0.1779 | 0.0049 | UNDERPOWERED |
+| tov_pct | 279 | 31 | 0.1935 | 0.1932 | 0.0003 | UNDERPOWERED |
+| tov_pct | 282 | 30 | 0.1873 | 0.1965 | -0.0092 | UNDERPOWERED |
+| tov_pct | 284 | 30 | 0.1898 | 0.1845 | 0.0053 | UNDERPOWERED |
+| tov_pct | 288 | 33 | 0.1510 | 0.1481 | 0.0028 | UNDERPOWERED |
+| tov_pct | 290 | 32 | 0.1899 | 0.1920 | -0.0021 | UNDERPOWERED |
+| tov_pct | 292 | 26 | 0.1842 | 0.1895 | -0.0053 | UNDERPOWERED |
+| tov_pct | 294 | 31 | 0.1849 | 0.1964 | -0.0115 | UNDERPOWERED |
+| tov_pct | 295 | 33 | 0.1880 | 0.1699 | 0.0181 | UNDERPOWERED |
+| tov_pct | 299 | 28 | 0.2026 | 0.2192 | -0.0167 | UNDERPOWERED |
+| tov_pct | 300 | 37 | 0.1789 | 0.1855 | -0.0066 | UNDERPOWERED |
+| tov_pct | 301 | 32 | 0.1995 | 0.1858 | 0.0137 | UNDERPOWERED |
+| tov_pct | 302 | 30 | 0.1955 | 0.1977 | -0.0023 | UNDERPOWERED |
+| tov_pct | 304 | 26 | 0.1872 | 0.1650 | 0.0221 | UNDERPOWERED |
+| tov_pct | 305 | 34 | 0.1984 | 0.1819 | 0.0165 | UNDERPOWERED |
+| tov_pct | 309 | 32 | 0.1829 | 0.1622 | 0.0208 | UNDERPOWERED |
+| tov_pct | 311 | 32 | 0.1701 | 0.1557 | 0.0144 | UNDERPOWERED |
+| tov_pct | 314 | 34 | 0.1948 | 0.2105 | -0.0157 | UNDERPOWERED |
+| tov_pct | 315 | 29 | 0.1873 | 0.1846 | 0.0027 | UNDERPOWERED |
+| tov_pct | 322 | 32 | 0.1652 | 0.1671 | -0.0019 | UNDERPOWERED |
+| tov_pct | 324 | 30 | 0.1804 | 0.1835 | -0.0032 | UNDERPOWERED |
+| tov_pct | 325 | 32 | 0.1775 | 0.1809 | -0.0034 | UNDERPOWERED |
+| tov_pct | 326 | 30 | 0.1810 | 0.1837 | -0.0027 | UNDERPOWERED |
+| tov_pct | 328 | 33 | 0.1722 | 0.1621 | 0.0101 | UNDERPOWERED |
+| tov_pct | 331 | 30 | 0.1789 | 0.1889 | -0.0100 | UNDERPOWERED |
+| tov_pct | 333 | 37 | 0.1681 | 0.1688 | -0.0007 | UNDERPOWERED |
+| tov_pct | 338 | 30 | 0.1982 | 0.1977 | 0.0005 | UNDERPOWERED |
+| tov_pct | 339 | 31 | 0.1956 | 0.1792 | 0.0164 | UNDERPOWERED |
+| tov_pct | 344 | 34 | 0.1581 | 0.1539 | 0.0042 | UNDERPOWERED |
+| tov_pct | 349 | 29 | 0.1719 | 0.1452 | 0.0267 | UNDERPOWERED |
+| tov_pct | 350 | 32 | 0.1637 | 0.1634 | 0.0003 | UNDERPOWERED |
+| tov_pct | 356 | 35 | 0.1618 | 0.1614 | 0.0004 | UNDERPOWERED |
+| tov_pct | 357 | 29 | 0.1828 | 0.1793 | 0.0035 | UNDERPOWERED |
+| tov_pct | 399 | 29 | 0.1700 | 0.1615 | 0.0085 | UNDERPOWERED |
+| tov_pct | 526 | 33 | 0.1644 | 0.1631 | 0.0013 | UNDERPOWERED |
+| tov_pct | 2000 | 28 | 0.2111 | 0.2110 | 0.0001 | UNDERPOWERED |
+| tov_pct | 2005 | 32 | 0.2022 | 0.2097 | -0.0076 | UNDERPOWERED |
+| tov_pct | 2006 | 33 | 0.1573 | 0.1648 | -0.0075 | UNDERPOWERED |
+| tov_pct | 2010 | 28 | 0.2189 | 0.2200 | -0.0011 | UNDERPOWERED |
+| tov_pct | 2011 | 35 | 0.1656 | 0.1324 | 0.0333 | UNDERPOWERED |
+| tov_pct | 2016 | 31 | 0.2056 | 0.1959 | 0.0098 | UNDERPOWERED |
+| tov_pct | 2026 | 29 | 0.1778 | 0.1694 | 0.0084 | UNDERPOWERED |
+| tov_pct | 2029 | 29 | 0.2044 | 0.2051 | -0.0008 | UNDERPOWERED |
+| tov_pct | 2031 | 30 | 0.1815 | 0.2015 | -0.0200 | UNDERPOWERED |
+| tov_pct | 2032 | 35 | 0.1592 | 0.1464 | 0.0128 | UNDERPOWERED |
+| tov_pct | 2046 | 31 | 0.1762 | 0.1479 | 0.0283 | UNDERPOWERED |
+| tov_pct | 2050 | 28 | 0.1887 | 0.1647 | 0.0240 | UNDERPOWERED |
+| tov_pct | 2057 | 32 | 0.1664 | 0.1612 | 0.0052 | UNDERPOWERED |
+| tov_pct | 2065 | 33 | 0.1909 | 0.1960 | -0.0050 | UNDERPOWERED |
+| tov_pct | 2066 | 29 | 0.1918 | 0.1975 | -0.0057 | UNDERPOWERED |
+| tov_pct | 2083 | 32 | 0.1849 | 0.1852 | -0.0003 | UNDERPOWERED |
+| tov_pct | 2084 | 29 | 0.1963 | 0.1979 | -0.0016 | UNDERPOWERED |
+| tov_pct | 2086 | 35 | 0.1758 | 0.1622 | 0.0136 | UNDERPOWERED |
+| tov_pct | 2097 | 29 | 0.1811 | 0.1608 | 0.0202 | UNDERPOWERED |
+| tov_pct | 2099 | 30 | 0.1975 | 0.1864 | 0.0111 | UNDERPOWERED |
+| tov_pct | 2110 | 31 | 0.1876 | 0.1841 | 0.0035 | UNDERPOWERED |
+| tov_pct | 2115 | 29 | 0.1722 | 0.1740 | -0.0018 | UNDERPOWERED |
+| tov_pct | 2116 | 37 | 0.1770 | 0.1678 | 0.0092 | UNDERPOWERED |
+| tov_pct | 2117 | 26 | 0.1986 | 0.1752 | 0.0235 | UNDERPOWERED |
+| tov_pct | 2127 | 30 | 0.1972 | 0.2017 | -0.0044 | UNDERPOWERED |
+| tov_pct | 2130 | 32 | 0.2020 | 0.1848 | 0.0172 | UNDERPOWERED |
+| tov_pct | 2132 | 35 | 0.1655 | 0.1566 | 0.0089 | UNDERPOWERED |
+| tov_pct | 2142 | 31 | 0.1626 | 0.1703 | -0.0078 | UNDERPOWERED |
+| tov_pct | 2154 | 29 | 0.2067 | 0.2169 | -0.0102 | UNDERPOWERED |
+| tov_pct | 2166 | 32 | 0.1606 | 0.1462 | 0.0144 | UNDERPOWERED |
+| tov_pct | 2168 | 33 | 0.1618 | 0.1564 | 0.0054 | UNDERPOWERED |
+| tov_pct | 2169 | 25 | 0.1916 | 0.1852 | 0.0065 | UNDERPOWERED |
+| tov_pct | 2172 | 28 | 0.1808 | 0.1870 | -0.0063 | UNDERPOWERED |
+| tov_pct | 2174 | 31 | 0.2088 | 0.1927 | 0.0161 | UNDERPOWERED |
+| tov_pct | 2181 | 33 | 0.1803 | 0.1846 | -0.0043 | UNDERPOWERED |
+| tov_pct | 2182 | 32 | 0.1664 | 0.1876 | -0.0213 | UNDERPOWERED |
+| tov_pct | 2184 | 30 | 0.1752 | 0.1878 | -0.0126 | UNDERPOWERED |
+| tov_pct | 2193 | 30 | 0.1696 | 0.1627 | 0.0069 | UNDERPOWERED |
+| tov_pct | 2197 | 28 | 0.1985 | 0.1875 | 0.0110 | UNDERPOWERED |
+| tov_pct | 2198 | 30 | 0.1575 | 0.1396 | 0.0179 | UNDERPOWERED |
+| tov_pct | 2199 | 31 | 0.1935 | 0.1897 | 0.0037 | UNDERPOWERED |
+| tov_pct | 2210 | 31 | 0.1865 | 0.1930 | -0.0065 | UNDERPOWERED |
+| tov_pct | 2217 | 31 | 0.1689 | 0.1569 | 0.0120 | UNDERPOWERED |
+| tov_pct | 2226 | 33 | 0.1685 | 0.1643 | 0.0042 | UNDERPOWERED |
+| tov_pct | 2229 | 30 | 0.1900 | 0.2006 | -0.0106 | UNDERPOWERED |
+| tov_pct | 2230 | 32 | 0.1913 | 0.1862 | 0.0052 | UNDERPOWERED |
+| tov_pct | 2239 | 30 | 0.2050 | 0.2149 | -0.0099 | UNDERPOWERED |
+| tov_pct | 2241 | 31 | 0.1968 | 0.2099 | -0.0131 | UNDERPOWERED |
+| tov_pct | 2244 | 35 | 0.1871 | 0.2008 | -0.0136 | UNDERPOWERED |
+| tov_pct | 2247 | 32 | 0.1800 | 0.1706 | 0.0094 | UNDERPOWERED |
+| tov_pct | 2250 | 35 | 0.1535 | 0.1354 | 0.0181 | UNDERPOWERED |
+| tov_pct | 2253 | 33 | 0.1801 | 0.1880 | -0.0079 | UNDERPOWERED |
+| tov_pct | 2261 | 30 | 0.1692 | 0.1610 | 0.0082 | UNDERPOWERED |
+| tov_pct | 2272 | 32 | 0.1546 | 0.1516 | 0.0030 | UNDERPOWERED |
+| tov_pct | 2275 | 31 | 0.1796 | 0.1786 | 0.0010 | UNDERPOWERED |
+| tov_pct | 2277 | 29 | 0.1958 | 0.1798 | 0.0160 | UNDERPOWERED |
+| tov_pct | 2287 | 35 | 0.1691 | 0.1596 | 0.0095 | UNDERPOWERED |
+| tov_pct | 2294 | 33 | 0.1643 | 0.1382 | 0.0261 | UNDERPOWERED |
+| tov_pct | 2296 | 34 | 0.1989 | 0.1950 | 0.0039 | UNDERPOWERED |
+| tov_pct | 2305 | 34 | 0.1573 | 0.1700 | -0.0126 | UNDERPOWERED |
+| tov_pct | 2306 | 32 | 0.1818 | 0.1781 | 0.0037 | UNDERPOWERED |
+| tov_pct | 2309 | 34 | 0.1707 | 0.1736 | -0.0029 | UNDERPOWERED |
+| tov_pct | 2320 | 29 | 0.1959 | 0.1897 | 0.0062 | UNDERPOWERED |
+| tov_pct | 2325 | 32 | 0.1719 | 0.1560 | 0.0159 | UNDERPOWERED |
+| tov_pct | 2329 | 27 | 0.1763 | 0.1582 | 0.0181 | UNDERPOWERED |
+| tov_pct | 2330 | 30 | 0.1893 | 0.1985 | -0.0092 | UNDERPOWERED |
+| tov_pct | 2335 | 32 | 0.1625 | 0.1562 | 0.0063 | UNDERPOWERED |
+| tov_pct | 2344 | 29 | 0.1795 | 0.1814 | -0.0019 | UNDERPOWERED |
+| tov_pct | 2348 | 29 | 0.1762 | 0.1910 | -0.0148 | UNDERPOWERED |
+| tov_pct | 2349 | 28 | 0.1758 | 0.1796 | -0.0038 | UNDERPOWERED |
+| tov_pct | 2350 | 36 | 0.1790 | 0.1742 | 0.0049 | UNDERPOWERED |
+| tov_pct | 2351 | 31 | 0.1656 | 0.1533 | 0.0123 | UNDERPOWERED |
+| tov_pct | 2352 | 29 | 0.1925 | 0.1759 | 0.0167 | UNDERPOWERED |
+| tov_pct | 2363 | 30 | 0.1852 | 0.1689 | 0.0163 | UNDERPOWERED |
+| tov_pct | 2368 | 30 | 0.1714 | 0.1852 | -0.0138 | UNDERPOWERED |
+| tov_pct | 2377 | 33 | 0.1664 | 0.1642 | 0.0022 | UNDERPOWERED |
+| tov_pct | 2378 | 28 | 0.1708 | 0.1571 | 0.0137 | UNDERPOWERED |
+| tov_pct | 2379 | 26 | 0.2136 | 0.2001 | 0.0135 | UNDERPOWERED |
+| tov_pct | 2382 | 31 | 0.1812 | 0.1667 | 0.0146 | UNDERPOWERED |
+| tov_pct | 2385 | 28 | 0.1852 | 0.1647 | 0.0205 | UNDERPOWERED |
+| tov_pct | 2390 | 31 | 0.1622 | 0.1605 | 0.0018 | UNDERPOWERED |
+| tov_pct | 2393 | 32 | 0.1766 | 0.1671 | 0.0095 | UNDERPOWERED |
+| tov_pct | 2400 | 28 | 0.2463 | 0.2430 | 0.0033 | UNDERPOWERED |
+| tov_pct | 2405 | 32 | 0.1847 | 0.1642 | 0.0205 | UNDERPOWERED |
+| tov_pct | 2413 | 29 | 0.1830 | 0.1847 | -0.0017 | UNDERPOWERED |
+| tov_pct | 2415 | 28 | 0.2067 | 0.1815 | 0.0252 | UNDERPOWERED |
+| tov_pct | 2426 | 32 | 0.1859 | 0.1656 | 0.0203 | UNDERPOWERED |
+| tov_pct | 2427 | 28 | 0.1584 | 0.1493 | 0.0091 | UNDERPOWERED |
+| tov_pct | 2428 | 29 | 0.2007 | 0.1936 | 0.0071 | UNDERPOWERED |
+| tov_pct | 2429 | 32 | 0.1632 | 0.1507 | 0.0125 | UNDERPOWERED |
+| tov_pct | 2430 | 29 | 0.1662 | 0.1554 | 0.0108 | UNDERPOWERED |
+| tov_pct | 2433 | 30 | 0.1911 | 0.1717 | 0.0194 | UNDERPOWERED |
+| tov_pct | 2437 | 33 | 0.1727 | 0.1577 | 0.0150 | UNDERPOWERED |
+| tov_pct | 2439 | 33 | 0.1675 | 0.1621 | 0.0055 | UNDERPOWERED |
+| tov_pct | 2440 | 33 | 0.1568 | 0.1574 | -0.0006 | UNDERPOWERED |
+| tov_pct | 2443 | 30 | 0.2059 | 0.1899 | 0.0160 | UNDERPOWERED |
+| tov_pct | 2447 | 29 | 0.1780 | 0.1533 | 0.0247 | UNDERPOWERED |
+| tov_pct | 2448 | 31 | 0.1808 | 0.1569 | 0.0239 | UNDERPOWERED |
+| tov_pct | 2449 | 29 | 0.1585 | 0.1564 | 0.0021 | UNDERPOWERED |
+| tov_pct | 2450 | 32 | 0.1895 | 0.1831 | 0.0064 | UNDERPOWERED |
+| tov_pct | 2453 | 32 | 0.1576 | 0.1273 | 0.0303 | UNDERPOWERED |
+| tov_pct | 2454 | 29 | 0.1540 | 0.1478 | 0.0062 | UNDERPOWERED |
+| tov_pct | 2458 | 32 | 0.1659 | 0.1604 | 0.0055 | UNDERPOWERED |
+| tov_pct | 2459 | 26 | 0.1839 | 0.1628 | 0.0211 | UNDERPOWERED |
+| tov_pct | 2460 | 32 | 0.1721 | 0.1620 | 0.0101 | UNDERPOWERED |
+| tov_pct | 2463 | 30 | 0.1875 | 0.1924 | -0.0048 | UNDERPOWERED |
+| tov_pct | 2464 | 30 | 0.1735 | 0.1532 | 0.0204 | UNDERPOWERED |
+| tov_pct | 2466 | 29 | 0.1946 | 0.2036 | -0.0090 | UNDERPOWERED |
+| tov_pct | 2473 | 33 | 0.1741 | 0.1814 | -0.0073 | UNDERPOWERED |
+| tov_pct | 2483 | 35 | 0.1639 | 0.1653 | -0.0014 | UNDERPOWERED |
+| tov_pct | 2492 | 34 | 0.1797 | 0.1623 | 0.0175 | UNDERPOWERED |
+| tov_pct | 2501 | 30 | 0.1881 | 0.1812 | 0.0069 | UNDERPOWERED |
+| tov_pct | 2502 | 29 | 0.1890 | 0.1849 | 0.0042 | UNDERPOWERED |
+| tov_pct | 2504 | 31 | 0.1919 | 0.1688 | 0.0231 | UNDERPOWERED |
+| tov_pct | 2506 | 30 | 0.1756 | 0.1624 | 0.0132 | UNDERPOWERED |
+| tov_pct | 2507 | 31 | 0.1728 | 0.1891 | -0.0163 | UNDERPOWERED |
+| tov_pct | 2509 | 36 | 0.1525 | 0.1581 | -0.0056 | UNDERPOWERED |
+| tov_pct | 2511 | 32 | 0.1863 | 0.1842 | 0.0021 | UNDERPOWERED |
+| tov_pct | 2514 | 32 | 0.1918 | 0.1807 | 0.0111 | UNDERPOWERED |
+| tov_pct | 2515 | 31 | 0.1857 | 0.1792 | 0.0065 | UNDERPOWERED |
+| tov_pct | 2520 | 33 | 0.1969 | 0.1725 | 0.0244 | UNDERPOWERED |
+| tov_pct | 2523 | 33 | 0.1913 | 0.1861 | 0.0052 | UNDERPOWERED |
+| tov_pct | 2529 | 30 | 0.1817 | 0.1773 | 0.0043 | UNDERPOWERED |
+| tov_pct | 2534 | 29 | 0.1802 | 0.1839 | -0.0037 | UNDERPOWERED |
+| tov_pct | 2535 | 30 | 0.1672 | 0.1860 | -0.0189 | UNDERPOWERED |
+| tov_pct | 2539 | 34 | 0.1672 | 0.1685 | -0.0013 | UNDERPOWERED |
+| tov_pct | 2540 | 32 | 0.1815 | 0.1832 | -0.0017 | UNDERPOWERED |
+| tov_pct | 2541 | 33 | 0.1742 | 0.1714 | 0.0028 | UNDERPOWERED |
+| tov_pct | 2545 | 28 | 0.1837 | 0.1761 | 0.0076 | UNDERPOWERED |
+| tov_pct | 2546 | 30 | 0.1775 | 0.1563 | 0.0212 | UNDERPOWERED |
+| tov_pct | 2547 | 30 | 0.1841 | 0.1709 | 0.0132 | UNDERPOWERED |
+| tov_pct | 2550 | 32 | 0.2024 | 0.1932 | 0.0093 | UNDERPOWERED |
+| tov_pct | 2561 | 32 | 0.1834 | 0.1717 | 0.0117 | UNDERPOWERED |
+| tov_pct | 2565 | 31 | 0.1720 | 0.1736 | -0.0016 | UNDERPOWERED |
+| tov_pct | 2567 | 35 | 0.1627 | 0.1754 | -0.0127 | UNDERPOWERED |
+| tov_pct | 2569 | 30 | 0.1969 | 0.2007 | -0.0038 | UNDERPOWERED |
+| tov_pct | 2571 | 29 | 0.1815 | 0.1773 | 0.0042 | UNDERPOWERED |
+| tov_pct | 2572 | 29 | 0.1958 | 0.1984 | -0.0026 | UNDERPOWERED |
+| tov_pct | 2579 | 32 | 0.1813 | 0.1846 | -0.0034 | UNDERPOWERED |
+| tov_pct | 2582 | 28 | 0.1987 | 0.1823 | 0.0163 | UNDERPOWERED |
+| tov_pct | 2598 | 31 | 0.2064 | 0.1974 | 0.0090 | UNDERPOWERED |
+| tov_pct | 2599 | 36 | 0.1567 | 0.1544 | 0.0023 | UNDERPOWERED |
+| tov_pct | 2603 | 34 | 0.1657 | 0.1658 | -0.0000 | UNDERPOWERED |
+| tov_pct | 2608 | 34 | 0.1588 | 0.1505 | 0.0083 | UNDERPOWERED |
+| tov_pct | 2612 | 26 | 0.1811 | 0.2054 | -0.0243 | UNDERPOWERED |
+| tov_pct | 2617 | 27 | 0.2127 | 0.2246 | -0.0120 | UNDERPOWERED |
+| tov_pct | 2619 | 31 | 0.1852 | 0.1837 | 0.0015 | UNDERPOWERED |
+| tov_pct | 2623 | 30 | 0.1978 | 0.2082 | -0.0103 | UNDERPOWERED |
+| tov_pct | 2627 | 29 | 0.2285 | 0.2530 | -0.0245 | UNDERPOWERED |
+| tov_pct | 2628 | 31 | 0.1810 | 0.1775 | 0.0034 | UNDERPOWERED |
+| tov_pct | 2630 | 29 | 0.1904 | 0.1962 | -0.0058 | UNDERPOWERED |
+| tov_pct | 2633 | 38 | 0.1711 | 0.1632 | 0.0079 | UNDERPOWERED |
+| tov_pct | 2634 | 29 | 0.1915 | 0.2142 | -0.0228 | UNDERPOWERED |
+| tov_pct | 2635 | 29 | 0.1862 | 0.1752 | 0.0110 | UNDERPOWERED |
+| tov_pct | 2636 | 29 | 0.1725 | 0.1554 | 0.0171 | UNDERPOWERED |
+| tov_pct | 2638 | 30 | 0.1756 | 0.1675 | 0.0081 | UNDERPOWERED |
+| tov_pct | 2640 | 29 | 0.1943 | 0.1985 | -0.0042 | UNDERPOWERED |
+| tov_pct | 2641 | 37 | 0.1546 | 0.1431 | 0.0115 | UNDERPOWERED |
+| tov_pct | 2643 | 25 | 0.2079 | 0.1951 | 0.0129 | UNDERPOWERED |
+| tov_pct | 2649 | 32 | 0.1585 | 0.1380 | 0.0205 | UNDERPOWERED |
+| tov_pct | 2653 | 32 | 0.1891 | 0.2002 | -0.0111 | UNDERPOWERED |
+| tov_pct | 2655 | 32 | 0.1743 | 0.1609 | 0.0134 | UNDERPOWERED |
+| tov_pct | 2670 | 34 | 0.1598 | 0.1699 | -0.0101 | UNDERPOWERED |
+| tov_pct | 2674 | 32 | 0.1700 | 0.1408 | 0.0292 | UNDERPOWERED |
+| tov_pct | 2678 | 30 | 0.1869 | 0.1809 | 0.0061 | UNDERPOWERED |
+| tov_pct | 2681 | 26 | 0.2012 | 0.1968 | 0.0044 | UNDERPOWERED |
+| tov_pct | 2692 | 31 | 0.1765 | 0.1701 | 0.0063 | UNDERPOWERED |
+| tov_pct | 2698 | 30 | 0.1810 | 0.1633 | 0.0177 | UNDERPOWERED |
+| tov_pct | 2710 | 27 | 0.1759 | 0.1841 | -0.0082 | UNDERPOWERED |
+| tov_pct | 2711 | 31 | 0.1854 | 0.1594 | 0.0260 | UNDERPOWERED |
+| tov_pct | 2717 | 26 | 0.2138 | 0.1942 | 0.0196 | UNDERPOWERED |
+| tov_pct | 2724 | 33 | 0.1752 | 0.1646 | 0.0105 | UNDERPOWERED |
+| tov_pct | 2729 | 30 | 0.1866 | 0.1816 | 0.0051 | UNDERPOWERED |
+| tov_pct | 2737 | 31 | 0.1968 | 0.1788 | 0.0180 | UNDERPOWERED |
+| tov_pct | 2739 | 30 | 0.1946 | 0.1802 | 0.0144 | UNDERPOWERED |
+| tov_pct | 2747 | 31 | 0.1696 | 0.1709 | -0.0013 | UNDERPOWERED |
+| tov_pct | 2750 | 31 | 0.1757 | 0.1790 | -0.0033 | UNDERPOWERED |
+| tov_pct | 2751 | 31 | 0.1869 | 0.2001 | -0.0132 | UNDERPOWERED |
+| tov_pct | 2752 | 34 | 0.1704 | 0.1576 | 0.0128 | UNDERPOWERED |
+| tov_pct | 2754 | 31 | 0.1798 | 0.1786 | 0.0012 | UNDERPOWERED |
+| tov_pct | 2755 | 30 | 0.2019 | 0.1912 | 0.0107 | UNDERPOWERED |
+| tov_pct | 2771 | 32 | 0.1595 | 0.1383 | 0.0212 | UNDERPOWERED |
+| tov_pct | 2803 | 33 | 0.1772 | 0.1624 | 0.0147 | UNDERPOWERED |
+| tov_pct | 2815 | 30 | 0.1932 | 0.1817 | 0.0116 | UNDERPOWERED |
+| tov_pct | 2837 | 31 | 0.2159 | 0.2265 | -0.0106 | UNDERPOWERED |
+| tov_pct | 2856 | 32 | 0.1817 | 0.1791 | 0.0026 | UNDERPOWERED |
+| tov_pct | 2870 | 30 | 0.1566 | 0.1403 | 0.0162 | UNDERPOWERED |
+| tov_pct | 2885 | 28 | 0.2088 | 0.1808 | 0.0280 | UNDERPOWERED |
+| tov_pct | 2900 | 31 | 0.1430 | 0.1371 | 0.0059 | UNDERPOWERED |
+| tov_pct | 2908 | 29 | 0.1994 | 0.1907 | 0.0087 | UNDERPOWERED |
+| tov_pct | 2916 | 31 | 0.1879 | 0.1772 | 0.0107 | UNDERPOWERED |
+| tov_pct | 2934 | 28 | 0.1916 | 0.1849 | 0.0067 | UNDERPOWERED |
+| tov_pct | 3084 | 32 | 0.1943 | 0.1748 | 0.0194 | UNDERPOWERED |
+| tov_pct | 3101 | 30 | 0.1852 | 0.1816 | 0.0035 | UNDERPOWERED |
+| tov_pct | 112358 | 30 | 0.1943 | 0.2015 | -0.0072 | UNDERPOWERED |
+| oreb_pct | 2 | 38 | 0.3372 | 0.3387 | -0.0015 | UNDERPOWERED |
+| oreb_pct | 5 | 36 | 0.3160 | 0.3785 | -0.0625 | UNDERPOWERED |
+| oreb_pct | 6 | 30 | 0.2663 | 0.2802 | -0.0139 | UNDERPOWERED |
+| oreb_pct | 8 | 36 | 0.2621 | 0.2760 | -0.0139 | UNDERPOWERED |
+| oreb_pct | 9 | 33 | 0.2493 | 0.2497 | -0.0005 | UNDERPOWERED |
+| oreb_pct | 12 | 37 | 0.3456 | 0.3589 | -0.0133 | UNDERPOWERED |
+| oreb_pct | 13 | 34 | 0.2485 | 0.2752 | -0.0267 | UNDERPOWERED |
+| oreb_pct | 16 | 28 | 0.2502 | 0.2764 | -0.0262 | UNDERPOWERED |
+| oreb_pct | 21 | 30 | 0.2969 | 0.2843 | 0.0126 | UNDERPOWERED |
+| oreb_pct | 23 | 33 | 0.2510 | 0.2710 | -0.0200 | UNDERPOWERED |
+| oreb_pct | 24 | 35 | 0.2881 | 0.3064 | -0.0183 | UNDERPOWERED |
+| oreb_pct | 25 | 33 | 0.3022 | 0.3488 | -0.0466 | UNDERPOWERED |
+| oreb_pct | 26 | 34 | 0.3288 | 0.3288 | 0.0000 | UNDERPOWERED |
+| oreb_pct | 27 | 30 | 0.2781 | 0.3218 | -0.0437 | UNDERPOWERED |
+| oreb_pct | 28 | 33 | 0.2814 | 0.2515 | 0.0299 | UNDERPOWERED |
+| oreb_pct | 30 | 35 | 0.2467 | 0.2738 | -0.0271 | UNDERPOWERED |
+| oreb_pct | 36 | 36 | 0.2462 | 0.2701 | -0.0239 | UNDERPOWERED |
+| oreb_pct | 38 | 35 | 0.2807 | 0.2902 | -0.0096 | UNDERPOWERED |
+| oreb_pct | 41 | 35 | 0.3250 | 0.3555 | -0.0305 | UNDERPOWERED |
+| oreb_pct | 43 | 29 | 0.3091 | 0.3256 | -0.0165 | UNDERPOWERED |
+| oreb_pct | 44 | 33 | 0.2514 | 0.2376 | 0.0137 | UNDERPOWERED |
+| oreb_pct | 45 | 33 | 0.2995 | 0.3158 | -0.0164 | UNDERPOWERED |
+| oreb_pct | 46 | 34 | 0.3021 | 0.3165 | -0.0144 | UNDERPOWERED |
+| oreb_pct | 47 | 25 | 0.2770 | 0.2900 | -0.0130 | UNDERPOWERED |
+| oreb_pct | 48 | 34 | 0.2466 | 0.2200 | 0.0266 | UNDERPOWERED |
+| oreb_pct | 50 | 28 | 0.2552 | 0.2779 | -0.0227 | UNDERPOWERED |
+| oreb_pct | 52 | 32 | 0.2840 | 0.2885 | -0.0045 | UNDERPOWERED |
+| oreb_pct | 55 | 33 | 0.2646 | 0.3095 | -0.0449 | UNDERPOWERED |
+| oreb_pct | 56 | 27 | 0.2479 | 0.2367 | 0.0112 | UNDERPOWERED |
+| oreb_pct | 57 | 40 | 0.3495 | 0.3827 | -0.0333 | UNDERPOWERED |
+| oreb_pct | 58 | 31 | 0.2576 | 0.2708 | -0.0132 | UNDERPOWERED |
+| oreb_pct | 59 | 34 | 0.2819 | 0.3032 | -0.0213 | UNDERPOWERED |
+| oreb_pct | 61 | 32 | 0.3192 | 0.3545 | -0.0353 | UNDERPOWERED |
+| oreb_pct | 62 | 28 | 0.3027 | 0.3098 | -0.0071 | UNDERPOWERED |
+| oreb_pct | 66 | 34 | 0.3419 | 0.3177 | 0.0242 | UNDERPOWERED |
+| oreb_pct | 68 | 36 | 0.3155 | 0.3278 | -0.0123 | UNDERPOWERED |
+| oreb_pct | 70 | 31 | 0.2729 | 0.2888 | -0.0159 | UNDERPOWERED |
+| oreb_pct | 71 | 35 | 0.2643 | 0.2622 | 0.0021 | UNDERPOWERED |
+| oreb_pct | 77 | 33 | 0.2792 | 0.3080 | -0.0288 | UNDERPOWERED |
+| oreb_pct | 79 | 31 | 0.2641 | 0.3041 | -0.0400 | UNDERPOWERED |
+| oreb_pct | 82 | 29 | 0.2769 | 0.2950 | -0.0181 | UNDERPOWERED |
+| oreb_pct | 84 | 31 | 0.2824 | 0.3081 | -0.0257 | UNDERPOWERED |
+| oreb_pct | 85 | 29 | 0.2565 | 0.2978 | -0.0413 | UNDERPOWERED |
+| oreb_pct | 87 | 33 | 0.2678 | 0.2961 | -0.0283 | UNDERPOWERED |
+| oreb_pct | 88 | 28 | 0.2671 | 0.2778 | -0.0107 | UNDERPOWERED |
+| oreb_pct | 91 | 29 | 0.2584 | 0.1993 | 0.0591 | UNDERPOWERED |
+| oreb_pct | 93 | 32 | 0.2539 | 0.2897 | -0.0359 | UNDERPOWERED |
+| oreb_pct | 94 | 31 | 0.2808 | 0.3068 | -0.0260 | UNDERPOWERED |
+| oreb_pct | 96 | 36 | 0.2783 | 0.2743 | 0.0040 | UNDERPOWERED |
+| oreb_pct | 97 | 35 | 0.2823 | 0.3138 | -0.0315 | UNDERPOWERED |
+| oreb_pct | 98 | 30 | 0.2503 | 0.2282 | 0.0221 | UNDERPOWERED |
+| oreb_pct | 99 | 32 | 0.2961 | 0.2914 | 0.0046 | UNDERPOWERED |
+| oreb_pct | 103 | 31 | 0.2743 | 0.2824 | -0.0081 | UNDERPOWERED |
+| oreb_pct | 104 | 28 | 0.2967 | 0.3237 | -0.0269 | UNDERPOWERED |
+| oreb_pct | 107 | 30 | 0.2420 | 0.2298 | 0.0122 | UNDERPOWERED |
+| oreb_pct | 108 | 25 | 0.2445 | 0.2551 | -0.0107 | UNDERPOWERED |
+| oreb_pct | 111 | 32 | 0.2750 | 0.3066 | -0.0317 | UNDERPOWERED |
+| oreb_pct | 113 | 31 | 0.3000 | 0.3424 | -0.0424 | UNDERPOWERED |
+| oreb_pct | 116 | 34 | 0.2909 | 0.3048 | -0.0140 | UNDERPOWERED |
+| oreb_pct | 119 | 31 | 0.3002 | 0.3496 | -0.0494 | UNDERPOWERED |
+| oreb_pct | 120 | 36 | 0.3037 | 0.3092 | -0.0055 | UNDERPOWERED |
+| oreb_pct | 127 | 37 | 0.3222 | 0.3531 | -0.0309 | UNDERPOWERED |
+| oreb_pct | 130 | 37 | 0.3007 | 0.3325 | -0.0318 | UNDERPOWERED |
+| oreb_pct | 135 | 31 | 0.2691 | 0.2999 | -0.0308 | UNDERPOWERED |
+| oreb_pct | 139 | 32 | 0.2432 | 0.2350 | 0.0082 | UNDERPOWERED |
+| oreb_pct | 140 | 29 | 0.2905 | 0.3274 | -0.0370 | UNDERPOWERED |
+| oreb_pct | 142 | 34 | 0.3069 | 0.3297 | -0.0228 | UNDERPOWERED |
+| oreb_pct | 145 | 36 | 0.2296 | 0.2543 | -0.0247 | UNDERPOWERED |
+| oreb_pct | 147 | 32 | 0.2372 | 0.2057 | 0.0315 | UNDERPOWERED |
+| oreb_pct | 149 | 31 | 0.2384 | 0.2203 | 0.0181 | UNDERPOWERED |
+| oreb_pct | 150 | 39 | 0.3623 | 0.3345 | 0.0278 | UNDERPOWERED |
+| oreb_pct | 151 | 31 | 0.3089 | 0.3344 | -0.0254 | UNDERPOWERED |
+| oreb_pct | 152 | 31 | 0.3017 | 0.2881 | 0.0136 | UNDERPOWERED |
+| oreb_pct | 153 | 37 | 0.2917 | 0.2943 | -0.0026 | UNDERPOWERED |
+| oreb_pct | 154 | 32 | 0.2695 | 0.2666 | 0.0029 | UNDERPOWERED |
+| oreb_pct | 155 | 30 | 0.2926 | 0.3337 | -0.0411 | UNDERPOWERED |
+| oreb_pct | 156 | 36 | 0.2637 | 0.2595 | 0.0042 | UNDERPOWERED |
+| oreb_pct | 158 | 34 | 0.2823 | 0.2687 | 0.0136 | UNDERPOWERED |
+| oreb_pct | 159 | 26 | 0.2247 | 0.2256 | -0.0009 | UNDERPOWERED |
+| oreb_pct | 160 | 29 | 0.2461 | 0.2667 | -0.0207 | UNDERPOWERED |
+| oreb_pct | 161 | 30 | 0.2628 | 0.2592 | 0.0035 | UNDERPOWERED |
+| oreb_pct | 163 | 27 | 0.2391 | 0.2586 | -0.0195 | UNDERPOWERED |
+| oreb_pct | 164 | 32 | 0.2713 | 0.3053 | -0.0340 | UNDERPOWERED |
+| oreb_pct | 166 | 29 | 0.3019 | 0.3225 | -0.0206 | UNDERPOWERED |
+| oreb_pct | 167 | 34 | 0.3133 | 0.3063 | 0.0071 | UNDERPOWERED |
+| oreb_pct | 171 | 24 | 0.2781 | 0.2615 | 0.0165 | UNDERPOWERED |
+| oreb_pct | 172 | 27 | 0.2412 | 0.2468 | -0.0056 | UNDERPOWERED |
+| oreb_pct | 179 | 32 | 0.2811 | 0.2669 | 0.0142 | UNDERPOWERED |
+| oreb_pct | 183 | 33 | 0.2697 | 0.3112 | -0.0415 | UNDERPOWERED |
+| oreb_pct | 189 | 29 | 0.2457 | 0.2542 | -0.0085 | UNDERPOWERED |
+| oreb_pct | 193 | 32 | 0.2658 | 0.2757 | -0.0099 | UNDERPOWERED |
+| oreb_pct | 194 | 32 | 0.2590 | 0.2903 | -0.0313 | UNDERPOWERED |
+| oreb_pct | 195 | 31 | 0.2637 | 0.2355 | 0.0281 | UNDERPOWERED |
+| oreb_pct | 197 | 35 | 0.2930 | 0.3100 | -0.0170 | UNDERPOWERED |
+| oreb_pct | 198 | 25 | 0.2378 | 0.2254 | 0.0124 | UNDERPOWERED |
+| oreb_pct | 201 | 34 | 0.2699 | 0.2646 | 0.0054 | UNDERPOWERED |
+| oreb_pct | 202 | 31 | 0.2907 | 0.2677 | 0.0230 | UNDERPOWERED |
+| oreb_pct | 204 | 32 | 0.3008 | 0.3157 | -0.0149 | UNDERPOWERED |
+| oreb_pct | 213 | 31 | 0.2792 | 0.2840 | -0.0048 | UNDERPOWERED |
+| oreb_pct | 218 | 29 | 0.2958 | 0.3207 | -0.0250 | UNDERPOWERED |
+| oreb_pct | 219 | 26 | 0.2802 | 0.2643 | 0.0159 | UNDERPOWERED |
+| oreb_pct | 221 | 32 | 0.2745 | 0.2899 | -0.0154 | UNDERPOWERED |
+| oreb_pct | 222 | 36 | 0.3162 | 0.3021 | 0.0141 | UNDERPOWERED |
+| oreb_pct | 225 | 24 | 0.2676 | 0.3047 | -0.0371 | UNDERPOWERED |
+| oreb_pct | 227 | 29 | 0.2667 | 0.2700 | -0.0033 | UNDERPOWERED |
+| oreb_pct | 228 | 34 | 0.2882 | 0.3355 | -0.0473 | UNDERPOWERED |
+| oreb_pct | 231 | 32 | 0.2779 | 0.2960 | -0.0181 | UNDERPOWERED |
+| oreb_pct | 232 | 32 | 0.2689 | 0.2618 | 0.0070 | UNDERPOWERED |
+| oreb_pct | 233 | 28 | 0.2983 | 0.2956 | 0.0027 | UNDERPOWERED |
+| oreb_pct | 235 | 35 | 0.3013 | 0.3479 | -0.0465 | UNDERPOWERED |
+| oreb_pct | 236 | 35 | 0.2576 | 0.2521 | 0.0055 | UNDERPOWERED |
+| oreb_pct | 238 | 33 | 0.2817 | 0.3124 | -0.0307 | UNDERPOWERED |
+| oreb_pct | 239 | 34 | 0.3302 | 0.3595 | -0.0294 | UNDERPOWERED |
+| oreb_pct | 242 | 31 | 0.3092 | 0.3359 | -0.0268 | UNDERPOWERED |
+| oreb_pct | 245 | 34 | 0.3227 | 0.4142 | -0.0915 | UNDERPOWERED |
+| oreb_pct | 248 | 40 | 0.3462 | 0.3670 | -0.0208 | UNDERPOWERED |
+| oreb_pct | 249 | 33 | 0.3334 | 0.3270 | 0.0064 | UNDERPOWERED |
+| oreb_pct | 250 | 29 | 0.2917 | 0.3195 | -0.0277 | UNDERPOWERED |
+| oreb_pct | 251 | 35 | 0.2787 | 0.2981 | -0.0194 | UNDERPOWERED |
+| oreb_pct | 252 | 35 | 0.3208 | 0.3293 | -0.0086 | UNDERPOWERED |
+| oreb_pct | 253 | 28 | 0.2736 | 0.3017 | -0.0281 | UNDERPOWERED |
+| oreb_pct | 254 | 33 | 0.3229 | 0.3418 | -0.0189 | UNDERPOWERED |
+| oreb_pct | 256 | 29 | 0.2966 | 0.3166 | -0.0200 | UNDERPOWERED |
+| oreb_pct | 257 | 29 | 0.2071 | 0.1924 | 0.0148 | UNDERPOWERED |
+| oreb_pct | 258 | 32 | 0.2479 | 0.2234 | 0.0245 | UNDERPOWERED |
+| oreb_pct | 259 | 32 | 0.2758 | 0.3065 | -0.0307 | UNDERPOWERED |
+| oreb_pct | 261 | 29 | 0.2583 | 0.2547 | 0.0036 | UNDERPOWERED |
+| oreb_pct | 264 | 30 | 0.2778 | 0.2719 | 0.0059 | UNDERPOWERED |
+| oreb_pct | 265 | 33 | 0.3178 | 0.3073 | 0.0105 | UNDERPOWERED |
+| oreb_pct | 269 | 34 | 0.2966 | 0.2976 | -0.0010 | UNDERPOWERED |
+| oreb_pct | 270 | 30 | 0.3131 | 0.3985 | -0.0854 | UNDERPOWERED |
+| oreb_pct | 275 | 37 | 0.2766 | 0.2776 | -0.0010 | UNDERPOWERED |
+| oreb_pct | 276 | 31 | 0.2828 | 0.3249 | -0.0421 | UNDERPOWERED |
+| oreb_pct | 277 | 32 | 0.2731 | 0.2557 | 0.0174 | UNDERPOWERED |
+| oreb_pct | 278 | 32 | 0.2437 | 0.2637 | -0.0199 | UNDERPOWERED |
+| oreb_pct | 279 | 31 | 0.2721 | 0.2863 | -0.0143 | UNDERPOWERED |
+| oreb_pct | 282 | 30 | 0.2611 | 0.2626 | -0.0015 | UNDERPOWERED |
+| oreb_pct | 284 | 30 | 0.2409 | 0.2632 | -0.0223 | UNDERPOWERED |
+| oreb_pct | 288 | 33 | 0.2496 | 0.2368 | 0.0128 | UNDERPOWERED |
+| oreb_pct | 290 | 32 | 0.2781 | 0.3322 | -0.0541 | UNDERPOWERED |
+| oreb_pct | 292 | 26 | 0.2920 | 0.3056 | -0.0136 | UNDERPOWERED |
+| oreb_pct | 294 | 31 | 0.3100 | 0.3557 | -0.0458 | UNDERPOWERED |
+| oreb_pct | 295 | 33 | 0.2982 | 0.3592 | -0.0610 | UNDERPOWERED |
+| oreb_pct | 299 | 28 | 0.2568 | 0.2841 | -0.0273 | UNDERPOWERED |
+| oreb_pct | 300 | 37 | 0.3042 | 0.2779 | 0.0264 | UNDERPOWERED |
+| oreb_pct | 301 | 32 | 0.2655 | 0.2973 | -0.0319 | UNDERPOWERED |
+| oreb_pct | 302 | 30 | 0.2677 | 0.2755 | -0.0078 | UNDERPOWERED |
+| oreb_pct | 304 | 26 | 0.3039 | 0.3804 | -0.0765 | UNDERPOWERED |
+| oreb_pct | 305 | 34 | 0.2907 | 0.2699 | 0.0208 | UNDERPOWERED |
+| oreb_pct | 309 | 32 | 0.2603 | 0.2553 | 0.0050 | UNDERPOWERED |
+| oreb_pct | 311 | 32 | 0.2403 | 0.2188 | 0.0216 | UNDERPOWERED |
+| oreb_pct | 314 | 34 | 0.3220 | 0.3867 | -0.0647 | UNDERPOWERED |
+| oreb_pct | 315 | 29 | 0.2480 | 0.2277 | 0.0203 | UNDERPOWERED |
+| oreb_pct | 322 | 32 | 0.2345 | 0.2414 | -0.0069 | UNDERPOWERED |
+| oreb_pct | 324 | 30 | 0.2697 | 0.2850 | -0.0153 | UNDERPOWERED |
+| oreb_pct | 325 | 32 | 0.3058 | 0.3465 | -0.0407 | UNDERPOWERED |
+| oreb_pct | 326 | 30 | 0.2943 | 0.3467 | -0.0524 | UNDERPOWERED |
+| oreb_pct | 328 | 33 | 0.3357 | 0.3403 | -0.0047 | UNDERPOWERED |
+| oreb_pct | 331 | 30 | 0.2600 | 0.2650 | -0.0050 | UNDERPOWERED |
+| oreb_pct | 333 | 37 | 0.3301 | 0.3349 | -0.0048 | UNDERPOWERED |
+| oreb_pct | 338 | 30 | 0.2935 | 0.3248 | -0.0313 | UNDERPOWERED |
+| oreb_pct | 339 | 31 | 0.2201 | 0.2211 | -0.0010 | UNDERPOWERED |
+| oreb_pct | 344 | 34 | 0.3224 | 0.3377 | -0.0153 | UNDERPOWERED |
+| oreb_pct | 349 | 29 | 0.2594 | 0.2579 | 0.0015 | UNDERPOWERED |
+| oreb_pct | 350 | 32 | 0.3111 | 0.3546 | -0.0435 | UNDERPOWERED |
+| oreb_pct | 356 | 35 | 0.3509 | 0.3556 | -0.0047 | UNDERPOWERED |
+| oreb_pct | 357 | 29 | 0.3222 | 0.3156 | 0.0066 | UNDERPOWERED |
+| oreb_pct | 399 | 29 | 0.3001 | 0.3241 | -0.0240 | UNDERPOWERED |
+| oreb_pct | 526 | 33 | 0.2617 | 0.2996 | -0.0378 | UNDERPOWERED |
+| oreb_pct | 2000 | 28 | 0.2720 | 0.2956 | -0.0236 | UNDERPOWERED |
+| oreb_pct | 2005 | 32 | 0.2323 | 0.2235 | 0.0089 | UNDERPOWERED |
+| oreb_pct | 2006 | 33 | 0.2930 | 0.3287 | -0.0358 | UNDERPOWERED |
+| oreb_pct | 2010 | 28 | 0.2923 | 0.3386 | -0.0463 | UNDERPOWERED |
+| oreb_pct | 2011 | 35 | 0.2853 | 0.2787 | 0.0066 | UNDERPOWERED |
+| oreb_pct | 2016 | 31 | 0.3043 | 0.3349 | -0.0306 | UNDERPOWERED |
+| oreb_pct | 2026 | 29 | 0.3013 | 0.2723 | 0.0290 | UNDERPOWERED |
+| oreb_pct | 2029 | 29 | 0.2722 | 0.2623 | 0.0099 | UNDERPOWERED |
+| oreb_pct | 2031 | 30 | 0.2757 | 0.3001 | -0.0244 | UNDERPOWERED |
+| oreb_pct | 2032 | 35 | 0.3018 | 0.3349 | -0.0330 | UNDERPOWERED |
+| oreb_pct | 2046 | 31 | 0.2567 | 0.2578 | -0.0011 | UNDERPOWERED |
+| oreb_pct | 2050 | 28 | 0.2401 | 0.2617 | -0.0216 | UNDERPOWERED |
+| oreb_pct | 2057 | 32 | 0.2526 | 0.2689 | -0.0164 | UNDERPOWERED |
+| oreb_pct | 2065 | 33 | 0.2923 | 0.2887 | 0.0036 | UNDERPOWERED |
+| oreb_pct | 2066 | 29 | 0.2485 | 0.2622 | -0.0137 | UNDERPOWERED |
+| oreb_pct | 2083 | 32 | 0.2508 | 0.2597 | -0.0089 | UNDERPOWERED |
+| oreb_pct | 2084 | 29 | 0.2373 | 0.2477 | -0.0104 | UNDERPOWERED |
+| oreb_pct | 2086 | 35 | 0.2687 | 0.2602 | 0.0085 | UNDERPOWERED |
+| oreb_pct | 2097 | 29 | 0.2358 | 0.2419 | -0.0061 | UNDERPOWERED |
+| oreb_pct | 2099 | 30 | 0.2398 | 0.1777 | 0.0621 | UNDERPOWERED |
+| oreb_pct | 2110 | 31 | 0.2465 | 0.2822 | -0.0357 | UNDERPOWERED |
+| oreb_pct | 2115 | 29 | 0.2659 | 0.2619 | 0.0040 | UNDERPOWERED |
+| oreb_pct | 2116 | 37 | 0.2866 | 0.3193 | -0.0326 | UNDERPOWERED |
+| oreb_pct | 2117 | 26 | 0.3040 | 0.3161 | -0.0121 | UNDERPOWERED |
+| oreb_pct | 2127 | 30 | 0.2899 | 0.3108 | -0.0209 | UNDERPOWERED |
+| oreb_pct | 2130 | 32 | 0.2322 | 0.2234 | 0.0089 | UNDERPOWERED |
+| oreb_pct | 2132 | 35 | 0.3021 | 0.3205 | -0.0185 | UNDERPOWERED |
+| oreb_pct | 2142 | 31 | 0.2352 | 0.2378 | -0.0025 | UNDERPOWERED |
+| oreb_pct | 2154 | 29 | 0.2549 | 0.2630 | -0.0081 | UNDERPOWERED |
+| oreb_pct | 2166 | 32 | 0.2448 | 0.2438 | 0.0010 | UNDERPOWERED |
+| oreb_pct | 2168 | 33 | 0.2742 | 0.2926 | -0.0184 | UNDERPOWERED |
+| oreb_pct | 2169 | 25 | 0.2859 | 0.3338 | -0.0479 | UNDERPOWERED |
+| oreb_pct | 2172 | 28 | 0.2396 | 0.2620 | -0.0224 | UNDERPOWERED |
+| oreb_pct | 2174 | 31 | 0.2934 | 0.3180 | -0.0246 | UNDERPOWERED |
+| oreb_pct | 2181 | 33 | 0.3227 | 0.3498 | -0.0272 | UNDERPOWERED |
+| oreb_pct | 2182 | 32 | 0.3179 | 0.3285 | -0.0107 | UNDERPOWERED |
+| oreb_pct | 2184 | 30 | 0.2778 | 0.3289 | -0.0511 | UNDERPOWERED |
+| oreb_pct | 2193 | 30 | 0.3056 | 0.3552 | -0.0495 | UNDERPOWERED |
+| oreb_pct | 2197 | 28 | 0.2707 | 0.3014 | -0.0307 | UNDERPOWERED |
+| oreb_pct | 2198 | 30 | 0.2914 | 0.3202 | -0.0288 | UNDERPOWERED |
+| oreb_pct | 2199 | 31 | 0.2844 | 0.2948 | -0.0104 | UNDERPOWERED |
+| oreb_pct | 2210 | 31 | 0.3052 | 0.3595 | -0.0543 | UNDERPOWERED |
+| oreb_pct | 2217 | 31 | 0.2841 | 0.2788 | 0.0054 | UNDERPOWERED |
+| oreb_pct | 2226 | 33 | 0.2679 | 0.2999 | -0.0320 | UNDERPOWERED |
+| oreb_pct | 2229 | 30 | 0.2985 | 0.3084 | -0.0100 | UNDERPOWERED |
+| oreb_pct | 2230 | 32 | 0.2670 | 0.3154 | -0.0484 | UNDERPOWERED |
+| oreb_pct | 2239 | 30 | 0.2734 | 0.2577 | 0.0157 | UNDERPOWERED |
+| oreb_pct | 2241 | 31 | 0.3045 | 0.3365 | -0.0321 | UNDERPOWERED |
+| oreb_pct | 2244 | 35 | 0.3066 | 0.3153 | -0.0087 | UNDERPOWERED |
+| oreb_pct | 2247 | 32 | 0.2730 | 0.3228 | -0.0498 | UNDERPOWERED |
+| oreb_pct | 2250 | 35 | 0.3573 | 0.3228 | 0.0345 | UNDERPOWERED |
+| oreb_pct | 2253 | 33 | 0.3111 | 0.3203 | -0.0092 | UNDERPOWERED |
+| oreb_pct | 2261 | 30 | 0.2876 | 0.3421 | -0.0544 | UNDERPOWERED |
+| oreb_pct | 2272 | 32 | 0.2995 | 0.3296 | -0.0301 | UNDERPOWERED |
+| oreb_pct | 2275 | 31 | 0.2725 | 0.2536 | 0.0189 | UNDERPOWERED |
+| oreb_pct | 2277 | 29 | 0.2809 | 0.2608 | 0.0201 | UNDERPOWERED |
+| oreb_pct | 2287 | 35 | 0.2328 | 0.2466 | -0.0138 | UNDERPOWERED |
+| oreb_pct | 2294 | 33 | 0.2513 | 0.2501 | 0.0011 | UNDERPOWERED |
+| oreb_pct | 2296 | 34 | 0.2788 | 0.2996 | -0.0208 | UNDERPOWERED |
+| oreb_pct | 2305 | 34 | 0.3015 | 0.3039 | -0.0025 | UNDERPOWERED |
+| oreb_pct | 2306 | 32 | 0.2963 | 0.2892 | 0.0071 | UNDERPOWERED |
+| oreb_pct | 2309 | 34 | 0.3105 | 0.3550 | -0.0445 | UNDERPOWERED |
+| oreb_pct | 2320 | 29 | 0.3006 | 0.3522 | -0.0516 | UNDERPOWERED |
+| oreb_pct | 2325 | 32 | 0.2796 | 0.3058 | -0.0262 | UNDERPOWERED |
+| oreb_pct | 2329 | 27 | 0.2199 | 0.2201 | -0.0001 | UNDERPOWERED |
+| oreb_pct | 2330 | 30 | 0.2365 | 0.2568 | -0.0202 | UNDERPOWERED |
+| oreb_pct | 2335 | 32 | 0.2393 | 0.1896 | 0.0497 | UNDERPOWERED |
+| oreb_pct | 2344 | 29 | 0.3023 | 0.3135 | -0.0112 | UNDERPOWERED |
+| oreb_pct | 2348 | 29 | 0.2860 | 0.2932 | -0.0072 | UNDERPOWERED |
+| oreb_pct | 2349 | 28 | 0.2680 | 0.2585 | 0.0096 | UNDERPOWERED |
+| oreb_pct | 2350 | 36 | 0.2883 | 0.2886 | -0.0002 | UNDERPOWERED |
+| oreb_pct | 2351 | 31 | 0.2381 | 0.2293 | 0.0088 | UNDERPOWERED |
+| oreb_pct | 2352 | 29 | 0.2770 | 0.2848 | -0.0078 | UNDERPOWERED |
+| oreb_pct | 2363 | 30 | 0.2781 | 0.3257 | -0.0476 | UNDERPOWERED |
+| oreb_pct | 2368 | 30 | 0.2728 | 0.3025 | -0.0297 | UNDERPOWERED |
+| oreb_pct | 2377 | 33 | 0.3264 | 0.3436 | -0.0172 | UNDERPOWERED |
+| oreb_pct | 2378 | 28 | 0.2267 | 0.1927 | 0.0339 | UNDERPOWERED |
+| oreb_pct | 2379 | 26 | 0.2565 | 0.2781 | -0.0216 | UNDERPOWERED |
+| oreb_pct | 2382 | 31 | 0.2714 | 0.2861 | -0.0147 | UNDERPOWERED |
+| oreb_pct | 2385 | 28 | 0.2563 | 0.2189 | 0.0374 | UNDERPOWERED |
+| oreb_pct | 2390 | 31 | 0.2665 | 0.2813 | -0.0148 | UNDERPOWERED |
+| oreb_pct | 2393 | 32 | 0.2801 | 0.3041 | -0.0240 | UNDERPOWERED |
+| oreb_pct | 2400 | 28 | 0.2757 | 0.2278 | 0.0478 | UNDERPOWERED |
+| oreb_pct | 2405 | 32 | 0.2794 | 0.2947 | -0.0153 | UNDERPOWERED |
+| oreb_pct | 2413 | 29 | 0.2956 | 0.3112 | -0.0156 | UNDERPOWERED |
+| oreb_pct | 2415 | 28 | 0.2809 | 0.3389 | -0.0580 | UNDERPOWERED |
+| oreb_pct | 2426 | 32 | 0.2982 | 0.3155 | -0.0173 | UNDERPOWERED |
+| oreb_pct | 2427 | 28 | 0.2730 | 0.2955 | -0.0226 | UNDERPOWERED |
+| oreb_pct | 2428 | 29 | 0.2922 | 0.3446 | -0.0524 | UNDERPOWERED |
+| oreb_pct | 2429 | 32 | 0.2542 | 0.2531 | 0.0010 | UNDERPOWERED |
+| oreb_pct | 2430 | 29 | 0.3128 | 0.3106 | 0.0022 | UNDERPOWERED |
+| oreb_pct | 2433 | 30 | 0.2731 | 0.2847 | -0.0116 | UNDERPOWERED |
+| oreb_pct | 2437 | 33 | 0.2672 | 0.2935 | -0.0264 | UNDERPOWERED |
+| oreb_pct | 2439 | 33 | 0.2635 | 0.2681 | -0.0047 | UNDERPOWERED |
+| oreb_pct | 2440 | 33 | 0.2886 | 0.2684 | 0.0202 | UNDERPOWERED |
+| oreb_pct | 2443 | 30 | 0.2759 | 0.3176 | -0.0417 | UNDERPOWERED |
+| oreb_pct | 2447 | 29 | 0.2939 | 0.3038 | -0.0100 | UNDERPOWERED |
+| oreb_pct | 2448 | 31 | 0.2523 | 0.2691 | -0.0168 | UNDERPOWERED |
+| oreb_pct | 2449 | 29 | 0.2520 | 0.2570 | -0.0051 | UNDERPOWERED |
+| oreb_pct | 2450 | 32 | 0.2887 | 0.3171 | -0.0284 | UNDERPOWERED |
+| oreb_pct | 2453 | 32 | 0.2959 | 0.3343 | -0.0384 | UNDERPOWERED |
+| oreb_pct | 2454 | 29 | 0.2648 | 0.2773 | -0.0125 | UNDERPOWERED |
+| oreb_pct | 2458 | 32 | 0.2505 | 0.2597 | -0.0092 | UNDERPOWERED |
+| oreb_pct | 2459 | 26 | 0.2146 | 0.1792 | 0.0354 | UNDERPOWERED |
+| oreb_pct | 2460 | 32 | 0.2342 | 0.2494 | -0.0152 | UNDERPOWERED |
+| oreb_pct | 2463 | 30 | 0.3140 | 0.3528 | -0.0388 | UNDERPOWERED |
+| oreb_pct | 2464 | 30 | 0.2877 | 0.3155 | -0.0278 | UNDERPOWERED |
+| oreb_pct | 2466 | 29 | 0.2847 | 0.3208 | -0.0361 | UNDERPOWERED |
+| oreb_pct | 2473 | 33 | 0.2841 | 0.3388 | -0.0548 | UNDERPOWERED |
+| oreb_pct | 2483 | 35 | 0.2872 | 0.3044 | -0.0171 | UNDERPOWERED |
+| oreb_pct | 2492 | 34 | 0.2566 | 0.2754 | -0.0188 | UNDERPOWERED |
+| oreb_pct | 2501 | 30 | 0.2253 | 0.2364 | -0.0111 | UNDERPOWERED |
+| oreb_pct | 2502 | 29 | 0.3042 | 0.3336 | -0.0295 | UNDERPOWERED |
+| oreb_pct | 2504 | 31 | 0.2651 | 0.2368 | 0.0283 | UNDERPOWERED |
+| oreb_pct | 2506 | 30 | 0.2757 | 0.2925 | -0.0168 | UNDERPOWERED |
+| oreb_pct | 2507 | 31 | 0.3113 | 0.3237 | -0.0124 | UNDERPOWERED |
+| oreb_pct | 2509 | 36 | 0.2765 | 0.3130 | -0.0365 | UNDERPOWERED |
+| oreb_pct | 2511 | 32 | 0.2821 | 0.3093 | -0.0273 | UNDERPOWERED |
+| oreb_pct | 2514 | 32 | 0.3147 | 0.3295 | -0.0148 | UNDERPOWERED |
+| oreb_pct | 2515 | 31 | 0.3081 | 0.3345 | -0.0264 | UNDERPOWERED |
+| oreb_pct | 2520 | 33 | 0.2953 | 0.3230 | -0.0277 | UNDERPOWERED |
+| oreb_pct | 2523 | 33 | 0.3241 | 0.3523 | -0.0281 | UNDERPOWERED |
+| oreb_pct | 2529 | 30 | 0.2925 | 0.3143 | -0.0218 | UNDERPOWERED |
+| oreb_pct | 2534 | 29 | 0.2802 | 0.2989 | -0.0187 | UNDERPOWERED |
+| oreb_pct | 2535 | 30 | 0.3286 | 0.3453 | -0.0167 | UNDERPOWERED |
+| oreb_pct | 2539 | 34 | 0.2813 | 0.2877 | -0.0063 | UNDERPOWERED |
+| oreb_pct | 2540 | 32 | 0.2843 | 0.2730 | 0.0113 | UNDERPOWERED |
+| oreb_pct | 2541 | 33 | 0.2960 | 0.3214 | -0.0253 | UNDERPOWERED |
+| oreb_pct | 2545 | 28 | 0.2941 | 0.3150 | -0.0209 | UNDERPOWERED |
+| oreb_pct | 2546 | 30 | 0.2420 | 0.2373 | 0.0047 | UNDERPOWERED |
+| oreb_pct | 2547 | 30 | 0.2883 | 0.2973 | -0.0089 | UNDERPOWERED |
+| oreb_pct | 2550 | 32 | 0.2954 | 0.3062 | -0.0108 | UNDERPOWERED |
+| oreb_pct | 2561 | 32 | 0.2799 | 0.2840 | -0.0041 | UNDERPOWERED |
+| oreb_pct | 2565 | 31 | 0.3015 | 0.3087 | -0.0073 | UNDERPOWERED |
+| oreb_pct | 2567 | 35 | 0.3373 | 0.3606 | -0.0233 | UNDERPOWERED |
+| oreb_pct | 2569 | 30 | 0.3102 | 0.3567 | -0.0466 | UNDERPOWERED |
+| oreb_pct | 2571 | 29 | 0.2940 | 0.3337 | -0.0396 | UNDERPOWERED |
+| oreb_pct | 2572 | 29 | 0.2737 | 0.2790 | -0.0053 | UNDERPOWERED |
+| oreb_pct | 2579 | 32 | 0.2777 | 0.3031 | -0.0254 | UNDERPOWERED |
+| oreb_pct | 2582 | 28 | 0.3193 | 0.3385 | -0.0192 | UNDERPOWERED |
+| oreb_pct | 2598 | 31 | 0.2758 | 0.2490 | 0.0269 | UNDERPOWERED |
+| oreb_pct | 2599 | 36 | 0.3370 | 0.3763 | -0.0392 | UNDERPOWERED |
+| oreb_pct | 2603 | 34 | 0.2520 | 0.2978 | -0.0458 | UNDERPOWERED |
+| oreb_pct | 2608 | 34 | 0.3461 | 0.3943 | -0.0482 | UNDERPOWERED |
+| oreb_pct | 2612 | 26 | 0.3239 | 0.3720 | -0.0481 | UNDERPOWERED |
+| oreb_pct | 2617 | 27 | 0.3276 | 0.3482 | -0.0205 | UNDERPOWERED |
+| oreb_pct | 2619 | 31 | 0.2573 | 0.2939 | -0.0366 | UNDERPOWERED |
+| oreb_pct | 2623 | 30 | 0.2742 | 0.3152 | -0.0410 | UNDERPOWERED |
+| oreb_pct | 2627 | 29 | 0.2592 | 0.2769 | -0.0177 | UNDERPOWERED |
+| oreb_pct | 2628 | 31 | 0.2979 | 0.3240 | -0.0261 | UNDERPOWERED |
+| oreb_pct | 2630 | 29 | 0.3109 | 0.3445 | -0.0336 | UNDERPOWERED |
+| oreb_pct | 2633 | 38 | 0.3274 | 0.3526 | -0.0252 | UNDERPOWERED |
+| oreb_pct | 2634 | 29 | 0.3018 | 0.3335 | -0.0317 | UNDERPOWERED |
+| oreb_pct | 2635 | 29 | 0.2589 | 0.2493 | 0.0096 | UNDERPOWERED |
+| oreb_pct | 2636 | 29 | 0.2601 | 0.2605 | -0.0004 | UNDERPOWERED |
+| oreb_pct | 2638 | 30 | 0.2600 | 0.2541 | 0.0059 | UNDERPOWERED |
+| oreb_pct | 2640 | 29 | 0.2750 | 0.3072 | -0.0322 | UNDERPOWERED |
+| oreb_pct | 2641 | 37 | 0.3308 | 0.3394 | -0.0087 | UNDERPOWERED |
+| oreb_pct | 2643 | 25 | 0.2546 | 0.2719 | -0.0173 | UNDERPOWERED |
+| oreb_pct | 2649 | 32 | 0.2631 | 0.2974 | -0.0343 | UNDERPOWERED |
+| oreb_pct | 2653 | 32 | 0.3275 | 0.3812 | -0.0536 | UNDERPOWERED |
+| oreb_pct | 2655 | 32 | 0.2735 | 0.2643 | 0.0092 | UNDERPOWERED |
+| oreb_pct | 2670 | 34 | 0.3066 | 0.3618 | -0.0552 | UNDERPOWERED |
+| oreb_pct | 2674 | 32 | 0.2529 | 0.2625 | -0.0096 | UNDERPOWERED |
+| oreb_pct | 2678 | 30 | 0.2616 | 0.2502 | 0.0114 | UNDERPOWERED |
+| oreb_pct | 2681 | 26 | 0.3019 | 0.3197 | -0.0177 | UNDERPOWERED |
+| oreb_pct | 2692 | 31 | 0.2637 | 0.2419 | 0.0218 | UNDERPOWERED |
+| oreb_pct | 2698 | 30 | 0.2739 | 0.2600 | 0.0139 | UNDERPOWERED |
+| oreb_pct | 2710 | 27 | 0.2634 | 0.2763 | -0.0129 | UNDERPOWERED |
+| oreb_pct | 2711 | 31 | 0.2839 | 0.3411 | -0.0572 | UNDERPOWERED |
+| oreb_pct | 2717 | 26 | 0.2864 | 0.2604 | 0.0260 | UNDERPOWERED |
+| oreb_pct | 2724 | 33 | 0.2868 | 0.3170 | -0.0302 | UNDERPOWERED |
+| oreb_pct | 2729 | 30 | 0.2769 | 0.2612 | 0.0157 | UNDERPOWERED |
+| oreb_pct | 2737 | 31 | 0.3097 | 0.3141 | -0.0044 | UNDERPOWERED |
+| oreb_pct | 2739 | 30 | 0.2142 | 0.1834 | 0.0308 | UNDERPOWERED |
+| oreb_pct | 2747 | 31 | 0.2923 | 0.3469 | -0.0546 | UNDERPOWERED |
+| oreb_pct | 2750 | 31 | 0.2556 | 0.2761 | -0.0204 | UNDERPOWERED |
+| oreb_pct | 2751 | 31 | 0.2736 | 0.2973 | -0.0237 | UNDERPOWERED |
+| oreb_pct | 2752 | 34 | 0.2805 | 0.2422 | 0.0382 | UNDERPOWERED |
+| oreb_pct | 2754 | 31 | 0.2733 | 0.2965 | -0.0232 | UNDERPOWERED |
+| oreb_pct | 2755 | 30 | 0.2690 | 0.2567 | 0.0123 | UNDERPOWERED |
+| oreb_pct | 2771 | 32 | 0.2374 | 0.2050 | 0.0325 | UNDERPOWERED |
+| oreb_pct | 2803 | 33 | 0.3069 | 0.3384 | -0.0315 | UNDERPOWERED |
+| oreb_pct | 2815 | 30 | 0.2788 | 0.3006 | -0.0218 | UNDERPOWERED |
+| oreb_pct | 2837 | 31 | 0.2466 | 0.2782 | -0.0316 | UNDERPOWERED |
+| oreb_pct | 2856 | 32 | 0.2939 | 0.3314 | -0.0375 | UNDERPOWERED |
+| oreb_pct | 2870 | 30 | 0.2615 | 0.2190 | 0.0425 | UNDERPOWERED |
+| oreb_pct | 2885 | 28 | 0.2587 | 0.2782 | -0.0195 | UNDERPOWERED |
+| oreb_pct | 2900 | 31 | 0.2393 | 0.2170 | 0.0223 | UNDERPOWERED |
+| oreb_pct | 2908 | 29 | 0.2601 | 0.2508 | 0.0093 | UNDERPOWERED |
+| oreb_pct | 2916 | 31 | 0.2940 | 0.3469 | -0.0529 | UNDERPOWERED |
+| oreb_pct | 2934 | 28 | 0.2912 | 0.3456 | -0.0544 | UNDERPOWERED |
+| oreb_pct | 3084 | 32 | 0.3068 | 0.3104 | -0.0035 | UNDERPOWERED |
+| oreb_pct | 3101 | 30 | 0.2691 | 0.2536 | 0.0155 | UNDERPOWERED |
+| oreb_pct | 112358 | 30 | 0.2971 | 0.3248 | -0.0277 | UNDERPOWERED |
+| ft_rate | 2 | 38 | 0.3295 | 0.3435 | -0.0140 | UNDERPOWERED |
+| ft_rate | 5 | 36 | 0.3250 | 0.3167 | 0.0084 | UNDERPOWERED |
+| ft_rate | 6 | 30 | 0.3346 | 0.3386 | -0.0039 | UNDERPOWERED |
+| ft_rate | 8 | 36 | 0.3136 | 0.3624 | -0.0488 | UNDERPOWERED |
+| ft_rate | 9 | 33 | 0.3313 | 0.3679 | -0.0366 | UNDERPOWERED |
+| ft_rate | 12 | 37 | 0.3315 | 0.3605 | -0.0290 | UNDERPOWERED |
+| ft_rate | 13 | 34 | 0.3284 | 0.2714 | 0.0570 | UNDERPOWERED |
+| ft_rate | 16 | 28 | 0.3320 | 0.3198 | 0.0122 | UNDERPOWERED |
+| ft_rate | 21 | 30 | 0.3275 | 0.3289 | -0.0014 | UNDERPOWERED |
+| ft_rate | 23 | 33 | 0.3079 | 0.3260 | -0.0181 | UNDERPOWERED |
+| ft_rate | 24 | 35 | 0.3039 | 0.3029 | 0.0010 | UNDERPOWERED |
+| ft_rate | 25 | 33 | 0.3256 | 0.3938 | -0.0682 | UNDERPOWERED |
+| ft_rate | 26 | 34 | 0.2962 | 0.3280 | -0.0318 | UNDERPOWERED |
+| ft_rate | 27 | 30 | 0.2808 | 0.2798 | 0.0011 | UNDERPOWERED |
+| ft_rate | 28 | 33 | 0.2968 | 0.3402 | -0.0434 | UNDERPOWERED |
+| ft_rate | 30 | 35 | 0.3151 | 0.3634 | -0.0483 | UNDERPOWERED |
+| ft_rate | 36 | 36 | 0.2839 | 0.3259 | -0.0419 | UNDERPOWERED |
+| ft_rate | 38 | 35 | 0.3140 | 0.3669 | -0.0529 | UNDERPOWERED |
+| ft_rate | 41 | 35 | 0.3232 | 0.3143 | 0.0089 | UNDERPOWERED |
+| ft_rate | 43 | 29 | 0.3022 | 0.3195 | -0.0173 | UNDERPOWERED |
+| ft_rate | 44 | 33 | 0.2820 | 0.2964 | -0.0145 | UNDERPOWERED |
+| ft_rate | 45 | 33 | 0.3416 | 0.4204 | -0.0788 | UNDERPOWERED |
+| ft_rate | 46 | 34 | 0.2915 | 0.2623 | 0.0291 | UNDERPOWERED |
+| ft_rate | 47 | 25 | 0.3415 | 0.3691 | -0.0275 | UNDERPOWERED |
+| ft_rate | 48 | 34 | 0.3139 | 0.3057 | 0.0081 | UNDERPOWERED |
+| ft_rate | 50 | 28 | 0.3371 | 0.3771 | -0.0400 | UNDERPOWERED |
+| ft_rate | 52 | 32 | 0.3319 | 0.4093 | -0.0774 | UNDERPOWERED |
+| ft_rate | 55 | 33 | 0.3150 | 0.3219 | -0.0069 | UNDERPOWERED |
+| ft_rate | 56 | 27 | 0.3090 | 0.3367 | -0.0277 | UNDERPOWERED |
+| ft_rate | 57 | 40 | 0.3398 | 0.3575 | -0.0176 | UNDERPOWERED |
+| ft_rate | 58 | 31 | 0.3338 | 0.3503 | -0.0165 | UNDERPOWERED |
+| ft_rate | 59 | 34 | 0.3360 | 0.3139 | 0.0221 | UNDERPOWERED |
+| ft_rate | 61 | 32 | 0.3359 | 0.4157 | -0.0798 | UNDERPOWERED |
+| ft_rate | 62 | 28 | 0.3706 | 0.4125 | -0.0419 | UNDERPOWERED |
+| ft_rate | 66 | 34 | 0.3248 | 0.3815 | -0.0567 | UNDERPOWERED |
+| ft_rate | 68 | 36 | 0.3248 | 0.3850 | -0.0602 | UNDERPOWERED |
+| ft_rate | 70 | 31 | 0.3012 | 0.3445 | -0.0433 | UNDERPOWERED |
+| ft_rate | 71 | 35 | 0.2885 | 0.3253 | -0.0369 | UNDERPOWERED |
+| ft_rate | 77 | 33 | 0.2828 | 0.3202 | -0.0374 | UNDERPOWERED |
+| ft_rate | 79 | 31 | 0.3302 | 0.3473 | -0.0171 | UNDERPOWERED |
+| ft_rate | 82 | 29 | 0.3211 | 0.3574 | -0.0363 | UNDERPOWERED |
+| ft_rate | 84 | 31 | 0.3525 | 0.3314 | 0.0212 | UNDERPOWERED |
+| ft_rate | 85 | 29 | 0.3172 | 0.3427 | -0.0255 | UNDERPOWERED |
+| ft_rate | 87 | 33 | 0.2723 | 0.3206 | -0.0482 | UNDERPOWERED |
+| ft_rate | 88 | 28 | 0.3351 | 0.3161 | 0.0191 | UNDERPOWERED |
+| ft_rate | 91 | 29 | 0.3212 | 0.2692 | 0.0520 | UNDERPOWERED |
+| ft_rate | 93 | 32 | 0.3255 | 0.4169 | -0.0914 | UNDERPOWERED |
+| ft_rate | 94 | 31 | 0.2964 | 0.3182 | -0.0218 | UNDERPOWERED |
+| ft_rate | 96 | 36 | 0.3472 | 0.3614 | -0.0141 | UNDERPOWERED |
+| ft_rate | 97 | 35 | 0.2989 | 0.3481 | -0.0492 | UNDERPOWERED |
+| ft_rate | 98 | 30 | 0.3587 | 0.3288 | 0.0299 | UNDERPOWERED |
+| ft_rate | 99 | 32 | 0.3525 | 0.3335 | 0.0191 | UNDERPOWERED |
+| ft_rate | 103 | 31 | 0.3133 | 0.3187 | -0.0054 | UNDERPOWERED |
+| ft_rate | 104 | 28 | 0.2860 | 0.2997 | -0.0136 | UNDERPOWERED |
+| ft_rate | 107 | 30 | 0.2639 | 0.2241 | 0.0399 | UNDERPOWERED |
+| ft_rate | 108 | 25 | 0.2790 | 0.2514 | 0.0276 | UNDERPOWERED |
+| ft_rate | 111 | 32 | 0.3125 | 0.2898 | 0.0226 | UNDERPOWERED |
+| ft_rate | 113 | 31 | 0.3172 | 0.3458 | -0.0286 | UNDERPOWERED |
+| ft_rate | 116 | 34 | 0.3313 | 0.3107 | 0.0207 | UNDERPOWERED |
+| ft_rate | 119 | 31 | 0.3172 | 0.2971 | 0.0201 | UNDERPOWERED |
+| ft_rate | 120 | 36 | 0.3347 | 0.3373 | -0.0025 | UNDERPOWERED |
+| ft_rate | 127 | 37 | 0.3061 | 0.3837 | -0.0776 | UNDERPOWERED |
+| ft_rate | 130 | 37 | 0.3177 | 0.3611 | -0.0434 | UNDERPOWERED |
+| ft_rate | 135 | 31 | 0.3119 | 0.3193 | -0.0074 | UNDERPOWERED |
+| ft_rate | 139 | 32 | 0.3162 | 0.3160 | 0.0002 | UNDERPOWERED |
+| ft_rate | 140 | 29 | 0.3404 | 0.3211 | 0.0193 | UNDERPOWERED |
+| ft_rate | 142 | 34 | 0.3474 | 0.4817 | -0.1343 | UNDERPOWERED |
+| ft_rate | 145 | 36 | 0.3048 | 0.3602 | -0.0555 | UNDERPOWERED |
+| ft_rate | 147 | 32 | 0.3070 | 0.3242 | -0.0172 | UNDERPOWERED |
+| ft_rate | 149 | 31 | 0.3249 | 0.3677 | -0.0429 | UNDERPOWERED |
+| ft_rate | 150 | 39 | 0.3042 | 0.3370 | -0.0328 | UNDERPOWERED |
+| ft_rate | 151 | 31 | 0.3431 | 0.3567 | -0.0136 | UNDERPOWERED |
+| ft_rate | 152 | 31 | 0.3345 | 0.3266 | 0.0079 | UNDERPOWERED |
+| ft_rate | 153 | 37 | 0.3433 | 0.3557 | -0.0124 | UNDERPOWERED |
+| ft_rate | 154 | 32 | 0.3256 | 0.3686 | -0.0430 | UNDERPOWERED |
+| ft_rate | 155 | 30 | 0.3163 | 0.3425 | -0.0262 | UNDERPOWERED |
+| ft_rate | 156 | 36 | 0.2969 | 0.2920 | 0.0049 | UNDERPOWERED |
+| ft_rate | 158 | 34 | 0.3310 | 0.3549 | -0.0239 | UNDERPOWERED |
+| ft_rate | 159 | 26 | 0.3009 | 0.3134 | -0.0125 | UNDERPOWERED |
+| ft_rate | 160 | 29 | 0.2961 | 0.2645 | 0.0316 | UNDERPOWERED |
+| ft_rate | 161 | 30 | 0.3194 | 0.3287 | -0.0093 | UNDERPOWERED |
+| ft_rate | 163 | 27 | 0.3360 | 0.2498 | 0.0862 | UNDERPOWERED |
+| ft_rate | 164 | 32 | 0.3313 | 0.3712 | -0.0399 | UNDERPOWERED |
+| ft_rate | 166 | 29 | 0.3436 | 0.3517 | -0.0080 | UNDERPOWERED |
+| ft_rate | 167 | 34 | 0.3735 | 0.3826 | -0.0091 | UNDERPOWERED |
+| ft_rate | 171 | 24 | 0.3180 | 0.2953 | 0.0226 | UNDERPOWERED |
+| ft_rate | 172 | 27 | 0.2990 | 0.2920 | 0.0070 | UNDERPOWERED |
+| ft_rate | 179 | 32 | 0.3285 | 0.3071 | 0.0215 | UNDERPOWERED |
+| ft_rate | 183 | 33 | 0.3364 | 0.3342 | 0.0022 | UNDERPOWERED |
+| ft_rate | 189 | 29 | 0.3537 | 0.3564 | -0.0027 | UNDERPOWERED |
+| ft_rate | 193 | 32 | 0.3090 | 0.2886 | 0.0205 | UNDERPOWERED |
+| ft_rate | 194 | 32 | 0.2965 | 0.3594 | -0.0629 | UNDERPOWERED |
+| ft_rate | 195 | 31 | 0.3259 | 0.3430 | -0.0171 | UNDERPOWERED |
+| ft_rate | 197 | 35 | 0.3386 | 0.4170 | -0.0784 | UNDERPOWERED |
+| ft_rate | 198 | 25 | 0.3215 | 0.3568 | -0.0353 | UNDERPOWERED |
+| ft_rate | 201 | 34 | 0.3553 | 0.4126 | -0.0573 | UNDERPOWERED |
+| ft_rate | 202 | 31 | 0.3419 | 0.3450 | -0.0031 | UNDERPOWERED |
+| ft_rate | 204 | 32 | 0.3229 | 0.4003 | -0.0775 | UNDERPOWERED |
+| ft_rate | 213 | 31 | 0.3238 | 0.3954 | -0.0716 | UNDERPOWERED |
+| ft_rate | 218 | 29 | 0.3753 | 0.4607 | -0.0854 | UNDERPOWERED |
+| ft_rate | 219 | 26 | 0.2846 | 0.2932 | -0.0087 | UNDERPOWERED |
+| ft_rate | 221 | 32 | 0.3220 | 0.3477 | -0.0256 | UNDERPOWERED |
+| ft_rate | 222 | 36 | 0.2793 | 0.2984 | -0.0191 | UNDERPOWERED |
+| ft_rate | 225 | 24 | 0.2843 | 0.2835 | 0.0008 | UNDERPOWERED |
+| ft_rate | 227 | 29 | 0.3509 | 0.4244 | -0.0736 | UNDERPOWERED |
+| ft_rate | 228 | 34 | 0.2747 | 0.2874 | -0.0127 | UNDERPOWERED |
+| ft_rate | 231 | 32 | 0.2958 | 0.3524 | -0.0566 | UNDERPOWERED |
+| ft_rate | 232 | 32 | 0.3532 | 0.3529 | 0.0003 | UNDERPOWERED |
+| ft_rate | 233 | 28 | 0.3556 | 0.4546 | -0.0990 | UNDERPOWERED |
+| ft_rate | 235 | 35 | 0.3540 | 0.3968 | -0.0428 | UNDERPOWERED |
+| ft_rate | 236 | 35 | 0.2952 | 0.3075 | -0.0123 | UNDERPOWERED |
+| ft_rate | 238 | 33 | 0.3376 | 0.3402 | -0.0027 | UNDERPOWERED |
+| ft_rate | 239 | 34 | 0.3310 | 0.3104 | 0.0206 | UNDERPOWERED |
+| ft_rate | 242 | 31 | 0.3607 | 0.4430 | -0.0823 | UNDERPOWERED |
+| ft_rate | 245 | 34 | 0.3537 | 0.4200 | -0.0663 | UNDERPOWERED |
+| ft_rate | 248 | 40 | 0.3185 | 0.2751 | 0.0434 | UNDERPOWERED |
+| ft_rate | 249 | 33 | 0.2945 | 0.3538 | -0.0593 | UNDERPOWERED |
+| ft_rate | 250 | 29 | 0.3270 | 0.3867 | -0.0597 | UNDERPOWERED |
+| ft_rate | 251 | 35 | 0.3469 | 0.3752 | -0.0283 | UNDERPOWERED |
+| ft_rate | 252 | 35 | 0.3157 | 0.3081 | 0.0076 | UNDERPOWERED |
+| ft_rate | 253 | 28 | 0.3559 | 0.3772 | -0.0213 | UNDERPOWERED |
+| ft_rate | 254 | 33 | 0.3271 | 0.3771 | -0.0500 | UNDERPOWERED |
+| ft_rate | 256 | 29 | 0.2861 | 0.2989 | -0.0128 | UNDERPOWERED |
+| ft_rate | 257 | 29 | 0.2914 | 0.3023 | -0.0110 | UNDERPOWERED |
+| ft_rate | 258 | 32 | 0.2819 | 0.2679 | 0.0141 | UNDERPOWERED |
+| ft_rate | 259 | 32 | 0.2880 | 0.3106 | -0.0226 | UNDERPOWERED |
+| ft_rate | 261 | 29 | 0.2857 | 0.3016 | -0.0159 | UNDERPOWERED |
+| ft_rate | 264 | 30 | 0.3436 | 0.3469 | -0.0033 | UNDERPOWERED |
+| ft_rate | 265 | 33 | 0.3234 | 0.3357 | -0.0123 | UNDERPOWERED |
+| ft_rate | 269 | 34 | 0.2748 | 0.2627 | 0.0121 | UNDERPOWERED |
+| ft_rate | 270 | 30 | 0.3713 | 0.3909 | -0.0196 | UNDERPOWERED |
+| ft_rate | 275 | 37 | 0.3352 | 0.3504 | -0.0152 | UNDERPOWERED |
+| ft_rate | 276 | 31 | 0.3189 | 0.3632 | -0.0443 | UNDERPOWERED |
+| ft_rate | 277 | 32 | 0.3000 | 0.2592 | 0.0408 | UNDERPOWERED |
+| ft_rate | 278 | 32 | 0.3558 | 0.3706 | -0.0148 | UNDERPOWERED |
+| ft_rate | 279 | 31 | 0.3363 | 0.3343 | 0.0020 | UNDERPOWERED |
+| ft_rate | 282 | 30 | 0.3201 | 0.3658 | -0.0457 | UNDERPOWERED |
+| ft_rate | 284 | 30 | 0.3139 | 0.3192 | -0.0053 | UNDERPOWERED |
+| ft_rate | 288 | 33 | 0.2911 | 0.3284 | -0.0373 | UNDERPOWERED |
+| ft_rate | 290 | 32 | 0.3200 | 0.2669 | 0.0531 | UNDERPOWERED |
+| ft_rate | 292 | 26 | 0.3177 | 0.2354 | 0.0823 | UNDERPOWERED |
+| ft_rate | 294 | 31 | 0.3179 | 0.2905 | 0.0274 | UNDERPOWERED |
+| ft_rate | 295 | 33 | 0.3042 | 0.3166 | -0.0124 | UNDERPOWERED |
+| ft_rate | 299 | 28 | 0.2971 | 0.3589 | -0.0617 | UNDERPOWERED |
+| ft_rate | 300 | 37 | 0.3678 | 0.3551 | 0.0127 | UNDERPOWERED |
+| ft_rate | 301 | 32 | 0.3216 | 0.3099 | 0.0116 | UNDERPOWERED |
+| ft_rate | 302 | 30 | 0.3475 | 0.3921 | -0.0446 | UNDERPOWERED |
+| ft_rate | 304 | 26 | 0.3272 | 0.3546 | -0.0274 | UNDERPOWERED |
+| ft_rate | 305 | 34 | 0.3027 | 0.2858 | 0.0169 | UNDERPOWERED |
+| ft_rate | 309 | 32 | 0.2833 | 0.2998 | -0.0165 | UNDERPOWERED |
+| ft_rate | 311 | 32 | 0.2883 | 0.2868 | 0.0015 | UNDERPOWERED |
+| ft_rate | 314 | 34 | 0.3121 | 0.2835 | 0.0286 | UNDERPOWERED |
+| ft_rate | 315 | 29 | 0.2866 | 0.3080 | -0.0214 | UNDERPOWERED |
+| ft_rate | 322 | 32 | 0.3048 | 0.3089 | -0.0042 | UNDERPOWERED |
+| ft_rate | 324 | 30 | 0.3360 | 0.3464 | -0.0104 | UNDERPOWERED |
+| ft_rate | 325 | 32 | 0.3014 | 0.3142 | -0.0128 | UNDERPOWERED |
+| ft_rate | 326 | 30 | 0.3542 | 0.3818 | -0.0276 | UNDERPOWERED |
+| ft_rate | 328 | 33 | 0.3564 | 0.3740 | -0.0176 | UNDERPOWERED |
+| ft_rate | 331 | 30 | 0.3226 | 0.3155 | 0.0071 | UNDERPOWERED |
+| ft_rate | 333 | 37 | 0.3367 | 0.3994 | -0.0627 | UNDERPOWERED |
+| ft_rate | 338 | 30 | 0.3421 | 0.4014 | -0.0593 | UNDERPOWERED |
+| ft_rate | 339 | 31 | 0.3181 | 0.3135 | 0.0046 | UNDERPOWERED |
+| ft_rate | 344 | 34 | 0.2874 | 0.3210 | -0.0336 | UNDERPOWERED |
+| ft_rate | 349 | 29 | 0.2990 | 0.2589 | 0.0401 | UNDERPOWERED |
+| ft_rate | 350 | 32 | 0.3334 | 0.3876 | -0.0542 | UNDERPOWERED |
+| ft_rate | 356 | 35 | 0.3240 | 0.3498 | -0.0258 | UNDERPOWERED |
+| ft_rate | 357 | 29 | 0.3699 | 0.3661 | 0.0038 | UNDERPOWERED |
+| ft_rate | 399 | 29 | 0.3238 | 0.3137 | 0.0101 | UNDERPOWERED |
+| ft_rate | 526 | 33 | 0.2948 | 0.2350 | 0.0598 | UNDERPOWERED |
+| ft_rate | 2000 | 28 | 0.3595 | 0.3860 | -0.0265 | UNDERPOWERED |
+| ft_rate | 2005 | 32 | 0.2964 | 0.3664 | -0.0700 | UNDERPOWERED |
+| ft_rate | 2006 | 33 | 0.3109 | 0.2763 | 0.0346 | UNDERPOWERED |
+| ft_rate | 2010 | 28 | 0.3905 | 0.3864 | 0.0041 | UNDERPOWERED |
+| ft_rate | 2011 | 35 | 0.3504 | 0.2965 | 0.0539 | UNDERPOWERED |
+| ft_rate | 2016 | 31 | 0.3449 | 0.3120 | 0.0329 | UNDERPOWERED |
+| ft_rate | 2026 | 29 | 0.3237 | 0.3560 | -0.0323 | UNDERPOWERED |
+| ft_rate | 2029 | 29 | 0.3432 | 0.3338 | 0.0094 | UNDERPOWERED |
+| ft_rate | 2031 | 30 | 0.3240 | 0.2947 | 0.0292 | UNDERPOWERED |
+| ft_rate | 2032 | 35 | 0.3488 | 0.3416 | 0.0072 | UNDERPOWERED |
+| ft_rate | 2046 | 31 | 0.3262 | 0.3022 | 0.0239 | UNDERPOWERED |
+| ft_rate | 2050 | 28 | 0.3643 | 0.4535 | -0.0892 | UNDERPOWERED |
+| ft_rate | 2057 | 32 | 0.2942 | 0.2634 | 0.0308 | UNDERPOWERED |
+| ft_rate | 2065 | 33 | 0.3637 | 0.3686 | -0.0048 | UNDERPOWERED |
+| ft_rate | 2066 | 29 | 0.3200 | 0.3409 | -0.0210 | UNDERPOWERED |
+| ft_rate | 2083 | 32 | 0.3147 | 0.3671 | -0.0524 | UNDERPOWERED |
+| ft_rate | 2084 | 29 | 0.3431 | 0.3344 | 0.0087 | UNDERPOWERED |
+| ft_rate | 2086 | 35 | 0.3226 | 0.3797 | -0.0571 | UNDERPOWERED |
+| ft_rate | 2097 | 29 | 0.3008 | 0.3062 | -0.0054 | UNDERPOWERED |
+| ft_rate | 2099 | 30 | 0.2924 | 0.2403 | 0.0521 | UNDERPOWERED |
+| ft_rate | 2110 | 31 | 0.3050 | 0.2952 | 0.0098 | UNDERPOWERED |
+| ft_rate | 2115 | 29 | 0.3139 | 0.2601 | 0.0538 | UNDERPOWERED |
+| ft_rate | 2116 | 37 | 0.3141 | 0.3664 | -0.0523 | UNDERPOWERED |
+| ft_rate | 2117 | 26 | 0.3353 | 0.3720 | -0.0366 | UNDERPOWERED |
+| ft_rate | 2127 | 30 | 0.3567 | 0.4465 | -0.0897 | UNDERPOWERED |
+| ft_rate | 2130 | 32 | 0.3265 | 0.2752 | 0.0512 | UNDERPOWERED |
+| ft_rate | 2132 | 35 | 0.2877 | 0.2320 | 0.0557 | UNDERPOWERED |
+| ft_rate | 2142 | 31 | 0.2734 | 0.2324 | 0.0411 | UNDERPOWERED |
+| ft_rate | 2154 | 29 | 0.3822 | 0.3770 | 0.0051 | UNDERPOWERED |
+| ft_rate | 2166 | 32 | 0.3088 | 0.3013 | 0.0076 | UNDERPOWERED |
+| ft_rate | 2168 | 33 | 0.3201 | 0.3833 | -0.0631 | UNDERPOWERED |
+| ft_rate | 2169 | 25 | 0.3788 | 0.3704 | 0.0084 | UNDERPOWERED |
+| ft_rate | 2172 | 28 | 0.3232 | 0.3285 | -0.0053 | UNDERPOWERED |
+| ft_rate | 2174 | 31 | 0.2943 | 0.2939 | 0.0005 | UNDERPOWERED |
+| ft_rate | 2181 | 33 | 0.3292 | 0.4323 | -0.1031 | UNDERPOWERED |
+| ft_rate | 2182 | 32 | 0.2999 | 0.2475 | 0.0524 | UNDERPOWERED |
+| ft_rate | 2184 | 30 | 0.2907 | 0.3132 | -0.0225 | UNDERPOWERED |
+| ft_rate | 2193 | 30 | 0.2960 | 0.3466 | -0.0506 | UNDERPOWERED |
+| ft_rate | 2197 | 28 | 0.3191 | 0.3349 | -0.0158 | UNDERPOWERED |
+| ft_rate | 2198 | 30 | 0.2873 | 0.2626 | 0.0247 | UNDERPOWERED |
+| ft_rate | 2199 | 31 | 0.3199 | 0.3356 | -0.0156 | UNDERPOWERED |
+| ft_rate | 2210 | 31 | 0.2991 | 0.3919 | -0.0928 | UNDERPOWERED |
+| ft_rate | 2217 | 31 | 0.3137 | 0.2575 | 0.0562 | UNDERPOWERED |
+| ft_rate | 2226 | 33 | 0.3551 | 0.3427 | 0.0124 | UNDERPOWERED |
+| ft_rate | 2229 | 30 | 0.3286 | 0.3654 | -0.0368 | UNDERPOWERED |
+| ft_rate | 2230 | 32 | 0.3187 | 0.3263 | -0.0076 | UNDERPOWERED |
+| ft_rate | 2239 | 30 | 0.3424 | 0.4066 | -0.0642 | UNDERPOWERED |
+| ft_rate | 2241 | 31 | 0.3449 | 0.3676 | -0.0226 | UNDERPOWERED |
+| ft_rate | 2244 | 35 | 0.3539 | 0.4374 | -0.0835 | UNDERPOWERED |
+| ft_rate | 2247 | 32 | 0.3249 | 0.3479 | -0.0229 | UNDERPOWERED |
+| ft_rate | 2250 | 35 | 0.3497 | 0.3105 | 0.0392 | UNDERPOWERED |
+| ft_rate | 2253 | 33 | 0.3845 | 0.4470 | -0.0625 | UNDERPOWERED |
+| ft_rate | 2261 | 30 | 0.3085 | 0.3096 | -0.0011 | UNDERPOWERED |
+| ft_rate | 2272 | 32 | 0.3416 | 0.3716 | -0.0300 | UNDERPOWERED |
+| ft_rate | 2275 | 31 | 0.3078 | 0.2589 | 0.0489 | UNDERPOWERED |
+| ft_rate | 2277 | 29 | 0.2992 | 0.3062 | -0.0071 | UNDERPOWERED |
+| ft_rate | 2287 | 35 | 0.2845 | 0.3246 | -0.0402 | UNDERPOWERED |
+| ft_rate | 2294 | 33 | 0.3173 | 0.2645 | 0.0528 | UNDERPOWERED |
+| ft_rate | 2296 | 34 | 0.3348 | 0.3808 | -0.0460 | UNDERPOWERED |
+| ft_rate | 2305 | 34 | 0.2742 | 0.2509 | 0.0232 | UNDERPOWERED |
+| ft_rate | 2306 | 32 | 0.2924 | 0.2825 | 0.0099 | UNDERPOWERED |
+| ft_rate | 2309 | 34 | 0.3210 | 0.3085 | 0.0126 | UNDERPOWERED |
+| ft_rate | 2320 | 29 | 0.3381 | 0.2965 | 0.0416 | UNDERPOWERED |
+| ft_rate | 2325 | 32 | 0.2999 | 0.3237 | -0.0238 | UNDERPOWERED |
+| ft_rate | 2329 | 27 | 0.2794 | 0.3237 | -0.0444 | UNDERPOWERED |
+| ft_rate | 2330 | 30 | 0.3321 | 0.3893 | -0.0572 | UNDERPOWERED |
+| ft_rate | 2335 | 32 | 0.3175 | 0.3101 | 0.0074 | UNDERPOWERED |
+| ft_rate | 2344 | 29 | 0.3418 | 0.4666 | -0.1248 | UNDERPOWERED |
+| ft_rate | 2348 | 29 | 0.3545 | 0.3549 | -0.0004 | UNDERPOWERED |
+| ft_rate | 2349 | 28 | 0.3454 | 0.3246 | 0.0208 | UNDERPOWERED |
+| ft_rate | 2350 | 36 | 0.3129 | 0.3187 | -0.0058 | UNDERPOWERED |
+| ft_rate | 2351 | 31 | 0.2735 | 0.2957 | -0.0222 | UNDERPOWERED |
+| ft_rate | 2352 | 29 | 0.3166 | 0.2914 | 0.0252 | UNDERPOWERED |
+| ft_rate | 2363 | 30 | 0.3100 | 0.3208 | -0.0108 | UNDERPOWERED |
+| ft_rate | 2368 | 30 | 0.2913 | 0.2284 | 0.0629 | UNDERPOWERED |
+| ft_rate | 2377 | 33 | 0.3283 | 0.3636 | -0.0352 | UNDERPOWERED |
+| ft_rate | 2378 | 28 | 0.3510 | 0.3258 | 0.0252 | UNDERPOWERED |
+| ft_rate | 2379 | 26 | 0.3343 | 0.3714 | -0.0371 | UNDERPOWERED |
+| ft_rate | 2382 | 31 | 0.3296 | 0.2975 | 0.0322 | UNDERPOWERED |
+| ft_rate | 2385 | 28 | 0.2984 | 0.3126 | -0.0141 | UNDERPOWERED |
+| ft_rate | 2390 | 31 | 0.2670 | 0.2726 | -0.0056 | UNDERPOWERED |
+| ft_rate | 2393 | 32 | 0.3520 | 0.3276 | 0.0244 | UNDERPOWERED |
+| ft_rate | 2400 | 28 | 0.3387 | 0.3190 | 0.0196 | UNDERPOWERED |
+| ft_rate | 2405 | 32 | 0.3311 | 0.3769 | -0.0458 | UNDERPOWERED |
+| ft_rate | 2413 | 29 | 0.3369 | 0.3839 | -0.0470 | UNDERPOWERED |
+| ft_rate | 2415 | 28 | 0.4114 | 0.3630 | 0.0485 | UNDERPOWERED |
+| ft_rate | 2426 | 32 | 0.3012 | 0.3551 | -0.0539 | UNDERPOWERED |
+| ft_rate | 2427 | 28 | 0.3448 | 0.3497 | -0.0049 | UNDERPOWERED |
+| ft_rate | 2428 | 29 | 0.3197 | 0.4001 | -0.0804 | UNDERPOWERED |
+| ft_rate | 2429 | 32 | 0.3357 | 0.4323 | -0.0966 | UNDERPOWERED |
+| ft_rate | 2430 | 29 | 0.2808 | 0.3025 | -0.0217 | UNDERPOWERED |
+| ft_rate | 2433 | 30 | 0.3380 | 0.3162 | 0.0218 | UNDERPOWERED |
+| ft_rate | 2437 | 33 | 0.3048 | 0.3697 | -0.0649 | UNDERPOWERED |
+| ft_rate | 2439 | 33 | 0.3134 | 0.3674 | -0.0540 | UNDERPOWERED |
+| ft_rate | 2440 | 33 | 0.3187 | 0.3820 | -0.0633 | UNDERPOWERED |
+| ft_rate | 2443 | 30 | 0.3689 | 0.3513 | 0.0176 | UNDERPOWERED |
+| ft_rate | 2447 | 29 | 0.3329 | 0.3428 | -0.0099 | UNDERPOWERED |
+| ft_rate | 2448 | 31 | 0.3032 | 0.3166 | -0.0133 | UNDERPOWERED |
+| ft_rate | 2449 | 29 | 0.3180 | 0.3336 | -0.0156 | UNDERPOWERED |
+| ft_rate | 2450 | 32 | 0.3521 | 0.3970 | -0.0449 | UNDERPOWERED |
+| ft_rate | 2453 | 32 | 0.2909 | 0.3132 | -0.0223 | UNDERPOWERED |
+| ft_rate | 2454 | 29 | 0.3050 | 0.2480 | 0.0570 | UNDERPOWERED |
+| ft_rate | 2458 | 32 | 0.3161 | 0.3442 | -0.0281 | UNDERPOWERED |
+| ft_rate | 2459 | 26 | 0.3512 | 0.3256 | 0.0256 | UNDERPOWERED |
+| ft_rate | 2460 | 32 | 0.3447 | 0.3535 | -0.0088 | UNDERPOWERED |
+| ft_rate | 2463 | 30 | 0.3697 | 0.3658 | 0.0038 | UNDERPOWERED |
+| ft_rate | 2464 | 30 | 0.3179 | 0.2910 | 0.0270 | UNDERPOWERED |
+| ft_rate | 2466 | 29 | 0.2792 | 0.3241 | -0.0449 | UNDERPOWERED |
+| ft_rate | 2473 | 33 | 0.2722 | 0.3229 | -0.0507 | UNDERPOWERED |
+| ft_rate | 2483 | 35 | 0.3329 | 0.3360 | -0.0031 | UNDERPOWERED |
+| ft_rate | 2492 | 34 | 0.3192 | 0.3233 | -0.0041 | UNDERPOWERED |
+| ft_rate | 2501 | 30 | 0.3355 | 0.3267 | 0.0089 | UNDERPOWERED |
+| ft_rate | 2502 | 29 | 0.3520 | 0.3493 | 0.0027 | UNDERPOWERED |
+| ft_rate | 2504 | 31 | 0.3823 | 0.3474 | 0.0350 | UNDERPOWERED |
+| ft_rate | 2506 | 30 | 0.3007 | 0.3181 | -0.0173 | UNDERPOWERED |
+| ft_rate | 2507 | 31 | 0.2815 | 0.3123 | -0.0308 | UNDERPOWERED |
+| ft_rate | 2509 | 36 | 0.3326 | 0.3537 | -0.0211 | UNDERPOWERED |
+| ft_rate | 2511 | 32 | 0.3043 | 0.3480 | -0.0437 | UNDERPOWERED |
+| ft_rate | 2514 | 32 | 0.3165 | 0.3131 | 0.0034 | UNDERPOWERED |
+| ft_rate | 2515 | 31 | 0.3303 | 0.4157 | -0.0854 | UNDERPOWERED |
+| ft_rate | 2520 | 33 | 0.3093 | 0.3041 | 0.0052 | UNDERPOWERED |
+| ft_rate | 2523 | 33 | 0.3628 | 0.3840 | -0.0212 | UNDERPOWERED |
+| ft_rate | 2529 | 30 | 0.3164 | 0.2671 | 0.0494 | UNDERPOWERED |
+| ft_rate | 2534 | 29 | 0.3190 | 0.3687 | -0.0498 | UNDERPOWERED |
+| ft_rate | 2535 | 30 | 0.3279 | 0.2952 | 0.0327 | UNDERPOWERED |
+| ft_rate | 2539 | 34 | 0.3214 | 0.3516 | -0.0302 | UNDERPOWERED |
+| ft_rate | 2540 | 32 | 0.2849 | 0.3031 | -0.0182 | UNDERPOWERED |
+| ft_rate | 2541 | 33 | 0.3103 | 0.2936 | 0.0168 | UNDERPOWERED |
+| ft_rate | 2545 | 28 | 0.3202 | 0.3418 | -0.0215 | UNDERPOWERED |
+| ft_rate | 2546 | 30 | 0.2923 | 0.2954 | -0.0031 | UNDERPOWERED |
+| ft_rate | 2547 | 30 | 0.3864 | 0.4350 | -0.0485 | UNDERPOWERED |
+| ft_rate | 2550 | 32 | 0.3035 | 0.3361 | -0.0327 | UNDERPOWERED |
+| ft_rate | 2561 | 32 | 0.3139 | 0.3827 | -0.0687 | UNDERPOWERED |
+| ft_rate | 2565 | 31 | 0.2901 | 0.3453 | -0.0552 | UNDERPOWERED |
+| ft_rate | 2567 | 35 | 0.3285 | 0.3708 | -0.0423 | UNDERPOWERED |
+| ft_rate | 2569 | 30 | 0.3888 | 0.4403 | -0.0514 | UNDERPOWERED |
+| ft_rate | 2571 | 29 | 0.3314 | 0.3151 | 0.0163 | UNDERPOWERED |
+| ft_rate | 2572 | 29 | 0.3588 | 0.3519 | 0.0069 | UNDERPOWERED |
+| ft_rate | 2579 | 32 | 0.3003 | 0.4370 | -0.1368 | UNDERPOWERED |
+| ft_rate | 2582 | 28 | 0.3714 | 0.3945 | -0.0231 | UNDERPOWERED |
+| ft_rate | 2598 | 31 | 0.3192 | 0.2456 | 0.0737 | UNDERPOWERED |
+| ft_rate | 2599 | 36 | 0.3232 | 0.3135 | 0.0097 | UNDERPOWERED |
+| ft_rate | 2603 | 34 | 0.3010 | 0.3254 | -0.0244 | UNDERPOWERED |
+| ft_rate | 2608 | 34 | 0.3242 | 0.3172 | 0.0070 | UNDERPOWERED |
+| ft_rate | 2612 | 26 | 0.2988 | 0.3519 | -0.0530 | UNDERPOWERED |
+| ft_rate | 2617 | 27 | 0.3528 | 0.3422 | 0.0106 | UNDERPOWERED |
+| ft_rate | 2619 | 31 | 0.2997 | 0.3213 | -0.0216 | UNDERPOWERED |
+| ft_rate | 2623 | 30 | 0.3567 | 0.3428 | 0.0139 | UNDERPOWERED |
+| ft_rate | 2627 | 29 | 0.3683 | 0.4215 | -0.0532 | UNDERPOWERED |
+| ft_rate | 2628 | 31 | 0.3276 | 0.3444 | -0.0168 | UNDERPOWERED |
+| ft_rate | 2630 | 29 | 0.3482 | 0.3442 | 0.0041 | UNDERPOWERED |
+| ft_rate | 2633 | 38 | 0.3219 | 0.3625 | -0.0406 | UNDERPOWERED |
+| ft_rate | 2634 | 29 | 0.3633 | 0.4315 | -0.0682 | UNDERPOWERED |
+| ft_rate | 2635 | 29 | 0.3069 | 0.2962 | 0.0106 | UNDERPOWERED |
+| ft_rate | 2636 | 29 | 0.3304 | 0.2945 | 0.0359 | UNDERPOWERED |
+| ft_rate | 2638 | 30 | 0.3530 | 0.3767 | -0.0236 | UNDERPOWERED |
+| ft_rate | 2640 | 29 | 0.3548 | 0.2937 | 0.0611 | UNDERPOWERED |
+| ft_rate | 2641 | 37 | 0.2943 | 0.2970 | -0.0027 | UNDERPOWERED |
+| ft_rate | 2643 | 25 | 0.2908 | 0.3378 | -0.0470 | UNDERPOWERED |
+| ft_rate | 2649 | 32 | 0.3449 | 0.3566 | -0.0118 | UNDERPOWERED |
+| ft_rate | 2653 | 32 | 0.3418 | 0.3801 | -0.0383 | UNDERPOWERED |
+| ft_rate | 2655 | 32 | 0.3096 | 0.3553 | -0.0457 | UNDERPOWERED |
+| ft_rate | 2670 | 34 | 0.2838 | 0.3231 | -0.0393 | UNDERPOWERED |
+| ft_rate | 2674 | 32 | 0.3348 | 0.3424 | -0.0076 | UNDERPOWERED |
+| ft_rate | 2678 | 30 | 0.3306 | 0.3855 | -0.0548 | UNDERPOWERED |
+| ft_rate | 2681 | 26 | 0.2855 | 0.3043 | -0.0187 | UNDERPOWERED |
+| ft_rate | 2692 | 31 | 0.3307 | 0.3500 | -0.0192 | UNDERPOWERED |
+| ft_rate | 2698 | 30 | 0.3028 | 0.2936 | 0.0092 | UNDERPOWERED |
+| ft_rate | 2710 | 27 | 0.2678 | 0.2853 | -0.0175 | UNDERPOWERED |
+| ft_rate | 2711 | 31 | 0.3263 | 0.3153 | 0.0110 | UNDERPOWERED |
+| ft_rate | 2717 | 26 | 0.3023 | 0.2755 | 0.0268 | UNDERPOWERED |
+| ft_rate | 2724 | 33 | 0.3451 | 0.3528 | -0.0077 | UNDERPOWERED |
+| ft_rate | 2729 | 30 | 0.3271 | 0.3669 | -0.0398 | UNDERPOWERED |
+| ft_rate | 2737 | 31 | 0.3744 | 0.4863 | -0.1118 | UNDERPOWERED |
+| ft_rate | 2739 | 30 | 0.3071 | 0.3753 | -0.0683 | UNDERPOWERED |
+| ft_rate | 2747 | 31 | 0.2967 | 0.3231 | -0.0264 | UNDERPOWERED |
+| ft_rate | 2750 | 31 | 0.3144 | 0.2742 | 0.0402 | UNDERPOWERED |
+| ft_rate | 2751 | 31 | 0.3100 | 0.3069 | 0.0031 | UNDERPOWERED |
+| ft_rate | 2752 | 34 | 0.3359 | 0.3819 | -0.0460 | UNDERPOWERED |
+| ft_rate | 2754 | 31 | 0.3334 | 0.3724 | -0.0390 | UNDERPOWERED |
+| ft_rate | 2755 | 30 | 0.3695 | 0.3543 | 0.0152 | UNDERPOWERED |
+| ft_rate | 2771 | 32 | 0.2681 | 0.2465 | 0.0216 | UNDERPOWERED |
+| ft_rate | 2803 | 33 | 0.3251 | 0.3039 | 0.0212 | UNDERPOWERED |
+| ft_rate | 2815 | 30 | 0.3521 | 0.3699 | -0.0178 | UNDERPOWERED |
+| ft_rate | 2837 | 31 | 0.3072 | 0.2864 | 0.0208 | UNDERPOWERED |
+| ft_rate | 2856 | 32 | 0.3192 | 0.3075 | 0.0116 | UNDERPOWERED |
+| ft_rate | 2870 | 30 | 0.3046 | 0.2937 | 0.0109 | UNDERPOWERED |
+| ft_rate | 2885 | 28 | 0.2697 | 0.2787 | -0.0091 | UNDERPOWERED |
+| ft_rate | 2900 | 31 | 0.2957 | 0.3512 | -0.0555 | UNDERPOWERED |
+| ft_rate | 2908 | 29 | 0.3195 | 0.3106 | 0.0088 | UNDERPOWERED |
+| ft_rate | 2916 | 31 | 0.2987 | 0.3035 | -0.0049 | UNDERPOWERED |
+| ft_rate | 2934 | 28 | 0.3423 | 0.3542 | -0.0118 | UNDERPOWERED |
+| ft_rate | 3084 | 32 | 0.3859 | 0.4321 | -0.0461 | UNDERPOWERED |
+| ft_rate | 3101 | 30 | 0.3331 | 0.3451 | -0.0120 | UNDERPOWERED |
+| ft_rate | 112358 | 30 | 0.3153 | 0.2828 | 0.0325 | UNDERPOWERED |
+
+**G4 overall: NEEDS-INSTRUMENTATION**
+
+## G5 -- Dispersion: SD ratio, score correlation, PIT histogram
+
+| quantity | value | target | tolerance | status |
+|---|---|---|---|---|
+| margin SD ratio | 1.5977 | 1.0 | 0.95-1.05 | FAIL |
+| total SD ratio | 0.7263 | 1.0 | 0.95-1.05 | FAIL |
+| home/away score correlation | -0.6154 vs 0.2532 | 0.2532 | +/-0.05 | FAIL |
+| PIT K-S p | 2.26e-183 | > 0.1 | > 0.1 | FAIL |
+
+SD ratio = mean(sim SD) / SD(actual - sim mean); >1 means the engine is too wide.
+
+PIT K-S statistic D = 0.1912.
+
+### SD ratio
+
+| quantity | mean_sim_SD | SD(actual - sim mean) | ratio | status |
+|---|---|---|---|---|
+| margin | 32.2614 | 20.1928 | 1.5977 | FAIL |
+| total | 13.6385 | 18.7776 | 0.7263 | FAIL |
+
+### PIT decile histogram
+
+| decile | share |
+|---|---|
+| 1 | 0.0422 |
+| 2 | 0.0023 |
+| 3 | 0.1587 |
+| 4 | 0.0056 |
+| 5 | 0.2695 |
+| 6 | 0.2786 |
+| 7 | 0.0054 |
+| 8 | 0.0046 |
+| 9 | 0.1729 |
+| 10 | 0.0602 |
+
+**G5 overall: FAIL**
+
+## G6 -- Home margin, non-neutral vs neutral, same games
+
+| quantity | value | target | tolerance | status |
+|---|---|---|---|---|
+| home margin (non-neutral) | +3.909 vs +5.738 | +5.738 | +/-1.0 | FAIL |
+| home margin (neutral) | +1.536 vs +3.288 | +3.288 | +/-1.0 | FAIL |
+
+### by site
+
+| site | n | sim | actual | delta | status |
+|---|---|---|---|---|---|
+| non-neutral | 4974 | 3.9092 | 5.7382 | -1.8290 | FAIL |
+| neutral | 736 | 1.5361 | 3.2880 | -1.7519 | FAIL |
+
+**G6 overall: FAIL**
+
+## G7 -- Overtime rate; first-half vs second-half scoring share
+
+| quantity | value | target | tolerance | status |
+|---|---|---|---|---|
+| OT rate | 0.0121 vs 0.0557 | 0.0557 | +/-1.0pp | FAIL |
+| first/second half scoring share | n/a (contract has no per-period sim score) | 1H 0.4731 / 2H 0.5269 | +/-1.0pp | NEEDS-INSTRUMENTATION |
+
+games.parquet carries only a whole-game home_pts/away_pts; a per-half score column is not in the contract, so the half-share leg is always NEEDS-INSTRUMENTATION.
+
+**G7 overall: FAIL**
+
+## G8 -- Player layer: minutes, usage share, distribution tails
+
+| quantity | value | target | tolerance | status |
+|---|---|---|---|---|
+| rotation minutes mean | 29.93 | n/a (needs actual box; see notes) | +/-2.0 | PASS |
+| rotation minutes SD ratio | 6.78 | n/a | 0.9-1.1 | NEEDS-INSTRUMENTATION |
+| top-1 FGA share, mean | 0.2611 | n/a | report only | NEEDS-INSTRUMENTATION |
+| players used per team-game, mean | 8.81 | n/a | K-S p > 0.1 | NEEDS-INSTRUMENTATION |
+
+Sim-side player aggregates computed from players.parquet; the actual-box comparison (hoopR player_box minutes/usage truth) is not wired into this harness -- box-score truth exists (`data/raw/hoopr/player_box`) but the per-player join/name-matching layer is out of this task's scope, so every sim-vs-actual comparison here is NEEDS-INSTRUMENTATION even though the sim-side numbers are real.
+
+**G8 overall: NEEDS-INSTRUMENTATION**
+
+## G9 -- Spread and total accuracy: MAE, signed bias, calibration slope
+
+| quantity | value | target | tolerance | status |
+|---|---|---|---|---|
+| margin bias | -1.8191 | 0 | +/-0.5 | FAIL |
+| total bias | +0.0139 | 0 | +/-1.0 | PASS |
+| calibration slope | 0.1814 | 1.0 | 0.95-1.05 | FAIL |
+| bias by month | 6/10 scored cells outside tolerance | all inside | see per-breakdown table | FAIL |
+| bias by tier | 3/6 scored cells outside tolerance | all inside | see per-breakdown table | FAIL |
+| bias by pred_total_tercile | 5/6 scored cells outside tolerance | all inside | see per-breakdown table | FAIL |
+
+margin MAE 16.0656, total MAE 14.5212, win-probability Brier 0.26985, slope_MC_corrected 0.7480 (MC noise SD 15.171, a diagnostic, not the gate).
+
+### win-probability calibration by decile
+
+| decile | n | pred | actual | delta |
+|---|---|---|---|---|
+| 1 | 988 | 0.1644 | 0.5617 | 0.3974 |
+| 2 | 1512 | 0.4000 | 0.5979 | 0.1979 |
+| 3 | 1782 | 0.6000 | 0.6644 | 0.0644 |
+| 4 | 1113 | 0.8000 | 0.7017 | -0.0983 |
+| 5 | 315 | 1.0000 | 0.7937 | -0.2063 |
+
+### by month
+
+| month | n | margin_mae | margin_bias | total_mae | total_bias | slope | status_margin_bias | status_total_bias |
+|---|---|---|---|---|---|---|---|---|
+| 1 | 1423 | 15.3186 | 0.1644 | 14.8020 | 0.8815 | 0.1501 | PASS | PASS |
+| 2 | 1367 | 15.9889 | -1.5599 | 14.3617 | 1.3604 | 0.1316 | FAIL | FAIL |
+| 3 | 765 | 15.4708 | -2.4884 | 14.2698 | 0.7001 | 0.0932 | FAIL | PASS |
+| 4 | 17 | 15.8235 | -3.1647 | 16.6941 | -10.5059 | n/a | UNDERPOWERED | UNDERPOWERED |
+| 11 | 1222 | 16.8209 | -3.3568 | 14.9833 | -2.6128 | 0.2255 | FAIL | FAIL |
+| 12 | 916 | 16.8343 | -2.6517 | 13.8762 | -0.2172 | 0.2145 | FAIL | PASS |
+
+### by tier
+
+| home_tier | n | margin_mae | margin_bias | total_mae | total_bias | slope | status_margin_bias | status_total_bias |
+|---|---|---|---|---|---|---|---|---|
+| bottom_tercile | 1607 | 15.5459 | 1.4983 | 14.5184 | -0.3991 | 0.1200 | FAIL | PASS |
+| middle_tercile | 1833 | 15.7210 | -1.2494 | 14.9854 | 0.9780 | 0.0976 | FAIL | PASS |
+| top_tercile | 2270 | 16.7119 | -4.6275 | 14.1484 | -0.4722 | 0.1543 | FAIL | PASS |
+
+### by pred_total_tercile
+
+| pred_total_tercile | n | margin_mae | margin_bias | total_mae | total_bias | slope | status_margin_bias | status_total_bias |
+|---|---|---|---|---|---|---|---|---|
+| bottom_tercile | 1933 | 14.9621 | -2.1232 | 13.9736 | -5.3950 | 0.1852 | FAIL | FAIL |
+| middle_tercile | 1885 | 16.2327 | -2.3021 | 14.2953 | -0.5773 | 0.1569 | FAIL | PASS |
+| top_tercile | 1892 | 17.0266 | -1.0271 | 15.3057 | 6.1290 | 0.1951 | FAIL | FAIL |
+
+**G9 overall: FAIL**
+
+## Summary
+
+| status | count |
+|---|---|
+| PASS | 0 |
+| FAIL | 6 |
+| NEEDS-INSTRUMENTATION | 3 |
+
+| gate | status |
+|---|---|
+| G1 | FAIL |
+| G2 | FAIL |
+| G3 | NEEDS-INSTRUMENTATION |
+| G4 | NEEDS-INSTRUMENTATION |
+| G5 | FAIL |
+| G6 | FAIL |
+| G7 | FAIL |
+| G8 | NEEDS-INSTRUMENTATION |
+| G9 | FAIL |
+

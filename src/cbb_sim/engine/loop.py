@@ -119,6 +119,14 @@ def _state_block(st: S.GameState, act: np.ndarray, n_state: int,
     x[:, I["is_ot"]] = (per >= 3.0)
     x[:, I["x_score_diff__seconds_remaining"]] = sd * sr / 1200.0
     x[:, I["chance_number"]] = st.chance_number[act].astype(np.float64)
+    # `clock.FEATURES_A`'s pre-registered "chance number within possession",
+    # which `clock.build_design` sets to a literal 1.0 on every row because a
+    # possession begins on its first chance by the segmentation rule. Every
+    # clock arm drops it as zero-variance. The engine supplies the same
+    # constant rather than the live chance number: the clock is drawn once per
+    # POSSESSION, at its start, so 1.0 is that column's training definition and
+    # anything else would be a different feature under the same name.
+    x[:, I["chance_number_at_start"]] = 1.0
     pe = st.prev_end[act]
     for k, name in enumerate(PREV_DUMMY, start=1):
         x[:, I[name]] = (pe == k).astype(np.float64)
@@ -256,7 +264,7 @@ def simulate_chunk(inp: EngineInputs, ad: Adapters, game_index: np.ndarray,
                 is_first, used[rows], ce_lut[np.minimum(chance[rows], 3)])
             t_off = inp.team_static[gidx[rows], off[rows]]
 
-            probs = ad.event.predict(t_off, xx, is_first)
+            probs = ad.event.predict(t_off, xx, is_first, gidx[rows], off[rows])
             cls = categorical(book.draw("event", a_rows), probs)
 
             # ---- (c) allocation: who of the five ------------------------

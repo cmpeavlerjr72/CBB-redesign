@@ -226,3 +226,96 @@ def test_output_satisfies_the_results_contract(bundle):
     assert C.validate_players_frame(res.players, strict=False) == []
     avail = C.box_columns_available(res.games)
     assert all(avail.values()), avail
+
+
+# ---------------------------------------------------------------------------
+# Dated artifacts (training scheme S1), which is the standing default for every
+# sub-model -- `docs/models/possession_outcome/experiments.md` section 4, L21.
+# ---------------------------------------------------------------------------
+def _manifest_dir():
+    return INPUT_DIR / "event_round2_s1_F2_2025"
+
+
+@pytest.mark.skipif(not _manifest_dir().exists(),
+                    reason="round-2 S1 artifacts not built; run "
+                           "scripts/build_engine_event_round2.py --fold F2 --season 2025")
+def test_a_game_never_gets_an_artifact_refit_at_or_after_its_own_month():
+    """The property S1 exists to give, asserted per GAME rather than per month.
+
+    A game played in month M must be scored by an artifact whose refit date is
+    strictly BEFORE M's own games -- and, the check that actually binds, whose
+    last TRAINING date is strictly before that game's date. A schedule that is
+    off by one month is still a schedule; only the training window makes it
+    honest (`CLAUDE.md`: created_at < tipoff, enforced in code)."""
+    import json
+
+    import pandas as pd
+
+    from cbb_sim.engine.inputs import EngineInputs
+    from cbb_sim.engine.manifest import ArtifactManifest
+
+    inp = EngineInputs.load(INPUT_DIR, TAG)
+    d = _manifest_dir()
+    idx = json.loads((d / "index.json").read_text(encoding="utf-8"))
+    gdate = pd.to_datetime(inp.games["game_date"])
+
+    for pop in ("first", "cont"):
+        segs = idx["populations"][pop]["segments"]
+        man = ArtifactManifest.from_obj(
+            {"model": "possession_outcome", "scheme": "S1", "key": pop,
+             "artifacts": [{"refit_date": s["refit_date"], "path": s["file"],
+                            "max_train_date": s["max_train_date"]} for s in segs]},
+            d, inp.games)
+        assert not man.is_static
+        assert man.flag_name == f"scheme_static_possession_outcome_{pop}"
+
+        chosen = man.seg_of_game
+        refit = pd.to_datetime([e.refit_date for e in man.entries])
+        maxtr = pd.to_datetime([e.max_train_date for e in man.entries])
+
+        # 1. the refit that scores a game never post-dates its tipoff
+        assert (refit[chosen].to_numpy() <= gdate.to_numpy()).all(), pop
+        # 2. and never saw a game on or after that game's own date
+        assert (maxtr[chosen].to_numpy() < gdate.to_numpy()).all(), pop
+        # 3. month-level form of the same claim: no game in month M is scored
+        #    by an artifact refit in M+1 or later
+        gm = gdate.dt.to_period("M").to_numpy()
+        rm = pd.Series(refit[chosen]).dt.to_period("M").to_numpy()
+        assert (rm <= gm).all(), pop
+        # 4. and the schedule is actually used -- a manifest that collapsed to
+        #    one artifact would pass 1-3 while quietly being S0
+        assert len(np.unique(chosen)) == len(man.entries), pop
+
+
+@pytest.mark.skipif(not _manifest_dir().exists(), reason="round-2 S1 artifacts not built")
+def test_a_static_manifest_is_a_manifest_of_length_one_and_says_so():
+    from cbb_sim.engine.inputs import EngineInputs
+    from cbb_sim.engine.manifest import ArtifactManifest
+
+    inp = EngineInputs.load(INPUT_DIR, TAG)
+    man = ArtifactManifest.static("clock", INPUT_DIR / f"rebound_{TAG.split('_')[0]}.joblib",
+                                  inp.n_games, why="bake-off adopted one undated artifact")
+    assert man.is_static
+    assert man.flag_name == "scheme_static_clock"
+    assert man.seg_of_game.shape == (inp.n_games,)
+    assert (man.seg_of_game == 0).all()
+    assert man.segments(np.array([0, 5, 9])).tolist() == [0, 0, 0]
+
+
+@pytest.mark.skipif(not _manifest_dir().exists(), reason="round-2 S1 artifacts not built")
+def test_a_manifest_whose_training_window_reaches_the_game_is_rejected():
+    """The guard must FAIL on a leaky schedule, not merely pass on a clean one."""
+    import json
+
+    from cbb_sim.engine.inputs import EngineInputs
+    from cbb_sim.engine.manifest import ArtifactManifest
+
+    inp = EngineInputs.load(INPUT_DIR, TAG)
+    d = _manifest_dir()
+    idx = json.loads((d / "index.json").read_text(encoding="utf-8"))
+    segs = idx["populations"]["first"]["segments"]
+    leaky = [{"refit_date": s["refit_date"], "path": s["file"],
+              "max_train_date": "2025-12-31"} for s in segs]      # trained past the season
+    with pytest.raises(AssertionError, match="leak"):
+        ArtifactManifest.from_obj(
+            {"model": "possession_outcome", "artifacts": leaky}, d, inp.games)
