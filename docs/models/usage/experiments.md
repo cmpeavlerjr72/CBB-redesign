@@ -834,6 +834,539 @@ Trainer: `scripts/train_usage_v2.py`. Artifacts:
 `data/processed/models/usage/` is written or moved, because the engine worker
 reads it concurrently). Results are appended below as sections 8.4-8.9.
 
+
+### 8.4 Run configuration (run 2026-09-10 by `scripts/train_usage_v2.py`, after the section 8.1-8.3 pre-registration was committed)
+
+| item | value |
+|---|---|
+| trainer | `scripts/train_usage_v2.py` |
+| shooter key | `shot_shooter_id` (round 1: `participant_1_id`) |
+| possessions version | `v2` (rim override 2.27 ft) |
+| universe | D-I, non-truncated, `pbp_complete` (identical to round 1) |
+| credited events (modelled) | 1,633,164 (round 1: 1,634,792) |
+| player-games with as-of inputs | 204,630 |
+| roster position known | 99.978% |
+| hoopR minutes joined through the player crosswalk | 99.8148% |
+| player-games with a prior season of on-floor history | 2024: 0.0%, 2025: 67.7998% |
+| Monte-Carlo draws (marginal / Polya / game-level / alpha fit) | 200 / 100 / 40 / 15 |
+| seed | 20260910 |
+
+### 8.5 What the label fix moved, and what it dropped
+
+| season | FGA rows relabelled | FGA rows with no `shot_shooter_id` |
+|---|---:|---:|
+| 2024 | 66,120 | 605 |
+| 2025 | 70,468 | 531 |
+
+Drop rate by season and class (rows with no credited player id; NEVER imputed), with the per-team distribution over teams with >= 50 rows of the class:
+
+| season | class | rows | dropped | drop % | per-team min / median / p95 / max % | teams > 1% | underpowered teams |
+|---|---|---:|---:|---:|---|---:|---:|
+| 2024 | FGA_rim | 225,021 | 107 | 0.0476 | 0.0 / 0.0 / 0.1583 / 4.4925 | 5 | 0 |
+| 2024 | FGA_jump2 | 153,702 | 415 | 0.27 | 0.0 / 0.1773 / 1.0447 / 3.2967 | 19 | 0 |
+| 2024 | FGA_3 | 225,731 | 83 | 0.0368 | 0.0 / 0.0 / 0.0 / 7.2052 | 3 | 0 |
+| 2024 | TOV | 121,637 | 6,154 | 5.0593 | 1.2232 / 4.911 / 8.3333 / 11.5385 | 362 | 0 |
+| 2024 | FT_trip | 107,004 | 0 | 0.0 | 0.0 / 0.0 / 0.0 / 0.0 | 0 | 0 |
+| 2025 | FGA_rim | 235,458 | 110 | 0.0467 | 0.0 / 0.0 / 0.0 / 6.903 | 4 | 0 |
+| 2025 | FGA_jump2 | 149,087 | 314 | 0.2106 | 0.0 / 0.0 / 1.0018 / 1.9444 | 19 | 0 |
+| 2025 | FGA_3 | 246,890 | 107 | 0.0433 | 0.0 / 0.0 / 0.0 / 6.6574 | 4 | 0 |
+| 2025 | TOV | 128,428 | 6,854 | 5.3368 | 1.1628 / 5.1561 / 8.8513 / 14.6707 | 364 | 0 |
+| 2025 | FT_trip | 112,715 | 2 | 0.0018 | 0.0 / 0.0 / 0.0 / 0.3509 | 0 | 0 |
+
+### 8.6 Event coverage (reported, not silently filtered)
+
+| season | class | events | five resolved | credited id present | modelled |
+|---|---|---:|---:|---:|---:|
+| 2024 | FGA_rim | 225,021 | 95.8817% | 99.9524% | 94.9249% |
+| 2024 | FGA_jump2 | 153,702 | 96.2642% | 99.73% | 95.1393% |
+| 2024 | FGA_3 | 225,731 | 95.9886% | 99.9632% | 95.033% |
+| 2024 | TOV | 121,637 | 95.6239% | 94.9407% | 89.5394% |
+| 2024 | FT_trip | 107,004 | 95.617% | 100.0% | 93.8881% |
+| 2025 | FGA_rim | 235,458 | 99.1417% | 99.9533% | 98.2167% |
+| 2025 | FGA_jump2 | 149,087 | 99.0925% | 99.7894% | 98.2044% |
+| 2025 | FGA_3 | 246,890 | 99.1871% | 99.9567% | 98.3207% |
+| 2025 | TOV | 128,428 | 99.1116% | 94.6632% | 92.764% |
+| 2025 | FT_trip | 112,715 | 99.1048% | 99.9982% | 97.4919% |
+
+### 8.7 F1 results (train 2024, test 2025) -- the selection fold
+
+#### FGA_rim
+
+Train 213,601 events, test 231,259. Fitted shrinkage: prior `position`, m = 50 pseudo on-floor events. Uniform-over-five log loss = 1.609438.
+
+| arm | log loss | Brier | top-1 | top-3 | calib worst (pp) | resp steps | slope ratio | boot SE | SD ratio | players >=1 (sim / real) | top-1 (sim / real) | top-3 (sim / real) | eligible |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---|---|---|---|
+| proportional | 1.517114 | 0.7633 | 0.3241 | 0.7528 | 0.358 | 4/4 | 1.0116 | 0.001094 | 1.0105 | 7.108 / 6.885 | 30.65% / 31.81% | 67.26% / 69.05% | yes |
+| dirichlet | 1.517114 | 0.7633 | 0.3240 | 0.7528 | 0.358 | 4/4 | 1.0116 | 0.001094 | 1.0105 | 7.108 / 6.885 | 30.65% / 31.81% | 67.26% / 69.05% | yes |
+| hier_dirichlet | 1.517255 | 0.7634 | 0.3240 | 0.7522 | 0.341 | 4/4 | 1.0081 | 0.001087 | 1.0263 | 7.083 / 6.885 | 30.98% / 31.81% | 67.59% / 69.05% | yes |
+| cond_logit | 1.515365 | 0.7625 | 0.3247 | 0.7537 | 0.406 | 4/4 | 1.0249 | 0.001114 | 1.0061 | 7.077 / 6.885 | 30.86% / 31.81% | 67.54% / 69.05% | yes |
+| lgbm | 1.502629 | 0.7567 | 0.3343 | 0.7598 | 0.473 | 4/4 | 1.0246 | 0.001156 | 1.0059 | 7.058 / 6.885 | 30.91% / 31.81% | 67.68% / 69.05% | yes |
+
+**Decision: lgbm.** eligible: lgbm 1.502629, cond_logit 1.515365, proportional 1.517114, dirichlet 1.517114, hier_dirichlet 1.517255; floor 0.001156; clear of the next eligible arm by 0.012736 (11.0 floors)
+
+Round 1 on this fold decided **lgbm**; round 2 decides **lgbm**. Per-arm log loss, round 1 -> round 2 (the LABELS differ between the rounds, so the LEVELS are not a like-for-like comparison and only the ordering and the gate verdicts are):
+
+| arm | round 1 | round 2 | delta |
+|---|---:|---:|---:|
+| proportional | 1.523130 | 1.517114 | -0.006016 |
+| dirichlet | 1.523130 | 1.517114 | -0.006016 |
+| hier_dirichlet | 1.523298 | 1.517255 | -0.006043 |
+| cond_logit | 1.521954 | 1.515365 | -0.006589 |
+| lgbm | 1.502348 | 1.502629 | +0.000281 |
+
+Per-team log loss (teams with >= 200 test events of this class):
+
+| arm | teams | min | p10 | median | p90 | max | SD | underpowered |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|
+| proportional | 364 | 1.2734 | 1.4420 | 1.5250 | 1.5747 | 1.6293 | 0.0537 | 0 |
+| dirichlet | 364 | 1.2734 | 1.4420 | 1.5250 | 1.5747 | 1.6293 | 0.0537 | 0 |
+| hier_dirichlet | 364 | 1.2741 | 1.4424 | 1.5249 | 1.5753 | 1.6292 | 0.0536 | 0 |
+| cond_logit | 364 | 1.2730 | 1.4412 | 1.5257 | 1.5736 | 1.6275 | 0.0536 | 0 |
+| lgbm | 364 | 1.2721 | 1.4287 | 1.5116 | 1.5604 | 1.6215 | 0.0536 | 0 |
+
+Responsiveness by player as-of-rate quintile (the matchup-specific slope check; predicted vs actual credited share, %):
+
+| arm | Q1 pred / act | Q2 | Q3 | Q4 | Q5 | span pred / act (pp) | slope ratio | steps | verdict |
+|---|---|---|---|---|---|---|---:|---:|---|
+| proportional | 9.48 / 9.67 | 15.29 / 15.35 | 19.21 / 19.27 | 24.06 / 23.82 | 31.95 / 31.89 | 22.47 / 22.21 | 1.0116 | 4/4 | PASS |
+| dirichlet | 9.48 / 9.67 | 15.29 / 15.35 | 19.21 / 19.27 | 24.06 / 23.82 | 31.95 / 31.89 | 22.47 / 22.21 | 1.0116 | 4/4 | PASS |
+| hier_dirichlet | 9.50 / 9.67 | 15.32 / 15.35 | 19.22 / 19.27 | 24.06 / 23.82 | 31.90 / 31.89 | 22.39 / 22.21 | 1.0081 | 4/4 | PASS |
+| cond_logit | 9.45 / 9.67 | 15.16 / 15.35 | 19.09 / 19.27 | 24.08 / 23.82 | 32.22 / 31.89 | 22.77 / 22.21 | 1.0249 | 4/4 | PASS |
+| lgbm | 9.42 / 9.67 | 15.03 / 15.35 | 19.12 / 19.27 | 24.24 / 23.82 | 32.18 / 31.89 | 22.76 / 22.21 | 1.0246 | 4/4 | PASS |
+
+Noise floor. Block-bootstrap SE (the floor used by the decision rule) is the per-arm `boot SE` column above; the largest over the eligible arms is 0.001156. Spec-identical LightGBM retrains under seeds [0, 1, 2]: [1.502629, 1.502732, 1.502727], SD 5.8e-05.
+
+Transfer subset (2025 credited players whose modal team changed):
+
+| arm | transfers | continuing | no prior season |
+|---|---:|---:|---:|
+| proportional | 1.500291 | 1.513076 | 1.545612 |
+| dirichlet | 1.500291 | 1.513076 | 1.545612 |
+| hier_dirichlet | 1.501031 | 1.513188 | 1.545054 |
+| cond_logit | 1.496307 | 1.507826 | 1.553004 |
+| lgbm | 1.482879 | 1.494769 | 1.541719 |
+
+(n transfers = 71,738)
+
+#### FGA_jump2
+
+Train 146,231 events, test 146,410. Fitted shrinkage: prior `league`, m = 50 pseudo on-floor events. Uniform-over-five log loss = 1.609438.
+
+| arm | log loss | Brier | top-1 | top-3 | calib worst (pp) | resp steps | slope ratio | boot SE | SD ratio | players >=1 (sim / real) | top-1 (sim / real) | top-3 (sim / real) | eligible |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---|---|---|---|
+| proportional | 1.495083 | 0.7530 | 0.3410 | 0.7663 | 0.597 | 4/4 | 0.9953 | 0.001654 | 1.0361 | 5.759 / 5.507 | 35.91% / 37.83% | 74.27% / 76.56% | NO (top1_top3) |
+| dirichlet | 1.495083 | 0.7530 | 0.3410 | 0.7663 | 0.597 | 4/4 | 0.9953 | 0.001654 | 1.0361 | 5.759 / 5.507 | 35.91% / 37.83% | 74.27% / 76.56% | NO (top1_top3) |
+| hier_dirichlet | 1.495169 | 0.7530 | 0.3410 | 0.7654 | 0.630 | 4/4 | 0.9936 | 0.001652 | 1.0462 | 5.742 / 5.507 | 36.18% / 37.83% | 74.49% / 76.56% | NO (top1_top3) |
+| cond_logit | 1.491815 | 0.7517 | 0.3428 | 0.7683 | 0.656 | 4/4 | 0.9867 | 0.001648 | 1.0270 | 5.709 / 5.507 | 36.19% / 37.83% | 74.71% / 76.56% | yes |
+| lgbm | 1.488712 | 0.7504 | 0.3450 | 0.7696 | 0.314 | 4/4 | 0.9887 | 0.001656 | 1.0226 | 5.674 / 5.507 | 36.50% / 37.83% | 75.08% / 76.56% | yes |
+
+**Decision: lgbm.** eligible: lgbm 1.488712, cond_logit 1.491815; floor 0.001656; clear of the next eligible arm by 0.003103 (1.9 floors)
+
+Round 1 on this fold decided **lgbm**; round 2 decides **lgbm**. Per-arm log loss, round 1 -> round 2 (the LABELS differ between the rounds, so the LEVELS are not a like-for-like comparison and only the ordering and the gate verdicts are):
+
+| arm | round 1 | round 2 | delta |
+|---|---:|---:|---:|
+| proportional | 1.498369 | 1.495083 | -0.003286 |
+| dirichlet | 1.498369 | 1.495083 | -0.003286 |
+| hier_dirichlet | 1.498540 | 1.495169 | -0.003371 |
+| cond_logit | 1.494403 | 1.491815 | -0.002588 |
+| lgbm | 1.491034 | 1.488712 | -0.002322 |
+
+Per-team log loss (teams with >= 200 test events of this class):
+
+| arm | teams | min | p10 | median | p90 | max | SD | underpowered |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|
+| proportional | 355 | 1.0105 | 1.4021 | 1.5082 | 1.5724 | 1.6151 | 0.0748 | 9 |
+| dirichlet | 355 | 1.0105 | 1.4021 | 1.5082 | 1.5724 | 1.6151 | 0.0748 | 9 |
+| hier_dirichlet | 355 | 1.0116 | 1.4033 | 1.5083 | 1.5723 | 1.6155 | 0.0748 | 9 |
+| cond_logit | 355 | 1.0066 | 1.3995 | 1.5070 | 1.5679 | 1.6207 | 0.0753 | 9 |
+| lgbm | 355 | 1.0095 | 1.3920 | 1.5018 | 1.5673 | 1.6177 | 0.0753 | 9 |
+
+Responsiveness by player as-of-rate quintile (the matchup-specific slope check; predicted vs actual credited share, %):
+
+| arm | Q1 pred / act | Q2 | Q3 | Q4 | Q5 | span pred / act (pp) | slope ratio | steps | verdict |
+|---|---|---|---|---|---|---|---:|---:|---|
+| proportional | 9.37 / 9.67 | 15.12 / 14.94 | 19.30 / 19.05 | 23.61 / 23.32 | 32.60 / 33.02 | 23.23 / 23.34 | 0.9953 | 4/4 | PASS |
+| dirichlet | 9.37 / 9.67 | 15.12 / 14.94 | 19.30 / 19.05 | 23.61 / 23.32 | 32.60 / 33.02 | 23.23 / 23.34 | 0.9953 | 4/4 | PASS |
+| hier_dirichlet | 9.39 / 9.67 | 15.13 / 14.94 | 19.30 / 19.05 | 23.60 / 23.32 | 32.58 / 33.02 | 23.19 / 23.34 | 0.9936 | 4/4 | PASS |
+| cond_logit | 9.51 / 9.67 | 15.14 / 14.94 | 19.18 / 19.05 | 23.63 / 23.32 | 32.54 / 33.02 | 23.03 / 23.34 | 0.9867 | 4/4 | PASS |
+| lgbm | 9.75 / 9.67 | 14.87 / 14.94 | 19.07 / 19.05 | 23.48 / 23.32 | 32.83 / 33.02 | 23.08 / 23.34 | 0.9887 | 4/4 | PASS |
+
+Noise floor. Block-bootstrap SE (the floor used by the decision rule) is the per-arm `boot SE` column above; the largest over the eligible arms is 0.001656. Spec-identical LightGBM retrains under seeds [0, 1, 2]: [1.488712, 1.488765, 1.488702], SD 3.4e-05.
+
+Transfer subset (2025 credited players whose modal team changed):
+
+| arm | transfers | continuing | no prior season |
+|---|---:|---:|---:|
+| proportional | 1.484754 | 1.479408 | 1.538110 |
+| dirichlet | 1.484754 | 1.479408 | 1.538110 |
+| hier_dirichlet | 1.485007 | 1.479507 | 1.537949 |
+| cond_logit | 1.478163 | 1.469191 | 1.552258 |
+| lgbm | 1.475134 | 1.460260 | 1.559990 |
+
+(n transfers = 46,033)
+
+#### FGA_3
+
+Train 214,519 events, test 242,744. Fitted shrinkage: prior `position`, m = 25 pseudo on-floor events. Uniform-over-five log loss = 1.609438.
+
+| arm | log loss | Brier | top-1 | top-3 | calib worst (pp) | resp steps | slope ratio | boot SE | SD ratio | players >=1 (sim / real) | top-1 (sim / real) | top-3 (sim / real) | eligible |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---|---|---|---|
+| proportional | 1.420255 | 0.7367 | 0.3448 | 0.8138 | 0.647 | 4/4 | 1.0015 | 0.001356 | 1.0868 | 6.654 / 6.490 | 32.66% / 32.87% | 70.99% / 71.72% | yes |
+| dirichlet | 1.420255 | 0.7367 | 0.3448 | 0.8138 | 0.647 | 4/4 | 1.0015 | 0.001356 | 1.0868 | 6.654 / 6.490 | 32.66% / 32.87% | 70.99% / 71.72% | yes |
+| hier_dirichlet | 1.420258 | 0.7367 | 0.3448 | 0.8139 | 0.647 | 4/4 | 1.0015 | 0.001356 | 1.0868 | 6.654 / 6.490 | 32.66% / 32.87% | 70.99% / 71.72% | yes |
+| cond_logit | 1.419666 | 0.7366 | 0.3454 | 0.8141 | 1.007 | 4/4 | 1.0158 | 0.001370 | 1.0825 | 6.615 / 6.490 | 32.94% / 32.87% | 71.35% / 71.72% | yes |
+| lgbm | 1.417636 | 0.7362 | 0.3455 | 0.8145 | 0.336 | 4/4 | 0.9954 | 0.001366 | 1.0766 | 6.582 / 6.490 | 32.67% / 32.87% | 71.21% / 71.72% | yes |
+
+**Decision: lgbm.** eligible: lgbm 1.417636, cond_logit 1.419666, proportional 1.420255, dirichlet 1.420255, hier_dirichlet 1.420258; floor 0.001370; clear of the next eligible arm by 0.002030 (1.5 floors)
+
+Round 1 on this fold decided **lgbm**; round 2 decides **lgbm**. Per-arm log loss, round 1 -> round 2 (the LABELS differ between the rounds, so the LEVELS are not a like-for-like comparison and only the ordering and the gate verdicts are):
+
+| arm | round 1 | round 2 | delta |
+|---|---:|---:|---:|
+| proportional | 1.461517 | 1.420255 | -0.041262 |
+| dirichlet | 1.461517 | 1.420255 | -0.041262 |
+| hier_dirichlet | 1.461517 | 1.420258 | -0.041259 |
+| cond_logit | 1.460492 | 1.419666 | -0.040826 |
+| lgbm | 1.458927 | 1.417636 | -0.041291 |
+
+Per-team log loss (teams with >= 200 test events of this class):
+
+| arm | teams | min | p10 | median | p90 | max | SD | underpowered |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|
+| proportional | 364 | 0.9797 | 1.3032 | 1.4215 | 1.5190 | 1.5838 | 0.0875 | 0 |
+| dirichlet | 364 | 0.9797 | 1.3032 | 1.4215 | 1.5190 | 1.5838 | 0.0875 | 0 |
+| hier_dirichlet | 364 | 0.9797 | 1.3032 | 1.4215 | 1.5190 | 1.5838 | 0.0875 | 0 |
+| cond_logit | 364 | 0.9803 | 1.3025 | 1.4215 | 1.5183 | 1.5829 | 0.0878 | 0 |
+| lgbm | 364 | 0.9762 | 1.2995 | 1.4183 | 1.5174 | 1.5831 | 0.0884 | 0 |
+
+Responsiveness by player as-of-rate quintile (the matchup-specific slope check; predicted vs actual credited share, %):
+
+| arm | Q1 pred / act | Q2 | Q3 | Q4 | Q5 | span pred / act (pp) | slope ratio | steps | verdict |
+|---|---|---|---|---|---|---|---:|---:|---|
+| proportional | 4.49 / 4.17 | 14.36 / 14.55 | 21.01 / 21.27 | 26.26 / 26.48 | 33.88 / 33.52 | 29.39 / 29.35 | 1.0015 | 4/4 | PASS |
+| dirichlet | 4.49 / 4.17 | 14.36 / 14.55 | 21.01 / 21.27 | 26.26 / 26.48 | 33.88 / 33.52 | 29.39 / 29.35 | 1.0015 | 4/4 | PASS |
+| hier_dirichlet | 4.49 / 4.17 | 14.36 / 14.55 | 21.01 / 21.27 | 26.26 / 26.48 | 33.88 / 33.52 | 29.39 / 29.35 | 1.0015 | 4/4 | PASS |
+| cond_logit | 4.34 / 4.17 | 14.18 / 14.55 | 20.97 / 21.27 | 26.34 / 26.48 | 34.16 / 33.52 | 29.81 / 29.35 | 1.0158 | 4/4 | PASS |
+| lgbm | 4.13 / 4.17 | 14.81 / 14.55 | 21.34 / 21.27 | 26.36 / 26.48 | 33.35 / 33.52 | 29.22 / 29.35 | 0.9954 | 4/4 | PASS |
+
+Noise floor. Block-bootstrap SE (the floor used by the decision rule) is the per-arm `boot SE` column above; the largest over the eligible arms is 0.001370. Spec-identical LightGBM retrains under seeds [0, 1, 2]: [1.417636, 1.417666, 1.417662], SD 1.6e-05.
+
+Transfer subset (2025 credited players whose modal team changed):
+
+| arm | transfers | continuing | no prior season |
+|---|---:|---:|---:|
+| proportional | 1.412416 | 1.414946 | 1.439386 |
+| dirichlet | 1.412416 | 1.414946 | 1.439386 |
+| hier_dirichlet | 1.412433 | 1.414944 | 1.439380 |
+| cond_logit | 1.410347 | 1.412689 | 1.443609 |
+| lgbm | 1.408200 | 1.409172 | 1.444408 |
+
+(n transfers = 73,440)
+
+#### TOV
+
+Train 108,913 events, test 119,135. Fitted shrinkage: prior `league`, m = 200 pseudo on-floor events. Uniform-over-five log loss = 1.609438.
+
+| arm | log loss | Brier | top-1 | top-3 | calib worst (pp) | resp steps | slope ratio | boot SE | SD ratio | players >=1 (sim / real) | top-1 (sim / real) | top-3 (sim / real) | eligible |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---|---|---|---|
+| proportional | 1.582423 | 0.7890 | 0.2653 | 0.6813 | 0.683 | 4/4 | 1.0720 | 0.000777 | 1.0474 | 5.856 / 5.825 | 32.63% / 32.96% | 70.77% / 71.17% | yes |
+| dirichlet | 1.582423 | 0.7890 | 0.2649 | 0.6811 | 0.683 | 4/4 | 1.0720 | 0.000777 | 1.0474 | 5.856 / 5.825 | 32.63% / 32.96% | 70.77% / 71.17% | yes |
+| hier_dirichlet | 1.582424 | 0.7890 | 0.2649 | 0.6810 | 0.682 | 4/4 | 1.0719 | 0.000776 | 1.0474 | 5.855 / 5.825 | 32.64% / 32.96% | 70.78% / 71.17% | yes |
+| cond_logit | 1.580640 | 0.7882 | 0.2677 | 0.6827 | 0.285 | 4/4 | 0.9872 | 0.000716 | 1.0431 | 5.842 / 5.825 | 32.65% / 32.96% | 70.87% / 71.17% | yes |
+| lgbm | 1.577494 | 0.7869 | 0.2726 | 0.6877 | 0.231 | 4/4 | 0.9881 | 0.000799 | 1.0407 | 5.816 / 5.825 | 32.91% / 32.96% | 71.18% / 71.17% | yes |
+
+**Decision: lgbm.** eligible: lgbm 1.577494, cond_logit 1.580640, proportional 1.582423, dirichlet 1.582423, hier_dirichlet 1.582424; floor 0.000799; clear of the next eligible arm by 0.003146 (3.9 floors)
+
+Round 1 on this fold decided **lgbm**; round 2 decides **lgbm**. Per-arm log loss, round 1 -> round 2 (the LABELS differ between the rounds, so the LEVELS are not a like-for-like comparison and only the ordering and the gate verdicts are):
+
+| arm | round 1 | round 2 | delta |
+|---|---:|---:|---:|
+| proportional | 1.582428 | 1.582423 | -0.000005 |
+| dirichlet | 1.582428 | 1.582423 | -0.000005 |
+| hier_dirichlet | 1.582482 | 1.582424 | -0.000058 |
+| cond_logit | 1.580645 | 1.580640 | -0.000005 |
+| lgbm | 1.577664 | 1.577494 | -0.000170 |
+
+Per-team log loss (teams with >= 200 test events of this class):
+
+| arm | teams | min | p10 | median | p90 | max | SD | underpowered |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|
+| proportional | 363 | 1.4584 | 1.5478 | 1.5864 | 1.6125 | 1.6315 | 0.0261 | 1 |
+| dirichlet | 363 | 1.4584 | 1.5478 | 1.5864 | 1.6125 | 1.6315 | 0.0261 | 1 |
+| hier_dirichlet | 363 | 1.4584 | 1.5478 | 1.5864 | 1.6125 | 1.6315 | 0.0261 | 1 |
+| cond_logit | 363 | 1.4659 | 1.5472 | 1.5846 | 1.6102 | 1.6354 | 0.0255 | 1 |
+| lgbm | 363 | 1.4684 | 1.5421 | 1.5817 | 1.6064 | 1.6321 | 0.0257 | 1 |
+
+Responsiveness by player as-of-rate quintile (the matchup-specific slope check; predicted vs actual credited share, %):
+
+| arm | Q1 pred / act | Q2 | Q3 | Q4 | Q5 | span pred / act (pp) | slope ratio | steps | verdict |
+|---|---|---|---|---|---|---|---:|---:|---|
+| proportional | 13.86 / 14.34 | 17.52 / 17.59 | 19.78 / 19.79 | 22.16 / 21.96 | 26.68 / 26.30 | 12.82 / 11.96 | 1.0720 | 4/4 | PASS |
+| dirichlet | 13.86 / 14.34 | 17.52 / 17.59 | 19.78 / 19.79 | 22.16 / 21.96 | 26.68 / 26.30 | 12.82 / 11.96 | 1.0720 | 4/4 | PASS |
+| hier_dirichlet | 13.86 / 14.34 | 17.52 / 17.59 | 19.78 / 19.79 | 22.16 / 21.96 | 26.68 / 26.30 | 12.82 / 11.96 | 1.0719 | 4/4 | PASS |
+| cond_logit | 14.38 / 14.34 | 17.72 / 17.59 | 19.70 / 19.79 | 22.00 / 21.96 | 26.19 / 26.30 | 11.81 / 11.96 | 0.9872 | 4/4 | PASS |
+| lgbm | 14.33 / 14.34 | 17.68 / 17.59 | 19.89 / 19.79 | 21.97 / 21.96 | 26.14 / 26.30 | 11.82 / 11.96 | 0.9881 | 4/4 | PASS |
+
+Noise floor. Block-bootstrap SE (the floor used by the decision rule) is the per-arm `boot SE` column above; the largest over the eligible arms is 0.000799. Spec-identical LightGBM retrains under seeds [0, 1, 2]: [1.577494, 1.577474, 1.577485], SD 1e-05.
+
+Transfer subset (2025 credited players whose modal team changed):
+
+| arm | transfers | continuing | no prior season |
+|---|---:|---:|---:|
+| proportional | 1.561118 | 1.591387 | 1.593062 |
+| dirichlet | 1.561118 | 1.591387 | 1.593062 |
+| hier_dirichlet | 1.561142 | 1.591382 | 1.593044 |
+| cond_logit | 1.557538 | 1.584972 | 1.601059 |
+| lgbm | 1.553332 | 1.577234 | 1.606744 |
+
+(n transfers = 36,998)
+
+#### FT_trip
+
+Train 100,464 events, test 109,888. Fitted shrinkage: prior `position`, m = 200 pseudo on-floor events. Uniform-over-five log loss = 1.609438.
+
+| arm | log loss | Brier | top-1 | top-3 | calib worst (pp) | resp steps | slope ratio | boot SE | SD ratio | players >=1 (sim / real) | top-1 (sim / real) | top-3 (sim / real) | eligible |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---|---|---|---|
+| proportional | 1.540768 | 0.7718 | 0.3083 | 0.7313 | 1.801 | 4/4 | 0.9017 | 0.001169 | 1.0183 | 5.372 / 5.092 | 35.36% / 37.65% | 74.53% / 77.47% | NO (top1_top3) |
+| dirichlet | 1.540768 | 0.7718 | 0.3082 | 0.7311 | 1.801 | 4/4 | 0.9017 | 0.001169 | 1.0183 | 5.372 / 5.092 | 35.36% / 37.65% | 74.53% / 77.47% | NO (top1_top3) |
+| hier_dirichlet | 1.541404 | 0.7721 | 0.3079 | 0.7288 | 1.895 | 4/4 | 0.8949 | 0.001163 | 1.0443 | 5.307 / 5.092 | 36.20% / 37.65% | 75.29% / 77.47% | NO (top1_top3) |
+| cond_logit | 1.536446 | 0.7702 | 0.3113 | 0.7344 | 0.322 | 4/4 | 0.9955 | 0.001289 | 1.0102 | 5.293 / 5.092 | 36.09% / 37.65% | 75.38% / 77.47% | NO (top1_top3) |
+| lgbm | 1.523321 | 0.7644 | 0.3247 | 0.7433 | 0.382 | 4/4 | 0.9888 | 0.001435 | 1.0071 | 5.274 / 5.092 | 36.20% / 37.65% | 75.56% / 77.47% | yes |
+
+**Decision: lgbm.** eligible: lgbm 1.523321; floor 0.001435; the only eligible arm
+
+Round 1 on this fold decided **lgbm**; round 2 decides **lgbm**. Per-arm log loss, round 1 -> round 2 (the LABELS differ between the rounds, so the LEVELS are not a like-for-like comparison and only the ordering and the gate verdicts are):
+
+| arm | round 1 | round 2 | delta |
+|---|---:|---:|---:|
+| proportional | 1.540766 | 1.540768 | +0.000002 |
+| dirichlet | 1.540766 | 1.540768 | +0.000002 |
+| hier_dirichlet | 1.541230 | 1.541404 | +0.000174 |
+| cond_logit | 1.536445 | 1.536446 | +0.000001 |
+| lgbm | 1.522266 | 1.523321 | +0.001055 |
+
+Per-team log loss (teams with >= 200 test events of this class):
+
+| arm | teams | min | p10 | median | p90 | max | SD | underpowered |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|
+| proportional | 353 | 1.3422 | 1.4748 | 1.5484 | 1.5937 | 1.6283 | 0.0475 | 11 |
+| dirichlet | 353 | 1.3422 | 1.4748 | 1.5484 | 1.5937 | 1.6283 | 0.0475 | 11 |
+| hier_dirichlet | 353 | 1.3451 | 1.4749 | 1.5494 | 1.5942 | 1.6293 | 0.0472 | 11 |
+| cond_logit | 353 | 1.3534 | 1.4678 | 1.5437 | 1.5937 | 1.6193 | 0.0499 | 11 |
+| lgbm | 353 | 1.3433 | 1.4532 | 1.5319 | 1.5806 | 1.6252 | 0.0507 | 11 |
+
+Responsiveness by player as-of-rate quintile (the matchup-specific slope check; predicted vs actual credited share, %):
+
+| arm | Q1 pred / act | Q2 | Q3 | Q4 | Q5 | span pred / act (pp) | slope ratio | steps | verdict |
+|---|---|---|---|---|---|---|---:|---:|---|
+| proportional | 12.04 / 11.39 | 16.53 / 16.09 | 19.36 / 18.86 | 22.71 / 23.07 | 29.36 / 30.60 | 17.32 / 19.20 | 0.9017 | 4/4 | PASS |
+| dirichlet | 12.04 / 11.39 | 16.53 / 16.09 | 19.36 / 18.86 | 22.71 / 23.07 | 29.36 / 30.60 | 17.32 / 19.20 | 0.9017 | 4/4 | PASS |
+| hier_dirichlet | 12.09 / 11.39 | 16.56 / 16.09 | 19.36 / 18.86 | 22.71 / 23.07 | 29.28 / 30.60 | 17.18 / 19.20 | 0.8949 | 4/4 | PASS |
+| cond_logit | 11.46 / 11.39 | 16.06 / 16.09 | 19.00 / 18.86 | 22.90 / 23.07 | 30.58 / 30.60 | 19.12 / 19.20 | 0.9955 | 4/4 | PASS |
+| lgbm | 11.49 / 11.39 | 16.06 / 16.09 | 19.10 / 18.86 | 22.86 / 23.07 | 30.48 / 30.60 | 18.99 / 19.20 | 0.9888 | 4/4 | PASS |
+
+Noise floor. Block-bootstrap SE (the floor used by the decision rule) is the per-arm `boot SE` column above; the largest over the eligible arms is 0.001435. Spec-identical LightGBM retrains under seeds [0, 1, 2]: [1.523321, 1.52344, 1.523438], SD 6.8e-05.
+
+Transfer subset (2025 credited players whose modal team changed):
+
+| arm | transfers | continuing | no prior season |
+|---|---:|---:|---:|
+| proportional | 1.528706 | 1.534400 | 1.567744 |
+| dirichlet | 1.528706 | 1.534400 | 1.567744 |
+| hier_dirichlet | 1.529653 | 1.535108 | 1.567846 |
+| cond_logit | 1.519146 | 1.522108 | 1.584541 |
+| lgbm | 1.502847 | 1.506557 | 1.579875 |
+
+(n transfers = 34,438)
+
+### 8.8 Robustness fold: within-2025 walk-forward (train before 2025-01-15, test after)
+
+| class | arm | log loss | boot SE | calib (pp) | resp | slope ratio | SD ratio | players >=1 delta | eligible |
+|---|---|---:|---:|---:|---:|---:|---:|---:|---|
+| FGA_rim | proportional | 1.504910 | 0.001639 | 0.454 | 4/4 | 0.9877 | 0.9934 | 0.164 | yes |
+| FGA_rim | dirichlet | 1.504910 | 0.001639 | 0.454 | 4/4 | 0.9877 | 0.9934 | 0.164 | yes |
+| FGA_rim | hier_dirichlet | 1.505047 | 0.001632 | 0.587 | 4/4 | 0.9832 | 1.0059 | 0.142 | yes |
+| FGA_rim | cond_logit | 1.504517 | 0.001607 | 1.041 | 4/4 | 0.9499 | 0.9929 | 0.167 | yes |
+| FGA_rim | lgbm | 1.496060 | 0.001760 | 0.919 | 4/4 | 1.0310 | 0.9902 | 0.054 | yes |
+| FGA_jump2 | proportional | 1.472566 | 0.002011 | 0.851 | 4/4 | 0.9602 | 1.0176 | 0.221 | no |
+| FGA_jump2 | dirichlet | 1.472566 | 0.002011 | 0.851 | 4/4 | 0.9602 | 1.0176 | 0.221 | no |
+| FGA_jump2 | hier_dirichlet | 1.472751 | 0.002003 | 0.914 | 4/4 | 0.9570 | 1.0386 | 0.187 | yes |
+| FGA_jump2 | cond_logit | 1.471264 | 0.001961 | 1.753 | 4/4 | 0.9146 | 1.0160 | 0.203 | yes |
+| FGA_jump2 | lgbm | 1.471357 | 0.002155 | 0.828 | 4/4 | 0.9585 | 1.0119 | 0.138 | yes |
+| FGA_3 | proportional | 1.402224 | 0.001683 | 0.419 | 4/4 | 0.9938 | 1.0572 | 0.104 | yes |
+| FGA_3 | dirichlet | 1.402224 | 0.001683 | 0.419 | 4/4 | 0.9938 | 1.0572 | 0.104 | yes |
+| FGA_3 | hier_dirichlet | 1.402224 | 0.001683 | 0.419 | 4/4 | 0.9938 | 1.0572 | 0.104 | yes |
+| FGA_3 | cond_logit | 1.403343 | 0.001717 | 0.389 | 4/4 | 0.9889 | 1.0527 | 0.072 | yes |
+| FGA_3 | lgbm | 1.404042 | 0.001688 | 0.751 | 4/4 | 0.9661 | 1.0514 | 0.057 | yes |
+| TOV | proportional | 1.574325 | 0.001257 | 0.659 | 4/4 | 1.0230 | 1.0374 | 0.010 | yes |
+| TOV | dirichlet | 1.574325 | 0.001257 | 0.659 | 4/4 | 1.0230 | 1.0374 | 0.010 | yes |
+| TOV | hier_dirichlet | 1.574305 | 0.001257 | 0.658 | 4/4 | 1.0228 | 1.0379 | 0.008 | yes |
+| TOV | cond_logit | 1.572821 | 0.001148 | 0.994 | 4/4 | 0.9029 | 1.0375 | 0.002 | yes |
+| TOV | lgbm | 1.578779 | 0.001440 | 1.506 | 4/4 | 0.9934 | 1.0338 | -0.078 | yes |
+| FT_trip | proportional | 1.527195 | 0.001752 | 1.983 | 4/4 | 0.9163 | 1.0000 | 0.231 | no |
+| FT_trip | dirichlet | 1.527195 | 0.001752 | 1.983 | 4/4 | 0.9163 | 1.0000 | 0.231 | no |
+| FT_trip | hier_dirichlet | 1.528182 | 0.001726 | 2.170 | 4/4 | 0.9035 | 1.0502 | 0.117 | no |
+| FT_trip | cond_logit | 1.522811 | 0.001967 | 0.690 | 4/4 | 1.0243 | 0.9929 | 0.134 | yes |
+| FT_trip | lgbm | 1.516973 | 0.002210 | 0.856 | 4/4 | 0.9930 | 0.9902 | 0.088 | yes |
+
+| class | winner | reason |
+|---|---|---|
+| FGA_rim | lgbm | eligible: lgbm 1.496060, cond_logit 1.504517, proportional 1.504910, dirichlet 1.504910, hier_dirichlet 1.505047; floor 0.001760; clear of the next eligible arm by 0.008457 (4.8 floors) |
+| FGA_jump2 | hier_dirichlet | eligible: cond_logit 1.471264, lgbm 1.471357, hier_dirichlet 1.472751; floor 0.002155; cond_logit, lgbm, hier_dirichlet are inside the floor of each other; the pre-registered tie-break takes the simplest |
+| FGA_3 | proportional | eligible: proportional 1.402224, dirichlet 1.402224, hier_dirichlet 1.402224, cond_logit 1.403343, lgbm 1.404042; floor 0.001717; proportional, dirichlet, hier_dirichlet, cond_logit are inside the floor of each other; the pre-registered tie-break takes the simplest |
+| TOV | cond_logit | eligible: cond_logit 1.572821, hier_dirichlet 1.574305, proportional 1.574325, dirichlet 1.574325, lgbm 1.578779; floor 0.001440; clear of the next eligible arm by 0.001484 (1.0 floors) |
+| FT_trip | lgbm | eligible: lgbm 1.516973, cond_logit 1.522811; floor 0.002210; clear of the next eligible arm by 0.005838 (2.6 floors) |
+
+### 8.9 Round 2 decision, against round 1
+
+| class | round 1 winner (F1) | round 2 winner (F1) | changed? | round 1 winner (WF) | round 2 winner (WF) | floor (F1) |
+|---|---|---|---|---|---|---:|
+| FGA_rim | lgbm | lgbm | no | lgbm | lgbm | 0.001156 |
+| FGA_jump2 | lgbm | lgbm | no | cond_logit | hier_dirichlet | 0.001656 |
+| FGA_3 | lgbm | lgbm | no | proportional | proportional | 0.001370 |
+| TOV | lgbm | lgbm | no | proportional | cond_logit | 0.000799 |
+| FT_trip | lgbm | lgbm | no | lgbm | lgbm | 0.001435 |
+
+
+### 8.10 Interpretation -- what the data fix did and did not change
+
+**R12. The winner does not change on the selection fold. All five classes stay
+`lgbm`.** That is the headline and it is worth stating plainly: the round-1
+adoption survives the label fix. The margins move a little in both directions --
+`FGA_rim` 16.9 -> 11.0 floors, `FGA_jump2` 2.1 -> 1.9, `FGA_3` 1.2 -> 1.5,
+`TOV` 3.8 -> 3.9, `FT_trip` the only eligible arm in both rounds -- and none of
+those moves crosses the decision rule.
+
+| class | R1 winner (F1) | R2 winner (F1) | changed? | R1 floors clear | R2 floors clear |
+|---|---|---|---|---:|---:|
+| FGA_rim | lgbm | lgbm | no | 16.9 | 11.0 |
+| FGA_jump2 | lgbm | lgbm | no | 2.1 | 1.9 |
+| FGA_3 | lgbm | lgbm | no | 1.2 | 1.5 |
+| TOV | lgbm | lgbm | no | 3.8 | 3.9 |
+| FT_trip | lgbm | lgbm | no | only eligible arm | only eligible arm |
+
+On the robustness fold two tie-breaks shuffle inside the floor -- `FGA_jump2`
+`cond_logit` -> `hier_dirichlet` (the three leaders are within 0.0015 of each
+other against a 0.0022 floor) and `TOV` `proportional` -> `cond_logit` (1.0
+floors). Neither is a fact about the label; both are the tie-break landing on a
+different member of a set the rule already declared indistinguishable. `FGA_rim`
+and `FT_trip` replicate `lgbm` on the robustness fold in both rounds, and
+`FGA_3` falls through to `proportional` in both.
+
+**R13. The ELIGIBILITY verdict does change on `FGA_rim`, and it changes in the
+direction the defect predicts.** Round 1 ruled U1 and U2 ineligible on `FGA_rim`
+for under-concentrating top-3 usage share by 2.17 pp against a 2.0 pp gate.
+Cleaning the label moves that gap to **-1.79 pp** and both arms become eligible.
+
+| class | arm | top-3 gap R1 (pp) | top-3 gap R2 (pp) | top-1 gap R1 | top-1 gap R2 |
+|---|---|---:|---:|---:|---:|
+| FGA_rim | proportional | -2.17 | **-1.79** | -1.54 | -1.15 |
+| FGA_rim | lgbm | -1.61 | -1.38 | -1.15 | -0.90 |
+| FGA_jump2 | proportional | -2.20 | -2.29 | -1.81 | -1.92 |
+| FGA_jump2 | lgbm | -1.40 | -1.48 | -1.23 | -1.33 |
+| FGA_3 | proportional | -0.60 | -0.73 | -0.25 | -0.21 |
+| FGA_3 | lgbm | -0.45 | -0.52 | -0.24 | -0.20 |
+| TOV | proportional | -0.40 | -0.40 | -0.32 | -0.32 |
+| TOV | lgbm | -0.01 | +0.00 | -0.05 | -0.05 |
+| FT_trip | proportional | -2.95 | -2.95 | -2.29 | -2.29 |
+| FT_trip | lgbm | -1.94 | -1.91 | -1.46 | -1.45 |
+
+This is the mechanism, and it is specific rather than generic. **An assist
+credited as a shot is credit moved from the finisher to the passer**, and a
+lineup's passer is usually not its highest-usage player, so the contaminated
+labels flattened the usage distribution. Rim shots are where that mattered:
+they are the most heavily assisted class after threes (24.8-25.2% assisted) AND
+the class where the finisher and the creator are most reliably different people.
+Removing the contamination hands the credit back to the finisher, the top of the
+distribution rises, and R3's named defect shrinks by 0.38 pp on `FGA_rim`
+without anyone touching a share vector -- which is what `CLAUDE.md`'s no-hand-
+tuning rule says a real fix looks like.
+
+It does NOT close the defect. Every one of the 50 F1 arm-class cells is still
+negative on top-3 (bar `TOV`/`lgbm` at +0.00), so R3 stays OPEN in the change
+ledger: this was a contaminating term inside the defect, not the defect itself.
+
+**R14. `FGA_jump2` moves the other way, and the reason is measurable.** Its
+top-3 gap widens from -2.20 to -2.29 pp, which is what puts `hier_dirichlet` out
+of the eligible set on F1 (it was eligible in round 1). Mid-range jumpers are the
+LEAST assisted class in the model (10.2-10.3% against 24.8-28.2% for rim and
+three), so the fix relabels only 4.9% of its rows -- a third of the rate the
+other two classes see -- while the shrinkage denominators every class shares move
+by the full amount. The class gets the cost of the correction without much of its
+benefit. The move is 0.09 pp, well inside the run-to-run variation of a 40-draw
+Monte-Carlo game-level statistic, and it should not be read as a finding about
+mid-range shooting.
+
+**R15. The two unaffected classes are unaffected, as pre-registered.** Section
+8.3 committed in advance to attributing any `TOV` or `FT_trip` movement to the
+shared exposure denominator or to noise. `FT_trip`'s top-1 and top-3 gaps are
+identical to round 1 to two decimals (-2.29 / -2.95 for U1), `TOV`'s to the same
+precision, and both classes' F1 log losses move by less than a quarter of their
+own floors (`TOV` 1.577664 -> 1.577494 against a 0.000799 floor; `FT_trip`
+1.514025 -> 1.523321 on the WF fold and 2.6 vs 4.2 floors clear). The exposure
+denominator carries the FGA relabelling into every class's `exposure_asof`, and
+the measured size of that channel is: nothing that moves a decision.
+
+**R16. Noise floor.** Spec-identical LightGBM retrains under seeds (0, 1, 2) on
+F1 give SDs of 1.0e-05 to 6.8e-05 -- one to two orders of magnitude below the
+block-bootstrap SEs (0.000799 to 0.001656) the decision rule actually uses. The
+tree's seed noise is not the binding floor on any class, which is the same
+finding round 1 reported, and it means every margin quoted above is a statement
+about sampling, not about initialisation.
+
+| class | lgbm seed log losses (F1) | seed SD | block-bootstrap SE (the floor) |
+|---|---|---:|---:|
+| FGA_rim | 1.502629 / 1.502732 / 1.502727 | 0.000058 | 0.001156 |
+| FGA_jump2 | 1.488712 / 1.488765 / 1.488702 | 0.000034 | 0.001656 |
+| FGA_3 | 1.417636 / 1.417666 / 1.417662 | 0.000016 | 0.001366 |
+| TOV | 1.577494 / 1.577474 / 1.577485 | 0.000010 | 0.000799 |
+| FT_trip | 1.523321 / 1.523440 / 1.523438 | 0.000068 | 0.001435 |
+
+**R17. Responsiveness and the per-team segment.** Every winner passes the
+amended Decision-8 gate with a slope ratio in [0.988, 1.025] -- comfortably
+inside the [0.8, 1.2] band and, on four of five classes, closer to 1.000 than
+round 1's. Worst decile calibration gap runs 0.23-0.47 pp against a 2.0 pp gate.
+Per-team log loss is tight and has no tail of teams the model fails on: the p10
+to p90 spread is 0.10-0.22 nats around a median of 1.42-1.58, with an SD of
+0.026-0.088. Teams below 200 test events of a class are excluded and counted
+(0-11 per class) rather than reported as signal.
+
+| class (F1 winner `lgbm`) | slope ratio | worst calib gap (pp) | teams | per-team median | p10 | p90 | SD | underpowered |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|
+| FGA_rim | 1.0246 | 0.474 | 364 | 1.5116 | 1.4287 | 1.5604 | 0.0536 | 0 |
+| FGA_jump2 | 0.9887 | 0.314 | 355 | 1.5018 | 1.3920 | 1.5673 | 0.0753 | 9 |
+| FGA_3 | 0.9954 | 0.336 | 364 | 1.4183 | 1.2995 | 1.5174 | 0.0884 | 0 |
+| TOV | 0.9881 | 0.231 | 363 | 1.5817 | 1.5421 | 1.6064 | 0.0257 | 1 |
+| FT_trip | 0.9888 | 0.382 | 353 | 1.5319 | 1.4532 | 1.5806 | 0.0507 | 11 |
+
+**R18. What the drop cost.** 136,588 field-goal rows were relabelled (66,120 in
+2024, 70,468 in 2025) and 1,136 dropped for having no `shot_shooter_id` (605 /
+531). Per class the drop is 0.04-0.27%; per team the median is 0.00-0.18% with
+3-19 teams per season above 1% and a worst case of 5.6%. Total modelled events
+1,633,164 against round 1's 1,634,792 -- a 0.10% reduction. Nothing was imputed.
+The much larger drop in the coverage table, 5.06-5.34% on `TOV`, is the
+PRE-EXISTING team-turnover blank documented in R11, not a cost of this fix.
+
+### 8.11 Round-2 decision
+
+| class | DECISION (F1, the selection fold) | confidence | change vs round 1 |
+|---|---|---|---|
+| `FGA_rim` | **lgbm** | replicated (11.0 floors F1, 4.8 floors WF) | winner unchanged; U1/U2 become ELIGIBLE (top-3 -2.17 -> -1.79 pp) |
+| `FGA_jump2` | **lgbm** | floor-thin, straddles | winner unchanged; `hier_dirichlet` loses eligibility (top-3 -2.29 pp) |
+| `FGA_3` | **lgbm** | floor-thin, straddles | winner unchanged; margin 1.2 -> 1.5 floors; WF still falls to `proportional` |
+| `TOV` | **lgbm, UNCONFIRMED** | reverses on WF | winner unchanged; the reversal reproduces (lgbm LAST on WF) |
+| `FT_trip` | **lgbm** | replicated (only eligible arm on F1) | winner unchanged |
+
+Adopted alongside the winners, as fitted parameters rather than choices: the
+per-class shrinkage prior and strength and the tree parameters in
+`usage_params_v2.json`. **The engine's usage adapter needs no rewiring of its
+arm** -- it runs the U1 proportional path in both rounds -- but
+`scripts/build_engine_inputs.py` must be repointed from
+`models/usage/asof_v2.parquet` + `usage_params_v1.json` to the `usage_v2`
+siblings, and the engine inputs rebuilt, before the engine's usage rates are
+clean. That is a PM action, not done here.
+
 ---
 
 ## 9. Round 2b: S1 training-scheme confirmation
@@ -949,3 +1482,130 @@ adopting it in the sim is a PM action that also requires
 `scripts/build_engine_inputs.py` to be repointed at the `usage_v2` / `usage_s1`
 artifacts. Trainer: `scripts/train_usage_v2b.py`. Results are appended below as
 sections 9.4-9.7; this commit contains no results.
+
+### 9.4 Run configuration
+
+| item | value |
+|---|---|
+| trainer | `scripts/train_usage_v2b.py` (imports `train_usage_v1` and `train_usage_v2`) |
+| fold | `F1` = project fold 2 (train 2024, test 2025); 2026 sealed |
+| shooter key | `shot_shooter_id` (round 2's fix, carried) |
+| arms selected by 9.1 | `lgbm` on all five classes -- no runner-up sits inside the round-2 floor on any class |
+| schemes | S0 static (paired control) vs S1 monthly in-season walk-forward |
+| S1 refit dates | 2024-11-01, 2024-12-01, 2025-01-01, 2025-02-01, 2025-03-01, 2025-04-01 (6 per class, 30 fits persisted) |
+| LightGBM hyper-parameters | carried unchanged from the round-2 F1 search (NOT re-searched monthly) |
+| bootstrap replicates / seeds | 200 / 3 (each S1 seed replays all 6 monthly refits) |
+| seed | 20260910 |
+
+S0 here is a re-fit at this trainer's own RNG seed, not a copy of round 2's
+number, and it reproduces round 2 to 1.1e-04 or better on every class (e.g.
+`FGA_rim` 1.502739 vs 1.502629, `TOV` 1.577452 vs 1.577494) -- inside the
+seed SD measured below. That agreement is the paired control working.
+
+### 9.5 S1 vs S0 on fold 2
+
+| class | S0 log loss | S1 log loss | delta | delta in floors | floor | S0 calib (pp) | S1 calib (pp) | S0 slope | S1 slope | S0 steps | S1 steps |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| FGA_rim | 1.502739 | **1.502225** | -0.000514 | -0.44 | 0.001175 | 0.541 | **0.513** | 1.0245 | 1.0274 | 4/4 | 4/4 |
+| FGA_jump2 | 1.488778 | **1.487860** | -0.000918 | -0.54 | 0.001696 | 0.335 | **0.195** | 0.9883 | **0.9994** | 4/4 | 4/4 |
+| FGA_3 | 1.417668 | **1.416718** | -0.000950 | -0.69 | 0.001380 | 0.318 | **0.146** | 0.9958 | **1.0004** | 4/4 | 4/4 |
+| TOV | 1.577452 | **1.576761** | -0.000691 | -0.82 | 0.000844 | 0.236 | 0.375 | 0.9862 | 1.0166 | 4/4 | 4/4 |
+| FT_trip | 1.523522 | **1.522378** | -0.001144 | -0.80 | 0.001436 | 0.395 | **0.376** | 0.9899 | 1.0128 | 4/4 | 4/4 |
+
+Secondary metrics and the per-team segment (teams with >= 200 test events;
+teams below that counted, never presented as signal):
+
+| class | scheme | Brier | top-1 | top-3 | teams | per-team median | p10 | p90 | SD | underpowered |
+|---|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| FGA_rim | S0 | 0.7568 | 0.3342 | 0.7603 | 364 | 1.5112 | 1.4309 | 1.5615 | 0.0536 | 0 |
+| FGA_rim | S1 | 0.7566 | 0.3344 | 0.7608 | 364 | 1.5105 | 1.4314 | 1.5603 | 0.0535 | 0 |
+| FGA_jump2 | S0 | 0.7504 | 0.3452 | 0.7695 | 355 | 1.5032 | 1.3920 | 1.5680 | 0.0753 | 9 |
+| FGA_jump2 | S1 | 0.7502 | 0.3451 | 0.7707 | 355 | 1.5009 | 1.3928 | 1.5687 | 0.0758 | 9 |
+| FGA_3 | S0 | 0.7362 | 0.3455 | 0.8146 | 364 | 1.4190 | 1.2987 | 1.5167 | 0.0885 | 0 |
+| FGA_3 | S1 | 0.7359 | 0.3460 | 0.8153 | 364 | 1.4189 | 1.2978 | 1.5168 | 0.0889 | 0 |
+| TOV | S0 | 0.7869 | 0.2727 | 0.6878 | 363 | 1.5817 | 1.5425 | 1.6064 | 0.0256 | 1 |
+| TOV | S1 | 0.7866 | 0.2745 | 0.6888 | 363 | 1.5799 | 1.5400 | 1.6069 | 0.0267 | 1 |
+| FT_trip | S0 | 0.7644 | 0.3245 | 0.7427 | 353 | 1.5318 | 1.4490 | 1.5804 | 0.0510 | 11 |
+| FT_trip | S1 | 0.7641 | 0.3250 | 0.7449 | 353 | 1.5299 | 1.4498 | 1.5815 | 0.0513 | 11 |
+
+**Noise floor.** Three spec-identical retrains per class per scheme, each S1
+retrain replaying all six monthly refits:
+
+| class | S0 seed SD | S1 seed SD | S0 bootstrap SE | S1 bootstrap SE |
+|---|---:|---:|---:|---:|
+| FGA_rim | 0.000119 | 0.000145 | 0.001159 | 0.001175 |
+| FGA_jump2 | 0.000020 | 0.000047 | 0.001647 | 0.001696 |
+| FGA_3 | 0.000058 | 0.000065 | 0.001372 | 0.001380 |
+| TOV | 0.000092 | 0.000056 | 0.000808 | 0.000844 |
+| FT_trip | 0.000099 | 0.000044 | 0.001432 | 0.001436 |
+
+Seed SD is 8-35x below the bootstrap SE on every cell, so the bootstrap SE is
+the binding floor, as in rounds 1 and 2. S1's bootstrap SE is 0.4-4.5% LARGER
+than S0's on every class -- refitting monthly does not reduce sampling variance,
+which is the honest reading of a scheme that changes the fit, not the test set.
+
+### 9.6 What S1 actually did
+
+The refit schedule for `FGA_rim` (identical in shape on all five classes; the
+row counts scale with the class):
+
+| refit date | train rows | of which from the test season | last train game | rows scored | fitted prior | m |
+|---|---:|---:|---|---:|---|---:|
+| 2024-11-01 | 213,601 | 0 | 2024-04-08 | 49,081 | position | 50 |
+| 2024-12-01 | 262,682 | 49,081 | 2024-11-30 | 38,770 | position | 50 |
+| 2025-01-01 | 301,452 | 87,851 | 2024-12-31 | 58,544 | position | 50 |
+| 2025-02-01 | 359,996 | 146,395 | 2025-01-31 | 52,923 | position | 50 |
+| 2025-03-01 | 412,919 | 199,318 | 2025-02-28 | 31,407 | position | 50 |
+| 2025-04-01 | 444,326 | 230,725 | 2025-03-31 | 534 | position | 50 |
+
+Two things to read off it. First, the leak proof is mechanical: every refit's
+`last train game` is strictly before its own refit date, and the six `rows
+scored` sum to the full 231,259-row test slice, so no event is in its own fit
+and none is scored twice. Second, **the fitted shrinkage never moves** -- prior
+`position`, m = 50 -- across all six refits on this class, and the same holds on
+the other four. The extra in-season data changes the tree, not the amount the
+model is willing to trust a player's own rate.
+
+### 9.7 Round-2b decision
+
+**S1 is adopted on all five classes.** It regresses nothing: log loss improves
+on all five (0.44-0.82 floors), the calibration gate is passed by both schemes
+everywhere, and the Decision-8 responsiveness gate is passed 4/4 with the slope
+ratio inside [0.8, 1.2] under both.
+
+| class | DECISION | why |
+|---|---|---|
+| FGA_rim | **S1** | ll -0.44 floors, calib 0.541 -> 0.513 pp, slope 1.0245 -> 1.0274, no gate lost |
+| FGA_jump2 | **S1** | ll -0.54 floors, calib 0.335 -> **0.195** pp, slope 0.9883 -> **0.9994** |
+| FGA_3 | **S1** | ll -0.69 floors, calib 0.318 -> **0.146** pp, slope 0.9958 -> **1.0004** |
+| TOV | **S1** | ll -0.82 floors; calib 0.236 -> 0.375 pp is a WORSENING but both pass a 2.0 pp gate by 5x and the pre-registered rule regresses only on a lost gate; slope 0.9862 -> 1.0166 |
+| FT_trip | **S1** | ll -0.80 floors, calib 0.395 -> 0.376 pp, slope 0.9899 -> 1.0128 |
+
+**Honest framing, stated because it differs from L21.** On possession outcome S1
+was a large calibration fix (worst decile gap 2.78 -> 0.98 pp). **It is not that
+here, because there was nothing to fix:** the static allocator was already
+calibrated to 0.24-0.54 pp against a 2.0 pp gate, five to eight times inside it.
+What S1 delivers on this model is a small, uniformly-signed improvement -- every
+class's log loss down, four of five classes' worst calibration gap down, three of
+five slope ratios moved closer to 1.000 -- none of which is individually
+significant against its own floor. **S1 is therefore adopted here because it is
+the standing default and it demonstrably costs nothing, NOT because this model
+was shown to need it.** The distinction matters for the next sub-model that runs
+this check: a flat result is the expected result when the static fit already
+passes, and it should not be reported as a win.
+
+The one thing S1 does cost is operational: six fits per class per season instead
+of one, and a deployment that must refit monthly. That is the `SCHEME_SIMPLICITY`
+ordering the possession-outcome pre-registration already recorded (S0 < S2 < S1),
+and it is the reason a tie goes to S0 rather than to S1 -- but a tie is not what
+happened on any class here.
+
+### 9.8 Artifacts
+
+30 monthly fits (5 classes x 6 refit dates) plus 5 static controls, written to
+`data/processed/models/usage_s1/` under the naming fixed in 9.2, with
+`s1_manifest.json` carrying every row's `refit_date`, `prior_kind`, `shrink_m`,
+`artifact` path, `shooter_key` and `possessions_version`. Engine selection rule:
+take the artifact with the LATEST `refit_date` at or before a game's own date;
+before the first refit date, use the `static` row. Nothing under
+`models/usage/` or `models/usage_v2/` was written or moved.

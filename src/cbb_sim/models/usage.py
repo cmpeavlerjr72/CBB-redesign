@@ -14,7 +14,9 @@ One row per credited event of a chance, restricted to events whose OFFENSIVE
 on-floor five is fully resolved (L13: CBBD `onFloor` is empty at the source in
 2022-2023, so this model lives on 2024+ alone). Five event classes:
 
-  FGA_rim / FGA_jump2 / FGA_3   the shooter of the attempt
+  FGA_rim / FGA_jump2 / FGA_3   the shooter of the attempt, read off
+                                `shot_shooter_id` -- NOT `participant_1_id`;
+                                see "THE SHOOTER LABEL" below
   TOV                           the player charged with the turnover
   FT_trip                       the FOULED SHOOTER, i.e. `participant_1_id`
                                 on the FIRST attempt of a foul-caused
@@ -23,6 +25,35 @@ on-floor five is fully resolved (L13: CBBD `onFloor` is empty at the source in
                                 the shooter is chosen by the coach, not by who
                                 was fouled, so the two populations are drawn
                                 from different shooter distributions.
+
+===========================================================================
+THE SHOOTER LABEL (data fix, 2026-09-10 -- round 2 of this bake-off)
+===========================================================================
+Round 1 keyed the field-goal shooter on `participant_1_id`, which is WRONG.
+CBBD's `participants` array is not ordered shooter-first: on an assisted made
+field goal it holds the shooter and the assister and the order is a coin flip.
+Measured over every 2022-2025 row of the modelling universe,
+`participant_1_id == shot_shooter_id` on 51.02% of assisted made FGAs, and on
+the 48.98% that disagree `participant_1_id` is the ASSISTER on 100.000% of rows.
+Inside this model's own window that mislabels 11.9% / 5.0% / 14.1% of
+`FGA_rim` / `FGA_jump2` / `FGA_3` rows in 2024 and 12.0% / 4.9% / 14.1% in 2025
+-- and the rate is NOT uniform across the classes, so the contamination bends
+the relative shooter profiles rather than adding symmetric noise. Nothing in
+round 1's coverage table caught it: the assister is a teammate on the floor, so
+he passes `in_five` on 95-99% of the mislabelled rows. Full evidence, per
+season, per event type and per team: `docs/tests/shooter_key_audit_2026-09-10.md`.
+
+`build_usage_events` therefore defaults to `shooter_key="shot_shooter_id"`.
+The other two classes are untouched and were never affected: FTA rows agree with
+`shot_shooter_id` on 100.000% of rows in all four seasons, and TOV rows have no
+`shot_shooter_id` at all, so `participant_1_id` is the only and the correct key
+for both. `shooter_key="participant_1_id"` reproduces round 1 exactly and is
+kept so the two rounds can be diffed rather than argued about.
+
+Field-goal rows with no `shot_shooter_id` (0.04-0.27% per class) are DROPPED,
+never imputed and never fallen back to `participant_1_id`: a fallback would
+reinstate the assister on exactly the population the fix removes. The drop is
+reported per season and per team by `scripts/train_usage_v2.py`.
 
 The event is read off `cbb_sim.models.event_stream`, not off the chance table,
 for two reasons the rebound and free-throw models already hit: the chance table
@@ -250,21 +281,33 @@ def _chance_number(stream: pd.DataFrame) -> np.ndarray:
     return (1 + cum - oreb).astype("int16")
 
 
+#: The shooter key of this model's ADOPTED build (module docstring, "THE
+#: SHOOTER LABEL"). Round 1 ran on `ES.SHOOTER_KEYS[0]` and is reproducible by
+#: passing it explicitly.
+DEFAULT_SHOOTER_KEY = "shot_shooter_id"
+
+
 def build_usage_events(
     season: int,
     universe: pd.DataFrame,
     rim_override_max_ft: float = 0.0,
     pbp_dir: Path | str = ES.DEFAULT_PBP_DIR,
+    shooter_key: str = DEFAULT_SHOOTER_KEY,
 ) -> pd.DataFrame:
     """One row per credited event with its offensive five (module docstring).
 
     Rows whose five is incomplete, or whose credited player is not one of the
     five, are KEPT with `five_ok` / `in_five` False so the trainer can report
     the coverage instead of silently losing it; `usable_events` applies the
-    filter."""
+    filter. A field-goal row with no `shot_shooter_id` has a missing
+    `player_id` and so lands in that same reported-then-filtered bucket -- it is
+    never imputed (module docstring, "THE SHOOTER LABEL").
+
+    `shooter_key` defaults to the FIXED column; pass `"participant_1_id"` to
+    reproduce round 1."""
     season = int(season)
     stream = ES.build_stream(season, universe, rim_override_max_ft=rim_override_max_ft,
-                             pbp_dir=pbp_dir)
+                             pbp_dir=pbp_dir, shooter_key=shooter_key)
     chance_no = _chance_number(stream)
     off_all = _offense_on_floor(stream)
 
@@ -319,6 +362,9 @@ def build_usage_events(
     d["y"] = y.astype("int8")
     d.attrs["season"] = season
     d.attrs["rim_override_max_ft"] = float(rim_override_max_ft)
+    d.attrs["shooter_key"] = shooter_key
+    d.attrs["n_fga_relabelled"] = int(stream.attrs.get("n_fga_relabelled", 0))
+    d.attrs["n_fga_no_shooter"] = int(stream.attrs.get("n_fga_no_shooter", 0))
     return d
 
 
@@ -345,6 +391,45 @@ def coverage_report(events: pd.DataFrame) -> dict:
             "player_id_present_pct": round(
                 float(np.isfinite(events["player_id"].to_numpy()[m]).mean() * 100), 4),
             "modelled_pct": round(float(events["in_five"].to_numpy()[m].mean() * 100), 4),
+        }
+    return out
+
+
+def shooter_drop_report(events: pd.DataFrame, min_rows: int = 50) -> dict:
+    """Rows lost to a MISSING credited-player id, per class and per team.
+
+    The pre-registered treatment of a field-goal row with no `shot_shooter_id`
+    is to drop it (module docstring, "THE SHOOTER LABEL"). This is the report
+    that makes the drop visible at the two levels `CLAUDE.md` asks for --
+    overall/per-class and per-team -- so that a team-specific hole in the feed
+    cannot hide inside a small pooled percentage. Teams with fewer than
+    `min_rows` rows of a class are excluded from the distribution and counted as
+    underpowered rather than reported as signal."""
+    pid = events["player_id"].to_numpy(dtype="float64")
+    miss = ~np.isfinite(pid)
+    tid = events["team_id"].to_numpy()
+    out: dict = {"by_class": {}, "by_team": {}}
+    for c in EVENT_CLASSES:
+        m = events["event_class"].to_numpy() == c
+        n = int(m.sum())
+        if not n:
+            continue
+        out["by_class"][c] = {"n": n, "dropped_no_player_id": int(miss[m].sum()),
+                              "drop_pct": round(float(miss[m].mean() * 100), 4)}
+        g = pd.DataFrame({"t": tid[m], "miss": miss[m]}).groupby("t")["miss"].agg(
+            ["size", "mean"])
+        big = g[g["size"] >= min_rows]
+        if not len(big):
+            out["by_team"][c] = {"teams": 0, "underpowered_teams": int(len(g))}
+            continue
+        q = big["mean"] * 100
+        out["by_team"][c] = {
+            "teams": int(len(big)), "underpowered_teams": int(len(g) - len(big)),
+            "min_pct": round(float(q.min()), 4),
+            "median_pct": round(float(q.median()), 4),
+            "p95_pct": round(float(q.quantile(0.95)), 4),
+            "max_pct": round(float(q.max()), 4),
+            "teams_over_1pct": int((q > 1.0).sum()),
         }
     return out
 

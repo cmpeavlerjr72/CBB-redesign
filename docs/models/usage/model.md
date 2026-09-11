@@ -2,15 +2,40 @@
 
 Pre-registration and the full grid: [`experiments.md`](experiments.md). Feature
 provenance: [`features.md`](features.md). Code:
-`src/cbb_sim/models/usage.py`. Trainer: `scripts/train_usage_v1.py`.
+`src/cbb_sim/models/usage.py`. Trainers: `scripts/train_usage_v1.py` (round 1)
+`scripts/train_usage_v2.py` (round 2, the shooter-label data fix) and
+`scripts/train_usage_v2b.py` (round 2b, the S1 training-scheme confirmation).
+Audit of the label defect: `scripts/diag_shooter_key_v1.py`.
 Tests: `tests/test_usage.py`.
 
-> **Status: BAKE-OFF RUN 2026-09-10.** A winner on all five event classes on the
-> selection fold, two of which replicate on the robustness fold, two of which
-> straddle the noise floor, and one (`TOV`) which reverses and is recorded
-> UNCONFIRMED. The headline finding is that CFB's "too narrow / too short" pair
-> does NOT reproduce in CBB and a third check -- top-k usage share, failing in
-> the opposite direction -- is what decides eligibility. Sections 4 and 5.
+> **Status: ROUND 2 RUN 2026-09-10 (shooter-label data fix). WINNER UNCHANGED ON
+> ALL FIVE CLASSES.** Round 1 keyed the field-goal shooter on
+> `participant_1_id`, which is the ASSISTER on 48.98% of assisted makes;
+> round 2 re-ran the identical pre-registration with the shooter keyed on
+> `shot_shooter_id`. `lgbm` wins all five classes on the selection fold in both
+> rounds (margins 16.9 -> 11.0, 2.1 -> 1.9, 1.2 -> 1.5, 3.8 -> 3.9 floors, and
+> `FT_trip` the only eligible arm in both). What DID change is the eligibility
+> verdict on `FGA_rim`: cleaning the label moves U1's top-3 usage-share gap from
+> -2.17 pp to -1.79 pp and both simple arms become eligible -- credit handed back
+> from the passer to the finisher, which is R3's named defect shrinking without
+> anyone touching a share vector. `TOV` still reverses on the robustness fold and
+> stays UNCONFIRMED. `experiments.md` section 8; audit
+> `docs/tests/shooter_key_audit_2026-09-10.md`.
+>
+> **Round 1's finding stands otherwise:** CFB's "too narrow / too short" pair
+> does NOT reproduce in CBB, and top-k usage share -- failing in the opposite
+> direction, still negative in 49 of 50 F1 cells -- is what decides eligibility.
+> Sections 4 and 5 describe round 1; section 8 of `experiments.md` is round 2.
+>
+> **Round 2b (S1 training scheme), run 2026-09-10: S1 ADOPTED on all five
+> classes.** Monthly in-season walk-forward refit beats the static fit on log
+> loss by 0.44-0.82 floors on every class and improves the worst calibration
+> gap on four of five, with no gate lost anywhere. Unlike L21's possession-
+> outcome result this is NOT a calibration rescue -- the static allocator was
+> already at 0.24-0.54 pp against a 2.0 pp gate -- so S1 is adopted because it
+> is the standing default and costs nothing here, not because this model needed
+> it. 30 monthly artifacts in `data/processed/models/usage_s1/` with a manifest
+> the engine selects by game month. `experiments.md` section 9.
 
 ---
 
@@ -38,11 +63,29 @@ resolved. Five classes, each modelled as a separate choice among the five:
 
 | class | credited player | source |
 |---|---|---|
-| `FGA_rim` | the shooter | `event_stream.cls == "FGA_rim"`, `participant_1_id` |
+| `FGA_rim` | the shooter | `event_stream.cls == "FGA_rim"`, **`shot_shooter_id`** (round 2 data fix; round 1 used `participant_1_id`, which is the ASSISTER on 48.98% of assisted makes -- see below) |
 | `FGA_jump2` | the shooter | same |
 | `FGA_3` | the shooter | same |
-| `TOV` | the player charged with the turnover | same |
+| `TOV` | the player charged with the turnover | `participant_1_id` (no `shot_shooter_id` exists on a turnover row; unaffected by the round-2 fix) |
 | `FT_trip` | the FOULED SHOOTER | first attempt of a foul-caused trip (`trip_pos == 1`, `trip_cause == "foul"`) |
+
+**THE SHOOTER KEY (round-2 data fix, 2026-09-10).** CBBD's `participants` array
+is not ordered shooter-first. On an assisted made field goal it holds the shooter
+and the assister and the order is a coin flip: over every 2022-2025 row of this
+universe, `participant_1_id == shot_shooter_id` on 51.02% of assisted makes, and
+on the 48.98% that disagree `participant_1_id` is the assister on 100.000% of
+rows. Inside this model's window that mislabels 11.9% / 5.0% / 14.1% of
+`FGA_rim` / `FGA_jump2` / `FGA_3` rows in 2024 (12.0% / 4.9% / 14.1% in 2025),
+at a rate that varies ~3x between classes and 5.3-22.3% between teams. Round 1's
+`in_five` coverage filter could not catch it because the assister is a teammate
+on the floor. The three FGA classes therefore key on `shot_shooter_id`
+(`build_usage_events(shooter_key=...)`, default `"shot_shooter_id"`); rows with
+no shooter id (0.04-0.27%) are dropped, never imputed and never fallen back to
+`participant_1_id`. `TOV` and `FT_trip` are untouched and were never affected:
+FTA rows agree with `shot_shooter_id` on 100.000% and TOV rows carry no
+`shot_shooter_id` at all. Evidence:
+[`docs/tests/shooter_key_audit_2026-09-10.md`](../../tests/shooter_key_audit_2026-09-10.md);
+re-run: `experiments.md` section 8.
 
 Technical free throws are excluded, for the same reason `free_throw` excludes
 them: the shooter is chosen by the coach rather than by who was fouled, so the
@@ -193,6 +236,12 @@ on-floor five (L13) plus, on turnovers only, 5.1-5.3% with no `participant_1_id`
 resolves on 99.98% of player-games and hoopR minutes join on 99.81%, so neither
 the position prior nor `minutes_asof` rests on a large unmeasured fallback.
 
+Round 2 adds one further, small loss: field-goal rows with no `shot_shooter_id`
+are dropped (0.04-0.27% per class; 1,136 rows over the two seasons; per-team
+median 0.00-0.18%, worst team 5.6%). Total modelled events 1,633,164 against
+round 1's 1,634,792, a 0.10% reduction. Nothing is imputed and nothing falls back
+to `participant_1_id`. `experiments.md` section 8.5.
+
 ## 6. Decisions log
 
 1. **The event stream, not the chance table, is the source.** The chance table
@@ -313,6 +362,22 @@ shooter = U.draw_player(five_on_floor, "FGA_3", state)   # -> a CBBD player id
 | `data/processed/models/usage/usage_params_v1.json` | the fitted parameters the sim consumes |
 | `data/processed/models/usage/report_v1.md` | the generated results markdown appended to `experiments.md` |
 | `data/processed/models/usage/train_log_v1.txt` | the run log, including every grid rung |
+| `data/processed/models/usage_v2/events_v2_shotshooter.parquet` | ROUND 2 (shooter keyed on `shot_shooter_id`): the same event table, relabelled |
+| `data/processed/models/usage_v2/asof_v2_shotshooter.parquet` | round-2 as-of inputs |
+| `data/processed/models/usage_v2/build_report_v2_shotshooter.json` | round-2 coverage, relabel counts and the per-season / per-team drop report |
+| `data/processed/models/usage_v2/results_v2.json` | round-2 metric blocks, incl. the per-team segment |
+| `data/processed/models/usage_v2/usage_params_v2.json` | round-2 fitted parameters (what the sim should consume once the PM adopts them) |
+| `data/processed/models/usage_v2/report_v2.md` | the generated round-2 markdown appended to `experiments.md` section 8 |
+| `data/processed/models/usage_v2/train_log_v2.txt` | the round-2 run log |
+| `data/processed/models/usage_v2/shooter_key_audit*.json` | the shooter-key audit numbers behind `docs/tests/shooter_key_audit_2026-09-10.md` |
+| `data/processed/models/usage_s1/{class}/{arm}_{YYYY-MM-DD}.joblib` | ROUND 2b: one S1 monthly refit; the engine takes the LATEST refit date at or before a game's date |
+| `data/processed/models/usage_s1/{class}/{arm}_static.joblib` | the S0 control fit, used for games before the first refit date |
+| `data/processed/models/usage_s1/s1_manifest.json` | every artifact row with its `refit_date`, `prior_kind`, `shrink_m`, `shooter_key` and `possessions_version` |
+| `data/processed/models/usage_s1/results_v2b.json` | S0-vs-S1 metric blocks, the refit schedules and the per-scheme noise floors |
+
+Round-1 artifacts are LEFT IN PLACE and unmodified: the engine reads
+`usage/asof_v2.parquet` and `usage/usage_params_v1.json` (`scripts/build_engine_inputs.py`
+lines 81-83) and must not be disturbed mid-run.
 
 ## 9. Known gaps / followups
 
@@ -322,7 +387,21 @@ shooter = U.draw_player(five_on_floor, "FGA_3", state)   # -> a CBBD player id
    what makes the simple arms ineligible on three classes. The fix is a model
    that can represent matchup-specific concentration -- a "featured player" term,
    or an opponent-conditioned share -- not an exponent on the share vector.
-   OPEN in the change ledger.
+   OPEN in the change ledger. **Round 2 shrank one contaminating term inside
+   this defect but did not close it:** the shooter-label fix moved `FGA_rim`'s
+   U1 top-3 gap from -2.17 to -1.79 pp (an assist credited as a shot is credit
+   moved from the finisher to the passer, and the passer is usually not the
+   lineup's highest-usage player), yet 49 of the 50 round-2 F1 cells are still
+   negative. `experiments.md` R13.
+1b. **`fg_make` reads the same wrong column and has NOT been re-run.**
+   `models/fg_make.py:361` takes its `shooter_id` from `event_stream`'s
+   `player_id`, i.e. `participant_1_id`, on every FGA row -- so its shooter
+   as-of block (`shooter_make_c`, `shooter_att_c`, `shooter_games_asof`,
+   `shooter_fga_asof`, `prior_season_make_c`) accumulates each attempt and its
+   make/miss onto the wrong player on 4.9-14.1% of attempts. Feature set
+   `B_plus_shooter` and everything above it is affected. The fix is one keyword
+   (`ES.build_stream(..., shooter_key="shot_shooter_id")`); the re-run is a PM
+   dispatch, not done here. `docs/tests/shooter_key_audit_2026-09-10.md` section 4.
 2. **`TOV` is undecided.** The tree wins F1 by 3.8 floors and loses the
    robustness fold by 7.0. It needs a third fold, which means another season of
    on-floor ids (2026 is sealed).

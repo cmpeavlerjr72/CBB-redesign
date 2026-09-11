@@ -53,8 +53,46 @@ D-I non-truncated universe, with:
                    rule is defined on
   trip_*           free-throw trip structure, see below
   player_id        `participant_1_id` (CBBD player id: the free-throw shooter,
-                   the rebounder, the fouler)
+                   the rebounder, the fouler) -- SEE `shooter_key` BELOW for
+                   field-goal rows
   home_on_1..5 / away_on_1..5   CBBD on-floor ids, null before 2024 (L13)
+
+THE FIELD-GOAL SHOOTER IS NOT `participant_1_id` (data fix, 2026-09-10)
+=======================================================================
+CBBD emits a `participants` array and `scripts/pull_cbbd_pbp.py` flattens its
+first two entries to `participant_1_id` / `participant_2_id`. On a made field
+goal WITH AN ASSIST the array holds the shooter and the assister and its ORDER
+IS NOT STABLE: measured over every 2022-2025 row of the modelling universe,
+`participant_1_id == shot_shooter_id` on only **51.02%** of assisted made FGAs,
+and on the other 48.98% `participant_1_id` is the ASSISTER on **100.000%** of
+rows (and `participant_2_id` is the shooter on 100.000%). Full evidence, by
+season, event type and team: `docs/tests/shooter_key_audit_2026-09-10.md`.
+
+The defect is confined to assisted makes. Missed FGAs and free throws carry ONE
+participant and agree with `shot_shooter_id` on 100.000% of rows in all four
+seasons. Rebounds, turnovers, fouls, steals and blocks have NO
+`shot_shooter_id` at all (0.000% populated), so `participant_1_id` is the only
+and the correct key there and must not be replaced.
+
+`shooter_key` therefore selects the FGA key and NOTHING else:
+
+  "participant_1_id"  (DEFAULT) the pre-2026-09-10 behaviour, byte for byte.
+                      Kept as the default so `free_throw`, `rebound` and
+                      `rotation` -- none of which is affected -- are unchanged,
+                      and so a concurrently running worker is not disturbed.
+  "shot_shooter_id"   `player_id` on `FGA_rim` / `FGA_jump2` / `FGA_3` rows is
+                      taken from the dedicated shooter column; every other class
+                      keeps `participant_1_id`. Rows where `shot_shooter_id` is
+                      absent (0.04-0.27% of FGAs) get a MISSING player id and
+                      are dropped by the caller's own coverage filter. Nothing
+                      is imputed and nothing falls back to `participant_1_id`:
+                      a fallback would silently reinstate the assister on
+                      exactly the rows the fix exists to remove.
+
+`cbb_sim.models.usage.build_usage_events` defaults to `"shot_shooter_id"`.
+`cbb_sim.models.fg_make` also reads the shooter off `player_id` and is
+AFFECTED, but is left on the default here pending its own re-run (audit doc
+section 4).
 
 FREE-THROW TRIPS
 ================
@@ -124,6 +162,11 @@ INERT: frozenset[str] = frozenset({"timeout", "sub", "jumpball", "challenge"})
 FT_CLASSES: tuple[str, ...] = ("FT_made", "FT_missed")
 FGA_CLASSES: tuple[str, ...] = ("FGA_rim", "FGA_jump2", "FGA_3")
 
+#: Legal values of `build_stream(shooter_key=...)` (module docstring, "THE
+#: FIELD-GOAL SHOOTER IS NOT `participant_1_id`"). The default is the first.
+SHOOTER_KEYS: tuple[str, ...] = ("participant_1_id", "shot_shooter_id")
+DEFAULT_SHOOTER_KEY = SHOOTER_KEYS[0]
+
 ON_FLOOR_COLS: tuple[str, ...] = tuple(
     [f"home_on_{k}" for k in range(1, 6)] + [f"away_on_{k}" for k in range(1, 6)]
 )
@@ -186,9 +229,16 @@ def build_stream(
     universe: pd.DataFrame,
     rim_override_max_ft: float = 0.0,
     pbp_dir: Path | str = DEFAULT_PBP_DIR,
+    shooter_key: str = DEFAULT_SHOOTER_KEY,
 ) -> pd.DataFrame:
-    """The cleaned event stream for one season (module docstring)."""
+    """The cleaned event stream for one season (module docstring).
+
+    `shooter_key` selects which column supplies `player_id` on FIELD-GOAL rows
+    and nothing else; see the module docstring for the measured reason the
+    default is not the correct one for a shooter."""
     season = int(season)
+    if shooter_key not in SHOOTER_KEYS:
+        raise ValueError(f"shooter_key must be one of {SHOOTER_KEYS}, got {shooter_key!r}")
     u = universe[universe["season"] == season]
     if not len(u):
         raise ValueError(f"no universe rows for season {season}")
@@ -221,6 +271,21 @@ def build_stream(
         "made": _bool_array(plays["shot_made"], plays["scoringPlay"]),
         "player_id": pd.to_numeric(plays["participant_1_id"], errors="coerce").to_numpy(),
     })
+    # ---- the field-goal shooter (module docstring) --------------------------
+    # Applied ONLY to FGA rows, and with no fallback: where `shot_shooter_id` is
+    # absent the id stays missing and the caller's coverage filter drops the row,
+    # because falling back to `participant_1_id` would put the assister back on
+    # exactly the population this exists to clean.
+    n_fga_relabelled = 0
+    n_fga_no_shooter = 0
+    if shooter_key == "shot_shooter_id":
+        is_fga = np.isin(cls.to_numpy(dtype=object), FGA_CLASSES)
+        sh = pd.to_numeric(plays["shot_shooter_id"], errors="coerce").to_numpy()
+        pid = df["player_id"].to_numpy(dtype="float64")
+        n_fga_relabelled = int((is_fga & np.isfinite(sh) & np.isfinite(pid)
+                                & (sh != pid)).sum())
+        n_fga_no_shooter = int((is_fga & ~np.isfinite(sh)).sum())
+        df["player_id"] = np.where(is_fga, sh, pid)
     for c in ON_FLOOR_COLS:
         df[c] = pd.to_numeric(plays[c], errors="coerce").to_numpy()
 
@@ -267,6 +332,9 @@ def build_stream(
     df["opp_id"] = np.where(sd == 0, away, np.where(sd == 1, home, -1)).astype("int64")
     df.attrs["n_admin_rebounds_dropped"] = n_admin
     df.attrs["rim_override_max_ft"] = float(rim_override_max_ft)
+    df.attrs["shooter_key"] = shooter_key
+    df.attrs["n_fga_relabelled"] = n_fga_relabelled
+    df.attrs["n_fga_no_shooter"] = n_fga_no_shooter
     return df
 
 
@@ -387,6 +455,7 @@ __all__ = [
     "FGA_CLASSES",
     "FT_CLASSES",
     "ON_FLOOR_COLS",
+    "SHOOTER_KEYS",
     "build_stream",
     "in_bonus",
     "in_double_bonus",

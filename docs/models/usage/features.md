@@ -61,7 +61,7 @@ before** the current game, within the season
 | Column | Source | Notes |
 |---|---|---|
 | `event_class` | `event_stream.cls`, plus `FT_trip` | `FGA_rim` / `FGA_jump2` / `FGA_3` / `TOV` straight off `events.classify_frame`; `FT_trip` is the FIRST attempt of a foul-caused free-throw trip (`trip_pos == 1 and trip_cause == 'foul'`). |
-| `player_id` | pbp `participant_1_id` | The credited player: the shooter, the turnover, the fouled shooter. CBBD player id. |
+| `player_id` | pbp `shot_shooter_id` on FGA rows, `participant_1_id` elsewhere | The credited player: the shooter, the turnover, the fouled shooter. CBBD player id. **Round-2 data fix (2026-09-10):** round 1 read the FGA shooter off `participant_1_id`, which is the ASSISTER on 48.98% of assisted makes (CBBD's participant order is not stable), mislabelling 4.9-14.1% of rows per FGA class. `TOV` and `FT_trip` keep `participant_1_id` and were never affected. Rows with no `shot_shooter_id` are dropped, never imputed. Evidence: `docs/tests/shooter_key_audit_2026-09-10.md`. |
 | `alt_1 .. alt_5` | pbp `home_on_*` / `away_on_*` through `event_stream.ON_FLOOR_COLS`, side-resolved | The OFFENSIVE five, sorted ascending so the alternative order is a function of the lineup and never of the feed's column order. |
 | `y` | derived | the slot index of `player_id` inside the sorted five. |
 | `five_ok`, `in_five` | derived | coverage flags, KEPT on the table so the trainer reports the filter instead of silently losing rows (`usage.coverage_report`). |

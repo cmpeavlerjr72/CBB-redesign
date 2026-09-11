@@ -63,7 +63,14 @@ def build_tables(version: str, out_dir: Path, rebuild: bool) -> tuple[pd.DataFra
     rim = ES.rim_override_for_version(version)
     per_season, coverage = {}, {}
     for s in SEASONS:
-        raw = U.build_usage_events(s, universe, rim_override_max_ft=rim)
+        # PINNED 2026-09-10. `usage.build_usage_events` now DEFAULTS to the
+        # corrected `shot_shooter_id` key (round 2, the shooter-label data fix).
+        # This trainer is the record of round 1 and must keep reproducing round
+        # 1's numbers, so it names the round-1 key explicitly instead of
+        # inheriting a default that has since moved. Round 2 is
+        # `scripts/train_usage_v2.py`; nothing else here changed.
+        raw = U.build_usage_events(s, universe, rim_override_max_ft=rim,
+                                   shooter_key="participant_1_id")
         coverage[str(s)] = U.coverage_report(raw)
         per_season[s] = U.usable_events(raw)
     minutes = U.load_minutes([SEASONS[0] - 1, *SEASONS])

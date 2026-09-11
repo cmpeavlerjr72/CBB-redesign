@@ -666,3 +666,104 @@ def test_f_the_shipped_parameters_reproduce_the_reported_log_loss():
         assert abs(got - want) < 1e-6
         checked += 1
     assert checked == len(params["per_class"])
+
+
+# ===========================================================================
+# (g) The shooter label is read off `shot_shooter_id`, not `participant_1_id`
+# ===========================================================================
+# Data fix, 2026-09-10. CBBD's `participants` array is not ordered
+# shooter-first: on an assisted made field goal `participant_1_id` is the
+# ASSISTER on 48.98% of rows (evidence:
+# `docs/tests/shooter_key_audit_2026-09-10.md`). These two tests pin the fix so
+# a later refactor cannot silently revert it, and pin the two properties that
+# make the fix SAFE for the sub-models that legitimately read
+# `participant_1_id`: the override touches FGA rows only, and it never falls
+# back to `participant_1_id` on a row with no shooter id.
+from cbb_sim.models import event_stream as ES  # noqa: E402
+
+
+def _shooter_key_plays(tmp_path: Path) -> tuple[Path, pd.DataFrame]:
+    """Four rows whose two id columns DISAGREE, one per event family."""
+    season = 2024
+
+    def row(idx, play_type, made, shot_range, p1, shooter, shooting=True):
+        return {
+            "gameId": 1, "season": season, "id": idx, "playType": play_type,
+            "isHomeTeam": True, "teamId": 1, "opponentId": 2,
+            "homeScore": 0, "awayScore": 0, "period": 1,
+            "secondsRemaining": 1200 - idx, "scoringPlay": bool(made),
+            "shootingPlay": shooting, "scoreValue": 0, "shot_made": made,
+            "shot_range": shot_range, "playText": "",
+            "shot_shooter_id": shooter, "shot_location_x": np.nan,
+            "shot_location_y": np.nan, "participant_1_id": p1,
+            **{f"home_on_{k}": float(k) for k in range(1, 6)},
+            **{f"away_on_{k}": float(10 + k) for k in range(1, 6)},
+        }
+
+    rows = [
+        # assisted make: p1 is the ASSISTER (9), the shooter is 3
+        row(1, "JumpShot", True, "three_pointer", 9.0, 3.0),
+        # a made field goal with NO shooter id at all -> must stay missing
+        row(2, "LayUpShot", True, "rim", 4.0, np.nan),
+        # a free throw: p1 is correct and must be left alone
+        row(3, "MadeFreeThrow", True, "free_throw", 5.0, 99.0),
+        # a defensive rebound: no shooter column exists on this family at all
+        row(4, "Defensive Rebound", None, None, 6.0, np.nan, shooting=False),
+    ]
+    d = tmp_path / "pbp"
+    d.mkdir(exist_ok=True)
+    pd.DataFrame(rows)[list(ES.STREAM_COLUMNS)].to_parquet(
+        d / f"plays_{season}.parquet", index=False)
+    universe = pd.DataFrame({
+        "game_id": [1001], "cbbd_game_id": [1], "season": [season],
+        "game_date": pd.to_datetime(["2024-01-01"]), "neutral_site": [False],
+        "home_team_id": [100], "away_team_id": [200],
+        "is_d1_game": [True], "pbp_truncated": [False]})
+    return d, universe
+
+
+def test_g_shooter_key_replaces_only_the_field_goal_shooter(tmp_path):
+    d, universe = _shooter_key_plays(tmp_path)
+    old = ES.build_stream(2024, universe, pbp_dir=d)
+    new = ES.build_stream(2024, universe, pbp_dir=d, shooter_key="shot_shooter_id")
+    by_cls_old = dict(zip(old["cls"], old["player_id"], strict=False))
+    by_cls_new = dict(zip(new["cls"], new["player_id"], strict=False))
+    print(f"\n(g) old {by_cls_old}\n    new {by_cls_new}")
+
+    # the default is unchanged, byte for byte -- free_throw / rebound / rotation
+    assert by_cls_old["FGA_3"] == 9.0            # the assister, the round-1 bug
+    # the fix takes the shooter off the dedicated column ...
+    assert by_cls_new["FGA_3"] == 3.0
+    # ... never falls back to participant_1_id when the column is empty ...
+    assert not np.isfinite(by_cls_new["FGA_rim"])
+    assert by_cls_old["FGA_rim"] == 4.0
+    # ... and leaves every non-field-goal family exactly as it was.
+    assert by_cls_new["FT_made"] == by_cls_old["FT_made"] == 5.0
+    assert by_cls_new["DREB"] == by_cls_old["DREB"] == 6.0
+    assert new.attrs["n_fga_relabelled"] == 1
+    assert new.attrs["n_fga_no_shooter"] == 1
+    with pytest.raises(ValueError):
+        ES.build_stream(2024, universe, pbp_dir=d, shooter_key="participant_2_id")
+
+
+def test_g_usage_defaults_to_the_fixed_key_and_drops_shooterless_rows(tmp_path):
+    """`build_usage_events` defaults to the FIXED column, and a field-goal row
+    with no shooter id is reported then filtered -- never imputed."""
+    d, universe = _shooter_key_plays(tmp_path)
+    ev = U.build_usage_events(2024, universe, pbp_dir=d)
+    assert ev.attrs["shooter_key"] == "shot_shooter_id"
+    three = ev[ev["event_class"] == "FGA_3"]
+    assert float(three["player_id"].iloc[0]) == 3.0
+    rim = ev[ev["event_class"] == "FGA_rim"]
+    assert not np.isfinite(float(rim["player_id"].iloc[0]))
+    assert not bool(rim["in_five"].iloc[0])          # dropped by usable_events
+    cov = U.coverage_report(ev)
+    assert cov["FGA_rim"]["player_id_present_pct"] == 0.0
+    drop = U.shooter_drop_report(ev, min_rows=1)
+    print(f"\n(g) drop report {drop['by_class']}")
+    assert drop["by_class"]["FGA_rim"]["dropped_no_player_id"] == 1
+    assert drop["by_class"]["FGA_3"]["dropped_no_player_id"] == 0
+    # the round-1 label is still reachable, so the two rounds can be diffed
+    old = U.build_usage_events(2024, universe, pbp_dir=d,
+                               shooter_key="participant_1_id")
+    assert float(old[old["event_class"] == "FGA_3"]["player_id"].iloc[0]) == 9.0

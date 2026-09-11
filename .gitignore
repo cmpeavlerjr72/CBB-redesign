@@ -75,3 +75,5 @@ data/processed/models/*/round*/
 data/processed/models/*/*_s1/
 !data/processed/models/possession_outcome/round2/
 !data/processed/models/clock/v3b_s1/
+data/processed/models/usage_v2/
+data/processed/models/usage_s1/
