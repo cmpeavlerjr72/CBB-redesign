@@ -171,49 +171,70 @@ def load_lines(season: int, lines_dir: Path | str = DEFAULT_LINES_DIR,
 # ---------------------------------------------------------------------------
 # G3/G4/G8 truth tables (`scripts/build_truth_tables.py`, PROVISIONAL 2026-09-10)
 # ---------------------------------------------------------------------------
-def load_team_shot_truth(season: int, truth_dir: Path | str = DEFAULT_TRUTH_DIR) -> pd.DataFrame | None:
+def load_team_shot_truth(season: int, truth_dir: Path | str = DEFAULT_TRUTH_DIR,
+                          version: str = "v2") -> pd.DataFrame | None:
     """One row per (game_id, team_id) for `season`: event-layer (CBBD
     possessions_v2) FGA/FGM by shot class + FTA/FTM, alongside hoopR
     `team_box`'s FGA/FGM/FG3A/FG3M/FTA/FTM as the second source, plus a diff
-    and `any_disagreement` flag per stat -- `team_game_shots_v1.parquet`
-    (`scripts/build_truth_tables.py`, `docs/tests/truth_tables_v1_2026-09-10.md`).
+    and `any_disagreement` flag per stat -- `team_game_shots_{version}.parquet`
+    (`scripts/build_truth_tables.py` / `scripts/build_truth_tables_v2.py`,
+    `docs/tests/truth_tables_v1_2026-09-10.md`,
+    `docs/tests/truth_tables_v2_2026-09-10.md`).
 
-    Returns None (not an error) when the truth directory or the file inside
-    it does not exist, so a caller with no truth built yet degrades to its
-    pre-truth-table behaviour instead of crashing.
+    Defaults to v2, which is a strict superset of v1's columns: it adds
+    event-layer `fta_tech`/`ftm_tech` (technical free throws, identified the
+    same way `cbb_sim.pbp.possessions._handle_technical` does) and
+    tech-adjusted reconciliation/points-identity columns; every v1 column
+    keeps its name, dtype and values. Pass `version="v1"` for the frozen
+    original. Returns None (not an error) when the truth directory or the
+    file inside it does not exist, so a caller with no truth built yet
+    degrades to its pre-truth-table behaviour instead of crashing.
     """
-    path = Path(truth_dir) / "team_game_shots_v1.parquet"
+    path = Path(truth_dir) / f"team_game_shots_{version}.parquet"
     if not path.exists():
         return None
     df = pd.read_parquet(path)
     return df[df["season"] == int(season)].reset_index(drop=True)
 
 
-def load_player_game_truth(season: int, truth_dir: Path | str = DEFAULT_TRUTH_DIR) -> pd.DataFrame | None:
+def load_player_game_truth(season: int, truth_dir: Path | str = DEFAULT_TRUTH_DIR,
+                            version: str = "v2") -> pd.DataFrame | None:
     """One row per (game_id, athlete_id) for `season`: hoopR `player_box`
     (minutes, box counts) keyed on the ESPN athlete id, joined to the CBBD
     player id via the crosswalk (`src/cbb_sim/data/player_ids.py`; CBBD
     rosters exist for 2024-2026 only, so `cbbd_player_id` and the event-layer
     `ev_*` columns are null for 2022-2023 by construction), plus event-layer
     FGA/FGM by class keyed on `shot_shooter_id` (never `participant_1_id`).
-    `player_game_v1.parquet` (`scripts/build_truth_tables.py`).
+    `player_game_{version}.parquet` (`scripts/build_truth_tables.py` /
+    `scripts/build_truth_tables_v2.py`).
 
+    Defaults to v2, which adds per-player technical `fta_tech`/`ftm_tech`
+    (null, not zero, for 2022-2023 where there is no crosswalk at all) on top
+    of every v1 column, unchanged. Pass `version="v1"` for the original.
     Returns None when the truth directory/file does not exist.
     """
-    path = Path(truth_dir) / "player_game_v1.parquet"
+    path = Path(truth_dir) / f"player_game_{version}.parquet"
     if not path.exists():
         return None
     df = pd.read_parquet(path)
     return df[df["season"] == int(season)].reset_index(drop=True)
 
 
-def load_game_finals_truth(season: int, truth_dir: Path | str = DEFAULT_TRUTH_DIR) -> pd.DataFrame | None:
+def load_game_finals_truth(season: int, truth_dir: Path | str = DEFAULT_TRUTH_DIR,
+                            version: str = "v2") -> pd.DataFrame | None:
     """One row per game_id for `season`: hoopR-schedule final score / OT count
     / per-period scores alongside CBBD `games` as the second source.
-    `game_finals_v1.parquet` (`scripts/build_truth_tables.py`). Returns None
-    when the truth directory/file does not exist.
+    `game_finals_{version}.parquet` (`scripts/build_truth_tables.py` /
+    `scripts/build_truth_tables_v2.py`).
+
+    Defaults to v2, which applies the four 2025 third-source resolutions
+    (`data/processed/truth/diag_finals_resolution_2025.json`) to `home_score`/
+    `away_score` and adds `finals_source` / `finals_third_source_checked` /
+    `finals_resolution_note`; every other row is byte-identical to v1. Pass
+    `version="v1"` for the original, unresolved table. Returns None when the
+    truth directory/file does not exist.
     """
-    path = Path(truth_dir) / "game_finals_v1.parquet"
+    path = Path(truth_dir) / f"game_finals_{version}.parquet"
     if not path.exists():
         return None
     df = pd.read_parquet(path)
