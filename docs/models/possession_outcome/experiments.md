@@ -287,3 +287,209 @@ any place the code could have been read two ways is settled in writing rather th
   grid with no floor cannot say how much of the log loss is matchup information at all.
 
 <!-- ROUND 2 RESULTS APPENDED BELOW BY scripts/train_possession_outcome_v2.py -->
+
+---
+
+## 6. Round 3 pre-registration: refit alignment and opponent adjustment (Decision 9) -- 2026-09-10, written and COMMITTED before any round-3 modelling
+
+Authority: `ARCHITECTURE_DECISIONS.md` Decision 9, **as amended 2026-09-10 (commit `40dbcbd`)**:
+opponent adjustment and conference alignment are mandatory bake-off **ARMS, PENDING EVIDENCE**,
+not standing rules. The reference arms are round 2's own choices -- raw-centred style rates and
+the calendar-monthly S1 -- they stand unless a round-3 arm beats them beyond the noise floor, and
+a tie or a loss for the adjusted or aligned arms is a legitimate result to report, not a failure
+to fix.
+
+Motivating diagnostic, run first and written up before this section:
+`docs/tests/possession_outcome_conference_regime_2026-09-10.md`. It re-scored the round-2 S1
+winners on fold 2 through round 2's own code path (log loss reproduced to 1e-6: 1.515428 `first`,
+1.499760 `cont`) and bucketed their calibration residuals five ways. Three findings shape the
+design below, and none of them decides an arm: calendar week explains MORE residual structure than
+either conference-relative alignment; weeks-since-the-monthly-refit explains essentially nothing;
+and the round-2 winner's 0.98 pp headline gap is 2.49 pp on non-conference games and 2.95 pp
+before each team's conference boundary against a 2.0 pp gate, while conference games sit at
+0.98 pp.
+
+Held fixed from round 2 and not reopened: the model class per population (`lgbm` on `first`,
+`cascade` on `cont`), the event layer (possessions v2, rim override, first-chance style sources),
+the universe (`pbp_complete`), the folds, the seal, and the scoring function -- `score()` is
+imported from `train_possession_outcome_v1` and called, as round 2 imported it, so all three
+rounds go through one scorer.
+
+### 6.1 The two dimensions
+
+**Scheme (refit alignment).** Every arm keeps round 2's S1 contract exactly: each refit uses games
+STRICTLY BEFORE its own date (all prior seasons plus the test season to date), and each test game
+is scored by the most recent refit at or before its own date, so no game is ever in its own fit.
+Only the CALENDAR changes.
+
+| arm | refit calendar | refits per test season | complexity rank |
+|---|---|---|---|
+| `S1_monthly` | first day of every calendar month containing a test-season game. Round 2's S1, **the reference**; it must reproduce round 2's recorded numbers as a check | 6 | 0 |
+| `S1_conf_aligned` | the monthly dates UNION every distinct date on which at least one team plays its first regular-season conference game | ~29 | 1 |
+| `S1_weekly` | every Monday, from the Monday on or before the first test-season game | ~23 | 2 |
+| `S1_conf_aligned_weekly` | the weekly dates UNION the conference-boundary dates | ~40 | 3 |
+
+Per-team alignment costs nothing extra: the trainer refits once per distinct boundary date, and
+the "latest refit at or before the game date" rule then gives every team a fit that already knows
+about its own conference start. The boundary dates come from the PUBLISHED SCHEDULE
+(`home_conference_id == away_conference_id`, both non-null, regular season only), which is known
+before the season is played and contains no result, so using them to choose a refit calendar is
+not a leak. Definitions and standing tests: `cbb_sim.features.conference`,
+`tests/test_opponent_adjust.py`.
+
+**Feature.** `own_ratings` (`off_c` / `def_c`) is **ALREADY opponent-adjusted** -- a ridge on
+offence dummies AND defence dummies fitted jointly on the same as-of window is a regularised
+simultaneous adjustment (`src/cbb_sim/ratings/own_ratings.py`) -- so it is carried unchanged in
+every arm and is NOT re-adjusted; doing so would double-count. The STYLE RATES are what these arms
+change.
+
+| arm | features | complexity rank |
+|---|---|---|
+| `F0` | round 2's `C_plus_state`, character for character. **The reference** | 0 |
+| `F1` | F0 + `is_conf_game` (first-class, audited like home/away; Decision 9b) | 1 |
+| `F2` | F1 with every style rate REPLACED by its one-pass opponent-adjusted sibling | 2 |
+| `F3` | F1 with every style rate REPLACED by the alternating-least-squares adjusted sibling | 3 |
+
+Replaced, not appended: the adjusted column is the same quantity measured differently, and
+carrying both would let a tree reconstruct the raw one and turn a feature-bundle comparison into a
+superset comparison.
+
+**How the as-of window and the league mean are formed, per arm.** Identically to round 2, because
+F2 and F3 are built by SUBTRACTING a correction from round 2's own column rather than by
+recomputing it -- so the own-rate component is bit-identical across F0-F3 and the arms differ by
+the correction and by nothing else. For a rate with numerator n and denominator d:
+
+* own-rate component: `scale * N_i(<t)/D_i(<t) - scale * N_league(<t)/D_league(<t)`, cumulative
+  sums over games strictly before the team's own game (round 2's `_expanding_asof`) minus the
+  league's cumulative rate on the same window. Unchanged.
+* F2's correction: `[rownorm(M(t)) @ def_dev(t)]_i`, where `M(t)` is the denominator mass team i
+  produced against team j strictly before date t and `def_dev(t)` is every team's allowed
+  deviation on the same strictly-before window. This is the pre-registered "team rate minus the
+  mean deviation of its opponents' allowed rates from league".
+* F3: the same two equations solved to convergence -- alternating least squares on
+  `min sum_g d_g (r_g - o_i - a_j)^2` over the team-games strictly before t, weighted by each
+  game's denominator, GAUSS-SEIDEL sweeps (Jacobi diverges on the sparse November schedule graph
+  and was rejected by test), re-centred within each connected component of the schedule graph
+  after every sweep in a way that preserves the fit, capped at 200 iterations with tolerance 1e-6.
+  Dates that hit the cap are counted and reported. Seasons are adjusted independently.
+* no shrinkage, no caps, no minimum-games rule on either adjusted arm. A team with no prior games
+  gets a correction of exactly 0.0, which on a league-centred scale is the league mean.
+
+Implementation and unit tests: `src/cbb_sim/features/opponent_adjust.py`,
+`tests/test_opponent_adjust.py` (including
+`test_strictly_as_of_appending_future_games_changes_nothing`).
+
+### 6.2 Folds, populations, metrics
+
+Folds unchanged: F1 trains 2022 and 2023 and tests 2024; F2 trains 2022, 2023 and 2024 and tests
+2025 and is the SELECTION fold. 2026 stays sealed. Populations `first` and `cont` fitted and
+scored separately.
+
+Metrics are round 2's, through the same imported `score()`: multiclass log loss (primary),
+per-class Brier, the worst gated decile calibration gap (classes with share at least 5%, gate
+2.0 pp) split into level and shape, the step-monotonicity responsiveness reading, and by-state
+calibration. Round 3 adds, for every cell:
+
+1. **Per-decile calibration gap on the regime segments**: the first four weeks of conference play
+   by the offence team's own boundary (`conf4_gap_pp`) -- the segment Decision 9 predicted -- AND
+   the non-conference segment (`nonconf_gap_pp`) -- the segment Stage A found the damage in. Both
+   are DECISION quantities. `first4_season_gap_pp`, `conf_weeks_4plus` and `pre_boundary` are
+   reported as evidence.
+2. **Responsiveness by own-rating quintile** (round 2's drivers) AND **by non-conference schedule
+   strength quintile** -- the mean net as-of quality of the opponents a team met in its
+   non-conference games. The second is the direct test of Decision 9's claim. Both are read under
+   **Decision 8**: slope ratio in [0.8, 1.2] AND monotone in at least 3 of 4 steps, with a driver
+   whose realised quintile span is below 2 pp exempt from BOTH clauses and recorded as exempt. The
+   frozen `score()` implements only Decision 8's step clause; the slope clause is computed and
+   reported separately rather than by editing a scoring function two rounds of results already
+   went through.
+3. Per class, per fold, per cell throughout.
+
+### 6.3 The design is STAGED, and the stage order IS the drop order
+
+A full 4 x 4 x 2-fold cross is not affordable on the tree arm. Four workers share this machine, so
+this run is capped at four threads, and the alignment arms multiply FITS, not rows. Measured on
+2026-09-10 while reproducing the round-2 winner: **264 s per tree fit** on the fold-2 `first`
+training slice (1,585 s for 6 refits). So a tree FEATURE cell costs about 26 min, a tree ALIGNMENT
+cell about 2 h, and the full tree cross about 30 h. The design is therefore staged, with a hard
+wall clock of **6.5 h** checked before each tree cell (a cell that starts, finishes), and
+**anything the clock does not reach is written to the results as NOT RUN and never as a result.**
+
+| stage | cells | projected cumulative |
+|---|---|---|
+| 1 | the FULL 4 x 4 cross for `cascade`: `cont` on BOTH folds (this IS the `cont` selection grid) and `first` on fold 2 as an INTERACTION PROBE, reported in full and explicitly not the selection metric -- the only affordable way to see the whole scheme-by-feature interaction surface on that population | ~0.8 h |
+| 2 | tree reference `F0 x S1_monthly`, fold 2 | ~1.2 h |
+| 3 | tree reference `F0 x S1_monthly`, fold 1 (per-fold evidence) | ~1.5 h |
+| 4 | noise floor: the reference cell under a second seed, both populations | ~1.9 h |
+| 5-7 | tree FEATURE ladder at `S1_monthly`, fold 2: `F1`, then `F2`, then `F3` (Decision 9a and 9b) | ~3.2 h |
+| 8 | tree `F0 x S1_conf_aligned`, fold 2 (Decision 9c) | ~5.4 h |
+| 9 | tree `F0 x S1_weekly`, fold 2 | ~7.1 h |
+| 10 | tree interaction cell of the two ladder winners, fold 2, if they moved off the reference | -- |
+| 11 | tree `F0 x S1_conf_aligned_weekly`, fold 2 | -- |
+
+The instructed drop order -- `S1_conf_aligned_weekly` first, `F3` second -- is implemented by
+construction: the budget drops from the bottom of this order upward. On the measured cost the run
+is expected to reach stage 9 and to leave stages 10 and 11 NOT RUN, which overshoots the ~6 h
+guidance by about an hour; that is recorded here in advance rather than discovered afterwards. The
+alternative, keeping strictly under 6 h, would have cost both tree alignment arms, which are the
+whole of Decision 9c.
+
+Stage 1 runs the cheap arm first deliberately. Stage A found `weeks_since_refit` to be the
+flattest axis it measured, so the alignment dimension is the LEAST likely of the three to pay; the
+order buys the reference, both folds, the noise floor and the entire opponent-adjustment ladder
+inside 3.2 h and lets the alignment arms run against the clock rather than the other way round.
+
+### 6.4 Noise floor
+
+The reference cell `F0 x S1_monthly` is refit under a SECOND SEED on fold 2 for each population,
+spec-identical including the whole refit calendar (a seed-varied refit of an S1 arm has to redo
+every refit or it measures a different spec). The applied floor is the larger of that seed spread
+and a 200-replicate GAME-BLOCK bootstrap SE of the reference cell's fold-2 log loss. This is
+PARTIAL against round 1's five seeds and is labelled so; the run is wall-clock bound and a third
+seed costs another 26 min of tree time that stage 8 needs. A SEGMENT gap improvement must exceed
+**0.25 pp** to count; the second-seed refit reports its own `conf4` and `nonconf` gaps so that
+number can be checked against a measured spread rather than asserted.
+
+### 6.5 Decision rule
+
+Within each dimension **the simplest arm stands** (`S1_monthly` < `S1_conf_aligned` <
+`S1_weekly` < `S1_conf_aligned_weekly` by fitted-object count; `F0` < `F1` < `F2` < `F3`) **unless
+a more complex arm, while passing round 1's calibration and responsiveness gates, beats it beyond
+the noise floor on the primary metric (fold-2 log loss) OR by more than 0.25 pp on the
+first-four-conference-weeks gap OR by more than 0.25 pp on the non-conference gap.** Where several
+arms beat the reference, the simplest whose log loss is within the floor of the best beater's
+wins, exactly as round 2's scheme tie-break worked. The full cross is reported so interactions are
+visible, with the tree cross's unmeasured cells named as unmeasured.
+
+**If nothing beats the reference, the reference stands and opponent adjustment and conference
+alignment remain PENDING EVIDENCE for this sub-model. That outcome is a result and is reported as
+one.**
+
+An adopted winner is a SCHEDULE, not an object (L21): the trainer writes `round3/manifest.json`
+mapping `refit_date` to artifact path per population, which is the format the engine's per-game
+selector reads.
+
+### 6.6 Leak test
+
+Every column round 3 adds -- `is_conf_game` and all eight adjusted style columns per method --
+goes through the standing INV-45 change-form leak test (`cbb_sim.analysis.leak_test`,
+absolute as-joined correlation with own-game margin at most 0.15) BEFORE it is read as a result,
+and round 2's raw-centred columns go through the same run so the adjusted numbers are read against
+columns already accepted. The numbers are reported in the results section.
+
+### 6.7 Artifacts
+
+Trainer: `scripts/train_possession_outcome_v3.py` (v1 and v2 untouched). Artifacts:
+`data/processed/models/possession_outcome/round3/`. Shared feature code:
+`src/cbb_sim/features/conference.py` and `src/cbb_sim/features/opponent_adjust.py` with
+`tests/test_opponent_adjust.py` -- in the package rather than in the trainer because every other
+sub-model's S1 confirmation pass will consume it. Stage-A diagnostic:
+`scripts/diag_possession_outcome_conf_regime.py`.
+
+Note for the record: round 2's RESULTS were never appended to this file -- section 5 is missing,
+though `model.md` and L21 both cite it. Round 3 takes section 6 for its pre-registration and
+section 7 for its results, leaving section 5 free for the PM to fill from
+`data/processed/models/possession_outcome/round2/`, which holds the full grid, verdict and noise
+floor.
+
+<!-- ROUND 3 RESULTS APPENDED BELOW BY scripts/train_possession_outcome_v3.py -->
