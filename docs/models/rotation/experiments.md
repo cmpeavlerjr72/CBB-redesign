@@ -3347,3 +3347,314 @@ detects whether the new entry rule opens a NEW channel. It does not.
    seed-to-seed and refit-to-refit DIFFERENCES are readable, never the level.
 
 ---
+
+## 16. Round 7 pre-registration -- the EXIT side, `P(k_out | size, state)` (PM-directed, worker-authored 2026-09-11)
+
+Written and committed BEFORE any round-7 object was fitted and before any arm
+was run. Evidence it is built on: round 6's own results (section 15),
+`docs/tests/rotation_composition_audit_2026-09-11.md` sections 2 and 4, and L33.
+
+### 16.1 Why round 7 changes the EXIT RULE and nothing else
+
+Round 6 moved the entry side and measured, on its own mechanism check, where the
+error now lives (audit 4, 200 games, seed 0, the same as-of predicted starter set
+on both sides so the rows are like for like):
+
+| | P(starter in \| bench out) | P(starter in \| starter out) | spread | **share of single swaps that take a STARTER off** |
+|---|---:|---:|---:|---:|
+| **ACTUAL (as-of starters)** | 0.6848 | 0.3446 | 34.0 pp | **0.587** |
+| W4 (round 5, unconditional race) | 0.5415 | 0.3373 | 20.4 pp | 0.464 |
+| A1 (tier affinity) | 0.5683 | 0.3117 | 25.7 pp | 0.467 |
+| K1 (conditional class count) | 0.6344 | 0.2026 | 43.2 pp | 0.456 |
+
+**Every arm since round 5 removes a starter on 0.456-0.467 of single swaps
+against a real 0.587**, a 12-13 pp miss, because rounds 5 and 6 both
+pre-registered round 5's RANK exit rule. K1 conditions correctly on a class that
+arrives with the wrong frequency: it sets the best per-player minutes MAE of any
+arm in six rounds (8.8622, +63 floors over R2, +4.1 over W4) and the best
+per-player minutes K-S D ever measured (0.0589), and it moves **no** state cell
+(15.3, 15.12 item 3).
+
+Round 7 therefore keeps
+
+* round 5's **wave tables byte for byte** (`p_wave`, `p_size`, per S1 window),
+* round 4's **hazards byte for byte** (`rotation_v4_sub_*.json`),
+* round 3b's **base fits byte for byte**,
+* round 6's **K1 entry rule byte for byte** (`P(k_in | size, k_out)` from
+  `round6/rotation_v6_comp_*.json`, re-read, never re-fitted, never written to),
+* the **hard second-half reset**,
+
+and changes **only how the `size` leavers are chosen off the floor**.
+Consequence, stated so it cannot be read as a coincidence later: any difference
+between a round-7 arm and K1 is a difference in the **exit composition alone**.
+
+### 16.2 The exit state, declared before it is fitted
+
+The exit state is a **coarsening of round 5's wave cell with `prev_end`
+dropped**: `exit_cell = (time_cell * 3 + margin_bucket) * 2 + foul_state`, 18
+cells, with round 5's own `time_cell` (H1 / H2 20:00-08:00 / final 8:00),
+`margin_bucket` (\|m\| <= 5 / 6-15 / > 15) and `foul_state` (1 when any player on
+the floor carries >= 4 personal fouls). `prev_end` is dropped because the wave
+DRAW already carries it and the exit CLASS has no measured dependence on it;
+this is declared here, not after a fit.
+
+Those 18 cells contain the eight round-6 gate contexts **plus the one new
+measured cell round 6 named** (15.12 item 6, audit 2): the final eight minutes of
+a decided game, `time_cell = 2, margin_bucket = 2`, where
+P(a starter enters \| a bench player leaves) is **0.5286** (2025: 0.5024) against
+0.72-0.84 in the other eight cells. The size of that cell is measured, not
+guessed, and it is the reason the exit object carries a state term at all.
+
+### 16.3 The three candidate exit rules
+
+Baseline (K1's, and round 5's): the `size` leavers are the `size` on-floor
+players with the largest fitted `p_out`, a rank rule at zero temperature, with a
+foul-out override.
+
+**X1 `exit_class` -- the exit CLASS COUNT, K1's mirror.**
+`P(k_out | size, exit_cell)` is fitted as counts over the training window's own
+waves, with **one-level shrinkage to `P(k_out | size)` at the project's
+`k = 300`**, exactly as K1's table shrinks. At simulation time `k_out` is drawn
+FIRST from the fitted row (clipped to what the floor can supply: at most `size`,
+at most the number of on-floor starters, at least `size` minus the number of
+on-floor non-starters), then the `k_out` starters and `size - k_out`
+non-starters are chosen **by the SAME rank rule within their own class**, so the
+within-class ordering is round 5's unchanged. `k_in` is then drawn from K1's
+table conditioned on the realised `k_out`, byte-identical to round 6. Nothing
+else changes. Foul-outs are forced out first and count toward `k_out`.
+
+**X2 `exit_class_foul` -- the exit class conditioned on WHO is in foul trouble.**
+Round 6 found foul trouble to be the one veto cell whose failure is the model's
+own (15.10: the as-of-starter benchmark sits +0.2 pp from the actual there,
+while the arms sit -3.2 to -4.2 pp). X2 replaces the binary `foul_state` axis of
+16.2 with a three-level **foul class of the on-floor five**:
+`0` = no on-floor player at >= 4 personal fouls, `1` = at least one at >= 4 but
+none of them a predicted starter, `2` = at least one predicted STARTER at >= 4.
+The table is `P(k_out | size, time_cell, margin_bucket, foul_class)` with
+one-level shrinkage **to X1's own row** at `k = 300`, so a foul class with no
+signal is X1 exactly. This is the identity of the departing player conditioned on
+the foul state carried by his class, which is what 15.12 item 5 names.
+
+**X3 `exit_class_prev` -- the exit count conditioned on the PREVIOUS wave.**
+A joint over consecutive waves: `P(k_out | size, exit_cell, prev_class)` with
+`prev_class` = `0` when this half has had no previous wave, `1` when the previous
+wave of this half brought **0** predicted starters on, `2` when it brought **>= 1**
+on, shrunk **to X1's own row** at `k = 300`. This is the mean-reversion channel a
+rank rule cannot express (a starter who just came back on is not the man the rank
+rule takes off next). **Conditional on support**: the fitted counts per
+(size, exit_cell, prev_class) cell are reported in the results table and every
+cell with n < 300 is labelled UNDERPOWERED and shrinks to X1 by construction. If
+the whole `prev_class` axis is underpowered at size 1 the arm is reported as
+unidentified and is not adopted on that ground.
+
+All three are lookup tables (X1 (5, 18, 6), X2 (5, 9, 3, 6), X3 (5, 18, 3, 6));
+none makes a model call in the sim loop, and each carries exactly the state terms
+declared above and no others (16.10).
+
+### 16.4 Arms
+
+| arm | exit rule | new fitted object | simplicity | status |
+|---|---|---|---:|---|
+| `R2_hier_dirichlet` (S1) | -- | -- | 1 | reference (incumbent, SERVED) |
+| `K1_cond_class` (S1) | rank | -- | 9 | reference (round 6's best arm; NOT served, NOT adoptable here) |
+| `X1_exit_class` | class count drawn, then rank within class | (5, 18, 6) table | 11 | candidate |
+| `X2_exit_class_foul` | X1 with a 3-level foul class | (5, 9, 3, 6) table | 12 | candidate |
+| `X3_exit_class_prev` | X1 with the previous wave's entry class | (5, 18, 3, 6) table | 13 | candidate |
+
+The simplicity order `R2 < K1 < X1 < X2 < X3` is fixed here. **K1 and R2 are
+references and K1 is not adoptable in round 7** -- it is unchanged from round 6,
+where it failed four state cells and the per-player-quintile condition.
+
+### 16.5 Scheme, folds, and what is refitted
+
+**Scheme: S1 for every arm**, per rounds 3b, 4, 5 and 6. Windows are the calendar
+months of the 2024-25 season, a game uses the parameter set whose window closed
+before its tipoff, and the first window trains on 2024 alone. No static column is
+run, as in round 6.
+
+**Folds.** F1 = train 2024, test 2025, which IS the standing fold 2; CBBD carries
+no on-floor data before 2023-24 (L13), so no other fold exists. 2026 stays sealed
+(`seal.assert_not_sealed` guards the trainer).
+
+**What round 7 fits: the three exit objects, per window, and nothing else.**
+`rotation_fit_v3*.json`, `rotation_v4_sub_*.json`, `round5/rotation_v5_wave_*.json`
+and `round6/rotation_v6_comp_*.json` are REUSED and nothing is written to any of
+them. The round-7 objects are fitted on the **same rows** as round 6's -- the
+same `--wave-team-games 6000` per window, the same fit seed 11 -- so the exit and
+entry tables cannot drift apart.
+
+**The two reference columns (R2, K1) are taken from the round-6 results JSON**
+(`rotation_F1_round6_results.json`), not re-simulated: same 1,600-game universe,
+same subset seed 2025, same sim seeds 0-2, same base fits, hazards, wave tables
+and grading functions. A **1-seed re-run of K1 is executed inside this round as a
+reproduction check** and its cells are reported next to round 6's; **if any state
+cell moves by more than its floor-A SD the reference columns are discarded and
+the round is re-run in full.** Declared in advance, as 14.4 declared it for W4.
+
+### 16.6 Test universe and grading path
+
+The **same** 1,600-game subset of 2025 that rounds 2, 3, 3b, 4, 5 and 6 used
+(numpy RandomState seed 2025), **3 seeds per candidate arm** under S1, **the
+round-6 grading path unchanged**: `train_rotation_v1.build_row` / `verdict` /
+`rotation.aggregate_stats`, extended by `train_rotation_v4.extra_cells` and
+`.minutes_mae` and by `train_rotation_v5.wave_cells`. No gate cell is added, so
+no grader line changes and the reference columns stay comparable byte for byte.
+Any cell with n < 300 player-games or possessions is labelled UNDERPOWERED and is
+never read as signal or as absence of signal.
+
+### 16.7 Gates -- every round-6 gate, unchanged, and nothing added or relaxed
+
+*G8 cells (report, not veto):* minutes mean +/- 2.0; minutes SD ratio pooled and
+within-player 0.9-1.1; top-5 and top-8 share of team minutes +/- 2 pp; players
+with > 0 minutes +/- 1.0.
+
+*The eight state cells (the veto), each +/- 3 pp:* starters' share of on-floor
+slots in the final 8:00 at \|m\| <= 5 / 6-15 / > 15; starters' share while
+carrying >= 4 fouls; the second-half TIP starter share in each of the three
+margin bands; starters' share over H1 20:00-10:00 at \|m\| <= 5. **An arm missing
+ANY of the eight is ineligible regardless of G8 or of MAE.**
+
+*The two round-5 cells (also veto), at the round-5/6 tolerances:*
+`sub_rate_per_boundary` +/- 0.015 or 3x the floor-A seed SD if larger;
+`distinct_lineups_per_game` +/- 1.5 or 3x the floor-A seed SD if larger. The
+governing number is named in the results table.
+
+*Report only:* the "at exactly 4 fouls" diagnostic; top-1 / top-3 / top-5
+five-man lineup share; K-S D of the top-1 lineup share and of per-player minutes;
+mean wave size; the as-of starter benchmark of 14.6 on all eight state cells.
+
+**One report-only diagnostic is ADDED and it is the one the round exists to
+move: the EXIT-SIDE STARTER SHARE.** The share of simulated swaps that take a
+predicted starter off the floor, **overall and by swap size (1, 2, 3+)**, plus
+the size-1 joint of audit 4, measured on ACTUAL and on every arm through one
+function on 200 games at seed 0 with the as-of predicted starter set on both
+sides. It changes no tolerance and no verdict; the actual side is 0.587 overall
+and every arm since round 5 sits at 0.456-0.467.
+
+### 16.8 Primary metric and the two responsiveness checks
+
+**Primary metric: per-player minutes MAE**, unchanged from rounds 4, 5 and 6.
+
+**Responsiveness check 1 (Decision 8), unchanged from 14.7:** team-games
+bucketed into quintiles of the pregame as-of share of team minutes going to the
+predicted starting five; the close-and-late cell per quintile for ACTUAL and
+every arm, with slope and Q5 - Q1. An arm whose slope ratio to actual falls
+outside **[0.8, 1.2]**, or whose sign disagrees, is not adoptable.
+
+**Responsiveness check 2, per-player minutes MAE by PLAYER quintile, carried
+forward from 14.7 and made STRICTLY HARDER.** Players in the as-of rotation set
+are bucketed into quintiles of their own pregame as-of minutes per game. An arm
+is adoptable only if it beats K1 beyond the floor in the pooled MAE **and loses
+beyond the floor in no single quintile to EITHER reference it is measured
+against -- K1 (this round's base) or W4 (round 6's base, whose Q2 column is the
+one every round-6 arm lost)**. Carrying W4 forward is deliberate: round 6 vetoed
+its own arms on that column and round 7 must not become adoptable by dropping
+it. Both columns are read from the round-6 results JSON. Underpowered quintiles
+are labelled.
+
+### 16.9 Noise floors and the decision rule
+
+**Floor A, seed-varied sim runs:** 20 seeds x 150 games per candidate arm, the SD
+of every G8 cell, every state cell, both round-5 cells and the MAE -- the rounds
+3/4/5/6 configuration, so five rounds' floors are comparable. R2's and K1's
+floors are rounds 4's and 6's and are unchanged by a run that does not refit them.
+
+**Floor B, spec-identical refit under a second seed:** the round-7 exit objects
+refitted from a different training-game sample (fit seed 101 vs 11) and simulated
+under a different sim seed (23 vs 7), graded on the same 150-game universe. Run
+on **X3**, the largest new object this round adds and the one most at risk of
+being unidentified, and additionally on the arm the decision rule selects if the
+wall clock allows. An arm counts as beating a reference on a cell only if its
+improvement exceeds the refit-to-refit spread on that cell.
+
+**Decision rule.** Adopt the **simplest** arm that
+
+1. passes **every** one of the eight state cells at +/- 3 pp, AND
+2. passes **both** round-5 cells at the tolerances of 16.7, AND
+3. beats `R2_hier_dirichlet` on per-player minutes MAE by more than the floor, AND
+4. beats `K1_cond_class` on per-player minutes MAE by more than the floor and
+   loses beyond the floor to neither K1 nor W4 in any player quintile (16.8), AND
+5. satisfies the Decision 8 slope check, AND
+6. passes the Decision 10 checks of 16.10.
+
+Ties go to the simpler model in the order `R2 < K1 < X1 < X2 < X3`. An arm whose
+improvement on the cell it was built to fix does not clear floor B is not adopted
+on that cell. **If no arm is eligible, adopt nothing**, report which cell fails
+and by how much, name the diagnosis, and name the next structure. No gate is
+relaxed to produce a winner and no cell is dropped after seeing a result.
+**The served default is not changed by this lane in any case**; the PM switches
+it.
+
+### 16.10 Decision 10: the closed loop
+
+**What round 7 adds carries a state term BY DESIGN**, which is the difference
+from round 6 and the reason the freeze is the right instrument: `P(k_out | size,
+exit_cell)` contains a margin band, a time cell and a foul state. L31's
+refit-without-the-feature instrument was run on the objects the state already
+reached through in round 5 (13.12: W4 live/refit-without margin SD ratio 0.9941,
+possessions -0.136) and that number is the size of THAT channel; what round 7
+runs is the **freeze**, which is the instrument that detects whether the round-7
+exit rule opens a NEW channel from the game state into the rotation.
+
+Paired-stream runs over the fixed **500-game subset** of the F2 2025 slate
+(sorted by `game_id` ascending, every 11th row, the first 500 -- the subset the
+clock round-3c and the rotation round-4, 5 and 6 checks use), with
+`ENGINE_EVENT=round2_s1`, `ENGINE_FG_MAKE=round3_shooter_S_C_s1`,
+`ENGINE_CLOCK=reference` pinned and recorded in every `run_meta.json`, reporting
+margin SD ratio, home/away score correlation, possessions per game and per-player
+minutes MAE:
+
+| run | what it is |
+|---|---|
+| round-7 arm, live | the arm as it would be served |
+| round-7 arm, `ENGINE_ROTATION_FREEZE=1` | margin held at 0 and the personal/team-foul counts at 0 FOR THE ROTATION MODEL ONLY; foul accrual, the foul-out eviction and the box-score counters stay live |
+
+**Seed count, declared with its reason: 5 seeds**, the count rounds 4, 5 and 6
+ran, so four rounds are one comparison. A 25-seed repeat is run **only if the
+wall clock permits it**; the lane's hard stop is 12:45 ET, so it is pre-registered
+as conditional and its absence is reported, not hidden. The arm run is **the arm
+the decision rule selects**, or, if no arm is eligible, **the arm closest to
+eligibility**, stated to be a diagnostic and not a winner.
+
+An arm that moves margin SD ratio, home/away correlation or possessions outside
+the G1/G2 tolerances between live and frozen is not adopted, and no magnitude for
+the loop is quoted from the freeze alone (L31).
+
+### 16.11 Engine expressibility (a condition on adoption)
+
+Every rule is a vectorised array operation over the (2N, S) roster block:
+`k_out` is one gathered CDF row from the exit table and one extra uniform per
+(team, boundary); the within-class rank pick is two `argsort` calls on the
+existing `p_out` vector instead of one; X2 needs a (2N,) foul-class bincount over
+the on-floor five and X3 one (2N,) carried integer per half. All three ship
+behind **`ENGINE_ROTATION=round7`** plus **`ENGINE_ROTATION_ARM=X1|X2|X3`**,
+wired in `engine/rotation_adapter.py` with S1 artifacts per month and a manifest
+in the `engine/manifest.py` format under
+`data/processed/models/rotation/round7/`. `ENGINE_ROTATION=reference` remains the
+default and `engine/adapters.py` is **not touched by this lane**. The two stated
+RNG divergences of `docs/models/engine/model.md` section 4.5 apply unchanged.
+
+### 16.12 Disclosures
+
+1. **The three round-7 arms draw the same uniforms whether or not they use
+   them.** Each draws one `k_out` uniform per wave before the `k_in` uniform, so
+   the three arms sit at identical stream positions and are paired with each
+   other. The cost, stated: a round-7 arm is **NOT** byte-aligned with round 6's
+   K1, which is why K1's column comes from round 6's own JSON and is checked by
+   the 1-seed reproduction re-run of 16.5.
+2. `k = 300` is the project's UNDERPOWERED threshold, identical to rounds 5 and
+   6, fixed here before any fit and never tuned. The foul class boundary (>= 4
+   personal fouls) is round 5's own `foul_state` boundary, not a new constant.
+3. The exit state drops `prev_end` from round 5's wave cell (16.2), declared
+   before the fit.
+4. No static column is run; the 25-seed closed loop is conditional on the wall
+   clock (16.10).
+5. The exit-side starter-share diagnostic (16.7) is measured on 200 games at seed
+   0, the same configuration as audit 4, and is report-only.
+6. X3 is conditional on table support (16.3) and its cell counts are published
+   whether or not it is adopted.
+7. Round 6's per-player-quintile condition is carried forward against BOTH K1 and
+   W4 (16.8); this makes round 7 harder to pass than round 6, never easier.
+
+---
+
