@@ -726,7 +726,7 @@ class Adapters:
     @classmethod
     def load(cls, inp: EngineInputs, fold: str = "F2", season: int = 2025) -> Adapters:
         ev_mode = os.environ.get("ENGINE_EVENT", "reference")
-        ck_mode = os.environ.get("ENGINE_CLOCK", "v3c_srfloor_P3_s1")
+        ck_mode = os.environ.get("ENGINE_CLOCK", "reference")
         rot_mode = os.environ.get("ENGINE_ROTATION", "reference")
         fg3 = os.environ.get("ENGINE_FG3", "decision8")
         # DEFAULT, 2026-09-10 (PM decision recorded in L29 and the change
