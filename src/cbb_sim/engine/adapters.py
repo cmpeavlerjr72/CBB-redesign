@@ -672,7 +672,7 @@ class Adapters:
         ck_mode = os.environ.get("ENGINE_CLOCK", "reference")
         rot_mode = os.environ.get("ENGINE_ROTATION", "reference")
         fg3 = os.environ.get("ENGINE_FG3", "decision8")
-        fg_mode = os.environ.get("ENGINE_FG_MAKE", "winner")
+        fg_mode = os.environ.get("ENGINE_FG_MAKE", "round2b_S_C_s1")
         if rot_mode != "reference":
             raise NotImplementedError(
                 "the rotation bake-off adopted nothing; ENGINE_ROTATION=reference "
