@@ -493,3 +493,559 @@ section 7 for its results, leaving section 5 free for the PM to fill from
 floor.
 
 <!-- ROUND 3 RESULTS APPENDED BELOW BY scripts/train_possession_outcome_v3.py -->
+
+---
+
+## 7. Round 3 full results (run 2026-09-11 03:15, `scripts/train_possession_outcome_v3.py`)
+
+Wall clock 0.00 h against a pre-registered budget of 0.0 h, at 4 threads (four workers share the machine). Cells run: 55. Cells the budget did not reach: 3 -- listed in section 7.6 as NOT RUN, never as a result.
+
+Design: conference flag on 0.6234 of chances; 0 D-I games carry no hoopR conference id on one side and are flagged non-conference and counted; 0 chances matched no schedule row.
+
+### 7.1 The cross
+
+**`first` / F2**  (SELECTION)
+
+| stage | role | population | fold | arm | feature_arm | scheme | n_fits | log_loss | worst_gated_gap_pp | worst_gated_level_pp | worst_gated_shape_pp | conf4_gap_pp | nonconf_gap_pp | first4_season_gap_pp | calibration_pass | responsiveness_pass | ncss_slope_pass | fit_seconds |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| 1 | interaction probe (not selection) | first | F2 | cascade | F0 | S1_conf_aligned | 29 | 1.530448 | 2.075 | 0.698 | 2.027 | 2.164 | 2.145 | 3.247 | False | True | True | 139.7 |
+| 1 | interaction probe (not selection) | first | F2 | cascade | F0 | S1_conf_aligned_weekly | 45 | 1.530318 | 2.086 | 0.652 | 2.036 | 2.168 | 1.932 | 3.123 | False | True | True | 201.4 |
+| 1 | interaction probe (not selection) | first | F2 | cascade | F0 | S1_monthly | 6 | 1.530507 | 2.092 | 0.734 | 2.043 | 2.235 | 2.177 | 3.429 | False | True | True | 34.5 |
+| 1 | interaction probe (not selection) | first | F2 | cascade | F0 | S1_weekly | 23 | 1.530323 | 2.097 | 0.652 | 2.046 | 2.194 | 1.915 | 3.071 | False | True | True | 110.5 |
+| 1 | interaction probe (not selection) | first | F2 | cascade | F1 | S1_conf_aligned | 29 | 1.530429 | 2.083 | 0.71 | 2.034 | 2.357 | 2.04 | 3.234 | False | True | True | 135.6 |
+| 1 | interaction probe (not selection) | first | F2 | cascade | F1 | S1_conf_aligned_weekly | 45 | 1.5303 | 2.113 | 0.656 | 2.062 | 2.337 | 1.81 | 3.099 | False | True | True | 227.1 |
+| 1 | interaction probe (not selection) | first | F2 | cascade | F1 | S1_monthly | 6 | 1.530493 | 2.081 | 0.753 | 2.029 | 2.38 | 2.037 | 3.375 | False | True | True | 29.5 |
+| 1 | interaction probe (not selection) | first | F2 | cascade | F1 | S1_weekly | 23 | 1.530306 | 2.103 | 0.658 | 2.051 | 2.347 | 1.811 | 3.08 | False | True | True | 113.3 |
+| 1 | interaction probe (not selection) | first | F2 | cascade | F2 | S1_conf_aligned | 29 | 1.529627 | 2.038 | 0.718 | 1.991 | 2.225 | 1.898 | 2.281 | False | True | True | 186.9 |
+| 1 | interaction probe (not selection) | first | F2 | cascade | F2 | S1_conf_aligned_weekly | 45 | 1.529511 | 2.036 | 0.646 | 1.987 | 2.218 | 1.829 | 2.127 | False | True | True | 262.3 |
+| 1 | interaction probe (not selection) | first | F2 | cascade | F2 | S1_monthly | 6 | 1.529686 | 2.071 | 0.759 | 2.022 | 2.266 | 1.937 | 2.404 | False | True | True | 32.6 |
+| 1 | interaction probe (not selection) | first | F2 | cascade | F2 | S1_weekly | 23 | 1.529516 | 2.057 | 0.648 | 2.008 | 2.235 | 1.894 | 2.116 | False | True | True | 161.9 |
+| 1 | interaction probe (not selection) | first | F2 | cascade | F3 | S1_conf_aligned | 29 | 1.531221 | 2.205 | 0.709 | 2.154 | 2.534 | 2.453 | 4.283 | False | True | True | 162.2 |
+| 1 | interaction probe (not selection) | first | F2 | cascade | F3 | S1_conf_aligned_weekly | 45 | 1.531068 | 2.238 | 0.634 | 2.186 | 2.495 | 2.184 | 4.065 | False | True | True | 235.1 |
+| 1 | interaction probe (not selection) | first | F2 | cascade | F3 | S1_monthly | 6 | 1.531289 | 2.205 | 0.751 | 2.15 | 2.56 | 2.555 | 4.36 | False | True | True | 37.0 |
+| 1 | interaction probe (not selection) | first | F2 | cascade | F3 | S1_weekly | 23 | 1.531075 | 2.236 | 0.638 | 2.183 | 2.492 | 2.191 | 4.065 | False | True | True | 122.8 |
+| 2 | reference | first | F2 | lgbm | F0 | S1_monthly | 6 | 1.515428 | 0.98 | 0.477 | 1.032 | 1.166 | 2.492 | 3.832 | True | True | True | 898.7 |
+| 4 | noise floor | first | F2 | lgbm | F0 | S1_monthly | 6 | 1.515541 | 0.977 | 0.465 | 1.059 | 1.242 | 2.625 | 3.704 | True | True | True | 706.1 |
+| 5 | selection | first | F2 | lgbm | F1 | S1_monthly | 6 | 1.515482 | 1.01 | 0.51 | 0.978 | 1.16 | 2.392 | 3.647 | True | True | True | 3164.8 |
+| 6 | selection | first | F2 | lgbm | F2 | S1_monthly | 6 | 1.515215 | 1.115 | 0.542 | 0.982 | 1.452 | 2.46 | 3.482 | True | True | True | 1628.2 |
+| 7 | selection | first | F2 | lgbm | F3 | S1_monthly | 6 | 1.515203 | 1.322 | 0.57 | 0.983 | 1.189 | 2.995 | 3.982 | True | True | True | 538.2 |
+
+**`first` / F1**
+
+| stage | role | population | fold | arm | feature_arm | scheme | n_fits | log_loss | worst_gated_gap_pp | worst_gated_level_pp | worst_gated_shape_pp | conf4_gap_pp | nonconf_gap_pp | first4_season_gap_pp | calibration_pass | responsiveness_pass | ncss_slope_pass | fit_seconds |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| 3 | reference | first | F1 | lgbm | F0 | S1_monthly | 6 | 1.520961 | 1.549 | 0.533 | 1.015 | nan | 2.396 | 3.242 | True | True | True | 572.1 |
+
+**`cont` / F2**  (SELECTION)
+
+| stage | role | population | fold | arm | feature_arm | scheme | n_fits | log_loss | worst_gated_gap_pp | worst_gated_level_pp | worst_gated_shape_pp | conf4_gap_pp | nonconf_gap_pp | first4_season_gap_pp | calibration_pass | responsiveness_pass | ncss_slope_pass | fit_seconds |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| 1 | selection | cont | F2 | cascade | F0 | S1_conf_aligned | 29 | 1.49972 | 1.886 | 0.784 | 1.374 | 2.659 | 2.349 | 2.961 | True | True | True | 22.5 |
+| 1 | selection | cont | F2 | cascade | F0 | S1_conf_aligned_weekly | 45 | 1.499636 | 1.935 | 0.711 | 1.317 | 2.714 | 2.522 | 2.818 | True | True | True | 30.0 |
+| 1 | selection | cont | F2 | cascade | F0 | S1_monthly | 6 | 1.49976 | 1.859 | 0.826 | 1.403 | 2.787 | 2.609 | 2.849 | True | True | True | 5.1 |
+| 4 | noise floor | cont | F2 | cascade | F0 | S1_monthly | 6 | 1.49976 | 1.859 | 0.826 | 1.403 | 2.787 | 2.609 | 2.849 | True | True | True | 4.9 |
+| 1 | selection | cont | F2 | cascade | F0 | S1_weekly | 23 | 1.499639 | 1.963 | 0.714 | 1.335 | 2.87 | 2.668 | 2.866 | True | True | True | 16.0 |
+| 1 | selection | cont | F2 | cascade | F1 | S1_conf_aligned | 29 | 1.499663 | 1.499 | 0.796 | 1.388 | 2.973 | 2.37 | 2.811 | True | True | True | 20.7 |
+| 1 | selection | cont | F2 | cascade | F1 | S1_conf_aligned_weekly | 45 | 1.499578 | 1.525 | 0.719 | 1.399 | 2.885 | 2.318 | 2.723 | True | True | True | 33.2 |
+| 1 | selection | cont | F2 | cascade | F1 | S1_monthly | 6 | 1.499699 | 1.655 | 0.853 | 1.382 | 2.928 | 2.834 | 2.853 | True | True | True | 4.6 |
+| 1 | selection | cont | F2 | cascade | F1 | S1_weekly | 23 | 1.499581 | 1.529 | 0.725 | 1.363 | 2.963 | 2.444 | 2.688 | True | True | True | 18.1 |
+| 1 | selection | cont | F2 | cascade | F2 | S1_conf_aligned | 29 | 1.49917 | 1.546 | 0.807 | 1.395 | 2.21 | 2.968 | 4.016 | True | True | True | 26.5 |
+| 1 | selection | cont | F2 | cascade | F2 | S1_conf_aligned_weekly | 45 | 1.499107 | 1.639 | 0.726 | 1.433 | 2.93 | 3.008 | 4.017 | True | True | True | 40.7 |
+| 1 | selection | cont | F2 | cascade | F2 | S1_monthly | 6 | 1.499206 | 1.621 | 0.861 | 1.416 | 2.569 | 3.286 | 3.94 | True | True | True | 5.0 |
+| 1 | selection | cont | F2 | cascade | F2 | S1_weekly | 23 | 1.49911 | 1.652 | 0.731 | 1.415 | 2.856 | 3.162 | 4.135 | True | True | True | 23.6 |
+| 1 | selection | cont | F2 | cascade | F3 | S1_conf_aligned | 29 | 1.500195 | 1.812 | 0.792 | 1.452 | 3.703 | 3.477 | 5.072 | True | True | True | 23.2 |
+| 1 | selection | cont | F2 | cascade | F3 | S1_conf_aligned_weekly | 45 | 1.5001 | 1.997 | 0.714 | 1.475 | 3.891 | 3.395 | 4.932 | True | True | True | 34.8 |
+| 1 | selection | cont | F2 | cascade | F3 | S1_monthly | 6 | 1.500235 | 1.84 | 0.849 | 1.42 | 3.86 | 3.558 | 5.064 | True | True | True | 5.9 |
+| 1 | selection | cont | F2 | cascade | F3 | S1_weekly | 23 | 1.500105 | 1.942 | 0.72 | 1.466 | 4.029 | 3.309 | 4.85 | True | True | True | 23.0 |
+
+**`cont` / F1**
+
+| stage | role | population | fold | arm | feature_arm | scheme | n_fits | log_loss | worst_gated_gap_pp | worst_gated_level_pp | worst_gated_shape_pp | conf4_gap_pp | nonconf_gap_pp | first4_season_gap_pp | calibration_pass | responsiveness_pass | ncss_slope_pass | fit_seconds |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| 1 | selection | cont | F1 | cascade | F0 | S1_conf_aligned | 29 | 1.498981 | 1.157 | 0.63 | 1.345 | nan | 2.435 | 3.308 | True | True | True | 14.5 |
+| 1 | selection | cont | F1 | cascade | F0 | S1_conf_aligned_weekly | 46 | 1.498885 | 1.242 | 0.58 | 1.494 | nan | 2.301 | 2.811 | True | True | True | 19.4 |
+| 1 | selection | cont | F1 | cascade | F0 | S1_monthly | 6 | 1.499063 | 1.197 | 0.647 | 1.233 | nan | 2.251 | 3.213 | True | True | True | 5.0 |
+| 1 | selection | cont | F1 | cascade | F0 | S1_weekly | 23 | 1.498895 | 1.222 | 0.586 | 1.479 | nan | 2.166 | 2.948 | True | True | True | 10.4 |
+| 1 | selection | cont | F1 | cascade | F1 | S1_conf_aligned | 29 | 1.498901 | 1.406 | 0.632 | 1.442 | nan | 2.27 | 2.964 | True | True | True | 12.9 |
+| 1 | selection | cont | F1 | cascade | F1 | S1_conf_aligned_weekly | 46 | 1.498797 | 1.476 | 0.577 | 1.592 | nan | 2.164 | 2.792 | True | True | True | 21.2 |
+| 1 | selection | cont | F1 | cascade | F1 | S1_monthly | 6 | 1.498993 | 1.262 | 0.658 | 1.376 | nan | 2.146 | 3.251 | True | True | True | 3.1 |
+| 1 | selection | cont | F1 | cascade | F1 | S1_weekly | 23 | 1.498808 | 1.559 | 0.584 | 1.586 | nan | 1.955 | 2.739 | True | True | True | 11.0 |
+| 1 | selection | cont | F1 | cascade | F2 | S1_conf_aligned | 29 | 1.498197 | 1.318 | 0.649 | 1.143 | nan | 2.072 | 2.688 | True | True | True | 16.2 |
+| 1 | selection | cont | F1 | cascade | F2 | S1_conf_aligned_weekly | 46 | 1.498117 | 1.293 | 0.587 | 1.105 | nan | 1.838 | 2.39 | True | True | True | 31.6 |
+| 1 | selection | cont | F1 | cascade | F2 | S1_monthly | 6 | 1.498283 | 1.515 | 0.677 | 1.336 | nan | 1.849 | 2.652 | True | True | True | 3.3 |
+| 1 | selection | cont | F1 | cascade | F2 | S1_weekly | 23 | 1.498127 | 1.314 | 0.594 | 1.124 | nan | 1.978 | 2.318 | True | True | True | 16.5 |
+| 1 | selection | cont | F1 | cascade | F3 | S1_conf_aligned | 29 | 1.499195 | 1.479 | 0.626 | 1.726 | nan | 1.721 | 2.804 | True | True | True | 15.4 |
+| 1 | selection | cont | F1 | cascade | F3 | S1_conf_aligned_weekly | 46 | 1.499062 | 1.557 | 0.57 | 1.838 | nan | 1.718 | 2.982 | True | True | True | 22.4 |
+| 1 | selection | cont | F1 | cascade | F3 | S1_monthly | 6 | 1.499299 | 1.487 | 0.654 | 1.714 | nan | 1.724 | 2.873 | True | True | True | 4.0 |
+| 1 | selection | cont | F1 | cascade | F3 | S1_weekly | 23 | 1.499074 | 1.546 | 0.577 | 1.832 | nan | 1.786 | 3.014 | True | True | True | 15.0 |
+
+`conf4_gap_pp` is the worst gated decile calibration gap over the chances in the FIRST FOUR WEEKS OF CONFERENCE PLAY, by the offence team's own boundary -- the segment Decision 9 predicts a mis-aligned refit damages. `ncss_slope_pass` is Decision 8's slope reading against the non-conference-schedule-strength quintile, which is the direct test of Decision 9's claim.
+
+### 7.2 Noise floor
+
+* **`first`**: reference cell `F0 x S1_monthly` refit under a second seed -- log loss 1.515428 (seed 0) vs 1.515541 (seed 1), **spread 0.000113**; first-4-conference-weeks gap 1.166 vs 1.242 pp; 200-replicate game-block bootstrap SE 0.000804. Applied floor **0.000804**. PARTIAL: 2 seeds, against the 5 round 1 pre-registered; the round-3 pre-registration asks for one second seed and the run is wall-clock bound.
+* **`cont`**: reference cell `F0 x S1_monthly` refit under a second seed -- log loss 1.499760 (seed 0) vs 1.499760 (seed 1), **spread 0.000000**; first-4-conference-weeks gap 2.787 vs 2.787 pp; 200-replicate game-block bootstrap SE 0.001982. Applied floor **0.001982**. PARTIAL: 2 seeds, against the 5 round 1 pre-registered; the round-3 pre-registration asks for one second seed and the run is wall-clock bound.
+
+### 7.3 Decision
+
+**`first`** (fold F2, arm `lgbm`, noise floor 0.000804)
+
+*scheme ladder*
+
+| scheme | log_loss | gain_vs_reference | conf4_gap_pp | conf4_gain_vs_reference_pp | nonconf_gap_pp | nonconf_gain_vs_reference_pp | gates_pass | beats_reference_beyond_floor |
+|---|---|---|---|---|---|---|---|---|
+| S1_monthly | 1.515428 | 0.0 | 1.166 | 0.0 | 2.492 | 0.0 | True | False |
+| S1_monthly | 1.515541 | -0.000113 | 1.242 | -0.076 | 2.625 | -0.133 | True | False |
+
+Winner: `S1_monthly` -- the simplest arm `S1_monthly` stands -- no more complex arm beat it by more than the noise floor 0.00080 on log loss or by more than 0.25 pp on the first-4-conference-weeks gap. Under the pre-registration that is a RESULT, not a failure.
+
+*feature ladder*
+
+| feature_arm | log_loss | gain_vs_reference | conf4_gap_pp | conf4_gain_vs_reference_pp | nonconf_gap_pp | nonconf_gain_vs_reference_pp | gates_pass | beats_reference_beyond_floor |
+|---|---|---|---|---|---|---|---|---|
+| F0 | 1.515428 | 0.0 | 1.166 | 0.0 | 2.492 | 0.0 | True | False |
+| F0 | 1.515541 | -0.000113 | 1.242 | -0.076 | 2.625 | -0.133 | True | False |
+| F1 | 1.515482 | -5.4e-05 | 1.16 | 0.006 | 2.392 | 0.1 | True | False |
+| F2 | 1.515215 | 0.000213 | 1.452 | -0.286 | 2.46 | 0.032 | True | False |
+| F3 | 1.515203 | 0.000225 | 1.189 | -0.023 | 2.995 | -0.503 | True | False |
+
+Winner: `F0` -- the simplest arm `F0` stands -- no more complex arm beat it by more than the noise floor 0.00080 on log loss or by more than 0.25 pp on the first-4-conference-weeks gap. Under the pre-registration that is a RESULT, not a failure.
+
+**Selected cell: `F0` x `S1_monthly`.** This is the reference cell: the round-3 arms did not beat it beyond the floor, which under the pre-registration is a RESULT and not a failure -- opponent adjustment and conference alignment stay PENDING EVIDENCE.
+
+**`cont`** (fold F2, arm `cascade`, noise floor 0.001982)
+
+*scheme ladder*
+
+| scheme | log_loss | gain_vs_reference | conf4_gap_pp | conf4_gain_vs_reference_pp | nonconf_gap_pp | nonconf_gain_vs_reference_pp | gates_pass | beats_reference_beyond_floor |
+|---|---|---|---|---|---|---|---|---|
+| S1_monthly | 1.49976 | 0.0 | 2.787 | 0.0 | 2.609 | 0.0 | True | False |
+| S1_monthly | 1.49976 | 0.0 | 2.787 | 0.0 | 2.609 | 0.0 | True | False |
+| S1_conf_aligned | 1.49972 | 4e-05 | 2.659 | 0.128 | 2.349 | 0.26 | True | True |
+| S1_weekly | 1.499639 | 0.000121 | 2.87 | -0.083 | 2.668 | -0.059 | True | False |
+| S1_conf_aligned_weekly | 1.499636 | 0.000124 | 2.714 | 0.073 | 2.522 | 0.087 | True | False |
+
+Winner: `S1_conf_aligned` -- `S1_conf_aligned` beats the reference `S1_monthly` beyond the floor (log-loss gain 0.00004 against floor 0.00198; first-4-conference-weeks gap 2.787 -> 2.659 pp) and is the simplest arm within the floor of the best beater (1.499720).
+
+*feature ladder*
+
+| feature_arm | log_loss | gain_vs_reference | conf4_gap_pp | conf4_gain_vs_reference_pp | nonconf_gap_pp | nonconf_gain_vs_reference_pp | gates_pass | beats_reference_beyond_floor |
+|---|---|---|---|---|---|---|---|---|
+| F0 | 1.49976 | 0.0 | 2.787 | 0.0 | 2.609 | 0.0 | True | False |
+| F0 | 1.49976 | 0.0 | 2.787 | 0.0 | 2.609 | 0.0 | True | False |
+| F1 | 1.499699 | 6.1e-05 | 2.928 | -0.141 | 2.834 | -0.225 | True | False |
+| F2 | 1.499206 | 0.000554 | 2.569 | 0.218 | 3.286 | -0.677 | True | False |
+| F3 | 1.500235 | -0.000475 | 3.86 | -1.073 | 3.558 | -0.949 | True | False |
+
+Winner: `F0` -- the simplest arm `F0` stands -- no more complex arm beat it by more than the noise floor 0.00198 on log loss or by more than 0.25 pp on the first-4-conference-weeks gap. Under the pre-registration that is a RESULT, not a failure.
+
+**Selected cell: `F0` x `S1_conf_aligned`.** The round-3 arm beat the reference beyond the floor and is adopted for this sub-model.
+
+### 7.4 Responsiveness, both drivers
+
+| cell | driver | class | span_pred_pp | span_act_pp | slope_ratio | steps | exempt_narrow_span | pass |
+|---|---|---|---|---|---|---|---|---|
+| cont|F1|cascade|F0|S1_monthly|s0 | off_3pa_c | FGA_3 | 7.818 | 8.352 | 0.9361 | 4/4 | False | True |
+| cont|F1|cascade|F0|S1_monthly|s0 | off_rim_c | FGA_rim | 4.268 | 6.082 | 0.7017 | 4/4 | False | False |
+| cont|F1|cascade|F0|S1_monthly|s0 | off_tov_c | TOV | 2.197 | 2.402 | 0.9143 | 4/4 | False | True |
+| cont|F1|cascade|F0|S1_monthly|s0 | ncss | FGA_3 | 1.128 | 0.932 | 1.2097 | 4/4 | True | True |
+| cont|F1|cascade|F0|S1_monthly|s0 | ncss | FGA_rim | -0.719 | 0.252 | -2.8495 | 3/4 | True | True |
+| cont|F1|cascade|F0|S1_monthly|s0 | ncss | TOV | -0.878 | -0.693 | 1.2668 | 2/4 | True | True |
+| cont|F2|cascade|F0|S1_monthly|s0 | off_3pa_c | FGA_3 | 8.325 | 9.695 | 0.8587 | 4/4 | False | True |
+| cont|F2|cascade|F0|S1_monthly|s0 | off_rim_c | FGA_rim | 4.304 | 5.582 | 0.7711 | 4/4 | False | False |
+| cont|F2|cascade|F0|S1_monthly|s0 | off_tov_c | TOV | 1.938 | 2.105 | 0.921 | 3/4 | False | True |
+| cont|F2|cascade|F0|S1_monthly|s0 | ncss | FGA_3 | 1.228 | 0.144 | 8.5394 | 2/4 | True | True |
+| cont|F2|cascade|F0|S1_monthly|s0 | ncss | FGA_rim | -1.097 | -0.496 | 2.2097 | 3/4 | True | True |
+| cont|F2|cascade|F0|S1_monthly|s0 | ncss | TOV | -0.763 | -0.583 | 1.3096 | 3/4 | True | True |
+| first|F2|cascade|F0|S1_monthly|s0 | off_3pa_c | FGA_3 | 8.604 | 9.36 | 0.9192 | 4/4 | False | True |
+| first|F2|cascade|F0|S1_monthly|s0 | off_rim_c | FGA_rim | 5.288 | 6.083 | 0.8693 | 4/4 | False | True |
+| first|F2|cascade|F0|S1_monthly|s0 | off_tov_c | TOV | 2.451 | 2.756 | 0.8893 | 4/4 | False | True |
+| first|F2|cascade|F0|S1_monthly|s0 | ncss | FGA_3 | -0.214 | -0.319 | 0.6714 | 3/4 | True | True |
+| first|F2|cascade|F0|S1_monthly|s0 | ncss | FGA_rim | 0.033 | -0.007 | -5.0495 | 4/4 | True | True |
+| first|F2|cascade|F0|S1_monthly|s0 | ncss | TOV | -0.623 | -0.716 | 0.8706 | 2/4 | True | True |
+| cont|F1|cascade|F0|S1_conf_aligned|s0 | off_3pa_c | FGA_3 | 7.844 | 8.352 | 0.9392 | 4/4 | False | True |
+| cont|F1|cascade|F0|S1_conf_aligned|s0 | off_rim_c | FGA_rim | 4.277 | 6.082 | 0.7033 | 4/4 | False | False |
+| cont|F1|cascade|F0|S1_conf_aligned|s0 | off_tov_c | TOV | 2.19 | 2.402 | 0.9117 | 4/4 | False | True |
+| cont|F1|cascade|F0|S1_conf_aligned|s0 | ncss | FGA_3 | 1.143 | 0.932 | 1.2261 | 4/4 | True | True |
+| cont|F1|cascade|F0|S1_conf_aligned|s0 | ncss | FGA_rim | -0.754 | 0.252 | -2.9887 | 3/4 | True | True |
+| cont|F1|cascade|F0|S1_conf_aligned|s0 | ncss | TOV | -0.865 | -0.693 | 1.2486 | 2/4 | True | True |
+| cont|F2|cascade|F0|S1_conf_aligned|s0 | off_3pa_c | FGA_3 | 8.348 | 9.695 | 0.8611 | 4/4 | False | True |
+| cont|F2|cascade|F0|S1_conf_aligned|s0 | off_rim_c | FGA_rim | 4.307 | 5.582 | 0.7717 | 4/4 | False | False |
+| cont|F2|cascade|F0|S1_conf_aligned|s0 | off_tov_c | TOV | 1.936 | 2.105 | 0.9199 | 3/4 | False | True |
+| cont|F2|cascade|F0|S1_conf_aligned|s0 | ncss | FGA_3 | 1.223 | 0.144 | 8.5056 | 2/4 | True | True |
+| cont|F2|cascade|F0|S1_conf_aligned|s0 | ncss | FGA_rim | -1.1 | -0.496 | 2.2164 | 3/4 | True | True |
+| cont|F2|cascade|F0|S1_conf_aligned|s0 | ncss | TOV | -0.752 | -0.583 | 1.2909 | 3/4 | True | True |
+| first|F2|cascade|F0|S1_conf_aligned|s0 | off_3pa_c | FGA_3 | 8.601 | 9.36 | 0.9188 | 4/4 | False | True |
+| first|F2|cascade|F0|S1_conf_aligned|s0 | off_rim_c | FGA_rim | 5.287 | 6.083 | 0.8692 | 4/4 | False | True |
+| first|F2|cascade|F0|S1_conf_aligned|s0 | off_tov_c | TOV | 2.451 | 2.756 | 0.8891 | 4/4 | False | True |
+| first|F2|cascade|F0|S1_conf_aligned|s0 | ncss | FGA_3 | -0.21 | -0.319 | 0.6572 | 3/4 | True | True |
+| first|F2|cascade|F0|S1_conf_aligned|s0 | ncss | FGA_rim | 0.032 | -0.007 | -4.8852 | 4/4 | True | True |
+| first|F2|cascade|F0|S1_conf_aligned|s0 | ncss | TOV | -0.625 | -0.716 | 0.8725 | 2/4 | True | True |
+| cont|F1|cascade|F0|S1_weekly|s0 | off_3pa_c | FGA_3 | 7.83 | 8.352 | 0.9375 | 4/4 | False | True |
+| cont|F1|cascade|F0|S1_weekly|s0 | off_rim_c | FGA_rim | 4.315 | 6.082 | 0.7094 | 4/4 | False | False |
+| cont|F1|cascade|F0|S1_weekly|s0 | off_tov_c | TOV | 2.192 | 2.402 | 0.9123 | 4/4 | False | True |
+| cont|F1|cascade|F0|S1_weekly|s0 | ncss | FGA_3 | 1.134 | 0.932 | 1.217 | 4/4 | True | True |
+| cont|F1|cascade|F0|S1_weekly|s0 | ncss | FGA_rim | -0.739 | 0.252 | -2.928 | 3/4 | True | True |
+| cont|F1|cascade|F0|S1_weekly|s0 | ncss | TOV | -0.861 | -0.693 | 1.243 | 2/4 | True | True |
+| cont|F2|cascade|F0|S1_weekly|s0 | off_3pa_c | FGA_3 | 8.342 | 9.695 | 0.8605 | 4/4 | False | True |
+| cont|F2|cascade|F0|S1_weekly|s0 | off_rim_c | FGA_rim | 4.299 | 5.582 | 0.7701 | 4/4 | False | False |
+| cont|F2|cascade|F0|S1_weekly|s0 | off_tov_c | TOV | 1.919 | 2.105 | 0.9118 | 3/4 | False | True |
+| cont|F2|cascade|F0|S1_weekly|s0 | ncss | FGA_3 | 1.222 | 0.144 | 8.4946 | 2/4 | True | True |
+| cont|F2|cascade|F0|S1_weekly|s0 | ncss | FGA_rim | -1.098 | -0.496 | 2.2128 | 3/4 | True | True |
+| cont|F2|cascade|F0|S1_weekly|s0 | ncss | TOV | -0.757 | -0.583 | 1.2998 | 3/4 | True | True |
+| first|F2|cascade|F0|S1_weekly|s0 | off_3pa_c | FGA_3 | 8.596 | 9.36 | 0.9184 | 4/4 | False | True |
+| first|F2|cascade|F0|S1_weekly|s0 | off_rim_c | FGA_rim | 5.275 | 6.083 | 0.8672 | 4/4 | False | True |
+| first|F2|cascade|F0|S1_weekly|s0 | off_tov_c | TOV | 2.448 | 2.756 | 0.8882 | 4/4 | False | True |
+| first|F2|cascade|F0|S1_weekly|s0 | ncss | FGA_3 | -0.205 | -0.319 | 0.6441 | 3/4 | True | True |
+| first|F2|cascade|F0|S1_weekly|s0 | ncss | FGA_rim | 0.026 | -0.007 | -3.9341 | 4/4 | True | True |
+| first|F2|cascade|F0|S1_weekly|s0 | ncss | TOV | -0.625 | -0.716 | 0.8725 | 2/4 | True | True |
+| cont|F1|cascade|F0|S1_conf_aligned_weekly|s0 | off_3pa_c | FGA_3 | 7.835 | 8.352 | 0.9382 | 4/4 | False | True |
+| cont|F1|cascade|F0|S1_conf_aligned_weekly|s0 | off_rim_c | FGA_rim | 4.316 | 6.082 | 0.7096 | 4/4 | False | False |
+| cont|F1|cascade|F0|S1_conf_aligned_weekly|s0 | off_tov_c | TOV | 2.193 | 2.402 | 0.9128 | 4/4 | False | True |
+| cont|F1|cascade|F0|S1_conf_aligned_weekly|s0 | ncss | FGA_3 | 1.138 | 0.932 | 1.2207 | 4/4 | True | True |
+| cont|F1|cascade|F0|S1_conf_aligned_weekly|s0 | ncss | FGA_rim | -0.744 | 0.252 | -2.9473 | 3/4 | True | True |
+| cont|F1|cascade|F0|S1_conf_aligned_weekly|s0 | ncss | TOV | -0.862 | -0.693 | 1.2441 | 2/4 | True | True |
+| cont|F2|cascade|F0|S1_conf_aligned_weekly|s0 | off_3pa_c | FGA_3 | 8.349 | 9.695 | 0.8611 | 4/4 | False | True |
+| cont|F2|cascade|F0|S1_conf_aligned_weekly|s0 | off_rim_c | FGA_rim | 4.3 | 5.582 | 0.7703 | 4/4 | False | False |
+| cont|F2|cascade|F0|S1_conf_aligned_weekly|s0 | off_tov_c | TOV | 1.921 | 2.105 | 0.9126 | 3/4 | False | True |
+| cont|F2|cascade|F0|S1_conf_aligned_weekly|s0 | ncss | FGA_3 | 1.22 | 0.144 | 8.4859 | 2/4 | True | True |
+| cont|F2|cascade|F0|S1_conf_aligned_weekly|s0 | ncss | FGA_rim | -1.099 | -0.496 | 2.2136 | 3/4 | True | True |
+| cont|F2|cascade|F0|S1_conf_aligned_weekly|s0 | ncss | TOV | -0.757 | -0.583 | 1.2987 | 3/4 | True | True |
+| first|F2|cascade|F0|S1_conf_aligned_weekly|s0 | off_3pa_c | FGA_3 | 8.597 | 9.36 | 0.9185 | 4/4 | False | True |
+| first|F2|cascade|F0|S1_conf_aligned_weekly|s0 | off_rim_c | FGA_rim | 5.277 | 6.083 | 0.8675 | 4/4 | False | True |
+| first|F2|cascade|F0|S1_conf_aligned_weekly|s0 | off_tov_c | TOV | 2.448 | 2.756 | 0.888 | 4/4 | False | True |
+| first|F2|cascade|F0|S1_conf_aligned_weekly|s0 | ncss | FGA_3 | -0.206 | -0.319 | 0.6469 | 3/4 | True | True |
+| first|F2|cascade|F0|S1_conf_aligned_weekly|s0 | ncss | FGA_rim | 0.025 | -0.007 | -3.8063 | 4/4 | True | True |
+| first|F2|cascade|F0|S1_conf_aligned_weekly|s0 | ncss | TOV | -0.624 | -0.716 | 0.872 | 2/4 | True | True |
+| cont|F1|cascade|F1|S1_monthly|s0 | off_3pa_c | FGA_3 | 7.819 | 8.352 | 0.9361 | 4/4 | False | True |
+| cont|F1|cascade|F1|S1_monthly|s0 | off_rim_c | FGA_rim | 4.259 | 6.082 | 0.7003 | 4/4 | False | False |
+| cont|F1|cascade|F1|S1_monthly|s0 | off_tov_c | TOV | 2.174 | 2.402 | 0.9048 | 4/4 | False | True |
+| cont|F1|cascade|F1|S1_monthly|s0 | ncss | FGA_3 | 1.123 | 0.932 | 1.2052 | 4/4 | True | True |
+| cont|F1|cascade|F1|S1_monthly|s0 | ncss | FGA_rim | -0.733 | 0.252 | -2.9048 | 3/4 | True | True |
+| cont|F1|cascade|F1|S1_monthly|s0 | ncss | TOV | -0.878 | -0.693 | 1.2671 | 2/4 | True | True |
+| cont|F2|cascade|F1|S1_monthly|s0 | off_3pa_c | FGA_3 | 8.308 | 9.695 | 0.857 | 4/4 | False | True |
+| cont|F2|cascade|F1|S1_monthly|s0 | off_rim_c | FGA_rim | 4.288 | 5.582 | 0.7682 | 4/4 | False | False |
+| cont|F2|cascade|F1|S1_monthly|s0 | off_tov_c | TOV | 1.926 | 2.105 | 0.9154 | 3/4 | False | True |
+| cont|F2|cascade|F1|S1_monthly|s0 | ncss | FGA_3 | 1.22 | 0.144 | 8.4814 | 2/4 | True | True |
+| cont|F2|cascade|F1|S1_monthly|s0 | ncss | FGA_rim | -1.103 | -0.496 | 2.2229 | 3/4 | True | True |
+| cont|F2|cascade|F1|S1_monthly|s0 | ncss | TOV | -0.768 | -0.583 | 1.3187 | 3/4 | True | True |
+| first|F2|cascade|F1|S1_monthly|s0 | off_3pa_c | FGA_3 | 8.594 | 9.36 | 0.9181 | 4/4 | False | True |
+| first|F2|cascade|F1|S1_monthly|s0 | off_rim_c | FGA_rim | 5.273 | 6.083 | 0.867 | 4/4 | False | True |
+| first|F2|cascade|F1|S1_monthly|s0 | off_tov_c | TOV | 2.449 | 2.756 | 0.8887 | 4/4 | False | True |
+| first|F2|cascade|F1|S1_monthly|s0 | ncss | FGA_3 | -0.216 | -0.319 | 0.6767 | 3/4 | True | True |
+| first|F2|cascade|F1|S1_monthly|s0 | ncss | FGA_rim | 0.032 | -0.007 | -4.8173 | 4/4 | True | True |
+| first|F2|cascade|F1|S1_monthly|s0 | ncss | TOV | -0.63 | -0.716 | 0.8798 | 2/4 | True | True |
+| cont|F1|cascade|F1|S1_conf_aligned|s0 | off_3pa_c | FGA_3 | 7.845 | 8.352 | 0.9394 | 4/4 | False | True |
+| cont|F1|cascade|F1|S1_conf_aligned|s0 | off_rim_c | FGA_rim | 4.269 | 6.082 | 0.7018 | 4/4 | False | False |
+| cont|F1|cascade|F1|S1_conf_aligned|s0 | off_tov_c | TOV | 2.168 | 2.402 | 0.9024 | 4/4 | False | True |
+| cont|F1|cascade|F1|S1_conf_aligned|s0 | ncss | FGA_3 | 1.138 | 0.932 | 1.2205 | 4/4 | True | True |
+| cont|F1|cascade|F1|S1_conf_aligned|s0 | ncss | FGA_rim | -0.765 | 0.252 | -3.0316 | 3/4 | True | True |
+| cont|F1|cascade|F1|S1_conf_aligned|s0 | ncss | TOV | -0.865 | -0.693 | 1.2481 | 2/4 | True | True |
+| cont|F2|cascade|F1|S1_conf_aligned|s0 | off_3pa_c | FGA_3 | 8.332 | 9.695 | 0.8595 | 4/4 | False | True |
+| cont|F2|cascade|F1|S1_conf_aligned|s0 | off_rim_c | FGA_rim | 4.292 | 5.582 | 0.7688 | 4/4 | False | False |
+| cont|F2|cascade|F1|S1_conf_aligned|s0 | off_tov_c | TOV | 1.924 | 2.105 | 0.9141 | 3/4 | False | True |
+| cont|F2|cascade|F1|S1_conf_aligned|s0 | ncss | FGA_3 | 1.214 | 0.144 | 8.4431 | 2/4 | True | True |
+| cont|F2|cascade|F1|S1_conf_aligned|s0 | ncss | FGA_rim | -1.106 | -0.496 | 2.229 | 3/4 | True | True |
+| cont|F2|cascade|F1|S1_conf_aligned|s0 | ncss | TOV | -0.758 | -0.583 | 1.3008 | 3/4 | True | True |
+| first|F2|cascade|F1|S1_conf_aligned|s0 | off_3pa_c | FGA_3 | 8.592 | 9.36 | 0.9179 | 4/4 | False | True |
+| first|F2|cascade|F1|S1_conf_aligned|s0 | off_rim_c | FGA_rim | 5.272 | 6.083 | 0.8667 | 4/4 | False | True |
+| first|F2|cascade|F1|S1_conf_aligned|s0 | off_tov_c | TOV | 2.449 | 2.756 | 0.8887 | 4/4 | False | True |
+| first|F2|cascade|F1|S1_conf_aligned|s0 | ncss | FGA_3 | -0.212 | -0.319 | 0.6641 | 3/4 | True | True |
+| first|F2|cascade|F1|S1_conf_aligned|s0 | ncss | FGA_rim | 0.031 | -0.007 | -4.7053 | 4/4 | True | True |
+| first|F2|cascade|F1|S1_conf_aligned|s0 | ncss | TOV | -0.632 | -0.716 | 0.8822 | 2/4 | True | True |
+| cont|F1|cascade|F1|S1_weekly|s0 | off_3pa_c | FGA_3 | 7.833 | 8.352 | 0.9379 | 4/4 | False | True |
+| cont|F1|cascade|F1|S1_weekly|s0 | off_rim_c | FGA_rim | 4.307 | 6.082 | 0.7081 | 4/4 | False | False |
+| cont|F1|cascade|F1|S1_weekly|s0 | off_tov_c | TOV | 2.173 | 2.402 | 0.9045 | 4/4 | False | True |
+| cont|F1|cascade|F1|S1_weekly|s0 | ncss | FGA_3 | 1.131 | 0.932 | 1.2139 | 4/4 | True | True |
+| cont|F1|cascade|F1|S1_weekly|s0 | ncss | FGA_rim | -0.748 | 0.252 | -2.9642 | 3/4 | True | True |
+| cont|F1|cascade|F1|S1_weekly|s0 | ncss | TOV | -0.861 | -0.693 | 1.2422 | 2/4 | True | True |
+| cont|F2|cascade|F1|S1_weekly|s0 | off_3pa_c | FGA_3 | 8.326 | 9.695 | 0.8588 | 4/4 | False | True |
+| cont|F2|cascade|F1|S1_weekly|s0 | off_rim_c | FGA_rim | 4.287 | 5.582 | 0.768 | 4/4 | False | False |
+| cont|F2|cascade|F1|S1_weekly|s0 | off_tov_c | TOV | 1.907 | 2.105 | 0.9062 | 3/4 | False | True |
+| cont|F2|cascade|F1|S1_weekly|s0 | ncss | FGA_3 | 1.213 | 0.144 | 8.4368 | 2/4 | True | True |
+| cont|F2|cascade|F1|S1_weekly|s0 | ncss | FGA_rim | -1.105 | -0.496 | 2.2267 | 3/4 | True | True |
+| cont|F2|cascade|F1|S1_weekly|s0 | ncss | TOV | -0.761 | -0.583 | 1.3068 | 3/4 | True | True |
+| first|F2|cascade|F1|S1_weekly|s0 | off_3pa_c | FGA_3 | 8.59 | 9.36 | 0.9177 | 4/4 | False | True |
+| first|F2|cascade|F1|S1_weekly|s0 | off_rim_c | FGA_rim | 5.262 | 6.083 | 0.865 | 4/4 | False | True |
+| first|F2|cascade|F1|S1_weekly|s0 | off_tov_c | TOV | 2.446 | 2.756 | 0.8873 | 4/4 | False | True |
+| first|F2|cascade|F1|S1_weekly|s0 | ncss | FGA_3 | -0.209 | -0.319 | 0.6567 | 3/4 | True | True |
+| first|F2|cascade|F1|S1_weekly|s0 | ncss | FGA_rim | 0.025 | -0.007 | -3.7769 | 4/4 | True | True |
+| first|F2|cascade|F1|S1_weekly|s0 | ncss | TOV | -0.629 | -0.716 | 0.8791 | 2/4 | True | True |
+| cont|F1|cascade|F1|S1_conf_aligned_weekly|s0 | off_3pa_c | FGA_3 | 7.839 | 8.352 | 0.9386 | 4/4 | False | True |
+| cont|F1|cascade|F1|S1_conf_aligned_weekly|s0 | off_rim_c | FGA_rim | 4.308 | 6.082 | 0.7084 | 4/4 | False | False |
+| cont|F1|cascade|F1|S1_conf_aligned_weekly|s0 | off_tov_c | TOV | 2.174 | 2.402 | 0.9049 | 4/4 | False | True |
+| cont|F1|cascade|F1|S1_conf_aligned_weekly|s0 | ncss | FGA_3 | 1.134 | 0.932 | 1.2166 | 4/4 | True | True |
+| cont|F1|cascade|F1|S1_conf_aligned_weekly|s0 | ncss | FGA_rim | -0.753 | 0.252 | -2.9817 | 3/4 | True | True |
+| cont|F1|cascade|F1|S1_conf_aligned_weekly|s0 | ncss | TOV | -0.861 | -0.693 | 1.2423 | 2/4 | True | True |
+| cont|F2|cascade|F1|S1_conf_aligned_weekly|s0 | off_3pa_c | FGA_3 | 8.334 | 9.695 | 0.8596 | 4/4 | False | True |
+| cont|F2|cascade|F1|S1_conf_aligned_weekly|s0 | off_rim_c | FGA_rim | 4.288 | 5.582 | 0.7682 | 4/4 | False | False |
+| cont|F2|cascade|F1|S1_conf_aligned_weekly|s0 | off_tov_c | TOV | 1.909 | 2.105 | 0.907 | 3/4 | False | True |
+| cont|F2|cascade|F1|S1_conf_aligned_weekly|s0 | ncss | FGA_3 | 1.212 | 0.144 | 8.4261 | 2/4 | True | True |
+| cont|F2|cascade|F1|S1_conf_aligned_weekly|s0 | ncss | FGA_rim | -1.105 | -0.496 | 2.2263 | 3/4 | True | True |
+| cont|F2|cascade|F1|S1_conf_aligned_weekly|s0 | ncss | TOV | -0.761 | -0.583 | 1.3063 | 3/4 | True | True |
+| first|F2|cascade|F1|S1_conf_aligned_weekly|s0 | off_3pa_c | FGA_3 | 8.591 | 9.36 | 0.9178 | 4/4 | False | True |
+| first|F2|cascade|F1|S1_conf_aligned_weekly|s0 | off_rim_c | FGA_rim | 5.264 | 6.083 | 0.8654 | 4/4 | False | True |
+| first|F2|cascade|F1|S1_conf_aligned_weekly|s0 | off_tov_c | TOV | 2.445 | 2.756 | 0.8872 | 4/4 | False | True |
+| first|F2|cascade|F1|S1_conf_aligned_weekly|s0 | ncss | FGA_3 | -0.21 | -0.319 | 0.6577 | 3/4 | True | True |
+| first|F2|cascade|F1|S1_conf_aligned_weekly|s0 | ncss | FGA_rim | 0.024 | -0.007 | -3.6426 | 4/4 | True | True |
+| first|F2|cascade|F1|S1_conf_aligned_weekly|s0 | ncss | TOV | -0.629 | -0.716 | 0.8791 | 2/4 | True | True |
+| cont|F1|cascade|F2|S1_monthly|s0 | off_3pa_c | FGA_3 | 7.736 | 8.352 | 0.9263 | 4/4 | False | True |
+| cont|F1|cascade|F2|S1_monthly|s0 | off_rim_c | FGA_rim | 4.515 | 6.082 | 0.7424 | 4/4 | False | False |
+| cont|F1|cascade|F2|S1_monthly|s0 | off_tov_c | TOV | 2.08 | 2.402 | 0.8657 | 4/4 | False | True |
+| cont|F1|cascade|F2|S1_monthly|s0 | ncss | FGA_3 | 1.389 | 0.932 | 1.4898 | 4/4 | True | True |
+| cont|F1|cascade|F2|S1_monthly|s0 | ncss | FGA_rim | -0.508 | 0.252 | -2.0108 | 4/4 | True | True |
+| cont|F1|cascade|F2|S1_monthly|s0 | ncss | TOV | -0.87 | -0.693 | 1.2552 | 2/4 | True | True |
+| cont|F2|cascade|F2|S1_monthly|s0 | off_3pa_c | FGA_3 | 8.328 | 9.695 | 0.859 | 4/4 | False | True |
+| cont|F2|cascade|F2|S1_monthly|s0 | off_rim_c | FGA_rim | 4.536 | 5.582 | 0.8127 | 4/4 | False | True |
+| cont|F2|cascade|F2|S1_monthly|s0 | off_tov_c | TOV | 1.848 | 2.105 | 0.8781 | 3/4 | False | True |
+| cont|F2|cascade|F2|S1_monthly|s0 | ncss | FGA_3 | 1.308 | 0.144 | 9.0958 | 2/4 | True | True |
+| cont|F2|cascade|F2|S1_monthly|s0 | ncss | FGA_rim | -0.942 | -0.496 | 1.897 | 3/4 | True | True |
+| cont|F2|cascade|F2|S1_monthly|s0 | ncss | TOV | -0.879 | -0.583 | 1.508 | 2/4 | True | True |
+| first|F2|cascade|F2|S1_monthly|s0 | off_3pa_c | FGA_3 | 8.333 | 9.36 | 0.8902 | 4/4 | False | True |
+| first|F2|cascade|F2|S1_monthly|s0 | off_rim_c | FGA_rim | 5.201 | 6.083 | 0.8551 | 4/4 | False | True |
+| first|F2|cascade|F2|S1_monthly|s0 | off_tov_c | TOV | 2.386 | 2.756 | 0.8655 | 4/4 | False | True |
+| first|F2|cascade|F2|S1_monthly|s0 | ncss | FGA_3 | -0.034 | -0.319 | 0.1072 | 3/4 | True | True |
+| first|F2|cascade|F2|S1_monthly|s0 | ncss | FGA_rim | 0.225 | -0.007 | -34.0744 | 4/4 | True | True |
+| first|F2|cascade|F2|S1_monthly|s0 | ncss | TOV | -0.792 | -0.716 | 1.106 | 2/4 | True | True |
+| cont|F1|cascade|F2|S1_conf_aligned|s0 | off_3pa_c | FGA_3 | 7.774 | 8.352 | 0.9308 | 4/4 | False | True |
+| cont|F1|cascade|F2|S1_conf_aligned|s0 | off_rim_c | FGA_rim | 4.509 | 6.082 | 0.7413 | 4/4 | False | False |
+| cont|F1|cascade|F2|S1_conf_aligned|s0 | off_tov_c | TOV | 2.071 | 2.402 | 0.862 | 4/4 | False | True |
+| cont|F1|cascade|F2|S1_conf_aligned|s0 | ncss | FGA_3 | 1.406 | 0.932 | 1.5088 | 4/4 | True | True |
+| cont|F1|cascade|F2|S1_conf_aligned|s0 | ncss | FGA_rim | -0.539 | 0.252 | -2.1357 | 4/4 | True | True |
+| cont|F1|cascade|F2|S1_conf_aligned|s0 | ncss | TOV | -0.855 | -0.693 | 1.2341 | 2/4 | True | True |
+| cont|F2|cascade|F2|S1_conf_aligned|s0 | off_3pa_c | FGA_3 | 8.355 | 9.695 | 0.8618 | 4/4 | False | True |
+| cont|F2|cascade|F2|S1_conf_aligned|s0 | off_rim_c | FGA_rim | 4.536 | 5.582 | 0.8127 | 4/4 | False | True |
+| cont|F2|cascade|F2|S1_conf_aligned|s0 | off_tov_c | TOV | 1.846 | 2.105 | 0.8773 | 3/4 | False | True |
+| cont|F2|cascade|F2|S1_conf_aligned|s0 | ncss | FGA_3 | 1.304 | 0.144 | 9.0702 | 2/4 | True | True |
+| cont|F2|cascade|F2|S1_conf_aligned|s0 | ncss | FGA_rim | -0.947 | -0.496 | 1.907 | 3/4 | True | True |
+| cont|F2|cascade|F2|S1_conf_aligned|s0 | ncss | TOV | -0.867 | -0.583 | 1.4887 | 2/4 | True | True |
+| first|F2|cascade|F2|S1_conf_aligned|s0 | off_3pa_c | FGA_3 | 8.33 | 9.36 | 0.8899 | 4/4 | False | True |
+| first|F2|cascade|F2|S1_conf_aligned|s0 | off_rim_c | FGA_rim | 5.204 | 6.083 | 0.8555 | 4/4 | False | True |
+| first|F2|cascade|F2|S1_conf_aligned|s0 | off_tov_c | TOV | 2.385 | 2.756 | 0.8653 | 4/4 | False | True |
+| first|F2|cascade|F2|S1_conf_aligned|s0 | ncss | FGA_3 | -0.029 | -0.319 | 0.0905 | 3/4 | True | True |
+| first|F2|cascade|F2|S1_conf_aligned|s0 | ncss | FGA_rim | 0.223 | -0.007 | -33.7906 | 4/4 | True | True |
+| first|F2|cascade|F2|S1_conf_aligned|s0 | ncss | TOV | -0.792 | -0.716 | 1.1058 | 2/4 | True | True |
+| cont|F1|cascade|F2|S1_weekly|s0 | off_3pa_c | FGA_3 | 7.791 | 8.352 | 0.9329 | 4/4 | False | True |
+| cont|F1|cascade|F2|S1_weekly|s0 | off_rim_c | FGA_rim | 4.55 | 6.082 | 0.748 | 4/4 | False | False |
+| cont|F1|cascade|F2|S1_weekly|s0 | off_tov_c | TOV | 2.063 | 2.402 | 0.8586 | 4/4 | False | True |
+| cont|F1|cascade|F2|S1_weekly|s0 | ncss | FGA_3 | 1.398 | 0.932 | 1.4999 | 4/4 | True | True |
+| cont|F1|cascade|F2|S1_weekly|s0 | ncss | FGA_rim | -0.522 | 0.252 | -2.0665 | 4/4 | True | True |
+| cont|F1|cascade|F2|S1_weekly|s0 | ncss | TOV | -0.854 | -0.693 | 1.2322 | 2/4 | True | True |
+| cont|F2|cascade|F2|S1_weekly|s0 | off_3pa_c | FGA_3 | 8.373 | 9.695 | 0.8637 | 4/4 | False | True |
+| cont|F2|cascade|F2|S1_weekly|s0 | off_rim_c | FGA_rim | 4.548 | 5.582 | 0.8148 | 4/4 | False | True |
+| cont|F2|cascade|F2|S1_weekly|s0 | off_tov_c | TOV | 1.843 | 2.105 | 0.8757 | 3/4 | False | True |
+| cont|F2|cascade|F2|S1_weekly|s0 | ncss | FGA_3 | 1.303 | 0.144 | 9.0586 | 2/4 | True | True |
+| cont|F2|cascade|F2|S1_weekly|s0 | ncss | FGA_rim | -0.946 | -0.496 | 1.9051 | 3/4 | True | True |
+| cont|F2|cascade|F2|S1_weekly|s0 | ncss | TOV | -0.872 | -0.583 | 1.496 | 2/4 | True | True |
+| first|F2|cascade|F2|S1_weekly|s0 | off_3pa_c | FGA_3 | 8.341 | 9.36 | 0.8911 | 4/4 | False | True |
+| first|F2|cascade|F2|S1_weekly|s0 | off_rim_c | FGA_rim | 5.216 | 6.083 | 0.8574 | 4/4 | False | True |
+| first|F2|cascade|F2|S1_weekly|s0 | off_tov_c | TOV | 2.387 | 2.756 | 0.866 | 4/4 | False | True |
+| first|F2|cascade|F2|S1_weekly|s0 | ncss | FGA_3 | -0.027 | -0.319 | 0.0848 | 3/4 | True | True |
+| first|F2|cascade|F2|S1_weekly|s0 | ncss | FGA_rim | 0.217 | -0.007 | -32.8335 | 4/4 | True | True |
+| first|F2|cascade|F2|S1_weekly|s0 | ncss | TOV | -0.789 | -0.716 | 1.1023 | 2/4 | True | True |
+| cont|F1|cascade|F2|S1_conf_aligned_weekly|s0 | off_3pa_c | FGA_3 | 7.798 | 8.352 | 0.9337 | 4/4 | False | True |
+| cont|F1|cascade|F2|S1_conf_aligned_weekly|s0 | off_rim_c | FGA_rim | 4.549 | 6.082 | 0.748 | 4/4 | False | False |
+| cont|F1|cascade|F2|S1_conf_aligned_weekly|s0 | off_tov_c | TOV | 2.062 | 2.402 | 0.8584 | 4/4 | False | True |
+| cont|F1|cascade|F2|S1_conf_aligned_weekly|s0 | ncss | FGA_3 | 1.401 | 0.932 | 1.5034 | 4/4 | True | True |
+| cont|F1|cascade|F2|S1_conf_aligned_weekly|s0 | ncss | FGA_rim | -0.526 | 0.252 | -2.0841 | 4/4 | True | True |
+| cont|F1|cascade|F2|S1_conf_aligned_weekly|s0 | ncss | TOV | -0.854 | -0.693 | 1.2317 | 2/4 | True | True |
+| cont|F2|cascade|F2|S1_conf_aligned_weekly|s0 | off_3pa_c | FGA_3 | 8.378 | 9.695 | 0.8642 | 4/4 | False | True |
+| cont|F2|cascade|F2|S1_conf_aligned_weekly|s0 | off_rim_c | FGA_rim | 4.549 | 5.582 | 0.8149 | 4/4 | False | True |
+| cont|F2|cascade|F2|S1_conf_aligned_weekly|s0 | off_tov_c | TOV | 1.845 | 2.105 | 0.8765 | 3/4 | False | True |
+| cont|F2|cascade|F2|S1_conf_aligned_weekly|s0 | ncss | FGA_3 | 1.302 | 0.144 | 9.0504 | 2/4 | True | True |
+| cont|F2|cascade|F2|S1_conf_aligned_weekly|s0 | ncss | FGA_rim | -0.945 | -0.496 | 1.9046 | 3/4 | True | True |
+| cont|F2|cascade|F2|S1_conf_aligned_weekly|s0 | ncss | TOV | -0.871 | -0.583 | 1.4954 | 2/4 | True | True |
+| first|F2|cascade|F2|S1_conf_aligned_weekly|s0 | off_3pa_c | FGA_3 | 8.34 | 9.36 | 0.891 | 4/4 | False | True |
+| first|F2|cascade|F2|S1_conf_aligned_weekly|s0 | off_rim_c | FGA_rim | 5.217 | 6.083 | 0.8576 | 4/4 | False | True |
+| first|F2|cascade|F2|S1_conf_aligned_weekly|s0 | off_tov_c | TOV | 2.387 | 2.756 | 0.8659 | 4/4 | False | True |
+| first|F2|cascade|F2|S1_conf_aligned_weekly|s0 | ncss | FGA_3 | -0.028 | -0.319 | 0.0869 | 3/4 | True | True |
+| first|F2|cascade|F2|S1_conf_aligned_weekly|s0 | ncss | FGA_rim | 0.216 | -0.007 | -32.7325 | 4/4 | True | True |
+| first|F2|cascade|F2|S1_conf_aligned_weekly|s0 | ncss | TOV | -0.789 | -0.716 | 1.1019 | 2/4 | True | True |
+| cont|F1|cascade|F3|S1_monthly|s0 | off_3pa_c | FGA_3 | 6.903 | 8.352 | 0.8265 | 4/4 | False | True |
+| cont|F1|cascade|F3|S1_monthly|s0 | off_rim_c | FGA_rim | 3.631 | 6.082 | 0.597 | 4/4 | False | False |
+| cont|F1|cascade|F3|S1_monthly|s0 | off_tov_c | TOV | 1.883 | 2.402 | 0.7838 | 4/4 | False | False |
+| cont|F1|cascade|F3|S1_monthly|s0 | ncss | FGA_3 | 1.367 | 0.932 | 1.4667 | 4/4 | True | True |
+| cont|F1|cascade|F3|S1_monthly|s0 | ncss | FGA_rim | -0.454 | 0.252 | -1.7995 | 4/4 | True | True |
+| cont|F1|cascade|F3|S1_monthly|s0 | ncss | TOV | -0.913 | -0.693 | 1.3173 | 2/4 | True | True |
+| cont|F2|cascade|F3|S1_monthly|s0 | off_3pa_c | FGA_3 | 7.498 | 9.695 | 0.7734 | 4/4 | False | False |
+| cont|F2|cascade|F3|S1_monthly|s0 | off_rim_c | FGA_rim | 3.684 | 5.582 | 0.66 | 4/4 | False | False |
+| cont|F2|cascade|F3|S1_monthly|s0 | off_tov_c | TOV | 1.653 | 2.105 | 0.7855 | 3/4 | False | False |
+| cont|F2|cascade|F3|S1_monthly|s0 | ncss | FGA_3 | 1.306 | 0.144 | 9.0806 | 2/4 | True | True |
+| cont|F2|cascade|F3|S1_monthly|s0 | ncss | FGA_rim | -0.857 | -0.496 | 1.7274 | 2/4 | True | True |
+| cont|F2|cascade|F3|S1_monthly|s0 | ncss | TOV | -0.9 | -0.583 | 1.5443 | 2/4 | True | True |
+| first|F2|cascade|F3|S1_monthly|s0 | off_3pa_c | FGA_3 | 7.546 | 9.36 | 0.8061 | 4/4 | False | True |
+| first|F2|cascade|F3|S1_monthly|s0 | off_rim_c | FGA_rim | 4.384 | 6.083 | 0.7208 | 4/4 | False | False |
+| first|F2|cascade|F3|S1_monthly|s0 | off_tov_c | TOV | 2.059 | 2.756 | 0.747 | 4/4 | False | False |
+| first|F2|cascade|F3|S1_monthly|s0 | ncss | FGA_3 | -0.004 | -0.319 | 0.0127 | 3/4 | True | True |
+| first|F2|cascade|F3|S1_monthly|s0 | ncss | FGA_rim | 0.299 | -0.007 | -45.1975 | 4/4 | True | True |
+| first|F2|cascade|F3|S1_monthly|s0 | ncss | TOV | -0.782 | -0.716 | 1.0925 | 2/4 | True | True |
+| cont|F1|cascade|F3|S1_conf_aligned|s0 | off_3pa_c | FGA_3 | 6.933 | 8.352 | 0.8301 | 4/4 | False | True |
+| cont|F1|cascade|F3|S1_conf_aligned|s0 | off_rim_c | FGA_rim | 3.638 | 6.082 | 0.5982 | 4/4 | False | False |
+| cont|F1|cascade|F3|S1_conf_aligned|s0 | off_tov_c | TOV | 1.876 | 2.402 | 0.781 | 4/4 | False | False |
+| cont|F1|cascade|F3|S1_conf_aligned|s0 | ncss | FGA_3 | 1.381 | 0.932 | 1.4818 | 4/4 | True | True |
+| cont|F1|cascade|F3|S1_conf_aligned|s0 | ncss | FGA_rim | -0.484 | 0.252 | -1.9189 | 4/4 | True | True |
+| cont|F1|cascade|F3|S1_conf_aligned|s0 | ncss | TOV | -0.9 | -0.693 | 1.2988 | 2/4 | True | True |
+| cont|F2|cascade|F3|S1_conf_aligned|s0 | off_3pa_c | FGA_3 | 7.52 | 9.695 | 0.7756 | 4/4 | False | False |
+| cont|F2|cascade|F3|S1_conf_aligned|s0 | off_rim_c | FGA_rim | 3.679 | 5.582 | 0.6591 | 4/4 | False | False |
+| cont|F2|cascade|F3|S1_conf_aligned|s0 | off_tov_c | TOV | 1.647 | 2.105 | 0.7825 | 3/4 | False | False |
+| cont|F2|cascade|F3|S1_conf_aligned|s0 | ncss | FGA_3 | 1.301 | 0.144 | 9.0464 | 2/4 | True | True |
+| cont|F2|cascade|F3|S1_conf_aligned|s0 | ncss | FGA_rim | -0.861 | -0.496 | 1.7346 | 2/4 | True | True |
+| cont|F2|cascade|F3|S1_conf_aligned|s0 | ncss | TOV | -0.888 | -0.583 | 1.5238 | 2/4 | True | True |
+| first|F2|cascade|F3|S1_conf_aligned|s0 | off_3pa_c | FGA_3 | 7.542 | 9.36 | 0.8057 | 4/4 | False | True |
+| first|F2|cascade|F3|S1_conf_aligned|s0 | off_rim_c | FGA_rim | 4.385 | 6.083 | 0.7209 | 4/4 | False | False |
+| first|F2|cascade|F3|S1_conf_aligned|s0 | off_tov_c | TOV | 2.059 | 2.756 | 0.7469 | 4/4 | False | False |
+| first|F2|cascade|F3|S1_conf_aligned|s0 | ncss | FGA_3 | -0.0 | -0.319 | 0.0012 | 3/4 | True | True |
+| first|F2|cascade|F3|S1_conf_aligned|s0 | ncss | FGA_rim | 0.297 | -0.007 | -44.904 | 4/4 | True | True |
+| first|F2|cascade|F3|S1_conf_aligned|s0 | ncss | TOV | -0.781 | -0.716 | 1.0912 | 2/4 | True | True |
+| cont|F1|cascade|F3|S1_weekly|s0 | off_3pa_c | FGA_3 | 6.934 | 8.352 | 0.8303 | 4/4 | False | True |
+| cont|F1|cascade|F3|S1_weekly|s0 | off_rim_c | FGA_rim | 3.681 | 6.082 | 0.6052 | 4/4 | False | False |
+| cont|F1|cascade|F3|S1_weekly|s0 | off_tov_c | TOV | 1.874 | 2.402 | 0.78 | 4/4 | False | False |
+| cont|F1|cascade|F3|S1_weekly|s0 | ncss | FGA_3 | 1.374 | 0.932 | 1.4739 | 4/4 | True | True |
+| cont|F1|cascade|F3|S1_weekly|s0 | ncss | FGA_rim | -0.464 | 0.252 | -1.837 | 4/4 | True | True |
+| cont|F1|cascade|F3|S1_weekly|s0 | ncss | TOV | -0.899 | -0.693 | 1.2974 | 2/4 | True | True |
+| cont|F2|cascade|F3|S1_weekly|s0 | off_3pa_c | FGA_3 | 7.516 | 9.695 | 0.7753 | 4/4 | False | False |
+| cont|F2|cascade|F3|S1_weekly|s0 | off_rim_c | FGA_rim | 3.657 | 5.582 | 0.6552 | 4/4 | False | False |
+| cont|F2|cascade|F3|S1_weekly|s0 | off_tov_c | TOV | 1.628 | 2.105 | 0.7737 | 3/4 | False | False |
+| cont|F2|cascade|F3|S1_weekly|s0 | ncss | FGA_3 | 1.295 | 0.144 | 9.0009 | 2/4 | True | True |
+| cont|F2|cascade|F3|S1_weekly|s0 | ncss | FGA_rim | -0.862 | -0.496 | 1.7377 | 2/4 | True | True |
+| cont|F2|cascade|F3|S1_weekly|s0 | ncss | TOV | -0.89 | -0.583 | 1.5281 | 2/4 | True | True |
+| first|F2|cascade|F3|S1_weekly|s0 | off_3pa_c | FGA_3 | 7.53 | 9.36 | 0.8045 | 4/4 | False | True |
+| first|F2|cascade|F3|S1_weekly|s0 | off_rim_c | FGA_rim | 4.371 | 6.083 | 0.7185 | 4/4 | False | False |
+| first|F2|cascade|F3|S1_weekly|s0 | off_tov_c | TOV | 2.049 | 2.756 | 0.7436 | 4/4 | False | False |
+| first|F2|cascade|F3|S1_weekly|s0 | ncss | FGA_3 | 0.003 | -0.319 | -0.0081 | 3/4 | True | True |
+| first|F2|cascade|F3|S1_weekly|s0 | ncss | FGA_rim | 0.29 | -0.007 | -43.8554 | 4/4 | True | True |
+| first|F2|cascade|F3|S1_weekly|s0 | ncss | TOV | -0.778 | -0.716 | 1.0874 | 2/4 | True | True |
+| cont|F1|cascade|F3|S1_conf_aligned_weekly|s0 | off_3pa_c | FGA_3 | 6.941 | 8.352 | 0.831 | 4/4 | False | True |
+| cont|F1|cascade|F3|S1_conf_aligned_weekly|s0 | off_rim_c | FGA_rim | 3.682 | 6.082 | 0.6054 | 4/4 | False | False |
+| cont|F1|cascade|F3|S1_conf_aligned_weekly|s0 | off_tov_c | TOV | 1.875 | 2.402 | 0.7804 | 4/4 | False | False |
+| cont|F1|cascade|F3|S1_conf_aligned_weekly|s0 | ncss | FGA_3 | 1.377 | 0.932 | 1.4768 | 4/4 | True | True |
+| cont|F1|cascade|F3|S1_conf_aligned_weekly|s0 | ncss | FGA_rim | -0.468 | 0.252 | -1.853 | 4/4 | True | True |
+| cont|F1|cascade|F3|S1_conf_aligned_weekly|s0 | ncss | TOV | -0.899 | -0.693 | 1.2971 | 2/4 | True | True |
+| cont|F2|cascade|F3|S1_conf_aligned_weekly|s0 | off_3pa_c | FGA_3 | 7.523 | 9.695 | 0.776 | 4/4 | False | False |
+| cont|F2|cascade|F3|S1_conf_aligned_weekly|s0 | off_rim_c | FGA_rim | 3.659 | 5.582 | 0.6556 | 4/4 | False | False |
+| cont|F2|cascade|F3|S1_conf_aligned_weekly|s0 | off_tov_c | TOV | 1.629 | 2.105 | 0.7741 | 3/4 | False | False |
+| cont|F2|cascade|F3|S1_conf_aligned_weekly|s0 | ncss | FGA_3 | 1.293 | 0.144 | 8.9909 | 2/4 | True | True |
+| cont|F2|cascade|F3|S1_conf_aligned_weekly|s0 | ncss | FGA_rim | -0.863 | -0.496 | 1.7383 | 2/4 | True | True |
+| cont|F2|cascade|F3|S1_conf_aligned_weekly|s0 | ncss | TOV | -0.89 | -0.583 | 1.5268 | 2/4 | True | True |
+| first|F2|cascade|F3|S1_conf_aligned_weekly|s0 | off_3pa_c | FGA_3 | 7.532 | 9.36 | 0.8047 | 4/4 | False | True |
+| first|F2|cascade|F3|S1_conf_aligned_weekly|s0 | off_rim_c | FGA_rim | 4.373 | 6.083 | 0.719 | 4/4 | False | False |
+| first|F2|cascade|F3|S1_conf_aligned_weekly|s0 | off_tov_c | TOV | 2.05 | 2.756 | 0.7437 | 4/4 | False | False |
+| first|F2|cascade|F3|S1_conf_aligned_weekly|s0 | ncss | FGA_3 | 0.001 | -0.319 | -0.0042 | 3/4 | True | True |
+| first|F2|cascade|F3|S1_conf_aligned_weekly|s0 | ncss | FGA_rim | 0.289 | -0.007 | -43.7311 | 4/4 | True | True |
+| first|F2|cascade|F3|S1_conf_aligned_weekly|s0 | ncss | TOV | -0.778 | -0.716 | 1.0869 | 2/4 | True | True |
+| first|F2|lgbm|F0|S1_monthly|s0 | off_3pa_c | FGA_3 | 8.867 | 9.36 | 0.9473 | 4/4 | False | True |
+| first|F2|lgbm|F0|S1_monthly|s0 | off_rim_c | FGA_rim | 5.972 | 6.083 | 0.9819 | 4/4 | False | True |
+| first|F2|lgbm|F0|S1_monthly|s0 | off_tov_c | TOV | 2.773 | 2.756 | 1.0062 | 4/4 | False | True |
+| first|F2|lgbm|F0|S1_monthly|s0 | ncss | FGA_3 | -0.413 | -0.319 | 1.2954 | 3/4 | True | True |
+| first|F2|lgbm|F0|S1_monthly|s0 | ncss | FGA_rim | -0.101 | -0.007 | 15.3344 | 4/4 | True | True |
+| first|F2|lgbm|F0|S1_monthly|s0 | ncss | TOV | -0.462 | -0.716 | 0.6459 | 2/4 | True | True |
+| first|F1|lgbm|F0|S1_monthly|s0 | off_3pa_c | FGA_3 | 9.432 | 9.64 | 0.9784 | 4/4 | False | True |
+| first|F1|lgbm|F0|S1_monthly|s0 | off_rim_c | FGA_rim | 6.044 | 6.358 | 0.9507 | 4/4 | False | True |
+| first|F1|lgbm|F0|S1_monthly|s0 | off_tov_c | TOV | 3.025 | 3.286 | 0.9205 | 4/4 | False | True |
+| first|F1|lgbm|F0|S1_monthly|s0 | ncss | FGA_3 | 0.002 | 0.375 | 0.0042 | 4/4 | True | True |
+| first|F1|lgbm|F0|S1_monthly|s0 | ncss | FGA_rim | 0.314 | 0.642 | 0.489 | 4/4 | True | True |
+| first|F1|lgbm|F0|S1_monthly|s0 | ncss | TOV | -0.901 | -1.063 | 0.8476 | 3/4 | True | True |
+| first|F2|lgbm|F0|S1_monthly|s1 | off_3pa_c | FGA_3 | 8.878 | 9.36 | 0.9485 | 4/4 | False | True |
+| first|F2|lgbm|F0|S1_monthly|s1 | off_rim_c | FGA_rim | 5.979 | 6.083 | 0.983 | 4/4 | False | True |
+| first|F2|lgbm|F0|S1_monthly|s1 | off_tov_c | TOV | 2.789 | 2.756 | 1.0119 | 4/4 | False | True |
+| first|F2|lgbm|F0|S1_monthly|s1 | ncss | FGA_3 | -0.419 | -0.319 | 1.3135 | 4/4 | True | True |
+| first|F2|lgbm|F0|S1_monthly|s1 | ncss | FGA_rim | -0.151 | -0.007 | 22.8271 | 4/4 | True | True |
+| first|F2|lgbm|F0|S1_monthly|s1 | ncss | TOV | -0.437 | -0.716 | 0.6105 | 1/4 | True | True |
+| cont|F2|cascade|F0|S1_monthly|s1 | off_3pa_c | FGA_3 | 8.325 | 9.695 | 0.8587 | 4/4 | False | True |
+| cont|F2|cascade|F0|S1_monthly|s1 | off_rim_c | FGA_rim | 4.304 | 5.582 | 0.7711 | 4/4 | False | False |
+| cont|F2|cascade|F0|S1_monthly|s1 | off_tov_c | TOV | 1.938 | 2.105 | 0.921 | 3/4 | False | True |
+| cont|F2|cascade|F0|S1_monthly|s1 | ncss | FGA_3 | 1.228 | 0.144 | 8.5394 | 2/4 | True | True |
+| cont|F2|cascade|F0|S1_monthly|s1 | ncss | FGA_rim | -1.097 | -0.496 | 2.2097 | 3/4 | True | True |
+| cont|F2|cascade|F0|S1_monthly|s1 | ncss | TOV | -0.763 | -0.583 | 1.3096 | 3/4 | True | True |
+| first|F2|lgbm|F1|S1_monthly|s0 | off_3pa_c | FGA_3 | 8.834 | 9.36 | 0.9438 | 4/4 | False | True |
+| first|F2|lgbm|F1|S1_monthly|s0 | off_rim_c | FGA_rim | 6.013 | 6.083 | 0.9886 | 4/4 | False | True |
+| first|F2|lgbm|F1|S1_monthly|s0 | off_tov_c | TOV | 2.752 | 2.756 | 0.9984 | 4/4 | False | True |
+| first|F2|lgbm|F1|S1_monthly|s0 | ncss | FGA_3 | -0.377 | -0.319 | 1.1817 | 3/4 | True | True |
+| first|F2|lgbm|F1|S1_monthly|s0 | ncss | FGA_rim | -0.196 | -0.007 | 29.6271 | 4/4 | True | True |
+| first|F2|lgbm|F1|S1_monthly|s0 | ncss | TOV | -0.45 | -0.716 | 0.6289 | 1/4 | True | True |
+| first|F2|lgbm|F2|S1_monthly|s0 | off_3pa_c | FGA_3 | 8.389 | 9.36 | 0.8962 | 4/4 | False | True |
+| first|F2|lgbm|F2|S1_monthly|s0 | off_rim_c | FGA_rim | 5.736 | 6.083 | 0.943 | 4/4 | False | True |
+| first|F2|lgbm|F2|S1_monthly|s0 | off_tov_c | TOV | 2.581 | 2.756 | 0.9366 | 4/4 | False | True |
+| first|F2|lgbm|F2|S1_monthly|s0 | ncss | FGA_3 | -0.157 | -0.319 | 0.4914 | 3/4 | True | True |
+| first|F2|lgbm|F2|S1_monthly|s0 | ncss | FGA_rim | -0.025 | -0.007 | 3.7135 | 4/4 | True | True |
+| first|F2|lgbm|F2|S1_monthly|s0 | ncss | TOV | -0.632 | -0.716 | 0.8823 | 3/4 | True | True |
+| first|F2|lgbm|F3|S1_monthly|s0 | off_3pa_c | FGA_3 | 8.405 | 9.36 | 0.898 | 4/4 | False | True |
+| first|F2|lgbm|F3|S1_monthly|s0 | off_rim_c | FGA_rim | 5.727 | 6.083 | 0.9416 | 4/4 | False | True |
+| first|F2|lgbm|F3|S1_monthly|s0 | off_tov_c | TOV | 2.579 | 2.756 | 0.9356 | 4/4 | False | True |
+| first|F2|lgbm|F3|S1_monthly|s0 | ncss | FGA_3 | -0.215 | -0.319 | 0.6737 | 3/4 | True | True |
+| first|F2|lgbm|F3|S1_monthly|s0 | ncss | FGA_rim | 0.062 | -0.007 | -9.3858 | 3/4 | True | True |
+| first|F2|lgbm|F3|S1_monthly|s0 | ncss | TOV | -0.608 | -0.716 | 0.8499 | 2/4 | True | True |
+
+### 7.5 Leak test on every column round 3 adds
+
+| column | corr_asjoined | corr_update | corr_level | n | static | verdict | level_verdict |
+|---|---|---|---|---|---|---|---|
+| off_3pa_c | 0.0062 | 0.027 | 0.0601 | 37347 | False | pass | pass (level-form) |
+| off_rim_c | 0.017 | 0.0881 | 0.074 | 37347 | False | pass | pass (level-form) |
+| off_tov_c | -0.0215 | -0.127 | -0.155 | 37347 | False | pass | LEAK (level-form) |
+| off_ftr_c | 0.0078 | 0.0889 | 0.0378 | 37347 | False | pass | pass (level-form) |
+| off_3pa_a1 | 0.0043 | 0.009 | 0.053 | 37347 | False | pass | pass (level-form) |
+| off_3pa_a3 | -0.003 | 0.0041 | 0.0454 | 37347 | False | pass | pass (level-form) |
+| off_rim_a1 | 0.0198 | 0.0371 | 0.0738 | 37347 | False | pass | pass (level-form) |
+| off_rim_a3 | 0.0155 | 0.0141 | 0.0698 | 37347 | False | pass | pass (level-form) |
+| off_tov_a1 | -0.0228 | -0.0707 | -0.1501 | 37347 | False | pass | LEAK (level-form) |
+| off_tov_a3 | -0.0086 | -0.0458 | -0.1269 | 37347 | False | pass | pass (level-form) |
+| off_ftr_a1 | 0.0058 | 0.0441 | 0.0412 | 37347 | False | pass | pass (level-form) |
+| off_ftr_a3 | 0.0035 | 0.0333 | 0.0328 | 37347 | False | pass | pass (level-form) |
+| is_conf_game | -0.0111 | 0.0067 | 0.0 | 37347 | False | pass | pass (level-form) |
+
+Gate: |as-joined change-form corr| <= 0.15 (CLAUDE.md, standing rule 'backtests must be honest'). The raw-centred reference columns are shown alongside the adjusted ones so the adjusted numbers are read against a column already accepted.
+
+### 7.6 Cells the budget did not reach (NOT RUN, not a result)
+
+| stage | population | arm | fold | feature_arm | scheme | role | seed | reason |
+|---|---|---|---|---|---|---|---|---|
+| 8 | first | lgbm | F2 | F0 | S1_conf_aligned | selection | 0 | wall clock 0.00h over budget 0.0h |
+| 9 | first | lgbm | F2 | F0 | S1_weekly | selection | 0 | wall clock 0.00h over budget 0.0h |
+| 11 | first | lgbm | F2 | F0 | S1_conf_aligned_weekly | selection | 0 | wall clock 0.00h over budget 0.0h |
+
+
+### 7.7 Execution note (worker, 2026-09-11)
+
+Written by hand, not by the trainer, because the run's own `run_meta` sees only its last pass.
+
+**Three passes, one checkpoint, no cell computed twice.** Pass 1 (2026-09-10 20:58 - 23:41, 2.73 h)
+ran the pre-registered stage order but was launched without `--stages`, and the flag's DEFAULT
+still held the earlier stage numbering `1,2,3,4,5,6` -- so stages 7-11 were never scheduled. That
+is a launcher defect, not a design change: the pre-registered stage list in section 6.3 is the one
+the code builds. Pass 1's partial append to this file was reverted in the working tree before it
+was committed, and the pre-registration commit was untouched. Pass 2 (2026-09-11 00:12 - 03:15,
+3.05 h) resumed from the checkpoint with the full stage list and added stage 7 (`F3`); it was
+stopped at a directed hard stop of 03:15 while stage 8 (`F0 x S1_conf_aligned`, 29 tree refits) was
+still fitting, and that cell's partial work was discarded rather than recorded. Pass 3 (03:16,
+0.00 h) fitted NOTHING: it re-read the checkpoint, marked every unreached cell NOT RUN, computed
+the floors, applied the decision rule and wrote this section.
+
+**What that leaves.** The `cascade` cross is COMPLETE -- all 4 features x 4 schemes, both folds on
+`cont` (the selection grid there) and fold 2 on `first` (the interaction probe). The `lgbm` grid
+has the reference on both folds, its second-seed noise floor, and the entire feature ladder
+(`F1`, `F2`, `F3` at `S1_monthly`). **No tree ALIGNMENT cell finished.** `S1_conf_aligned`,
+`S1_weekly` and `S1_conf_aligned_weekly` on the `first` population are NOT RUN, listed in
+section 7.6, and nothing about tree alignment is claimed from this run. The drop order the
+pre-registration fixed was honoured in the sense that `S1_conf_aligned_weekly` and the interaction
+cell were the first casualties; the hard stop then took the rest of the alignment ladder too,
+which the pre-registration did not anticipate and which is recorded here rather than smoothed over.
+
+**Cost, for whoever schedules the missing cells.** A tree fit on the fold-2 `first` training slice
+ran at 150 s under a quiet machine and 530 s under a busy one, at the four-thread cap; the three
+missing alignment cells are 29, 24 and 46 refits. On the 196-core box they are minutes, and they
+are the one piece of Decision 9c this sub-model still owes.
+
+**Two readings of the tables above that a reader should not have to derive.**
+
+1. The `cont` scheme ladder's adoption of `S1_conf_aligned` is MARGINAL and rests on one number.
+   Its log-loss gain is 0.00004 against a floor of 0.00198 -- a fiftieth of the floor. It clears
+   the rule only on the non-conference segment gap, 2.609 -> 2.349 pp, a 0.260 pp gain against a
+   0.25 pp threshold. That threshold was fixed before the run, but `cascade` is deterministic, so
+   the second-seed refit measured a segment spread of exactly 0.0 pp and cannot corroborate it.
+   Treat the `cont` alignment result as a lead, not a finding, until the segment floor has a
+   measured spread behind it.
+2. The scheme and feature ladder tables each show the reference row TWICE. The second is the
+   noise-floor cell -- the same spec under seed 1 -- which the ladder builder does not filter out.
+   It is left in deliberately: it puts the seed spread (0.000113 log loss, 0.076 pp conf4,
+   0.133 pp non-conference) on the same rows as the gains it has to be compared against.

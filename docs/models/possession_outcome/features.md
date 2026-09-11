@@ -13,6 +13,18 @@ adjustment to its output. The round-1 source is still reachable
 (`build_design(style_source="all_chances")`) so that `scripts/train_possession_outcome_v1.py`
 reproduces its own recorded numbers exactly.
 
+**Round 3 (2026-09-11) added three candidate columns and adopted NONE of them on the `first`
+population.** `is_conf_game` (the conference-game flag, Decision 9b) and the opponent-adjusted
+style rates `off_*_a1` / `opp_def_*_a1` (one pass) and `off_*_a3` / `opp_def_*_a3` (alternating
+least squares) are built by `cbb_sim.features.conference` and
+`cbb_sim.features.opponent_adjust` and are present in
+`data/processed/models/possession_outcome/round3/design_v3.parquet`, but the feature ladder's best
+arm gained 0.000225 log loss against a noise floor of 0.000804, so `F0` -- the round-2 bundle
+below -- stands unchanged. All thirteen columns PASS the change-form leak test (|as-joined corr|
+0.003-0.023 against a 0.15 gate); `experiments.md` section 7.5. `own_ratings`' `off_c` / `def_c`
+are ALREADY opponent-adjusted (a jointly fitted offence/defence ridge) and were deliberately not
+re-adjusted.
+
 Three rules govern every row of the table below and are worth stating before it:
 
 - **Strictly-before, always.** Every team-form feature is an expanding mean over that team's own

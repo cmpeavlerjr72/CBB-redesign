@@ -7,6 +7,17 @@ population (F2 log loss 1.51543, worst gated decile gap
 `cascade` + `C_plus_state` + **`S1`** on `cont`
 (1.49976, 1.86 pp).
 
+**ROUND 3 RUN 2026-09-11 (Decision 9): the round-2 winner STANDS on the `first` population.**
+Neither the conference flag (F1), nor one-pass opponent-adjusted style rates (F2), nor
+alternating-least-squares adjusted rates (F3) beat `F0` beyond the noise floor (best gain
+0.000225 against a floor of 0.000804), and no tree ALIGNMENT cell finished before the run's hard
+stop -- `S1_conf_aligned`, `S1_weekly` and `S1_conf_aligned_weekly` on `first` are NOT RUN and are
+the open item. On `cont` the complete `cascade` cross adopts `S1_conf_aligned`, but marginally and
+on one segment number; read `experiments.md` section 7.7 before using it. Opponent adjustment and
+conference alignment therefore remain PENDING EVIDENCE for this sub-model, which under the amended
+Decision 9 is a result and not a failure. Numbers: `experiments.md` sections 6-7. Motivating
+diagnostic: `docs/tests/possession_outcome_conference_regime_2026-09-10.md`.
+
 Round 1 adopted nothing: 0 of 11 arms cleared the calibration gate. Round 2 changed three things --
 two data fixes in the event layer, a completeness restriction on the universe, and a training-scheme
 dimension -- and the gate now passes. Nothing was tuned on the output; the numbers moved because the
