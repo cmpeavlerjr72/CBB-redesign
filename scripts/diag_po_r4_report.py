@@ -27,7 +27,17 @@ def md(df: pd.DataFrame, cols: list[str] | None = None) -> str:
     d = df[cols] if cols else df
     head = "| " + " | ".join(str(c) for c in d.columns) + " |"
     sep = "|" + "|".join("---" for _ in d.columns) + "|"
-    body = ["| " + " | ".join("" if pd.isna(v) else str(v) for v in row) + " |"
+    def _cell(v):
+        if isinstance(v, (list, tuple, dict)):
+            return str(v).replace("|", "/")
+        try:
+            if pd.isna(v):
+                return ""
+        except (TypeError, ValueError):
+            pass
+        return str(v).replace("|", "/")
+
+    body = ["| " + " | ".join(_cell(v) for v in row) + " |"
             for row in d.itertuples(index=False)]
     return "\n".join([head, sep, *body])
 
