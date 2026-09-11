@@ -32,19 +32,27 @@ THREE RULES IT KEEPS
    `refit_date <= game_date` and `max_train_date < game_date` at load. The rule
    is not re-implemented here.
 
-WHY S1 IS SERVED ONE SEGMENT PER RUN
-------------------------------------
-`loop.py` calls `clock.draw(team, state, u)` with no game index -- the clock is
-the one sub-model whose call site carries no `gidx`, because until now every
-clock arm was static. Editing that call site would mean editing `loop.py`, which
-another worker owns. So the schedule is honoured by PARTITIONING THE RUN instead
-of the batch: `ENGINE_CLOCK_SEGMENT=k` serves manifest entry `k`, and the runner
-dispatches each month's games to a run carrying that month's artifact. The
-partition comes from the same `ArtifactManifest.seg_of_game`, so the result is
-identical to per-row routing, and `game_segments()` is what the runner uses so
-the two cannot disagree. A schedule with more than one entry REFUSES to load
-without an explicit segment rather than silently serving a stale artifact -- the
-failure mode the change ledger calls out.
+HOW S1 IS SERVED (round 4, 2026-09-11)
+--------------------------------------
+Originally `loop.py` called `clock.draw(team, state, u)` with no game index --
+the clock was the one sub-model whose call site carried no `gidx`, because every
+clock arm before round 3c was static -- so a 6-month schedule could only be
+honoured by PARTITIONING THE RUN: `ENGINE_CLOCK_SEGMENT=k` serves manifest entry
+`k` and the runner dispatches that month's games to that run. That made the
+schedule unservable as an engine DEFAULT (a mixed-month batch raised rather than
+silently serving one month's fit to a whole season).
+
+Round 4 makes the call site game-indexed, the same way `EventAdapter.predict`
+and `FgMakeAdapter.predict` already route their S1 schedules: the adapter
+declares `wants_game_index = True`, `loop.py` passes the active rows' `gidx`,
+and `ArtifactManifest.segments(gidx)` selects each GAME's own artifact inside
+one run -- one batched `pmf` per segment over disjoint row sets, the same total
+row count and still no per-game model call. `ENGINE_CLOCK_SEGMENT=k` keeps
+working unchanged and pins the whole run to entry `k`, which is what
+`scripts/run_clk3c_closed_loop.py` and every round-3c result used; the two paths
+read the same `seg_of_game`, so they cannot disagree. An adapter that is handed
+no `gidx` and has more than one entry still REFUSES rather than serving a stale
+artifact -- the failure mode the change ledger calls out.
 
 THE FREEZE FLAG
 ---------------
@@ -182,15 +190,23 @@ class ClockAdapterV3:
     """One round-3c clock arm, batched, over the engine's own state block."""
 
     mode: str
-    arm: object
+    arm: object                      # the segment served when `segment` is pinned
     manifests: dict
-    segment: int
+    segment: int | None              # None = route per game through the manifest
     freeze: bool
     source: dict
     provisional: bool = True
     team_idx: np.ndarray = field(default_factory=lambda: np.zeros(0, dtype=np.int64))
     state_idx: dict = field(default_factory=dict)
     eoh: EohAccumulator = field(default_factory=EohAccumulator)
+    #: every fitted object of the schedule, indexed by manifest entry. Length 1
+    #: and equal to `(arm,)` when a segment is pinned.
+    arms: tuple = ()
+
+    #: `loop.py` reads this and passes the active rows' game index to `draw`.
+    #: An adapter without it keeps the old three-argument call, so the
+    #: incumbent `ClockAdapter` needs no change.
+    wants_game_index: bool = True
 
     # -- construction -----------------------------------------------------
     @classmethod
@@ -209,51 +225,58 @@ class ClockAdapterV3:
 
         seg_env = os.environ.get("ENGINE_CLOCK_SEGMENT", "")
         if seg_env == "":
-            if len(man.entries) > 1:
-                raise ValueError(
-                    f"{mode} is a schedule of {len(man.entries)} dated artifacts and "
-                    "loop.py's clock call site carries no game index, so the segment "
-                    "must be named: set ENGINE_CLOCK_SEGMENT=k and dispatch that "
-                    "segment's games to that run (scripts/run_clk3c_closed_loop.py "
-                    "does this). Refusing to silently serve one month's fit to a "
-                    "whole season.")
-            seg = 0
+            # Per-GAME routing: every entry is loaded and `pmf` dispatches each
+            # row to its own game's artifact. This is the default path and the
+            # one an engine DEFAULT needs.
+            segs = list(range(len(man.entries)))
+            pinned: int | None = None
         else:
-            seg = int(seg_env)
-        if not 0 <= seg < len(man.entries):
-            raise ValueError(f"ENGINE_CLOCK_SEGMENT={seg} outside 0..{len(man.entries) - 1}")
+            pinned = int(seg_env)
+            if not 0 <= pinned < len(man.entries):
+                raise ValueError(
+                    f"ENGINE_CLOCK_SEGMENT={pinned} outside 0..{len(man.entries) - 1}")
+            segs = [pinned]
 
-        entry = man.entries[seg]
-        with open(entry.path, "rb") as f:
-            arm = pickle.load(f)
-        # The pickle must BE the parametrisation the mode names. A P2/P3 arm is
-        # a `StateWrapArm` that re-derives its own state columns; a P1 arm is
-        # the bare fitted object. Serving one under the other's name would be a
-        # silent train/serve skew, which is the whole failure L23 is about.
-        got = getattr(arm, "parametrisation", "P1")
-        if got != spec["parametrisation"]:
-            raise ValueError(
-                f"{mode} names parametrisation {spec['parametrisation']} but "
-                f"{entry.path} holds {got}")
+        arms: list[object] = []
+        for k in segs:
+            entry = man.entries[k]
+            with open(entry.path, "rb") as f:
+                a = pickle.load(f)
+            # The pickle must BE the parametrisation the mode names. A P2/P3
+            # arm is a `StateWrapArm` that re-derives its own state columns; a
+            # P1 arm is the bare fitted object. Serving one under the other's
+            # name would be a silent train/serve skew, which is the whole
+            # failure L23 is about.
+            got = getattr(a, "parametrisation", "P1")
+            if got != spec["parametrisation"]:
+                raise ValueError(
+                    f"{mode} names parametrisation {spec['parametrisation']} but "
+                    f"{entry.path} holds {got}")
+            arms.append(a)
 
         team_idx = np.array([inp.team_names[c] for c in TEAM_COLS], dtype=np.int64)
         from cbb_sim.engine.adapters import STATE_INDEX
         freeze = os.environ.get("ENGINE_CLOCK_FREEZE", "0") == "1"
+        served = [man.entries[k] for k in segs]
         src = {
-            "path": str(entry.path), "arm": spec["base_arm"],
+            "path": str(served[0].path) if pinned is not None else
+            f"{len(served)} dated artifacts under {mpath.parent}",
+            "arm": spec["base_arm"],
             "parametrisation": spec["parametrisation"], "scheme": "S1",
-            "manifest": str(mpath), "segment": seg,
-            "refit_date": str(entry.refit_date.date()),
-            "max_train_date": None if entry.max_train_date is None
-            else str(entry.max_train_date.date()),
+            "manifest": str(mpath),
+            "segment": pinned, "routing": "pinned_segment" if pinned is not None
+            else "per_game_manifest",
+            "refit_date": [str(e.refit_date.date()) for e in served],
+            "max_train_date": [None if e.max_train_date is None
+                               else str(e.max_train_date.date()) for e in served],
             "n_segments": len(man.entries), "freeze_score_diff": freeze,
             "adopted": False,
             "note": ("round-3c closed-loop candidate (experiments.md section 12); "
                      "live fitted object, no lookup table, so no binning error (L26)"),
         }
-        return cls(mode=mode, arm=arm, manifests={"clock": man}, segment=seg,
+        return cls(mode=mode, arm=arms[0], manifests={"clock": man}, segment=pinned,
                    freeze=freeze, source=src, team_idx=team_idx,
-                   state_idx=dict(STATE_INDEX))
+                   state_idx=dict(STATE_INDEX), arms=tuple(arms))
 
     # -- the schedule the runner has to honour ----------------------------
     def game_segments(self) -> np.ndarray:
@@ -297,14 +320,38 @@ class ClockAdapterV3:
         df["prev_end"] = np.asarray(CK.PREV_END_LEVELS, dtype=object)[code]
         return df
 
-    def pmf(self, team: np.ndarray, state: np.ndarray) -> np.ndarray:
-        return self.arm.pmf(self._frame(team, state))
+    def pmf(self, team: np.ndarray, state: np.ndarray,
+            gidx: np.ndarray | None = None) -> np.ndarray:
+        """The predictive law per row.
 
-    def draw(self, team: np.ndarray, state: np.ndarray, u: np.ndarray) -> np.ndarray:
+        One batched `pmf` when a segment is pinned; otherwise one batched `pmf`
+        PER MANIFEST ENTRY over disjoint row sets, selected by each row's own
+        game through `ArtifactManifest.segments`. Same total row count, no
+        per-game model call, and a game can only ever be served the artifact
+        the manifest's honest-backtest checks already cleared for it."""
+        df = self._frame(team, state)
+        if self.segment is not None or len(self.arms) == 1:
+            return self.arms[0].pmf(df)
+        if gidx is None:
+            raise ValueError(
+                f"ENGINE_CLOCK={self.mode} serves a dated S1 schedule of "
+                f"{len(self.arms)} artifacts and needs the per-row game index to "
+                "select each game's refit; pass gidx, or pin the run with "
+                "ENGINE_CLOCK_SEGMENT=k. Refusing to silently serve one month's "
+                "fit to a whole season.")
+        segs = self.manifests["clock"].segments(np.asarray(gidx))
+        out = np.empty((len(df), CK.DURATION_CAP + 1), dtype=np.float64)
+        for k in np.unique(segs):
+            r = np.flatnonzero(segs == k)
+            out[r] = self.arms[int(k)].pmf(df.iloc[r].reset_index(drop=True))
+        return out
+
+    def draw(self, team: np.ndarray, state: np.ndarray, u: np.ndarray,
+             gidx: np.ndarray | None = None) -> np.ndarray:
         """One INTENDED duration per row, by inverse CDF on the engine's own
         uniforms. `loop.py` truncates at the horn (L20); nothing is clipped
         here."""
-        dur = CK.sample_from_pmf(self.pmf(team, state), u)
+        dur = CK.sample_from_pmf(self.pmf(team, state, gidx), u)
         left = state[:, self.state_idx["seconds_remaining"]].astype(np.int64)
         self.eoh.add(state[:, self.state_idx["period"]], left, dur)
         return dur
@@ -332,6 +379,12 @@ class RecordingClock:
     eoh: EohAccumulator = field(default_factory=EohAccumulator)
 
     @property
+    def wants_game_index(self) -> bool:
+        """Mirror the inner adapter, so wrapping never changes what `loop.py`
+        passes: a v3 arm still gets its `gidx`, the incumbent still does not."""
+        return bool(getattr(self.inner, "wants_game_index", False))
+
+    @property
     def provisional(self) -> bool:
         return bool(getattr(self.inner, "provisional", True))
 
@@ -343,11 +396,16 @@ class RecordingClock:
     def manifests(self) -> dict:
         return getattr(self.inner, "manifests", {}) or {}
 
-    def pmf(self, team: np.ndarray, state: np.ndarray) -> np.ndarray:
+    def pmf(self, team: np.ndarray, state: np.ndarray,
+            gidx: np.ndarray | None = None) -> np.ndarray:
+        if self.wants_game_index:
+            return self.inner.pmf(team, state, gidx)
         return self.inner.pmf(team, state)
 
-    def draw(self, team: np.ndarray, state: np.ndarray, u: np.ndarray) -> np.ndarray:
-        dur = self.inner.draw(team, state, u)
+    def draw(self, team: np.ndarray, state: np.ndarray, u: np.ndarray,
+             gidx: np.ndarray | None = None) -> np.ndarray:
+        dur = (self.inner.draw(team, state, u, gidx) if self.wants_game_index
+               else self.inner.draw(team, state, u))
         left = state[:, self.state_idx["seconds_remaining"]].astype(np.int64)
         self.eoh.add(state[:, self.state_idx["period"]], left, np.asarray(dur))
         return dur

@@ -239,6 +239,10 @@ def simulate_chunk(inp: EngineInputs, ad: Adapters, game_index: np.ndarray,
     push_lineups()
 
     rows_all = np.arange(n)
+    # Read once, outside the step loop: whether the clock adapter routes its
+    # own dated artifacts per game (round-3c/4 S1 arms) or is a single static
+    # object (the incumbent).
+    clock_gidx = bool(getattr(ad.clock, "wants_game_index", False))
     diag: dict[str, int] = {}
 
     def bump(k: str, v: int = 1) -> None:
@@ -261,7 +265,12 @@ def simulate_chunk(inp: EngineInputs, ad: Adapters, game_index: np.ndarray,
         # ---- (a) clock ---------------------------------------------------
         st.chance_number[act] = 1
         x = _state_block(st, act, n_state, off_sd, bonus)
-        dur = ad.clock.draw(team_off, x, book.draw("clock", act))
+        # An S1 clock schedule needs the row's own game to pick that game's
+        # monthly refit, exactly as `ad.event.predict` and `ad.fg.predict` do.
+        # The incumbent static `ClockAdapter` declares no `wants_game_index`
+        # and keeps its three-argument call unchanged.
+        dur = (ad.clock.draw(team_off, x, book.draw("clock", act), gidx)
+               if clock_gidx else ad.clock.draw(team_off, x, book.draw("clock", act)))
         left = st.seconds_remaining[act].astype(np.int64)
         censored = dur >= left
         bump("possessions_censored_by_period_end", int(censored.sum()))

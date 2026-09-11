@@ -37,9 +37,13 @@ Adoption state as of 2026-09-10 (each model's own verdict file is the source):
                         `ENGINE_EVENT=reference` (round 1's best-loss but
                         NOT-ADOPTED arms) stays wired and still sets
                         provisional_event=True.
-    clock               NO ARM ADOPTED (0 of 20 eligible). `ENGINE_CLOCK=reference`
-                        wires the best-CRPS arm, `reference_not_adopted_lgbm_quantile.pkl`.
-                        -> provisional_clock=True
+    clock               NO ARM ADOPTED (0 of 20 eligible offline, 0 of 6 in the
+                        round-3c closed loop). The DEFAULT since 2026-09-11 is
+                        `ENGINE_CLOCK=v3c_srfloor_P3_s1`, the best arm inside the
+                        engine (L31), served per game off its S1 manifest;
+                        `reference` still wires round 1's best-CRPS
+                        `reference_not_adopted_lgbm_quantile.pkl`.
+                        -> provisional_clock=True either way
     rotation            NO ARM ADOPTED (state-dependence veto, both rounds).
                         `ENGINE_ROTATION=reference` wires R2 hierarchical
                         Dirichlet + the fitted scheduler from
@@ -726,7 +730,15 @@ class Adapters:
     @classmethod
     def load(cls, inp: EngineInputs, fold: str = "F2", season: int = 2025) -> Adapters:
         ev_mode = os.environ.get("ENGINE_EVENT", "reference")
-        ck_mode = os.environ.get("ENGINE_CLOCK", "reference")
+        # DEFAULT, 2026-09-11 (PM decision, L31 + change ledger): the best arm
+        # the project has produced inside the engine,
+        # `empirical_km3_srfloor|P3|S1`. It is NOT ADOPTED -- round 3c passed no
+        # arm and `provisional_clock` stays True -- this is a serving choice of
+        # the best available arm over an incumbent it beats on G1 (+1.16 vs
+        # +2.70 possessions), end-of-half duration (-0.3 s vs -6.0 s) and
+        # Decision-8 responsiveness (1.06 vs 1.43). `reference` stays selectable
+        # for reproduction of every gate report before this date.
+        ck_mode = os.environ.get("ENGINE_CLOCK", "v3c_srfloor_P3_s1")
         rot_mode = os.environ.get("ENGINE_ROTATION", "reference")
         fg3 = os.environ.get("ENGINE_FG3", "decision8")
         # DEFAULT, 2026-09-10 (PM decision recorded in L29 and the change

@@ -1,8 +1,8 @@
 """
-test_clock_adapter_v3.py -- the three properties round 3c's clock adapter must
-have, asserted against the REAL engine and the REAL fitted artifacts.
+test_clock_adapter_v3.py -- the four properties the round-3c/4 clock adapter
+must have, asserted against the REAL engine and the REAL fitted artifacts.
 
-Pre-registration: `docs/models/clock/experiments.md` section 12.
+Pre-registration: `docs/models/clock/experiments.md` sections 12 and 14.
 
   1. A sampled duration is the duration the offence INTENDED, and the horn
      truncation happens in the engine (L20). The adapter never clips, and its
@@ -12,6 +12,9 @@ Pre-registration: `docs/models/clock/experiments.md` section 12.
      `ENGINE_CLOCK_FREEZE=1`, and a different one without it.
   3. Manifest selection never serves a game an artifact refit at or after its
      own month, and never one whose training window reaches the game.
+  4. A mixed-month batch is routed per GAME to that game's own refit,
+     bit-identically to pinning the run to that segment, and the engine runs a
+     dated schedule without a pinned segment at all (round 4, 2026-09-11).
 
 Each test skips rather than inventing inputs if the artifact it needs has not
 been built.
@@ -51,11 +54,16 @@ def inp():
     return EngineInputs.load(INPUT_DIR, TAG)
 
 
-def _load(inp, mode: str, freeze: bool = False, segment: int = 0):
+def _load(inp, mode: str, freeze: bool = False, segment: int | None = 0):
+    """`segment=None` leaves `ENGINE_CLOCK_SEGMENT` UNSET, which is the
+    per-game routing path an engine default runs on."""
     from cbb_sim.engine.clock_adapter_v3 import ClockAdapterV3
     old = {k: os.environ.get(k) for k in ("ENGINE_CLOCK_FREEZE", "ENGINE_CLOCK_SEGMENT")}
     os.environ["ENGINE_CLOCK_FREEZE"] = "1" if freeze else "0"
-    os.environ["ENGINE_CLOCK_SEGMENT"] = str(segment)
+    if segment is None:
+        os.environ.pop("ENGINE_CLOCK_SEGMENT", None)
+    else:
+        os.environ["ENGINE_CLOCK_SEGMENT"] = str(segment)
     try:
         return ClockAdapterV3.load(inp, mode, 2025)
     finally:
@@ -220,20 +228,20 @@ def test_a_leaky_clock_manifest_is_rejected(inp):
 
 
 @pytest.mark.skipif(not _modes_available(), reason="no round-3c clock artifacts built")
-def test_a_schedule_refuses_to_load_without_an_explicit_segment(inp):
-    """`loop.py` gives the clock no game index, so a dated schedule must be
-    served one segment per run. Loading one without naming the segment would
-    silently serve one month's fit to a whole season."""
-    from cbb_sim.engine.clock_adapter_v3 import ClockAdapterV3
+def test_a_schedule_refuses_to_predict_without_a_game_index(inp):
+    """Round 4 replaced the old refusal-at-LOAD with per-game routing, so the
+    refusal moved to the one place it is still needed: a multi-artifact
+    schedule asked for a predictive law with no game index cannot know which
+    month's fit any row belongs to, and must raise rather than silently serve
+    one month's fit to a whole season. (Before round 4 `loop.py` passed no game
+    index at all and this raised at load; the call site is now indexed.)"""
     mode = _modes_available()[0]
-    old = os.environ.get("ENGINE_CLOCK_SEGMENT")
-    os.environ.pop("ENGINE_CLOCK_SEGMENT", None)
-    try:
-        with pytest.raises(ValueError, match="segment"):
-            ClockAdapterV3.load(inp, mode, 2025)
-    finally:
-        if old is not None:
-            os.environ["ENGINE_CLOCK_SEGMENT"] = old
+    ad = _load(inp, mode, segment=None)
+    assert len(ad.arms) > 1
+    team = inp.team_static[np.arange(64) % inp.n_games, 0].astype(np.float64)
+    x = _state(None, 64, seconds_remaining=600.0, score_diff=0.0)
+    with pytest.raises(ValueError, match="game index"):
+        ad.pmf(team, x)
 
 
 # ---------------------------------------------------------------------------
@@ -264,3 +272,80 @@ def test_the_subset_rule_is_the_pre_registered_one(inp):
     import pandas as pd
     d = pd.to_datetime(inp.games["game_date"].to_numpy()[rows])
     assert d.to_period("M").nunique() >= 4
+
+
+# ---------------------------------------------------------------------------
+# 4. per-game routing of the S1 schedule (round 4, 2026-09-11)
+# ---------------------------------------------------------------------------
+@pytest.mark.skipif(not _modes_available(), reason="no round-3c clock artifacts built")
+@pytest.mark.parametrize("mode", _modes_available())
+def test_a_mixed_month_batch_gets_each_game_its_own_months_artifact(inp, mode):
+    """One batch, games from several months, each row served by ITS game's
+    refit.
+
+    The reference for each row is the SAME adapter pinned to that game's
+    segment with `ENGINE_CLOCK_SEGMENT` -- the path every round-3c result was
+    produced on -- so per-game routing is asserted to be bit-identical to the
+    run-partitioning it replaces. The last assertion keeps the test from being
+    vacuous: two months' artifacts must actually disagree somewhere, or
+    routing could not be distinguished from serving one fit to everything."""
+    routed = _load(inp, mode, segment=None)
+    man = routed.manifests["clock"]
+    assert routed.segment is None
+    assert len(routed.arms) == len(man.entries)
+
+    segs = man.seg_of_game
+    uniq = np.unique(segs)
+    assert len(uniq) > 1, "slate covers one refit month; routing would be untested"
+    gsel = np.array([int(np.flatnonzero(segs == k)[0]) for k in uniq], dtype=np.int64)
+
+    gidx = np.tile(gsel, 50)                      # interleaved, not blocked
+    team = inp.team_static[gidx, 0].astype(np.float64)
+    x = _state(None, len(gidx), seconds_remaining=600.0, score_diff=0.0, period=2.0)
+    got = routed.pmf(team, x, gidx)
+
+    pmfs = {}
+    for k, g in zip(uniq, gsel, strict=True):
+        pinned = _load(inp, mode, segment=int(k))
+        rows = np.flatnonzero(gidx == g)
+        want = pinned.pmf(team[rows], x[rows])
+        assert np.array_equal(got[rows], want), f"segment {k} routed to the wrong artifact"
+        pmfs[int(k)] = pinned.pmf(team[:len(gsel)], x[:len(gsel)])
+    assert any(not np.array_equal(pmfs[int(uniq[0])], pmfs[int(k)]) for k in uniq[1:]), \
+        "every month's artifact gives the same law; this test cannot see routing"
+
+    # and the draw path carries the index through
+    u = np.random.default_rng(3).uniform(1e-9, 1 - 1e-9, len(gidx))
+    dur = routed.draw(team, x, u, gidx)
+    assert len(dur) == len(gidx) and dur.min() >= 0
+
+
+@pytest.mark.skipif(not _modes_available(), reason="no round-3c clock artifacts built")
+def test_the_engine_runs_a_dated_clock_schedule_without_a_pinned_segment(inp):
+    """`loop.py`'s clock call site hands the adapter the active rows' game
+    index, so a schedule serves a mixed-month batch inside ONE run. Before
+    round 4 this raised."""
+    from cbb_sim.engine import loop as L
+    from cbb_sim.engine.adapters import Adapters
+    mode = _modes_available()[0]
+    old = {k: os.environ.get(k) for k in
+           ("ENGINE_CLOCK", "ENGINE_CLOCK_SEGMENT", "ENGINE_CLOCK_FREEZE")}
+    os.environ.update({"ENGINE_CLOCK": mode, "ENGINE_CLOCK_FREEZE": "0"})
+    os.environ.pop("ENGINE_CLOCK_SEGMENT", None)
+    try:
+        ad = Adapters.load(inp, "F2", 2025)
+        assert ad.clock.segment is None
+        assert ad.clock.wants_game_index
+        # games spread across the slate, so several months are in one chunk
+        gi = np.linspace(0, inp.n_games - 1, 8).astype(np.int64)
+        segs = ad.clock.manifests["clock"].seg_of_game[gi]
+        assert len(np.unique(segs)) > 1, "chunk does not span two refit months"
+        res = L.simulate_chunk(inp, ad, gi, np.zeros(len(gi), dtype=np.int64),
+                               keep_players=False)
+    finally:
+        for k, v in old.items():
+            if v is None:
+                os.environ.pop(k, None)
+            else:
+                os.environ[k] = v
+    assert (res.games["possessions"] > 40).all() and (res.games["possessions"] < 120).all()
