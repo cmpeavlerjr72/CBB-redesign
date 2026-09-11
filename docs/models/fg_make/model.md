@@ -3,9 +3,47 @@
 Bake-off run 2026-09-10. Full grid, every number, and the pre-registration it
 executes: `docs/models/fg_make/experiments.md`. Feature provenance:
 `docs/models/fg_make/features.md`. Code: `src/cbb_sim/models/fg_make.py`,
-`scripts/train_fg_make_v1.py`.
+`scripts/train_fg_make_v1.py`, `scripts/train_fg_make_v2.py`,
+`scripts/train_fg_make_v2b_s1.py`.
 
-**Headline.** All three shot classes go to **LightGBM on the full bundle**
+> ## STATUS 2026-09-10: ROUNDS 2 AND 2b SUPERSEDE THE ROUND-1 STATE BLOCK
+>
+> **Round 1's `score_diff` is a POST-OUTCOME feature and the round-1 winner
+> must not be shipped.** It is read off the feed's running score on the
+> attempt's own row, and that column is the score AFTER the play: a made three
+> already carries its own three points. Evidence, proved three ways off the raw
+> feed:
+> `docs/tests/fg_make_state_confound_2026-09-10.md`. The leak manufactures
+> 62.0 / 83.3 / 83.5% of the apparent margin effect (rim / jumper / three) and
+> is the mechanism behind L23's margin SD 34.6 and home/away correlation -0.64.
+>
+> **Round 2 (experiments.md sections 13-14) re-parametrised the state block and
+> adopted `S-C R2_C_safe_state` on all three classes**: the team block, the
+> shooter block and `period`, `seconds_remaining`, `in_bonus`, `chance_number`,
+> `chance_elapsed_s`, `is_transition_f` -- **no margin term of any kind**. It
+> passes the `ARCHITECTURE_DECISIONS.md` Decision-10 closed-loop gate (margin SD
+> 14.05 against the round-1 arm's 35.39 on the same paired 500-game x 5-seed
+> run; home/away correlation +0.241 against -0.605) and improves calibration on
+> all three classes. It costs 35.0 / 38.2 / 36.4 noise floors of log loss --
+> that gap was the leak.
+>
+> **Round 2b (sections 15-16) adopted the standing S1 scheme** (L21, monthly
+> in-season walk-forward refit) for the same arm: no gate regressed, log loss
+> improved by 0.19-0.60 floors, and the closed-loop gate passed.
+>
+> **The shipping model is therefore `ENGINE_FG_MAKE=round2b_S_C_s1`**, served
+> from `data/processed/models/fg_make/round2b/S_C_s1/` through
+> `cbb_sim.engine.manifest`. The engine DEFAULT is still `winner` (round 1's
+> artifacts, byte for byte); switching it is the PM's step. Sections 4-8 below
+> describe ROUND 1 and are left exactly as they were written.
+>
+> **Still open and blocking a round 3:** this model is STILL keyed on
+> `participant_1_id` for the shooter, which the change ledger records as the
+> assister on ~49% of assisted made field goals. Rounds 2 and 2b share that
+> defect equally across every arm, so it cannot have decided anything here, but
+> the adopted artifacts carry it. See section 9 item 8.
+
+**Headline (round 1, as written).** All three shot classes go to **LightGBM on the full bundle**
 (`C_plus_state`), each with calibration inside the gate and with the shooter
 driver tracked at slope 0.99-1.01. `FGA_rim` and `FGA_jump2` beat the best
 passing non-tree arm by 33.7 and 32.4 noise floors. `FGA_3` is LightGBM under
@@ -321,6 +359,15 @@ correlating 0.949-0.958. The restriction neither helps nor hurts here.
 
 ## 7. Consumption from the sim
 
+**Round 2b changed this.** The shipping model is a SCHEDULE, not three
+objects: `data/processed/models/fg_make/round2b/S_C_s1/manifest_<class>.json`
+plus one joblib per (class, refit date), loaded through
+`cbb_sim.engine.manifest.ArtifactManifest` and selected per game by tipoff.
+`cbb_sim.engine.adapters.FgMakeAdapter` does this when
+`ENGINE_FG_MAKE=round2b_S_C_s1`; `ENGINE_FG_MAKE=round2_S_C` serves the static
+round-2 winner, and the default `winner` serves the round-1 artifacts below.
+The round-1 consumption pattern, unchanged and still valid for those artifacts:
+
 ```python
 import joblib
 from cbb_sim.models import fg_make as FG
@@ -358,8 +405,47 @@ p_make = p[:, FG.CLASS_INDEX["MAKE"]]
 | `data/processed/models/fg_make/winner_{class}.joblib` | The adopted arm per class, refit on F2 train. All three are `lgbm` after the Decision 8 re-decision; `winner_FGA_3.joblib` carries `meta["gate"] = "ARCHITECTURE_DECISIONS.md Decision 8"` and `meta["supersedes_arm"] = "team_baseline"` |
 | `data/processed/models/fg_make/reference_superseded_FGA_3.joblib` | The `team_baseline` arm the steps-only gate had selected for threes, kept for reference. NOT for use by the engine |
 | `data/processed/models/fg_make/run_report_partial.json` | Checkpoint written before the lineup block |
+| `data/processed/models/fg_make/state_confound.json` | ROUND 2 step 1: the leak proof and the confound decomposition (`scripts/diag_fg_make_state_confound.py`) |
+| `data/processed/models/fg_make/round2/grid_results.csv`, `run_report.json`, `closed_loop.json` | ROUND 2: every (class, fold, arm) row, the full detail, and the Decision-10 closed-loop table |
+| `data/processed/models/fg_make/round2/<arm>/fg_make_<class>_F2.joblib` | ROUND 2: one fitted LightGBM per (arm, class). `S_C`'s three carry `adopted=True` |
+| `data/processed/models/fg_make/round2b/S_C_s1/<class>_<refit_date>.joblib` + `manifest_<class>.json` | ROUND 2b: the S1 schedule, 18 artifacts and three `cbb_sim.engine.manifest`-format manifests, all `adopted=True`. **This is the shipping model** |
+| `results/engine_v0/fgmake_r2_<arm>/` | The six paired closed-loop engine runs |
 
 ## 9. Known gaps / followups
+
+0. **ROUND 2 / 2b SUPERSEDE ITEMS 1-7's CONTEXT.** Items 1-7 were written about
+   the round-1 model. What changed: item 7 ("nothing here has been through a
+   paired-seed sim run") is DONE -- six paired engine runs, `experiments.md`
+   sections 14.5, 14.6 and 16.3 -- and it found the defect that item 0 of this
+   list now names. Items 2-6 are unchanged and still open.
+
+8. **The shooter is keyed on the WRONG participant column (BLOCKING, round 3).**
+   `fg_make._season_events` calls `event_stream.build_stream` without
+   `shooter_key`, so it takes `DEFAULT_SHOOTER_KEY = participant_1_id`, which
+   `docs/tests/shooter_key_audit_2026-09-10.md` measures as the ASSISTER on
+   48.98% of assisted made field goals -- mislabelling 11.9 / 5.0 / 14.1% of
+   rim / jumper / three attempts in 2024 and 12.0 / 4.9 / 14.1% in 2025. The
+   whole shooter as-of block accumulates onto the wrong player on those rows.
+   `usage` has already been re-run on `shot_shooter_id` (round 2 there, winner
+   unchanged); fg_make has not. Rounds 2 and 2b are unaffected as COMPARISONS
+   -- every arm reads the same contaminated events table, and the state block
+   is orthogonal to the shooter label -- but the adopted artifacts carry it and
+   a round 3 with the corrected key is required before any player prop is built
+   on this model.
+
+9. **G4's defence tercile regressed under the honest arms** (1.066 pp for S-C
+   against a 1.0 pp tolerance, where the round-1 leaked trio read 0.914 pp).
+   Every honest arm misses it, including the one with no state at all
+   (S-B, 1.021 pp), so it is not the state parametrisation's doing; the leaked
+   arm's extra (spurious) discriminating power on the test rows was flattering
+   it. `experiments.md` section 14.7.
+
+10. **The end-game effect this model declined to carry belongs upstream.** In
+    the last two minutes a team trailing by 4-9 takes 52.0% of its attempts
+    from three at 8.4 s on the ball, against 27.0% at 19.0 s for a team leading
+    by 4-9. That is a SHOT-MIX and CLOCK effect, owned by `possession_outcome`
+    and the clock model, and neither currently carries an end-game state term
+    of that shape. `docs/tests/fg_make_state_confound_2026-09-10.md` section 3.
 
 1. **The `FGA_3` gate question is RESOLVED** (Decision 8, 2026-09-10): the
    responsiveness gate gained the slope-ratio clause and all three classes take

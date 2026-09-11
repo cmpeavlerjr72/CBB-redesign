@@ -758,3 +758,453 @@ the leak was removed, and S-B is adopted. That outcome is pre-committed here so
 it cannot later be presented as a disappointment.
 
 <!-- RESULTS FOR ROUND 2 APPEND BELOW THIS LINE -->
+
+---
+
+## 14. ROUND 2 RESULTS (appended by `scripts/train_fg_make_v2.py` +
+## `scripts/diag_fg_make_round2_closedloop.py`, run 2026-09-10)
+
+Executes section 13 exactly as written. No arm was added, dropped, re-tuned or
+re-thresholded after any number below existed. Artifacts:
+`data/processed/models/fg_make/round2/{grid_results.csv, run_report.json,
+closed_loop.json, <arm>/fg_make_<class>_F2.joblib}`.
+
+### 14.0 Harness validity: S-A reproduces round 1 EXACTLY
+
+| class | round 1 `lgbm` / `C_plus_state` F2 log loss | round 2 S-A F2 log loss | delta |
+|---|---:|---:|---:|
+| `FGA_rim` | 0.641605 | 0.641605 | 0.0 |
+| `FGA_jump2` | 0.642003 | 0.642003 | 0.0 |
+| `FGA_3` | 0.561085 | 0.561085 | 0.0 |
+
+Bit-identical on all three classes, so every difference below is the state
+block and nothing else in the harness.
+
+### 14.1 Noise floors (section 13.4: the larger of the two)
+
+| class | round-1 game-block bootstrap SE | five-seed S-A refit SD (this round) | **floor used** |
+|---|---:|---:|---:|
+| `FGA_rim` | 0.000539 | 0.000211 | **0.000539** |
+| `FGA_jump2` | 0.000578 | 0.000124 | **0.000578** |
+| `FGA_3` | 0.000849 | 0.000089 | **0.000849** |
+
+Seed log losses: rim [0.641605, 0.641637, 0.641562, 0.641985, 0.641982];
+jumper [0.642003, 0.642178, 0.642281, 0.642092, 0.641986];
+three [0.561085, 0.560962, 0.561145, 0.561145, 0.561190].
+
+### 14.2 How often the S-D indicators fire on the F2 test season
+
+| class | `gt_flag` n (%) / make% | `eg_trail` n (%) / make% | `eg_lead` n (%) / make% | base make% |
+|---|---|---|---|---:|
+| `FGA_rim` | 14,678 (6.23%) / 62.57 | 4,192 (1.78%) / 59.16 | 2,266 (0.96%) / 62.14 | 58.46 |
+| `FGA_jump2` | 8,172 (5.48%) / 40.33 | 1,756 (1.18%) / 38.61 | 1,200 (0.81%) / 35.83 | 39.18 |
+| `FGA_3` | 15,685 (6.35%) / 33.03 | 5,609 (2.27%) / **26.74** | 1,338 (0.54%) / 29.60 | 33.80 |
+
+Every indicator fires on 0.5-6.4% of the test season, so none of them is a
+dead column. The raw make rate inside `eg_trail` on threes is **26.74% against
+a 33.80% base** -- the 7-8 pp end-game effect the evidence doc measured on
+2022-2025, reproducing in the held-out test fold's own raw data, which is the
+strongest single confirmation that the effect is real and not a fit artefact.
+`eg_lead` on the jumper and the three is the thinnest cell (1,200 and 1,338
+attempts) and is the one number here to read as indicative only. The SD of
+`score_diff_pre` on the test fold is 10.7-11.2 points, so the continuous term
+S-E carries is not degenerate either.
+
+### 14.3 F2 (SELECTION), per class -- the full grid
+
+Sorted by log loss. `calib` is the worst gated decile gap (<= 2.00 pp);
+`respons_d8` is `ARCHITECTURE_DECISIONS.md` Decision 8 under the adopted
+`low_span_exempt` reading.
+
+**`FGA_rim`** (n = 235,454, floor 0.000539)
+
+| arm | feature set | log loss | brier | calib | worst gap pp | D8 | slope shooter | slope defence | chance gap first / cont |
+|---|---|---:|---:|---|---:|---|---:|---:|---|
+| S-A (INELIGIBLE) | `R2_A_round1_leaked` | 0.641605 | 0.225818 | PASS | 1.186 | PASS | 1.0075 | 0.9992 | 0.174 / 0.152 |
+| S-E | `R2_E_safe_plus_continuous` | 0.660026 | 0.233927 | PASS | 0.569 | PASS | 0.9983 | 0.9647 | 0.159 / 0.047 |
+| S-D | `R2_D_safe_plus_indicators` | 0.660124 | 0.233972 | PASS | 0.644 | PASS | 1.0085 | 0.9556 | 0.118 / 0.050 |
+| **S-C** | `R2_C_safe_state` | 0.660471 | 0.234123 | PASS | 0.663 | PASS | 0.9988 | 0.9564 | 0.145 / 0.050 |
+| S-B | `R2_B_no_state` | 0.667788 | 0.237594 | PASS | 1.236 | PASS | 1.0116 | 1.0044 | 0.583 / 3.328 |
+
+**`FGA_jump2`** (n = 149,075, floor 0.000578)
+
+| arm | feature set | log loss | brier | calib | worst gap pp | D8 | slope shooter | slope defence | chance gap first / cont |
+|---|---|---:|---:|---|---:|---|---:|---:|---|
+| S-A (INELIGIBLE) | `R2_A_round1_leaked` | 0.642003 | 0.226228 | PASS | 1.580 | PASS | 0.9860 | 0.8281 | 0.428 / 0.027 |
+| **S-C** | `R2_C_safe_state` | 0.664094 | 0.235713 | PASS | 1.212 | PASS | 1.0233 | 0.9597 | 0.368 / 0.059 |
+| S-D | `R2_D_safe_plus_indicators` | 0.664116 | 0.235728 | PASS | 1.211 | PASS | 0.9846 | 0.9440 | 0.365 / 0.067 |
+| S-E | `R2_E_safe_plus_continuous` | 0.664165 | 0.235748 | PASS | 1.308 | PASS | 1.0035 | 0.9416 | 0.393 / 0.024 |
+| S-B | `R2_B_no_state` | 0.665899 | 0.236569 | **FAIL** | 2.014 | PASS | 0.9701 | 0.9459 | 0.386 / 0.521 |
+
+**`FGA_3`** (n = 246,885, floor 0.000849)
+
+| arm | feature set | log loss | brier | calib | worst gap pp | D8 | slope shooter | slope defence | chance gap first / cont |
+|---|---|---:|---:|---|---:|---|---:|---:|---|
+| S-A (INELIGIBLE) | `R2_A_round1_leaked` | 0.561085 | 0.190895 | PASS | 1.007 | PASS | 0.9878 | 0.4736 | 0.284 / 0.683 |
+| S-E | `R2_E_safe_plus_continuous` | 0.591835 | 0.203667 | PASS | 0.770 | **FAIL** | 0.9849 | 0.5064 | 0.251 / 0.659 |
+| S-D | `R2_D_safe_plus_indicators` | 0.591880 | 0.203692 | PASS | 0.883 | PASS | 0.9875 | 0.5067 | 0.254 / 0.703 |
+| **S-C** | `R2_C_safe_state` | 0.591958 | 0.203708 | PASS | 0.852 | PASS | 0.9880 | 0.4657 | 0.233 / 0.718 |
+| S-B | `R2_B_no_state` | 0.594319 | 0.204750 | PASS | 0.863 | **FAIL** | 0.9903 | 0.3895 | 0.286 / 0.298 |
+
+The two Decision-8 failures are both on the `def_allow_c` driver, whose
+realised F2 span on threes is **1.373 pp** -- below the 2 pp low-span
+threshold. Under the adopted `low_span_exempt` reading a low-span driver is
+exempt from the SLOPE band but still needs 3 of 4 monotone steps; S-B and S-E
+each manage 2. Section 14.7 records that this is the open scope question
+`model.md` section 9 item 1 already flagged, and that it does not change the
+winner under either reading.
+
+### 14.4 F1 (reported, selects nothing)
+
+| class | S-A | S-B | S-C | S-D | S-E |
+|---|---:|---:|---:|---:|---:|
+| `FGA_rim` | 0.645369 | 0.670600 | 0.664051 | 0.663899 | 0.663603 |
+| `FGA_jump2` | 0.643098 | 0.666094 | 0.664590 | 0.664514 | 0.664803 |
+| `FGA_3` | 0.562400 | 0.595710 | 0.593166 | 0.593309 | 0.593212 |
+
+F1's ordering of S-C / S-D / S-E is not the same as F2's on any class, and
+every F1 gap between them is under 0.0004 -- consistent with the three being
+indistinguishable, which is what F2's floors also say.
+
+### 14.5 THE DECISION-10 CLOSED-LOOP GATE
+
+500 games x 5 seeds = 2,500 simulations per arm, the same game rows and the
+same seeds for every arm, so the RNG streams are paired by construction.
+Adapters: `ENGINE_EVENT=round2_s1` (passed explicitly -- the environment
+default was changed to `reference` by in-flight work elsewhere and must not be
+relied on), `ENGINE_CLOCK=reference`, `ENGINE_ROTATION=reference`,
+`ENGINE_FG3=decision8`, `ENGINE_FG_MAKE=round2_<arm>`.
+
+| arm | margin SD | d vs S-B | corr(home,away) | d | poss/gm | d | total bias | d | PPP | **gate** |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---|
+| S-A | **35.389** | **+21.261** | **-0.605** | **-0.850** | 71.259 | +0.447 | +1.494 | -3.057 | 1.0308 | **FAIL** (CL1, CL2, CL4) |
+| S-B (reference) | 14.128 | 0.000 | +0.245 | 0.000 | 70.811 | 0.000 | +4.551 | 0.000 | 1.0590 | PASS |
+| **S-C** | 14.050 | -0.079 | +0.241 | -0.004 | 70.778 | -0.034 | +3.961 | -0.590 | 1.0554 | **PASS** |
+| S-D | 14.109 | -0.020 | +0.217 | -0.028 | 70.776 | -0.035 | +4.046 | -0.505 | 1.0560 | **PASS** |
+| S-E | 14.133 | +0.005 | +0.225 | -0.020 | 70.737 | -0.075 | +3.896 | -0.655 | 1.0554 | **PASS** |
+| ACTUAL (same 500 games) | 12.127 | -- | +0.423 | -- | 67.503 | -- | 0.000 | -- | 1.0775 | -- |
+
+**S-A reproduces L23's signature on this subset and fails three of the four
+checks**: margin SD 35.39 against 14.13 for the same engine with the same
+streams, and the home/away correlation inverted to -0.605 against a realised
++0.423. The three honest state arms are indistinguishable from the no-state
+reference on every closed-loop quantity: the largest movement any of them makes
+is 0.079 points of margin SD, 0.028 of correlation, 0.075 of a possession and
+0.66 points of total.
+
+**What remains outside the ABSOLUTE gate is not fg_make's.** Possessions are
++3.3 and PPP -0.022 for every arm including S-B, which carries no state at all
+-- that is the clock's `score_diff` (L23) and the clock round-3 censoring fix
+(L20), untouched here. Margin SD 14.05 against a realised 12.13 and correlation
++0.24 against +0.42 move by less than 0.08 and 0.03 across the four honest
+arms, so they are not this sub-model's to move either.
+
+### 14.6 eFG% AND MAKE RATE BY SHOT CLASS IN THE ENGINE
+
+The same runs, using the FGM-by-class instrumentation added to the results
+contract on 2026-09-10. Truth is the event layer
+(`data/processed/truth/team_game_shots_v1.parquet`) on the same 500 games;
+eFG% actual is that table's `box_fgm` / `box_fga` / `box_fgm3` and is
+PROVISIONAL.
+
+| arm | eFG% | rim make% | jump2 make% | three make% | FT% | rim share | jump2 share | 3 share |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|
+| S-A | **48.633** | 55.777 | 36.967 | 32.659 | 72.300 | 36.509 | 23.578 | 39.914 |
+| S-B | 50.329 | 58.019 | 37.814 | 33.838 | 72.577 | 36.798 | 23.953 | 39.249 |
+| **S-C** | **50.061** | 57.322 | 38.003 | 33.734 | 72.659 | 36.819 | 23.929 | 39.253 |
+| S-D | 50.117 | 57.281 | 38.413 | 33.701 | 72.564 | 36.757 | 23.958 | 39.285 |
+| S-E | 50.068 | 57.352 | 38.303 | 33.612 | 72.708 | 36.769 | 23.931 | 39.300 |
+| **ACTUAL** | **50.239** | 58.475 | 37.845 | 33.483 | 72.298 | 36.505 | 24.207 | 39.288 |
+
+This is the second first-order finding of the round and it was not the one the
+gate was built to catch. **The leak costs 1.61 pp of engine eFG%**: S-A
+produces 48.63 against a realised 50.24, and removing `score_diff` takes the
+gap to **-0.18 pp (S-C)**. It is a per-class effect concentrated exactly where
+the evidence doc said the leak was largest -- rim -2.70 pp under S-A, -1.15 pp
+under S-C; three -0.82 pp under S-A, +0.25 pp under S-C.
+
+The mechanism is the one L23 described running the other way. In a simulated
+game most attempts happen at a margin the leaked model reads as "this shot did
+not go in", because the leaked training column was systematically HIGHER on
+makes; fed a pre-shot margin, the model under-predicts makes everywhere except
+in the blowouts it drove itself into.
+
+Against the 60-game smoke read taken under the REFERENCE event and clock arms
+(pooled eFG% 0.474 vs 0.509, a 3.4 pp deficit): this run is a different
+configuration (`ENGINE_EVENT=round2_s1`, 500 games) and is not a like-for-like
+comparison, but on its own terms the make-rate deficit is now 0.18 pp rather
+than 1.61, so the `score_diff` leak was a large part of whatever that read was
+measuring.
+
+### 14.7 G4 -- implied team eFG% on the test season's own shot mix
+
+Offline, not the engine: every attempt the team actually took, weighted by its
+class model's predicted make probability. Tolerance +/- 1.0 pp on the worst
+as-of tercile gap.
+
+| arm | offence worst gap (asof) | G4 offence | defence worst gap (asof) | G4 defence | team MAE off / def | team corr off / def |
+|---|---:|---|---:|---|---|---|
+| S-A | 0.711 | PASS | 0.914 | PASS | 1.614 / 1.448 | 0.775 / 0.761 |
+| S-B | 0.867 | PASS | 1.021 | **FAIL** | 1.576 / 1.291 | 0.769 / 0.798 |
+| **S-C** | 0.896 | PASS | 1.066 | **FAIL** | 1.642 / 1.340 | 0.751 / 0.784 |
+| S-D | 0.936 | PASS | 1.078 | **FAIL** | 1.640 / 1.330 | 0.751 / 0.789 |
+| S-E | 0.912 | PASS | 1.061 | **FAIL** | 1.620 / 1.331 | 0.754 / 0.787 |
+
+Reported honestly and not hidden: **every honest arm misses the G4 defence
+tercile gate by 0.02-0.08 pp, and the leaked arm passes it.** G4 is not a
+discard criterion in section 13.6 and does not change the decision, but it is
+the round's one regression against round 1 (whose adopted trio read 0.865 on
+the same check) and it is an OPEN DEFECT, listed as such in `model.md`. It is a
+defence-side tercile miss of under a tenth of a percentage point on a
+provisional truth table; it is not a reason to keep a post-outcome feature.
+
+### 14.8 THE DECISION, by the pre-registered rule of section 13.6
+
+S-A is discarded first, as pre-registered before the round ran. Every remaining
+arm passed the closed-loop gate, so step 2 discards nothing and the choice is
+made on F2 log loss against the floor, with ties going to the simpler arm.
+
+**`FGA_rim`** (floor 0.000539) -- all four honest arms pass calibration and D8.
+Lowest is S-E. S-E beats S-D by 0.000098 = **0.18 floors**, inside it, so the
+simpler S-D takes it; S-D beats S-C by 0.000347 = **0.64 floors**, inside it,
+so the simpler S-C takes it; S-C beats S-B by 0.007317 = **13.57 floors**,
+beyond it. **WINNER: S-C.**
+
+**`FGA_jump2`** (floor 0.000578) -- S-B fails calibration (2.014 pp) and is
+discarded. Of the three survivors S-C is both the lowest log loss and the
+simplest; S-D and S-E are 0.04 and 0.12 floors behind. **WINNER: S-C.**
+
+**`FGA_3`** (floor 0.000849) -- S-B and S-E fail Decision 8 on the `def_allow_c`
+driver and are discarded. S-D beats S-C by 0.000078 = **0.09 floors**, inside
+it, so the simpler arm takes it. **WINNER: S-C.**
+
+> ### WINNER, all three classes: **S-C `R2_C_safe_state`**
+> `B_plus_shooter` + `period`, `seconds_remaining`, `in_bonus`,
+> `chance_number`, `chance_elapsed_s`, `is_transition_f`.
+> **No margin term of any kind.**
+
+Under the alternative strict reading of Decision 8's low-span clause (a sub-2
+pp driver exempt from the steps as well as the band, which is what
+`ARCHITECTURE_DECISIONS.md`'s own text says and what
+`fg_make.DECISION8_READINGS`'s `low_span_exempt` does NOT implement), S-B and
+S-E re-enter on `FGA_3`; S-E would then be lowest at 0.591835, ahead of S-C by
+0.09 floors -- inside the floor, so the simpler arm still wins. **The winner is
+S-C under both readings.** The scope question is real and still open; it did
+not decide anything here.
+
+### 14.9 What the round bought, and what it cost
+
+| quantity | round 1 (S-A, leaked) | round 2 winner (S-C) | change |
+|---|---:|---:|---|
+| F2 log loss, rim / jumper / three | 0.641605 / 0.642003 / 0.561085 | 0.660471 / 0.664094 / 0.591958 | **+35.0 / +38.2 / +36.4 floors WORSE** |
+| worst decile calibration gap, rim / jumper / three | 1.186 / 1.580 / 1.007 pp | 0.663 / 1.212 / 0.852 pp | better on all three |
+| engine margin SD (500 games x 5 seeds) | 35.389 | 14.050 | actual 12.127 |
+| engine home/away score correlation | -0.605 | +0.241 | actual +0.423 |
+| engine eFG% | 48.633% | 50.061% | actual 50.239% |
+| engine possessions/game | 71.259 | 70.778 | actual 67.503 (clock's, not this model's) |
+| G4 defence worst tercile gap | 0.914 pp PASS | 1.066 pp FAIL | the round's one regression |
+
+**The 35-38 noise floors of log loss that round 1's state block appeared to buy
+were the leak.** An offline metric computed on real game states cannot see a
+post-outcome feature that is stable in those states, which is precisely the
+case Decision 10 was written for -- and the closed-loop gate caught it at
+21 points of margin SD and 0.85 of correlation.
+
+### 14.10 Falsification check (section 13.7)
+
+Section 13.7 pre-committed that if S-B, S-C, S-D and S-E were all within one
+floor of each other, the state block was worth nothing and S-B would be
+adopted. That is NOT what happened: S-C beats S-B by 13.57 floors at the rim
+and S-B fails a gate outright on the other two classes (calibration on the
+jumper, Decision 8 on the three). The engine-safe state block earns its place;
+the margin does not.
+
+### 14.11 Artifacts and how the engine reaches them
+
+| path | what |
+|---|---|
+| `data/processed/models/fg_make/round2/<arm>/fg_make_<class>_F2.joblib` | one fitted LightGBM per (arm, class), refit on F2 train. S-C's three carry `adopted=True`; every other arm carries `adopted=False` |
+| `data/processed/models/fg_make/round2/grid_results.csv` | every (class, fold, arm) row |
+| `data/processed/models/fg_make/round2/run_report.json` | full calibration deciles, responsiveness ladders, Decision-8 working, indicator exposure, floors, G4 |
+| `data/processed/models/fg_make/round2/closed_loop.json` | section 14.5 and 14.6 |
+| `data/processed/models/fg_make/state_confound.json` | the step-1 evidence |
+| `results/engine_v0/fgmake_r2_<arm>/` | the five paired engine runs |
+
+`ENGINE_FG_MAKE=round2_S_C` selects the winner. **The engine default is still
+`ENGINE_FG_MAKE=winner`** (the round-1 artifacts, byte for byte) and nothing
+under `data/processed/models/engine/` or any `winner_FGA_*.joblib` was
+overwritten; switching the default is the PM's step, not this round's.
+
+---
+
+## 15. ROUND 2b PRE-REGISTRATION: the round-2 winner under S1 (written 2026-09-10, AFTER round 2 decided and BEFORE 2b ran)
+
+Why this is a separate round and not an arm of round 2: section 13.1 fixed the
+training scheme at STATIC so the five arms differed only in the state block, and
+section 13 was committed (5e54872) before any round-2 modelling ran. L21 makes
+**S1** -- in-season monthly walk-forward refit -- the standing default scheme
+for every sub-model, and `src/cbb_sim/engine/manifest.py` exists precisely so an
+S1 sub-model arrives as a schedule of dated artifacts. Round 2b asks the one
+question round 2 deliberately did not.
+
+**The question.** Does the round-2 winner S-C, refit monthly in-season, beat the
+same arm fitted once, on the same fold, by more than the noise floor, without
+regressing any gate?
+
+### 15.1 What is FIXED
+
+- **The arm is S-C `R2_C_safe_state`** on all three shot classes, as round 2
+  decided. No other state parametrisation is re-opened.
+- Model class, parameters, universe, possessions version, folds and floors are
+  exactly section 13.1's and section 14.1's. The floors are the SAME numbers
+  (rim 0.000539, jumper 0.000578, three 0.000849) because the arm is the same
+  arm; no new floor is computed and none may be.
+- **S1 is `possession_outcome.month_boundaries` / `fit_predict_scheme`'s
+  definition, reused not reimplemented**: one refit per calendar month of the
+  test season, fitted on all prior seasons plus the test season strictly before
+  that month's first day; every test game scored by the most recent refit at or
+  before its own date.
+
+### 15.2 The two arms
+
+| arm | scheme | artifact |
+|---|---|---|
+| **S-C-static** | one fit on F2 train | `round2/S_C/fg_make_<class>_F2.joblib` (already exists, round 2) |
+| **S-C-S1** | monthly walk-forward | `round2b/S_C_s1/<class>_<refit_date>.joblib` + `manifest_<class>.json` in `manifest.py` format (`refit_date`, `path`, `max_train_date`) |
+
+### 15.3 Gates -- identical to round 2, nothing added, nothing relaxed
+
+Offline on F2, per class: log loss (primary), Brier, worst gated decile
+calibration gap <= 2.00 pp, Decision 8 responsiveness on both drivers, by-chance
+calibration. Closed-loop: the same 500 games x 5 seeds, the same paired streams,
+the same S-B reference, the same CL1-CL4 tolerances of section 13.5.
+
+Every artifact is loaded through `ArtifactManifest` with
+`require_max_train_date=True`, so the honest-backtest property is enforced by
+the same code path the event layer uses and not by this script's good intentions.
+
+### 15.4 Decision rule (as the coordinator specified, 2026-09-10)
+
+**Adopt S1 unless a gate regresses beyond the floor.** Concretely, per class:
+
+1. If S-C-S1 fails calibration or Decision 8 on F2 where S-C-static passed, S1
+   is NOT adopted for that class.
+2. If S-C-S1 fails the closed-loop gate, S1 is NOT adopted at all.
+3. If S-C-S1's log loss is WORSE than S-C-static's by more than one noise
+   floor, S1 is not adopted for that class.
+4. Otherwise **S1 is adopted**, including when the log-loss difference is
+   inside the floor -- L21's finding is that S1 is a calibration fix and not a
+   log-loss fix, so "no log-loss gain" is the expected result and is not a
+   reason to refuse the standing scheme.
+
+The costs are reported either way: number of refits, fit time, and the artifact
+count the engine has to carry.
+
+<!-- ROUND 2b RESULTS APPEND BELOW THIS LINE -->
+
+---
+
+## 16. ROUND 2b RESULTS (`scripts/train_fg_make_v2b_s1.py`, run 2026-09-10)
+
+Executes section 15. One arm (the round-2 winner S-C), two schemes, same fold,
+same floors, same gates.
+
+### 16.1 The S1 schedule as it actually ran
+
+Six refits per class, the calendar months of the 2025 test season. Every
+artifact declares its own `max_train_date`, and every one of them precedes its
+refit date, so the honest-backtest property is a property of the files and not
+of this script's intentions.
+
+| refit date | train rows (rim / jumper / three) | of which from the test season | scored | max_train_date |
+|---|---|---:|---|---|
+| 2024-11-01 | 582,043 / 423,483 / 604,123 | 0 / 0 / 0 | 49,782 / 31,866 / 53,707 | 2024-04-08 |
+| 2024-12-01 | 631,825 / 455,349 / 657,830 | 49,782 / 31,866 / 53,707 | 39,246 / 24,378 / 40,658 | 2024-11-30 |
+| 2025-01-01 | 671,071 / 479,727 / 698,488 | 89,028 / 56,244 / 94,365 | 59,176 / 37,759 / 62,005 | 2024-12-31 |
+| 2025-02-01 | 730,247 / 517,486 / 760,493 | 148,204 / 94,003 / 156,370 | 53,671 / 33,264 / 55,155 | 2025-01-31 |
+| 2025-03-01 | 783,918 / 550,750 / 815,648 | 201,875 / 127,267 / 211,525 | 32,905 / 21,264 / 34,514 | 2025-02-28 |
+| 2025-04-01 | 816,823 / 572,014 / 850,162 | 234,780 / 148,531 / 246,039 | 674 / 544 / 846 | 2025-03-31 |
+
+The April segment scores 544-846 attempts (the tournament tail) and is
+UNDERPOWERED on its own; it is not read separately anywhere.
+
+Cost: 18 artifacts instead of 3, and 117 / 84 / 126 s of fitting instead of
+21 / 11 / 12 s -- about 6x, which is the arithmetic of six refits.
+
+### 16.2 F2, static vs S1
+
+| class | scheme | log loss | delta in floors | calib worst gap | D8 | chance gap first / cont |
+|---|---|---:|---:|---:|---|---|
+| `FGA_rim` | static | 0.660471 | -- | 0.663 PASS | PASS | 0.145 / 0.050 |
+| `FGA_rim` | **S1** | **0.660150** | **-0.60** | 0.672 PASS | PASS | 0.008 / 0.158 |
+| `FGA_jump2` | static | 0.664094 | -- | 1.212 PASS | PASS | 0.368 / 0.059 |
+| `FGA_jump2` | **S1** | **0.663985** | **-0.19** | 1.693 PASS | PASS | 0.049 / 0.306 |
+| `FGA_3` | static | 0.591958 | -- | 0.852 PASS | PASS | 0.233 / 0.718 |
+| `FGA_3` | **S1** | **0.591644** | **-0.37** | 0.578 PASS | PASS | 0.130 / 0.295 |
+
+S1 is better on log loss on all three classes and on none of them by a full
+floor (0.19-0.60), which is **exactly L21's finding reproducing on a second
+sub-model**: S1 is not a log-loss fix. Calibration is better on `FGA_3`
+(0.852 -> 0.578 pp), materially better on the FIRST-CHANCE segment of every
+class (0.145 -> 0.008, 0.368 -> 0.049, 0.233 -> 0.130 pp), and worse on the
+jumper's overall worst decile (1.212 -> 1.693 pp) and on the continuation
+segment of the rim and the jumper. Nothing crosses a gate in either direction:
+every cell is PASS under both schemes.
+
+Unlike possession_outcome, fg_make had no calibration FAILURE for S1 to repair
+-- the round-2 winner already passed at 0.66-1.21 pp -- so the honest summary is
+that S1 is neutral-to-slightly-positive here rather than decisive.
+
+### 16.3 The closed-loop gate for the S1 arm
+
+Same 500 games, same five seeds, same paired streams, same S-B reference and
+the same CL1-CL4 tolerances. Run: `results/engine_v0/fgmake_r2_S_C_s1`,
+`ENGINE_FG_MAKE=round2b_S_C_s1`, every artifact selected per game by
+`ArtifactManifest` with `require_max_train_date=True`.
+
+| arm | margin SD | d vs S-B | corr | d | poss/gm | d | total bias | d | PPP | gate |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---|
+| S-C (static) | 14.050 | -0.079 | +0.241 | -0.004 | 70.778 | -0.034 | +3.961 | -0.590 | 1.0554 | PASS |
+| **S-C-S1** | 14.002 | -0.126 | +0.229 | -0.016 | 70.758 | -0.053 | +3.912 | -0.640 | 1.0553 | **PASS** |
+| ACTUAL | 12.127 | -- | +0.423 | -- | 67.503 | -- | 0.000 | -- | 1.0775 | -- |
+
+eFG% and make rate by class on the same runs:
+
+| arm | eFG% | rim | jump2 | three | FT% |
+|---|---:|---:|---:|---:|---:|
+| S-C (static) | 50.061 | 57.322 | 38.003 | 33.734 | 72.659 |
+| **S-C-S1** | **50.147** | 57.379 | 38.642 | 33.600 | 72.525 |
+| ACTUAL | 50.239 | 58.475 | 37.845 | 33.483 | 72.298 |
+
+S-C-S1 is the closest arm to the realised eFG% of any run in either round
+(-0.09 pp).
+
+### 16.4 THE DECISION, by section 15.4
+
+No gate regressed: calibration PASS on all three classes under both schemes,
+Decision 8 PASS on all three, closed-loop PASS. S1's log loss is better, not
+worse, on every class. Rule 4 applies.
+
+> ### **S1 IS ADOPTED for fg_make, all three shot classes.**
+> Arm: S-C `R2_C_safe_state`. Scheme: monthly in-season walk-forward.
+> Engine flag: `ENGINE_FG_MAKE=round2b_S_C_s1`.
+> Artifacts: `data/processed/models/fg_make/round2b/S_C_s1/` -- 18 joblibs and
+> three `manifest.py`-format manifests, all marked `adopted=True`.
+
+The static S-C artifacts stay on disk under `round2/S_C/` and stay marked
+adopted for the STATE decision they won; `ENGINE_FG_MAKE=round2_S_C` still
+serves them, which is what makes "S1 vs static" re-runnable without a refit.
+
+**The engine default remains `ENGINE_FG_MAKE=winner`** -- round 1's artifacts,
+byte for byte. Switching the default to `round2b_S_C_s1` is the PM's step.
+`run_meta.json` will then report `scheme_static_fg_make=False`, which is the
+flag that tells a later reader this model is served by a schedule.
+
+### 16.5 Path taken, for the record
+
+The round-2 pre-registration (section 13) was written, committed (5e54872) and
+RUN with the scheme fixed at static, before the standing-scheme instruction
+arrived. Per that instruction's own branch, the round-2 spec was not changed
+retroactively; instead round 2b was pre-registered (section 15) after round 2
+decided and before 2b ran, and is the record of the S1 question. Both rounds'
+numbers stand as they were produced.
