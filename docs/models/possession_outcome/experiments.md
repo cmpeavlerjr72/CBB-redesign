@@ -1649,3 +1649,82 @@ the weeks-0-3 SEGMENT gap. Round 3 measured that spread at 0.076 pp on `conf4` a
 non-conference, both well under the 0.25 pp threshold, and `G1`'s 1.066 pp gain is eight to
 fourteen times either. The adoption does not rest on the missing cell; the statement that it does
 not is on the record here rather than left to be inferred.
+
+### 9.10 Addendum, 12:03 ET: the tree `G2` cell landed after 9.0-9.9 were written and committed (`db0f8a2`)
+
+Process B2 finished `first | F2 | lgbm | G2 | S1_monthly` at 12:02 ET, after the sections above were
+written and committed (`db0f8a2`). It is a pre-registered cell run in its pre-registered spec
+through the same grader, and it is reported here rather than by rewriting what stood; the earlier
+statement that `G2` on the tree is NOT RUN is superseded by this section. `G4`, `G3` and the
+second-seed floor cell remain NOT RUN.
+
+### The `first` feature ladder, now three arms
+
+| arm | log loss | gain vs ref | overall gap | **weeks 0-3 gap** | non-conf gap | worst quintile slope | gates | beats ref beyond floor |
+|---|---|---|---|---|---|---|---|---|
+| `G0` reference | 1.515428 | 0.0 | 0.980 | 3.832 | 2.492 | 0.9473 | PASS | -- |
+| `G1` shrink to league mean | 1.515519 | -0.000091 | 1.456 | **2.766** (+1.066) | 2.351 (+0.141) | 0.9745 | PASS | **YES** |
+| `G2` shrink to prior season | **1.514837** | **+0.000591** | 1.196 | **3.359** (+0.473) | 2.500 (-0.008) | 0.9156 | PASS | **YES** |
+| `G4`, `G3`, floor seed 1 | NOT RUN | | | | | | | |
+
+Both arms beat the reference on the pre-registered weeks-0-3 cell. `G2` has the best log loss in the
+round, but +0.000591 is inside the 0.000804 floor, so the primary metric still separates nothing.
+Under the pre-registered rule the winner is unchanged: the best beater by log loss is `G2`
+(1.514837), `G1` sits within the floor of it (1.515519 against 1.515641), and among arms inside that
+band the simplest wins -- `G1` at complexity rank 1 against `G2` at rank 2. **`G1` remains the
+round-4 winner, now over a ladder of three.**
+
+### Per week of season, all three arms
+
+| week | n | `G0` | `G1` | `G2` |
+|---|---|---|---|---|
+| 0 | 36,499 | 6.418 | **4.867** | 4.950 |
+| 1 | 40,718 | 5.216 | **4.054** | 4.166 |
+| 2 | 43,658 | 3.313 | **2.942** | 2.956 |
+| 3 | 43,562 | **2.751** | 2.398 | 3.247 |
+| 4-7 | 111,232 | **1.369** | 2.692 | 1.956 |
+| 8+ | 466,356 | 0.939 | 1.141 | **0.902** |
+
+Worst gated decile calibration gap in pp; no bucket is underpowered; the best arm per row in bold.
+
+**The prediction the first write-up made is confirmed in direction and not in full.** Section 4
+predicted that `G2` would not carry `G1`'s weeks-4-7 cost, because it holds the feature's dispersion
+at 4.0-4.2 in every week instead of collapsing it to 1.15 in week 0. Measured: `G2`'s weeks-4-7
+regression is 0.587 pp against `G1`'s 1.323 pp -- **45% of it** -- and `G2` stays UNDER the 2.0 pp
+gate there (1.956) where `G1` crosses it (2.692). `G2` also IMPROVES week 8+ (0.902 against the
+reference's 0.939) where `G1` degrades it (1.141). So the dispersion mechanism is real.
+
+What the prediction got wrong: `G2` is WORSE than the reference in week 3 (3.247 against 2.751), the
+one early bucket where the raw rate has enough mass to be worth something and the prior-season
+target is stale. `G1` is better than `G2` in all of weeks 0, 1, 2 and 3 and `G2` is better than `G1`
+in weeks 4-7 and 8+. Neither arm dominates, which is the honest shape of the result and is exactly
+why the recommendation stays VALIDATED-PENDING-SHIP-ACTION rather than SHIP.
+
+### What this changes in the recommendation
+
+1. The `first` and `cont` populations no longer disagree about whether shrinkage helps -- both now
+   have two arms beating their reference. They still disagree about WHICH target: `cont`'s complete
+   ladder prefers the prior-season target (`G2` wins there, `G1` is disqualified by the no-shuffling
+   clause), while `first`'s three-arm ladder gives `G1` the bigger segment gain and `G2` the better
+   log loss and the better late season.
+2. **The obvious next cell is no longer `G2`. It is an arm that is `G1` early and `G2` late** -- that
+   is what the two per-week columns say when read together -- and the natural construction is `G3`,
+   the two-level prior whose target is itself shrunk by its own reliability, which is NOT RUN on the
+   tree and is the one cell of the pre-registered ladder that no population has yet rejected.
+   `G3` wins `cont`'s log loss outright (1.498677) and `cont`'s weeks-0-3 cell (+0.427 pp). Running
+   `G3` and `G4` on the tree closes the ladder.
+3. Nothing here touches the alignment cells or Decision 9. Both tree alignment cells are still
+   NOT RUN.
+
+### Reproducing this addendum, and picking up the cells still running
+
+Process A is still fitting `G4` and will write it to `ckpt_a.json` when it finishes, then exit on its
+own pre-registered stop without starting another cell. The merged render is a read-only pass that
+fits nothing:
+
+```
+$env:CBB_THREADS="1"
+.venv/Scripts/python.exe scripts/train_possession_outcome_v4.py --render-only --stages 0 \
+    --ckpt ckpt_render.json --merge "ckpt_a.json,ckpt_b.json,ckpt_b2.json"
+.venv/Scripts/python.exe scripts/diag_po_r4_report.py
+```
