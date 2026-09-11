@@ -612,4 +612,116 @@ Transfer subset:
   `docs/tests/attribution_team_asof_lg_defect_2026-09-10.md` (new), and this
   file.
 
+---
+
+## 4. Pre-registration, round 2 (authored BEFORE round 2 ran, 2026-09-10)
+
+Round 1's `score_diff` construction (line ~534) is the same post-outcome
+construction L27 found in `fg_make`: built off the candidate's own-row
+`homeScore`/`awayScore`, which CBBD writes AFTER the row's own play.
+`docs/models/change_ledger.md` flagged this for attribution's owner without
+touching it. `docs/tests/attribution_score_diff_leak_2026-09-10.md` quantifies
+it first, off the raw feed and independent of any model fit (the own-row delta
+test, L27's own method): of the five populations `build_attr_events`
+constructs, only `made_fga` (behind `assist` and `assisted`) is a scoring play
+on its own row, so it is the only one the leak can reach, and it does --
+99.3-99.3% of `made_fga` rows move by exactly the shot's point value (vs
+99.9%+ zero-delta on all four other populations, both seasons). The apparent
+effect it manufactures: 18.6% of `assisted`'s outcome-rate decile span (12.312
+-> 10.017 pp), and a 1.3-9.9% shift on `assist`'s two `score_diff` conditional-
+logit interaction terms; `REB_off`, `REB_def`, `steal`, `stolen`, `block` and
+`blocked` are bit-identical between the leaked and pre-play constructions,
+because their own event is never a scoring play.
+
+`src/cbb_sim/models/attribution.py`'s `_state_block` now takes
+`score_diff_mode` (`"pre_play"` default, `"leaked"` selectable for
+reproduction) and `build_attr_events` threads it through -- a data-construction
+fix, not a modelling choice, per `CLAUDE.md`'s "no hand tuning" rule: it
+changes nothing about what is compared, only makes `score_diff` mean the same
+thing (the margin BEFORE the row's own event) everywhere it is read.
+
+### 4.1 What round 2 compares
+
+For **every** target, round 1's winning arm CLASS is carried FIXED (no arm
+choice is reopened here): `REB_off` -> `cond_logit`, `REB_def` -> `lgbm`,
+`steal` -> `proportional`, `block` -> `lgbm`, `assisted` -> `aware_ridge`,
+`blocked` -> `aware_ridge`. `assist` and `stolen` adopted NO WINNER on F1 in
+round 1; their best round-1 arm (`lgbm` for both) is carried as a REFERENCE
+class so the fix is visible even where round 1 adopted nothing.
+
+Two new arms per target, both under the pre-play fix:
+
+- **(a) static, data-fix-only**: the SAME scheme round 1 used (one fit on the
+  F1 train slice / the WF2025 train slice), the pre-registered arm class,
+  `score_diff` rebuilt from the pre-play score. Isolates the data fix from the
+  training scheme.
+- **(b) S1, monthly in-season walk-forward**: `possession_outcome
+  .month_boundaries` called directly (L21's default scheme; NOT reimplemented,
+  same pattern as `train_fg_make_v2b_s1.py`), refit at each calendar-month
+  boundary of the F1 2025 test season on all of 2024 plus 2025-to-date, the
+  same pre-registered arm class, the pre-play fix. The WF2025 robustness read
+  for this arm is the SAME S1 predictions sliced to `game_date >= 2025-01-15`
+  (`WF_SPLIT_DATE`) rather than a second monthly schedule fit inside an
+  already-partial season -- S1 is defined once, on the F1 test season, exactly
+  as `possession_outcome` and `fg_make` define it.
+
+Round 1's own numbers (`data/processed/models/attribution/{results_v1.json,
+report_v1.md}`, this file's section 3) are read back VERBATIM as the LEAKED
+reference; round 1's fitted arm objects are not reused (a changed `score_diff`
+column changes every design matrix that reads it).
+
+### 4.2 Folds, metrics, floor, decision rule
+
+- **Folds.** F1 (train 2024, test 2025) is the selection fold, exactly as round
+  1 pre-registered. Within-2025 walk-forward (train before `2025-01-15`, test
+  after) is the robustness fold for arm (a); for arm (b) it is the
+  `game_date >= 2025-01-15` slice of the same S1 predictions (4.1 above).
+- **Metrics.** Unchanged from round 1, scored by the SAME functions
+  (`attribution.score_choice_arm` / `score_binary_arm`,
+  `bootstrap_se_choice` / `bootstrap_se_binary`,
+  `choice_game_level_check` / `binary_game_level_check`): log loss, Brier,
+  calibration by predicted-probability decile (<= 2 pp gate), Decision 8
+  responsiveness slope (`model.md` section 3.1's reading), and the game-level
+  checks (choice: SD ratio, players >= 1, top-1/top-3; binary: per-team-game
+  count and its SD ratio). Per-decile calibration is reported BOTH on the full
+  F1/S1 test population and restricted to the within-2025 window, so the
+  `assisted` binary's WF2025 miss (4.15-6.74 pp, section 3.3) has a same-window
+  number to compare against under the fix.
+- **Noise floor.** A second-seed refit of the SAME arm and scheme (LightGBM:
+  `seed=1` alongside the reported `seed=0`; the linear/proportional arms have
+  no seed, so their floor is the existing game-block bootstrap SE, as in round
+  1) -- the floor a candidate change must clear is `max(bootstrap SE,
+  seed-refit |delta|)`, the same construction `decide()` already uses.
+- **Decision rule.** Per target, adopt the SIMPLEST of the arms that pass every
+  gate (static-fixed < S1-fixed, matching round 1's P1 < P2 < P3 /
+  ridge < aware < tree simplicity order) UNLESS a more complex arm beats it
+  beyond the noise floor on EITHER log loss OR the within-2025 calibration gap.
+  `assisted`'s within-2025 calibration gap (4.15-6.74 pp, currently FAILING) is
+  the number this round is pre-registered to expect movement on; `REB_off`,
+  `REB_def`, `steal`, `stolen`, `block` and `blocked` are the CONTROL group --
+  section 3 above already proves their `score_diff` is untouched by the fix, so
+  no gate on those six is expected to move, and any movement there would itself
+  be evidence of a bug in this round's code, not of a fix effect.
+- **2026 stays sealed**; `assert_not_sealed` guards every fold as in round 1.
+
+### 4.3 Artifacts
+
+New directory, round 1's `data/processed/models/attribution/` is never
+overwritten: `data/processed/models/attribution/round2_s1/` (gitignored, not
+committed) holds the pre-play-fixed population tables (`asof_v2.parquet` /
+`team_asof_v2.parquet` are read back from round 1's cache UNCHANGED -- neither
+depends on `score_diff`, confirmed by inspection: `build_player_asof` and
+`build_team_asof` never reference the column), one dated joblib per (target,
+refit month) for the S1 arm plus a `manifest_{target}.json` in
+`engine.manifest`'s format, and a `report_v2.md` / `results_v2.json` /
+`run_report.json`.
+
+### 4.4 Runner
+
+`scripts/train_attribution_v2_s1.py` (new). Imports `scripts/train_attribution_v1`
+for the shared, unchanged machinery (`cl_matrices`, `lgbm_matrices`, `decide`,
+the report helpers) rather than re-deriving it. Round 1 took 682.4 s wall time
+for the full three-arm, eight-target, two-fold grid; this round fits ONE arm
+class per target (not three) but adds six S1 refits per target on top of the
+static fit, so the pre-registered expectation is "about an hour."
 
