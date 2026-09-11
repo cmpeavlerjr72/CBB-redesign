@@ -56,6 +56,7 @@ from cbb_sim.engine import state as S
 from cbb_sim.engine.adapters import STATE_INDEX, Adapters
 from cbb_sim.engine.inputs import EngineInputs
 from cbb_sim.engine.rng import StreamBook, categorical
+from cbb_sim.models import fg_make as FG
 from cbb_sim.models import possession_outcome as PO
 from cbb_sim.models import rebound as RB
 
@@ -73,6 +74,8 @@ SHOT_CLASSES = {CLS_RIM: "FGA_rim", CLS_JUMP: "FGA_jump2", CLS_3: "FGA_3"}
 SHOT_KEY = {CLS_RIM: "rim", CLS_JUMP: "jump2", CLS_3: "three"}
 SHOT_POINTS = {CLS_RIM: 2, CLS_JUMP: 2, CLS_3: 3}
 BOX_OF_SHOT = {CLS_RIM: "fga2_rim", CLS_JUMP: "fga2_jump", CLS_3: "fga3"}
+#: the matching MAKE counter per shot class (added 2026-09-10 for G4 eFG%).
+BOX_MADE_OF_SHOT = {CLS_RIM: "fgm2_rim", CLS_JUMP: "fgm2_jump", CLS_3: "fgm3"}
 MISS_COL = {CLS_RIM: "miss_rim", CLS_JUMP: "miss_jump2", CLS_3: "miss_three"}
 
 #: usage event class index per possession_outcome class (usage.EVENT_CLASSES
@@ -127,6 +130,21 @@ def _state_block(st: S.GameState, act: np.ndarray, n_state: int,
     # POSSESSION, at its start, so 1.0 is that column's training definition and
     # anything else would be a different feature under the same name.
     x[:, I["chance_number_at_start"]] = 1.0
+    # --- fg_make round 2 (experiments.md section 13) ----------------------
+    # The engine's margin is already PRE-shot (`off_score_diff()` is read
+    # before the attempt resolves), so `score_diff_pre` is the same live value
+    # under the name the round-2 arms were trained on. The three indicators
+    # use `fg_make`'s own constants and its own `regulation_seconds_remaining`,
+    # so the simulated definition cannot drift from the trained one.
+    x[:, I["score_diff_pre"]] = sd
+    gsr = FG.regulation_seconds_remaining(per, sr)
+    reg = per <= 2.0
+    x[:, I["gt_flag"]] = (reg & (np.abs(sd) >= FG.R2_GT_MARGIN)
+                          & (gsr <= FG.R2_GT_SECONDS))
+    x[:, I["eg_trail"]] = (reg & (sd <= -FG.R2_EG_LO) & (sd >= -FG.R2_EG_HI)
+                           & (gsr <= FG.R2_EG_SECONDS))
+    x[:, I["eg_lead"]] = (reg & (sd >= FG.R2_EG_LO) & (sd <= FG.R2_EG_HI)
+                          & (gsr <= FG.R2_EG_SECONDS))
     pe = st.prev_end[act]
     for k, name in enumerate(PREV_DUMMY, start=1):
         x[:, I[name]] = (pe == k).astype(np.float64)
@@ -310,7 +328,9 @@ def simulate_chunk(inp: EngineInputs, ad: Adapters, game_index: np.ndarray,
                 if made.any():
                     mr = r[made]
                     st.pts[act[mr], off[mr]] += pv
+                    st.box[BOX_MADE_OF_SHOT[sc]][act[mr], off[mr]] += 1
                     st.player_box["pts"][act[mr], off[mr], sh[made]] += pv
+                    st.player_box[BOX_MADE_OF_SHOT[sc]][act[mr], off[mr], sh[made]] += 1
                     end_code[mr] = PREV["made_FG"]
                     # and-one: a shooting foul on a made basket, one attempt,
                     # at the measured rate per shot class
@@ -517,6 +537,7 @@ def _shoot_trip(st: S.GameState, inp: EngineInputs, ad: Adapters, book: StreamBo
         if made.any():
             mk = k[made]
             st.pts[rows[mk], side[mk]] += 1
+            st.box["ftm"][rows[mk], side[mk]] += 1
             st.player_box["pts"][rows[mk], side[mk], shooter[mk]] += 1
         last_missed[k] = ~made
         # a one-and-one front end that misses ends the trip
@@ -583,6 +604,11 @@ def _finalise(inp: EngineInputs, st: S.GameState, gids: np.ndarray, seeds: np.nd
         "fga": st.player_box["fga"].reshape(-1)[keep].astype("int16"),
         "fg3a": st.player_box["fg3a"].reshape(-1)[keep].astype("int16"),
         "fta": st.player_box["fta"].reshape(-1)[keep].astype("int16"),
+        # per-class FGM, added 2026-09-10 (optional columns; REQUIRED_PLAYER_COLUMNS
+        # is untouched -- see contract.py).
+        "fgm2_rim": st.player_box["fgm2_rim"].reshape(-1)[keep].astype("int16"),
+        "fgm2_jump": st.player_box["fgm2_jump"].reshape(-1)[keep].astype("int16"),
+        "fgm3": st.player_box["fgm3"].reshape(-1)[keep].astype("int16"),
         "fouls": st.player_fouls.reshape(-1)[keep].astype("int8"),
     })
     return g, p

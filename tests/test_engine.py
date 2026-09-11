@@ -137,6 +137,14 @@ def test_score_equals_points_from_events(bundle):
     assert (st.player_box["fga"].sum(axis=2) == team_fga).all()
     assert (st.player_box["fg3a"].sum(axis=2) == st.box["fga3"]).all()
     assert (st.player_box["fta"].sum(axis=2) == st.box["fta"]).all()
+    # eFG% inputs (added 2026-09-10, G4): points == 2*(rim+jump2 makes) +
+    # 3*(three makes) + FTM, and per-class FGM is also credited to a player.
+    identity = (2 * (st.box["fgm2_rim"] + st.box["fgm2_jump"])
+                + 3 * st.box["fgm3"] + st.box["ftm"])
+    assert (st.pts == identity).all(), "points do not equal 2*(FGM2) + 3*(FGM3) + FTM"
+    assert (st.player_box["fgm2_rim"].sum(axis=2) == st.box["fgm2_rim"]).all()
+    assert (st.player_box["fgm2_jump"].sum(axis=2) == st.box["fgm2_jump"]).all()
+    assert (st.player_box["fgm3"].sum(axis=2) == st.box["fgm3"]).all()
     # minutes: five players on the floor for every second of every period
     total_s = 2400.0 + 300.0 * st.n_ot.astype(float)
     mins = st.player_seconds.sum(axis=2)
@@ -319,3 +327,68 @@ def test_a_manifest_whose_training_window_reaches_the_game_is_rejected():
     with pytest.raises(AssertionError, match="leak"):
         ArtifactManifest.from_obj(
             {"model": "possession_outcome", "artifacts": leaky}, d, inp.games)
+
+
+# ---------------------------------------------------------------------------
+# fg_make round 2 (docs/models/fg_make/experiments.md section 13)
+# ---------------------------------------------------------------------------
+def test_round2_state_definitions_agree_between_training_and_the_engine():
+    """The engine's `gt_flag`/`eg_trail`/`eg_lead` must be the SAME function of
+    (period, seconds_remaining, margin) that `fg_make.add_round2_state` applies
+    to the training rows. They are computed in two different files, so a drift
+    between them would be a silent train/serve skew of exactly the kind L23
+    exists to catch."""
+    import pandas as pd
+
+    from cbb_sim.engine import loop as L
+    from cbb_sim.engine import state as S
+    from cbb_sim.engine.adapters import STATE_COLS, STATE_INDEX
+    from cbb_sim.models import fg_make as FG
+
+    rng = np.random.default_rng(0)
+    n = 400
+    period = rng.integers(1, 4, n).astype(np.int16)
+    sec = rng.integers(0, 1200, n).astype(np.int32)
+    sec = np.where(period >= 3, np.minimum(sec, 300), sec).astype(np.int32)
+    margin = rng.integers(-30, 31, n).astype(np.int32)
+
+    # engine side: the real state block, over a hand-built GameState
+    st = S.new_state(np.zeros(n, np.int32), np.zeros(n, np.int32),
+                     np.full(n, 2025), 15, {2025: (7, 10)}, np.zeros(n, np.int8))
+    st.period[:] = period
+    st.seconds_remaining[:] = sec
+    x = L._state_block(st, np.arange(n), len(STATE_COLS),
+                       margin.astype(np.float64), np.zeros(n))
+
+    # training side: the model's own builder, on a frame with the SAME numbers.
+    # Every row is a MISS, so `score_diff` == `score_diff_pre` and the two
+    # sides are comparable without re-deriving the post-outcome correction.
+    d = pd.DataFrame({"shot_class": "FGA_3", "made": False, "score_diff": margin,
+                      "period": period, "seconds_remaining": sec})
+    d = FG.add_round2_state(d)
+
+    assert (d["score_diff_pre"].to_numpy() == margin).all()
+    for col in ("score_diff_pre", "gt_flag", "eg_trail", "eg_lead"):
+        assert np.array_equal(x[:, STATE_INDEX[col]], d[col].to_numpy(np.float64)), col
+    # the indicators must actually fire on this sample, or the test proves nothing
+    for col in ("gt_flag", "eg_trail", "eg_lead"):
+        assert 0 < d[col].sum() < n, col
+
+
+def test_engine_fg_make_flag_defaults_to_the_round1_winner_and_rejects_junk():
+    """`ENGINE_FG_MAKE` is backward compatible: absent or `winner` is the old
+    path, an unknown value raises rather than silently falling back."""
+    import os
+
+    from cbb_sim.engine.adapters import FgMakeAdapter
+    from cbb_sim.engine.inputs import EngineInputs
+    from cbb_sim.models import fg_make as FG
+
+    inp = EngineInputs.load(INPUT_DIR, TAG)
+    a = FgMakeAdapter.load(inp, "F2")
+    assert a.mode == "winner"
+    assert not a.provisional
+    with pytest.raises(NotImplementedError, match="ENGINE_FG_MAKE"):
+        FgMakeAdapter.load(inp, "F2", "decision8", "round2_NOT_AN_ARM")
+    assert set(FG.R2_ARMS) == {"S_A", "S_B", "S_C", "S_D", "S_E"}
+    assert os.environ.get("ENGINE_FG_MAKE") in (None, "winner")

@@ -24,8 +24,9 @@ One batch of N concurrent simulations, advanced one possession at a time.
         double-bonus thresholds (the RULE ERA, read from
         data/processed/models/free_throw/bonus_era.json per season), chance
         number, previous possession end type, the ten on-floor roster slots,
-        per-player fouls and seconds, overtime count, the seven contract box
-        counters per team and five per player.
+        per-player fouls and seconds, overtime count, the eleven contract box
+        counters per team and eight per player (`contract.BOX_STATS` /
+        `state.PLAYER_STATS`; extended 2026-09-10 -- see 1.2).
 
     EngineInputs (src/cbb_sim/engine/inputs.py, built by build_engine_inputs.py)
         every quantity that is CONSTANT within a simulated game, as dense
@@ -58,6 +59,37 @@ sub-model for the whole batch** -- a single call covering every active
 simulation, not a call per game. The tree models are not further reduced to
 binned lookup tables; section 6 reports the measured throughput that decision
 buys and what the lookup export would cost.
+
+### 1.2 Output contract: FGM/FTM added 2026-09-10 (closes the G4 eFG% gap)
+
+Before this date `games.parquet`'s optional box columns were ATTEMPT/rebound
+counts only (`fga3, fga2_rim, fga2_jump, fta, tov, oreb, dreb`) -- enough for
+G3 (shot mix) and the TOV%/OREB%/FT-rate legs of G4, but not eFG% (which needs
+makes); `docs/tests/truth_tables_v1_2026-09-10.md` section 4 confirmed the gap
+by inspecting the actual results file (20 columns, no FGM anywhere). Four MAKE
+columns close it, home/away paired the same way as the existing seven:
+`fgm3, fgm2_rim, fgm2_jump, ftm`. `players.parquet` optionally gained the
+matching per-class makes (`fgm2_rim, fgm2_jump, fgm3`). Both are pure
+ADDITIONS -- the contract's `REQUIRED_GAME_COLUMNS`/`REQUIRED_PLAYER_COLUMNS`
+and every existing column are untouched, so a results directory built before
+this date still validates and still grades on every gate it always graded;
+`box_columns_available()` reports the four new pairs missing there and
+`gate_g4`'s eFG% check reads NEEDS-INSTRUMENTATION for it, exactly as before.
+`points == 2*(fgm2_rim+fgm2_jump) + 3*fgm3 + ftm` on every row, asserted in
+`tests/test_engine.py::test_score_equals_points_from_events`. Full column list
+and the backward-compatibility argument: `src/cbb_sim/eval/contract.py` module
+docstring (the authoritative contract spec). `gate_g4` now reads a real eFG%
+number wherever both the run has the new columns and `--truth-dir` has
+`team_game_shots_v1.parquet` for the season; a 60-game x 5-seed smoke on this
+extension read pooled eFG% 0.4742 (sim) vs 0.5086 (actual, PROVISIONAL truth)
+-- a real FAIL rather than NEEDS-INSTRUMENTATION, not investigated further
+here (that is a fg_make/possession-mix question, section 7, not an output-
+contract one). A paired same-seed rerun of the identical 60x5 smoke on the
+pre-extension code confirmed byte-identical values on every PRE-EXISTING
+column (`home_pts`, `away_pts`, `possessions`, `n_periods`, all seven old box
+pairs, and every existing player column): 0 of 300 game rows and 0 of 4,880
+player rows differ, so the extension is additive-only in practice, not just
+by inspection of the diff.
 
 ---
 

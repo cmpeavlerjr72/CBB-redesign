@@ -383,13 +383,29 @@ def gate_g4(summary: pd.DataFrame, raw: pd.DataFrame, season: int, tol: dict,
             box_available: dict[str, bool], min_cell_n: int = DEFAULT_MIN_CELL_N,
             truth_dir: str | None = None) -> GateResult:
     needed = ("fga3", "fga2_rim", "fga2_jump", "fta", "tov", "oreb", "dreb")
+    # MAKE columns, added to the contract 2026-09-10 so eFG% can read
+    # (`src/cbb_sim/eval/contract.py`, `docs/models/engine/model.md`). A
+    # results directory built before that date (or by an engine build that
+    # has not picked it up) simply lacks these -- box_available reports the
+    # pair missing exactly like any other optional column, and eFG% below
+    # falls back to NEEDS-INSTRUMENTATION rather than a fabricated number.
+    needed_efg = ("fgm2_rim", "fgm2_jump", "fgm3", "ftm")
     missing = [s for s in needed if not box_available.get(s, False)]
-    checks: list[GateCheck] = [GateCheck(
+    missing_efg = [s for s in needed_efg if not box_available.get(s, False)]
+
+    efg_check = GateCheck(
         "eFG% (offense/defense)", "n/a", "n/a", f"+/-{tol['g4_pp']}pp", "NEEDS-INSTRUMENTATION",
-    )]
-    notes = ["eFG% needs MAKE counts (FGM/3PM); the contract's optional box columns are attempt "
-             "counts only, so eFG% is unconditionally NEEDS-INSTRUMENTATION under the current "
-             "contract (a documented gap, not a missing-file accident)."]
+    )
+    checks: list[GateCheck] = [efg_check]
+    notes: list[str] = []
+    if missing_efg:
+        notes.append(
+            "eFG% needs MAKE counts (FGM by shot class + FTM); this results directory's "
+            f"games.parquet lacks optional box column pair(s) for: {', '.join(missing_efg)} -- "
+            "either a run predating the 2026-09-10 FGM/FTM contract extension "
+            "(docs/models/engine/model.md) or an engine build that has not picked it up yet. "
+            "TOV%/OREB%/FT-rate below are unaffected -- they only ever needed attempt counts."
+        )
     if missing:
         checks.append(GateCheck(
             "TOV% / OREB% / FT rate", "n/a", "n/a", "see SIM_GUARDRAILS G4 row", "NEEDS-INSTRUMENTATION",
@@ -399,11 +415,12 @@ def gate_g4(summary: pd.DataFrame, raw: pd.DataFrame, season: int, tol: dict,
                            checks=checks, notes=notes)
 
     r = raw.merge(summary[["game_id", "home_team_id", "away_team_id"]], on="game_id", how="inner")
+    efg_cols = () if missing_efg else needed_efg
     sides = []
     for side, opp in (("home", "away"), ("away", "home")):
-        cols = [f"{side}_{s}" for s in needed]
+        cols = [f"{side}_{s}" for s in (*needed, *efg_cols)]
         d = r[["game_id", f"{side}_team_id", f"{opp}_dreb", *cols]].copy()
-        d.columns = ["game_id", "team_id", "opp_dreb", *needed]
+        d.columns = ["game_id", "team_id", "opp_dreb", *needed, *efg_cols]
         sides.append(d)
     sim = pd.concat(sides, ignore_index=True)
     sim["fga"] = sim["fga3"] + sim["fga2_rim"] + sim["fga2_jump"]
@@ -411,7 +428,12 @@ def gate_g4(summary: pd.DataFrame, raw: pd.DataFrame, season: int, tol: dict,
     sim["tov_pct"] = sim["tov"] / poss_est
     sim["oreb_pct"] = sim["oreb"] / (sim["oreb"] + sim["opp_dreb"])
     sim["ft_rate"] = sim["fta"] / sim["fga"]
-    sim_by_team = sim.groupby("team_id")[["tov_pct", "oreb_pct", "ft_rate"]].mean()
+    sim_metrics = ["tov_pct", "oreb_pct", "ft_rate"]
+    if not missing_efg:
+        sim["fgm"] = sim["fgm2_rim"] + sim["fgm2_jump"] + sim["fgm3"]
+        sim["efg_pct"] = (sim["fgm"] + 0.5 * sim["fgm3"]) / sim["fga"]
+        sim_metrics.append("efg_pct")
+    sim_by_team = sim.groupby("team_id")[sim_metrics].mean()
 
     box = ref_mod.load_actual_team_box(season)
     act_by_team = box.groupby("team_id").agg(
@@ -433,6 +455,63 @@ def gate_g4(summary: pd.DataFrame, raw: pd.DataFrame, season: int, tol: dict,
                 "sim": sim_v, "actual": act_v, "delta": sim_v - act_v,
                 "status": cell_status(n, within(sim_v, act_v, tolerance), min_cell_n),
             })
+
+    # eFG% -- PROVISIONAL: team_game_shots_v1.parquet's box_fgm/box_fga/box_fgm3
+    # (hoopR team_box, second-sourced against the CBBD event layer,
+    # `docs/tests/truth_tables_v1_2026-09-10.md`) is the ACTUAL source; the SIM
+    # side needs the games.parquet FGM/FTM columns checked above. Both are now
+    # available where the run and the truth dir support them.
+    team_truth = ref_mod.load_team_shot_truth(season, truth_dir) if truth_dir else None
+    efg_pooled_check = None
+    if missing_efg:
+        pass  # already noted above; nothing further to compute
+    elif team_truth is None or not len(team_truth):
+        notes.append(
+            "games.parquet has the sim-side FGM/FTM columns, but no --truth-dir "
+            f"team_game_shots_v1.parquet was found for season {season}; eFG% stays "
+            "NEEDS-INSTRUMENTATION."
+        )
+    else:
+        tt = team_truth[team_truth["box_fga"].notna() & team_truth["box_fgm"].notna()].copy()
+        tt["efg_pct"] = (tt["box_fgm"] + 0.5 * tt["box_fgm3"]) / tt["box_fga"]
+        act_efg_by_team = tt.groupby("team_id").agg(
+            n_games=("game_id", "size"), efg_pct=("efg_pct", "mean"),
+        )
+        for team_id, act_row in act_efg_by_team.iterrows():
+            if team_id not in sim_by_team.index:
+                continue
+            n = int(act_row["n_games"])
+            sim_v = float(sim_by_team.loc[team_id, "efg_pct"])
+            act_v = float(act_row["efg_pct"])
+            rows.append({
+                "metric": "efg_pct", "team_id": team_id, "n_games": n,
+                "sim": sim_v, "actual": act_v, "delta": sim_v - act_v,
+                "status": cell_status(n, within(sim_v, act_v, tol["g4_pp"] / 100), min_cell_n),
+            })
+        efg_rows = [row for row in rows if row["metric"] == "efg_pct"]
+        efg_powered = [row for row in efg_rows if row["status"] != "UNDERPOWERED"]
+        efg_bad = [row for row in efg_powered if row["status"] == "FAIL"]
+        efg_check = GateCheck(
+            "eFG% (offense/defense)",
+            f"{len(efg_powered) - len(efg_bad)}/{len(efg_powered)} powered teams inside",
+            "all inside", f"+/-{tol['g4_pp']}pp (PROVISIONAL truth)",
+            status_of(len(efg_bad) == 0) if len(efg_powered) else "NEEDS-INSTRUMENTATION",
+        )
+        checks[0] = efg_check
+        sim_pool_fga = sim["fga"].sum()
+        sim_pool_efg = float((sim["fgm"].sum() + 0.5 * sim["fgm3"].sum()) / sim_pool_fga)
+        act_pool_efg = float((tt["box_fgm"] + 0.5 * tt["box_fgm3"]).sum() / tt["box_fga"].sum())
+        efg_pooled_check = GateCheck(
+            "efg_pct (season, pooled, PROVISIONAL)", f"{sim_pool_efg:.4f} vs {act_pool_efg:.4f}",
+            f"{act_pool_efg:.4f}", f"+/-{tol['g4_pp']}pp",
+            status_of(within(sim_pool_efg, act_pool_efg, tol['g4_pp'] / 100)),
+        )
+        notes.append(
+            "eFG% ACTUAL is data/processed/truth/team_game_shots_v1.parquet box_fgm/box_fga/box_fgm3 "
+            "(hoopR team_box, second-sourced against the CBBD event layer, PROVISIONAL -- not yet "
+            "itself bake-off-validated as a grading source)."
+        )
+
     tab = pd.DataFrame(rows)
     for metric in ("tov_pct", "oreb_pct", "ft_rate"):
         sub = tab[tab["metric"] == metric]
@@ -445,10 +524,8 @@ def gate_g4(summary: pd.DataFrame, raw: pd.DataFrame, season: int, tol: dict,
         ))
 
     # season-level pooled reads -- PROVISIONAL, gated on --truth-dir the same
-    # way G3's are (only tov_pct/oreb_pct/ft_rate: eFG% needs sim-side makes,
-    # which the contract does not carry regardless of truth data -- see the
-    # eFG% note above; this does NOT change that check).
-    team_truth = ref_mod.load_team_shot_truth(season, truth_dir) if truth_dir else None
+    # way G3's are (tov_pct/oreb_pct/ft_rate always; eFG% too once the sim
+    # side has the make columns -- efg_pooled_check is None otherwise).
     if team_truth is not None and len(team_truth):
         sim_pooled_metric = {
             "tov_pct": float(sim["tov"].sum() / poss_est.sum()),
@@ -469,16 +546,8 @@ def gate_g4(summary: pd.DataFrame, raw: pd.DataFrame, season: int, tol: dict,
                 f"{act_v:.4f}", f"+/-{tol[tolkey]}pp" if tolkey == "g4_pp" else f"+/-{tol[tolkey]}",
                 status_of(within(sim_v, act_v, tolerance)),
             ))
-        both = team_truth[team_truth["box_fga"].notna() & team_truth["box_fgm"].notna()]
-        act_efg = float((both["box_fgm"] + 0.5 * both["box_fgm3"]).sum() / both["box_fga"].sum())
-        notes.append(
-            f"eFG% ACTUAL side is now computable ({act_efg:.4f} pooled, from "
-            "data/processed/truth/team_game_shots_v1.parquet box_fgm/box_fga/box_fgm3, PROVISIONAL) "
-            "-- the SIM side still cannot be, because games.parquet's optional box columns remain "
-            "attempt counts only (no FGM/3PM anywhere in the engine's own output contract). This is "
-            "an engine-contract gap, not a truth gap, and eFG% stays NEEDS-INSTRUMENTATION until the "
-            "engine emits makes."
-        )
+        if efg_pooled_check is not None:
+            checks.append(efg_pooled_check)
         notes.append(
             "Season-level pooled tov_pct/oreb_pct/ft_rate reads (sum over every team-game) are "
             "genuinely powered; the by-team cells above are UNDERPOWERED at ~30-40 games/team under "

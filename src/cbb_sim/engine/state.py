@@ -80,13 +80,24 @@ def load_bonus_era(path: Path | str | None = None) -> dict[int, tuple[int, int]]
 
 
 #: Per-team box columns the results contract asks for (`contract.BOX_STATS`).
+#: The four MAKE stats (fgm2_rim, fgm2_jump, fgm3, ftm) were added 2026-09-10
+#: alongside the matching attempt stats already here, closing the eFG%
+#: engine-contract gap (`docs/tests/truth_tables_v1_2026-09-10.md` section 4,
+#: G4). Points must always equal 2*(fgm2_rim+fgm2_jump) + 3*fgm3 + ftm
+#: (`tests/test_engine.py::test_score_equals_points_from_events`).
 BOX_STATS: tuple[str, ...] = (
     "fga3", "fga2_rim", "fga2_jump", "fta", "tov", "oreb", "dreb",
+    "fgm2_rim", "fgm2_jump", "fgm3", "ftm",
 )
 #: Per-player box columns (`contract.REQUIRED_PLAYER_COLUMNS` minus the keys
-#: and minutes). `ast` is a placeholder the engine has no model for and is
-#: written as 0 with that stated, never as a fabricated number.
-PLAYER_STATS: tuple[str, ...] = ("pts", "reb", "fga", "fg3a", "fta")
+#: and minutes), plus per-class FGM (fgm2_rim, fgm2_jump, fgm3; added
+#: 2026-09-10, same reason as BOX_STATS above) as OPTIONAL additional player
+#: columns -- REQUIRED_PLAYER_COLUMNS itself is untouched. `ast` is a
+#: placeholder the engine has no model for and is written as 0 with that
+#: stated, never as a fabricated number.
+PLAYER_STATS: tuple[str, ...] = (
+    "pts", "reb", "fga", "fg3a", "fta", "fgm2_rim", "fgm2_jump", "fgm3",
+)
 
 
 @dataclass

@@ -27,7 +27,7 @@ GAMES.PARQUET -- required columns
     harness (see deliverable 5's reproduction check).
 
 GAMES.PARQUET -- optional per-team box columns
-    Each of the seven stats below is checked as a HOME/AWAY pair (the same
+    Each of the eleven stats below is checked as a HOME/AWAY pair (the same
     home_/away_ prefix convention as the required home_pts/away_pts columns).
     A gate that needs a pair and does not find BOTH sides reports
     NEEDS-INSTRUMENTATION rather than a partial or fabricated number.
@@ -39,14 +39,29 @@ GAMES.PARQUET -- optional per-team box columns
         home_tov       / away_tov         turnovers
         home_oreb      / away_oreb        offensive rebounds
         home_dreb      / away_dreb        defensive rebounds
+        home_fgm3      / away_fgm3        3-point makes                (added 2026-09-10)
+        home_fgm2_rim   / away_fgm2_rim    rim/dunk/layup 2-point makes (added 2026-09-10)
+        home_fgm2_jump  / away_fgm2_jump   jump-shot 2-point makes      (added 2026-09-10)
+        home_ftm       / away_ftm         free throws made            (added 2026-09-10)
 
-    NOTE (a known, deliberate contract gap): these are all ATTEMPT/rebound
-    counts, not makes. `fga2_rim + fga2_jump + fga3` gives a full FGA count,
-    which is enough for G3 (shot mix) and for the TOV%/OREB%/FT-rate legs of
-    G4, but NOT for eFG% (which needs makes). Until an engine also reports
-    make counts, G4's eFG% sub-check is unconditionally NEEDS-INSTRUMENTATION
-    -- reported honestly as an instrumentation gap, never backed into from
-    points scored.
+    `points == 2*(fgm2_rim+fgm2_jump) + 3*fgm3 + ftm` on every row this contract
+    accepts -- asserted directly in `tests/test_engine.py::
+    test_score_equals_points_from_events`.
+
+    HISTORY (a contract gap, now closed going forward): before 2026-09-10 this
+    list had only the first seven (ATTEMPT/rebound counts, no makes).
+    `fga2_rim + fga2_jump + fga3` gives a full FGA count, enough for G3 (shot
+    mix) and the TOV%/OREB%/FT-rate legs of G4, but not for eFG% (which needs
+    makes) -- G4's eFG% sub-check was unconditionally NEEDS-INSTRUMENTATION.
+    The four MAKE columns close that gap; a RESULTS DIRECTORY built before
+    this date (or by an engine build that has not picked it up) simply lacks
+    them, and `box_columns_available()` reports those four pairs as
+    unavailable exactly like any other missing optional pair -- gate_g4 keeps
+    reading eFG% as NEEDS-INSTRUMENTATION for that directory, never a
+    fabricated number backed into from points scored. This is backward
+    compatible by construction: BOX_STATS only grew, no existing pair moved
+    or was renamed, so an old results directory with the original seven pairs
+    still validates and still grades everything it always graded.
 
 PLAYERS.PARQUET -- optional; IF the file exists, these columns are required
     game_id, seed, athlete_id, team_id, minutes, pts, reb, ast, fga, fg3a, fta
@@ -54,6 +69,11 @@ PLAYERS.PARQUET -- optional; IF the file exists, these columns are required
     `team_id` is not in the deliverable's literal column list but is added
     here because G8's "by player role, by team" breakdown is impossible
     without it; every other column matches the spec verbatim.
+
+    OPTIONAL additional player columns: `fgm2_rim`, `fgm2_jump`, `fgm3`
+    (per-class field-goal makes, added 2026-09-10, same reason as the
+    games.parquet makes above). Not required -- REQUIRED_PLAYER_COLUMNS is
+    unchanged -- so a players.parquet without them still validates.
 
 RUN_META.JSON -- required keys
     engine_tag       str
@@ -92,9 +112,12 @@ REQUIRED_GAME_COLUMNS: tuple[str, ...] = (
     "game_id", "seed", "home_pts", "away_pts", "possessions", "n_periods",
 )
 
-# base name -> both home_<name> and away_<name> are the pair
+# base name -> both home_<name> and away_<name> are the pair. The four MAKE
+# stats were appended 2026-09-10 (backward compatible: only appended, never
+# reordered/renamed) so G4's eFG% can read; see the module docstring.
 BOX_STATS: tuple[str, ...] = (
     "fga3", "fga2_rim", "fga2_jump", "fta", "tov", "oreb", "dreb",
+    "fgm3", "fgm2_rim", "fgm2_jump", "ftm",
 )
 
 REQUIRED_PLAYER_COLUMNS: tuple[str, ...] = (
