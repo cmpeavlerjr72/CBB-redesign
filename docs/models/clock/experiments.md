@@ -2152,3 +2152,188 @@ share the machine. Results and the decision are appended to this file as
 section 17, the evidence goes to
 `docs/tests/clock_duration_dispersion_2026-09-11.md`, and a row goes to
 `docs/models/change_ledger.md` only if something is adopted.
+
+---
+
+## 17. Run R8 -- the round-5 dispersion grid (2026-09-11)
+
+`scripts/exp_clk5_dispersion_bakeoff.py` (module
+`src/cbb_sim/models/clock_v5.py`), scored by the SAME blind path rounds 3, 3b,
+3c and 4 used (`clock_v3.score_arm_v3`, unedited), with the primary metric
+reduced by ONE piece of variance algebra applied identically to the reference
+and to every arm. Pre-registration section 16 committed **28b5f17** BEFORE
+`clock_v5.py`, the bake-off script or any fitted parameter existed.
+Measurement: `scripts/diag_clk5_dispersion.py` (same commit; fits nothing).
+Evidence, multi-level: `docs/tests/clock_duration_dispersion_2026-09-11.md`.
+
+Universe: the 2025 clock-complete regulation possessions, **270,530 rows over
+1,991 games**, the same set section 15.2 read `E[min(T,R)]` on. Needed
+per-team-game possession SD on that set: **4.2795**
+(`3.8509 * sqrt(Var(rbar)) = 3.8509 * sqrt(1.23494)`), the bridge checked
+against the realised counts at ratio **0.9950**.
+
+Artifacts `v5_*` under `data/processed/models/clock/` (gitignored, HF-synced).
+**No engine run. No served default changed.**
+
+### 17.1 The measurement the arms were chosen against
+
+| channel | share of the `Var(Dbar)` gap | measured |
+|---|---:|---|
+| (a) conditional law too narrow | **+1.1%** | served conditional SD 8.8731 s against an actual residual SD 8.8940 s, **ratio 0.99765**; every powered `prev_end` cell inside 1.0% |
+| (b) missing within-game correlation | **+98.9%** | `tau = 0.8022 s`, CV 4.545%; implied average pairwise residual correlation **0.00807** |
+| (c) `prev_end` composition (L34) | **-0.3%** | L34's mix moves the mixture variance by **-0.258 s2**, the WRONG way |
+
+Produced 2.9430 against needed 4.2795, **ratio 0.6877** (the engine's own
+reading of the same defect is 3.743/4.972 = 0.753; the offline "produced"
+excludes across-seed state-composition feedback and is a lower bound).
+
+### 17.2 F2 offline -- the deciding table
+
+| id | arm | **P SD produced** | **ratio** | CRPS_trunc | cens. loglik | PIT worst D | leak cells | `E[min(T,R)]` | mean gap | poss delta |
+|---|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| R | `v3c_srfloor_P3_s1` (served) | 2.9430 | **0.6877** | 4.92746 | -3.51919 | 0.4306 | 20 | 17.4965 | -0.1561 | +0.607 |
+| **A1** | `v5_glat_shared` | **4.2980** | **1.0043** | 4.92777 | -3.50994 | 0.4307 | 20 | 17.5041 | -0.1485 | +0.577 |
+| A2 | `v5_glat_team` | 4.3103 | 1.0072 | 4.92825 | -3.51112 | 0.4327 | 20 | 17.5196 | -0.1331 | +0.516 |
+| A3 | `v5_glat_biv` | 4.3330 | 1.0125 | 4.92876 | -3.51106 | 0.4327 | 21 | 17.5159 | -0.1367 | +0.531 |
+| A4 | `v5_ar1` | 3.0518 | 0.7131 | 4.92746 | -3.51919 | 0.4306 | 20 | 17.4965 | -0.1561 | +0.607 |
+| A5 | `v5_gamma_P3_s1` | 3.3539 | 0.7837 | **4.97216** | **-3.57150** | **0.4712** | **34** | 17.4892 | -0.1635 | +0.635 |
+| A6 | `v5_glat_tempo` | 4.3103 | 1.0072 | 4.92776 | -3.50984 | 0.4295 | 20 | 17.5044 | -0.1482 | +0.576 |
+
+CRPS_trunc is read on the clock-complete subset, so its LEVEL is not comparable
+to section 15.2's 4.89946 (the full 5,319-game F2 slice); the arm-to-arm
+DIFFERENCES are, and those are what the no-regression line uses.
+
+Fitted parameters, F2 train {2022, 2023, 2024} with F1 {2022, 2023} beside it:
+`A1 sigma 0.047248 / 0.046959`; `A2 sigma 0.066741 / 0.066333`;
+`A3 sigma 0.077680 / 0.077476, rho_t -0.2620 / -0.2680`;
+`A4 rho 0.036823 / 0.034095`; `A6 b0 -0.002335 / -0.002749,
+b1 6.70e-05 / 7.30e-05`. **F1 and F2 agree to the third decimal on every
+parameter**: the dispersion is a property of the sport, not of a season.
+
+### 17.3 Floor, and the Monte-Carlo cross-check
+
+Two spec-identical refits on game-block bootstrap resamples of the F2 training
+window (seeds 20260911 / 20260912): `sigma` 0.047493 / 0.047107, P SD produced
+4.3217 / 4.2975. **Floor = 0.0242 possessions.** CRPS_trunc carries section
+15.2's own measured game-block SE, 0.00684.
+
+**A1 beats R by 1.3550 possessions = 56.0 floors.** A4 beats R by 4.5 floors
+and is still 0.29 short of the target.
+
+`scripts/diag_clk5_mc_check.py`, 25 replicate draws over the real 2025 state
+sequences through `clock.sample_from_pmf`'s own inverse-CDF construction:
+R closed form 2.9430 against MC 2.9551 (+0.41%), A1 4.2980 against 4.2684
+(-0.69%), A2 4.3103 against 4.3434 (+0.77%). All inside the MC's own noise:
+**the closed form is validated, the primary metric is not an artefact of the
+algebra.**
+
+### 17.4 Responsiveness -- and where every arm still fails
+
+`produced / needed` per pregame-tempo quintile, all five powered (398-399 games
+and 50,840-57,542 possessions each):
+
+| arm | Q1 slow | Q2 | Q3 | Q4 | Q5 fast | worst |
+|---|---:|---:|---:|---:|---:|---:|
+| R | 0.711 | 0.793 | 0.732 | 0.684 | 0.631 | 0.369 |
+| A1 | 1.035 | **1.168** | 1.067 | 0.997 | 0.919 | 0.168 |
+| A2 | 1.039 | **1.172** | 1.070 | 0.999 | 0.921 | 0.172 |
+| A3 | 1.044 | **1.178** | 1.076 | 1.005 | 0.926 | 0.178 |
+| A4 | 0.737 | 0.823 | 0.759 | 0.709 | 0.654 | 0.346 |
+| A5 | 0.826 | 0.900 | 0.838 | 0.774 | 0.706 | 0.294 |
+| A6 | **1.004** | **1.157** | 1.071 | 1.012 | **0.958** | 0.157 |
+
+The served arm is progressively worse the faster the game (0.711 -> 0.631): a
+fast game has more possessions, so iid sampling averages more of the
+conditional variance away and the missing level is a larger share of what is
+left. A6's fitted tempo dependence is real -- it is the only arm inside 5% at
+both ends -- but **every latent arm sits at 1.157-1.178 in Q2, outside the
+pre-registered [0.85, 1.15] band.** Q2's needed dispersion is a genuine 4-SE
+dip below the tempo trend, not noise, so the miss is not waived.
+
+### 17.5 Verdict
+
+**NO ARM ADOPTED. `ENGINE_CLOCK` stays `v3c_srfloor_P3_s1`,
+`provisional_clock` stays True, and nothing was hand-tuned, capped, scaled or
+blended at any point.** Two independent grounds:
+
+1. **Criterion 3 fails for every arm that passes criterion 1.** A1, A2, A3 and
+   A6 land the primary inside +/-1.3% against a +/-10% requirement and pass
+   every no-regression line, and all four are outside the [0.85, 1.15]
+   per-quintile band at Q2. A failing criterion is not softened.
+2. **No closed-loop run exists**, and `CLAUDE.md` requires a paired-seed sim
+   run showing no gate regressed before an offline winner ships (section 17.7).
+
+**A1 `v5_glat_shared` is the leading CANDIDATE**: primary 0.688 -> **1.0043**,
+56 floors, at the cost of ONE fitted scalar, with CRPS_trunc +0.00031 against a
+0.00684 floor, PIT unchanged (worst D +0.0001, leak cells 20 -> 20), the
+censored log-likelihood BETTER (-3.5099 against -3.5192), and round 4's mean
+gate IMPROVED rather than merely held (`E[min(T,R)]` 17.4965 -> 17.5041, gap
+-0.1561 -> -0.1485, implied possessions +0.607 -> +0.577; that is `round(A*T)`
+interacting with the horn truncation, measured not assumed, and it is not why
+the arm is preferred).
+
+### 17.6 The two negative results, both pre-registered before they ran
+
+- **A4 (AR(1)) fails exactly as predicted.** Section 16.1 item 2 put the
+  required `rho` at ~0.35 against a measured lag-1 of -0.0195 and PREDICTED the
+  failure in writing before the arm existed; it delivered 0.7131. The measured
+  autocorrelation is a near-flat positive floor at every EVEN lag out to 40
+  possessions (+0.0350, +0.0326, +0.0317, +0.0304, +0.0274, +0.0193, +0.0114)
+  with odd lags at zero or slightly negative -- **a persistent LEVEL, not an
+  autoregression, and not a shared-clock effect either.**
+- **A5 (a heavier-tailed conditional family) fails on every line**: primary
+  0.7837, CRPS_trunc 6.5 floors WORSE, PIT leak cells 20 -> 34, worst D
+  0.4306 -> 0.4712, mean gap worse. **Channel (a) is confirmed not to be the
+  defect by an arm built to exploit it**, which is stronger evidence than the
+  0.99765 conditional-SD ratio on its own.
+
+### 17.7 A pre-registration defect, RECORDED rather than applied
+
+Criterion 4 of section 16.7 breaks a primary tie on the S1/S2 structure (the
+per-offence latent variance 2.361/2.297 and the offence-pair correlation
+-0.172). A1, A2 and A6 do tie on the primary inside the 0.0242 floor, so the
+criterion fires, and it would select A2 over A1. It must not, and the reason is
+arithmetic: on a clock-complete game the possessions ALTERNATE and tile 2400 s,
+so `n_h*Dbar_h + n_a*Dbar_a = 2400` and the SUM of the two offences' mean
+durations is a deterministic function of the possession count while the
+DIFFERENCE is free. In those coordinates the variance splits
+
+    (Dbar_h + Dbar_a)/2   ->  1.2349   the pace level: THE possession count
+    (Dbar_h - Dbar_a)/2   ->  1.7487   which offence played slower: no gate reads it
+
+so S1 and S2 are dominated by a component that is orthogonal to the target and
+partly mechanical. `CLAUDE.md`'s standing rule -- ties go to the simpler model
+-- is the one that applies, and it selects A1. This is the same class of error
+section 13.2 recorded for round 3c's criterion 2; the criterion stands in the
+append-only pre-registration and this section records that it was found
+mis-specified, in the same commit as the result.
+
+### 17.8 What this round establishes, beyond the verdict
+
+- **The clock's conditional law is right and its JOINT law is missing.** The
+  one-possession distribution is within 0.25% in SD and within 1% in every
+  powered `prev_end` cell; the 135-possession aggregate is 31% short. An
+  average pairwise correlation of **0.008** is the entire defect. A sub-model
+  can be perfectly calibrated per row and badly wrong per game, and no
+  per-row scoring rule will see it -- CRPS_trunc separates R from A1 by
+  0.00031, which is 4% of its own floor. **Whenever a sub-model's draws are
+  aggregated inside a game, the round that fits it must carry an aggregate
+  metric; a per-row metric is structurally blind to the dependence.**
+- **The mean defect and the variance defect are independent and point at
+  different owners.** L34's `prev_end` mix owns two thirds of the MEAN
+  shortfall (round 4) and -0.3% of the VARIANCE shortfall, with the wrong sign.
+  Fixing the upstream mix would make the dispersion marginally worse. Round 4's
+  "round 5 for the CLOCK has no target left" was true of the mean and false of
+  the variance; a lane that closes one moment has not closed the others.
+- **`CLAUDE.md`'s "one pace realisation per simulated game, both teams scaled
+  by it" is not implemented for durations, and implementing it is worth 56
+  floors.** The engine draws every possession independently; there is no
+  game-level pace realisation anywhere in the clock path.
+- **The dispersion is a stable property of the sport.** Every fitted parameter
+  agrees to the third decimal between F1 and F2 -- unlike the round-4 calendar
+  arms, whose whole difficulty was that the LEVEL drifts within a season.
+- **The remaining defect is state-dependence of the dispersion.** The needed SD
+  slopes +32% from the slowest to the fastest tempo quintile and a constant-CV
+  latent reproduces +17% of that; A6's fitted tempo coefficient closes both
+  ends and still misses Q2 by 16%. That is the target a round 6 would have, and
+  it is a DISPERSION-function question, not a family question.
