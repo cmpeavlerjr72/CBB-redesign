@@ -1,0 +1,58 @@
+{
+  "generated_by": "docs/tests/ft_trip_reconciliation_2026-09-10.md, task 5",
+  "method": "ESPN public game page (www.espn.com/mens-college-basketball/game/_/gameId/<id>), fetched 2026-09-10, one request per game_id. The CBBD-facing site.api.espn.com JSON summary endpoint returned HTTP 403 (Akamai edge block) from this environment; the human-facing game page (which hoopR's own scrape wraps) was used instead.",
+  "source_disagreement_table": "data/processed/truth/game_finals_v1.parquet (the four 2025 rows flagged in docs/tests/truth_tables_v1_2026-09-10.md section 3)",
+  "note": "This file records a third-source resolution only. game_finals_v1.parquet itself is NOT edited -- both hoopR and CBBD columns stay on every row per that table's own no-silent-preference rule.",
+  "games": [
+    {
+      "game_id": 401745889,
+      "matchup": "Maine at Bryant",
+      "hoopr_home_away": "79-59",
+      "cbbd_home_away": "77-59",
+      "espn_home_team": "Bryant",
+      "espn_away_team": "Maine",
+      "espn_home_away": "79-59",
+      "resolution": "hoopR correct; CBBD home score (77) is wrong, off by 2",
+      "winner": "hoopR"
+    },
+    {
+      "game_id": 401723767,
+      "matchup": "Norfolk State at Howard",
+      "hoopr_home_away": "69-81",
+      "cbbd_home_away": "0-81",
+      "espn_home_team": "Howard",
+      "espn_away_team": "Norfolk State",
+      "espn_home_away": "69-81",
+      "resolution": "hoopR correct; CBBD homePoints=0 confirmed to be a data gap, not a real disagreement (matches the truth table's own note)",
+      "winner": "hoopR"
+    },
+    {
+      "game_id": 401722537,
+      "matchup": "Murray State at Southern Illinois",
+      "hoopr_home_away": "62-60",
+      "cbbd_home_away": "60-62",
+      "espn_home_team": "Southern Illinois",
+      "espn_away_team": "Murray State",
+      "espn_home_away": "60-62",
+      "resolution": "CBBD correct; hoopR has the side-label flip here, the opposite of the truth table's working assumption (it flagged this as \"the same class of defect the pbp layer's _fix_flipped_sides repairs\", implying the CBBD side was suspect -- ESPN shows hoopR's side assignment is the one that is flipped)",
+      "winner": "CBBD"
+    },
+    {
+      "game_id": 401746100,
+      "matchup": "South Alabama at Akron",
+      "hoopr_home_away": "80-67",
+      "cbbd_home_away": "80-65",
+      "espn_home_team": "Akron",
+      "espn_away_team": "South Alabama",
+      "espn_home_away": "80-67",
+      "resolution": "hoopR correct; CBBD away score (65) is wrong, off by 2",
+      "winner": "hoopR"
+    }
+  ],
+  "summary": {
+    "n_games": 4,
+    "hoopr_wins": 3,
+    "cbbd_wins": 1,
+    "reading": "hoopR is the more reliable source on 3 of 4, but not universally -- game 401722537 shows hoopR, not CBBD, can carry the side-flip defect. Neither source should be silently preferred by a grader; a disagreement should route to a third source (as done here) rather than a hard-coded preference rule."
+  }
+}
