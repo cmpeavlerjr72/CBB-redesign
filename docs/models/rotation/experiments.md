@@ -4992,3 +4992,308 @@ not. The identification claim of 19.1 now rests on a measured refit-to-refit
 spread as well as on the six-window agreement.
 
 ---
+
+## 20. Round 9 pre-registration -- inverting the exit hierarchy onto the POWERED composition marginal (PM-directed, worker-authored 2026-09-11)
+
+Written and committed BEFORE `rotation_v9.py` existed and before anything was
+fitted. Evidence it is built on: round 8's own results (section 19, commits
+b6a18ec..8e378b5), `docs/tests/rotation_exit_rate_2026-09-11.md`, and the
+support measurement 19.1.
+
+### 20.1 The one thing round 9 changes, and why
+
+19.13 item 3 named it arithmetically and it is not an interpretation. Y1 fits
+`P(k_out | size, exit_cell, n_st)` and shrinks it **to X1's row**, the LEVEL
+`P(k_out | size, exit_cell)`. At one predicted starter on the floor the 2,764
+training rows split over the 18 exit cells leave ~154 per cell, so at `k = 300`
+the data carry weight 154 / (154 + 300) = 0.34 and the fitted rate is
+0.34 x 0.37 + 0.66 x 0.5576 = **0.49 against a real 0.37** (19.1); the simulated
+rate lands at 0.46 against 0.31 and the arm carries **46% of the real 36.5 pp
+span** (19.7). Y1's gains are real -- both broken G8 cells repaired, +14 floors
+of MAE over X1, 3.5 pp of a 21.0 pp close-band miss, the drift gradient
+flattened 17% -- and they stop where the shrinkage parent stops.
+
+The composition MARGINAL `P(k_out | size, n_st)` is **amply powered**: 379 /
+2,764 / 12,646 / 28,762 / 28,011 / 9,582 rows at `n_st = 0..5` with a 29 pp span
+(19.1), because it is pooled over the 18 exit cells and carries no state split at
+all. **Round 9 therefore turns the hierarchy the other way up.** A thin
+(state x composition) cell falls back on the composition rate -- the strong term,
+which has a fixed point at three starters -- instead of on the level, which has
+no fixed point and drifts -0.071 per swap (18.1).
+
+Round 9 keeps round 3b's base fits, round 4's hazards, round 5's wave tables and
+rank-within-class rule, round 6's K1 entry rule, the hard second-half reset and
+rounds 7-8's exit MECHANISM byte for byte -- draw `k_out` first, then the rank
+rule WITHIN class, then K1's `k_in` conditioned on the realised `k_out`, with the
+same uniforms in the same order. **It changes only the shrinkage parent of the
+`k_out` table** (and, in Z2, whether the interaction is used at all). Any
+difference between a round-9 arm and Y1 is a difference in **that alone**.
+
+### 20.2 The three-level hierarchy, declared before it is fitted
+
+Per wave size `s`:
+
+* **level 0**, `M0(s) = P(k_out | size)` -- the size row pooled over everything,
+  the same object round 7's `fit_exit` and round 8's `fit_exit8` use as the root;
+* **level 1**, `M1(s, n_st) = P(k_out | size, n_st)` -- **the composition
+  marginal, pooled over all 18 exit cells**, counts shrunk to `M0(s)` at `k`;
+* **level 2**, `Z(s, ce, n_st) = P(k_out | size, exit_cell, n_st)` -- the state
+  cell's own counts shrunk to `M1(s, n_st)` at `k`.
+
+Y1's hierarchy was `M0 -> P(k_out | size, ce) -> level 2`. Round 9's is
+`M0 -> M1 -> level 2`. Same two axes, same counts, same rows, same mechanism;
+the parent of the thin cell is the powered composition rate instead of the level.
+No axis is added and none is dropped; `prev_end` stays out of the exit cell
+(16.2). `n_st` is the quantity declared in 18.2, unchanged: the number of the
+model's own PREDICTED starting five among the five on the floor BEFORE the swap,
+`is_st[on_idx].sum()`, six levels `0..5`, identical offline and in the sampler.
+
+### 20.3 The two candidate exit rules
+
+**Z1 `exit_marg` -- the inverted hierarchy, continuous shrinkage.**
+`Z(s, ce, n_st)` as 20.2 defines it, at the fitted `k` of 20.4. A state cell with
+no signal is the composition marginal `M1(s, n_st)` exactly; a composition level
+with no signal is `M0(s)` exactly. Table shape (5, 18, 6, 6).
+
+**Z2 `exit_interact` -- the same, with the interaction used only where it is
+powered.** `Z2(s, ce, n_st) = Z(s, ce, n_st)` where the cell carries
+**>= 300 fitted rows**, and `= M1(s, n_st)` exactly otherwise. This is a hard
+gate on the (state x composition) interaction in place of a continuous one, so
+the thin cells contribute no partial state signal at all. Table shape
+(5, 18, 6, 6).
+
+**Minimum cell size, unchanged: `n = 300` fitted rows**, the project's
+UNDERPOWERED threshold since round 5, not tuned here and identical to the
+threshold Z2's gate uses -- they are the same constant, stated once. Every
+(size, cell, n_st) count and every (size, n_st) marginal count is published in
+the results table; every cell under 300 rows is labelled UNDERPOWERED.
+
+Both are lookup tables; neither makes a model call in the sim loop. Support is
+clipped to `0..size` and renormalised at every level, as in rounds 7 and 8.
+
+### 20.4 The shrinkage constant is FITTED, not chosen by hand -- the method, declared here
+
+Rounds 7 and 8 used the project's `k = 300` as a declared constant. Round 9's
+result depends on how hard a thin cell is pulled onto its new parent, so `k` is
+selected by a stated criterion on held-out TRAINING data and then frozen:
+
+* **Data: the 2024 training season only** (the first S1 window's own training
+  set), which precedes the entire F1 2025 test season, so no test row and no
+  gate cell enters the choice.
+* **Procedure: leave-one-fold-out over 5 disjoint folds of the 2024 training
+  team-games** (`numpy.RandomState(11)` assigns folds). For each fold, the
+  level-1 and level-2 tables are fitted from the other four folds' counts and
+  scored on the left-out fold's counts.
+* **Criterion: held-out multinomial log-likelihood per held-out row**, summed
+  over every (size, exit_cell, n_st) cell, of the level-2 table Z1 defines.
+* **Grid, declared here and not extended after any number is seen:
+  `k in {30, 100, 300, 1000, 3000}`.** The argmax is taken; ties within 0.001
+  nats per held-out row go to the LARGER `k` (more shrinkage, simpler model).
+* The selected `k` is used for **both** arms, for **every** window, and for both
+  shrinkage levels. It is published with the full grid of held-out scores.
+
+This is a fit on training data against a likelihood, not a search against a gate
+cell: no state cell, no MAE and no Decision 8 number is visible to it.
+
+### 20.5 Arms
+
+| arm | exit rule | shrinkage parent of the state cell | simplicity | status |
+|---|---|---|---:|---|
+| `R2_hier_dirichlet` (S1) | -- | -- | 1 | reference (incumbent, SERVED) |
+| `K1_cond_class` (S1) | rank | -- | 9 | reference (round 6's best; NOT adoptable here) |
+| `X1_exit_class` (S1) | class LEVEL | -- | 11 | reference (round 7's; NOT adoptable here) |
+| `Y1_exit_rate` (S1) | class rate in the composition | the LEVEL `P(k_out given size, ce)` | 14 | reference (round 8's best; NOT adoptable here) |
+| `Z1_exit_marg` | class rate in the composition | **the MARGINAL `P(k_out given size, n_st)`** | 16 | candidate |
+| `Z2_exit_interact` | Z1 with the interaction gated at n >= 300 | marginal, or the cell where powered | 17 | candidate |
+
+The simplicity order `R2 < K1 < X1 < Y1 < Z1 < Z2` is fixed here. **R2, K1, X1
+and Y1 are references and none is adoptable in round 9.**
+
+### 20.6 Scheme, folds, and what is refitted
+
+**Scheme: S1 for every arm**, per rounds 3b-8. Windows are the calendar months of
+the 2024-25 season; the first window trains on 2024 alone. No static column.
+
+**Folds.** F1 = train 2024, test 2025, which IS the standing fold 2 (L13). 2026
+stays sealed (`seal.assert_not_sealed` guards the trainer).
+
+**Round 9 fits the two exit objects per window and nothing else**, on the **same
+rows** as rounds 6, 7 and 8 (`--wave-team-games 6000`, fit seed 11).
+`rotation_fit_v3*.json`, `rotation_v4_sub_*.json`, `round5/*`, `round6/*`,
+`round7/*` and `round8/*` are REUSED and **nothing is written to any of them**;
+the round-9 artifacts are new versioned siblings under `round9/`.
+
+**The four reference columns (R2, K1, X1, Y1) are taken from the round-6, -7 and
+-8 results JSONs**, not re-simulated: same 1,600-game universe, same subset seed
+2025, same sim seeds 0-2, same base fits, hazards, wave and composition tables
+and grading functions. A **1-seed re-run of Y1 is executed inside this round as a
+reproduction check** and its cells are reported next to round 8's; **if any state
+cell moves by more than its floor-A SD the reference columns are discarded and
+the round is re-run in full**, as 18.5 declared for X1 and 16.5 for K1.
+
+### 20.7 Test universe and grading path
+
+The **same** 1,600-game subset of 2025 that rounds 2-8 used (numpy RandomState
+seed 2025), **3 seeds per candidate arm** under S1, the **round-8 grading path
+unchanged** (`train_rotation_v1.build_row` / `verdict` / `rotation.aggregate_stats`,
+extended by `train_rotation_v4.extra_cells` / `.minutes_mae` and
+`train_rotation_v5.wave_cells`, with round 6's `quintile_mae`). No gate cell is
+added, so no grader line changes and the reference columns stay comparable byte
+for byte. Any cell with n < 300 player-games, possessions or fitted rows is
+labelled UNDERPOWERED and never read as signal or as absence of signal.
+
+### 20.8 Gates -- every round-8 gate, unchanged, nothing added or relaxed
+
+*G8 cells (report, not veto):* minutes mean +/- 2.0; minutes SD ratio pooled and
+within-player 0.9-1.1; top-5 and top-8 share of team minutes +/- 2 pp; players
+with > 0 minutes +/- 1.0.
+
+*The eight state cells (the veto), each +/- 3 pp:* starters' share of on-floor
+slots in the final 8:00 at |m| <= 5 / 6-15 / > 15; starters' share while carrying
+>= 4 fouls; the second-half TIP starter share in each of the three margin bands;
+starters' share over H1 20:00-10:00 at |m| <= 5. **An arm missing ANY of the
+eight is ineligible regardless of G8 or of MAE.**
+
+*The two round-5 cells (also veto):* `sub_rate_per_boundary` +/- 0.015 or 3x the
+floor-A seed SD if larger; `distinct_lineups_per_game` +/- 1.5 or 3x the floor-A
+seed SD if larger. The governing number is named in the results table.
+
+*Report only:* the "at exactly 4 fouls" diagnostic; top-1 / top-3 / top-5
+five-man lineup share; K-S D of the top-1 lineup share and of per-player minutes;
+mean wave size; the as-of starter benchmark of 14.6 on all eight state cells;
+**the exit-side starter share of 16.7** (200 games, seed 0, the as-of predicted
+starter set on both sides, one function for every row: ACTUAL 0.5576 overall,
+K1 0.4927, X1 0.5611, Y1 0.5422); **the twelve-minute time-since-reset gradient
+of 17.10** (H2 tip at 0 minutes, H1 20:00-10:00 at 0-10, the final 8:00 close
+band at 12+), quoted at twelve minutes as the round's headline drift number; and
+**the realised exit rate by `n_starters_on_floor` in the SIM against the same
+rate on the ACTUAL sequences** (19.7's table: ACTUAL span +36.5 pp, X1 +1.2,
+Y1 +16.7, Y2 +23.6), which is the object the round exists to move.
+
+### 20.9 Primary metric and the two responsiveness checks
+
+**Primary metric: per-player minutes MAE**, unchanged from rounds 4-8.
+
+**Responsiveness check 1 (Decision 8), unchanged from 18.8:** team-games bucketed
+into quintiles of the pregame as-of share of team minutes going to the predicted
+starting five; the close-and-late cell per quintile for ACTUAL and every arm,
+with slope and Q5 - Q1. An arm whose slope ratio to actual falls outside
+**[0.8, 1.2]**, or whose sign disagrees, is not adoptable. (ACTUAL +0.692;
+K1 0.83 PASS; X1 0.62 FAIL; Y1 0.60 FAIL.) 19.13 item 4 predicts in advance that
+a within-game restoring force cannot move this check; the prediction is recorded
+here so the round can falsify it.
+
+**Responsiveness check 2, per-player minutes MAE by PLAYER quintile, carried
+forward unchanged from 18.8.** Players in the as-of rotation set are bucketed
+into quintiles of their own pregame as-of minutes per game. An arm is adoptable
+only if it beats K1 beyond the floor in the pooled MAE **and loses beyond the
+floor in no single quintile to EITHER reference it is measured against -- K1
+(rounds 6-9's base) or W4 (round 5's, whose Q2 column vetoed round 6's arms)**.
+Both columns are read from the round-6 results JSON, as in rounds 7 and 8.
+Carrying W4 forward is deliberate: round 9 must not become adoptable by dropping
+a column. Underpowered quintiles are labelled.
+
+### 20.10 Noise floors and the decision rule
+
+**Floor A, seed-varied sim runs:** 20 seeds x 150 games per candidate arm, the SD
+of every G8 cell, every state cell, both round-5 cells and the MAE -- the rounds
+3/4/5/6/7/8 configuration, so seven rounds' floors are comparable. R2's, K1's,
+X1's and Y1's floors are rounds 4's, 6's, 7's and 8's and are unchanged by a run
+that does not refit them.
+
+**Floor B, spec-identical refit under a second seed:** the round-9 exit objects
+refitted from a different training-game sample (fit seed 101 vs 11) and simulated
+under a different sim seed (23 vs 7), graded on the same 150-game universe, run
+on the arm the decision rule selects or, failing that, on **Z1**, the arm the
+round is built on. An arm counts as beating a reference on a cell only if its
+improvement exceeds the refit-to-refit spread on that cell. **Floor B is
+pre-registered as CONDITIONAL ON THE WALL CLOCK** -- the lane's hard stop is
+13:05 ET -- and its absence, if it is absent, is reported and not hidden.
+
+**Decision rule.** Adopt the **simplest** arm that
+
+1. passes **every** one of the eight state cells at +/- 3 pp, AND
+2. passes **both** round-5 cells at the tolerances of 20.8, AND
+3. beats `R2_hier_dirichlet` on per-player minutes MAE by more than the floor, AND
+4. beats `K1_cond_class` on per-player minutes MAE by more than the floor and
+   loses beyond the floor to neither K1 nor W4 in any player quintile (20.9), AND
+5. satisfies the Decision 8 slope check, AND
+6. passes the Decision 10 freeze of 20.11.
+
+Ties go to the simpler model in the order `R2 < K1 < X1 < Y1 < Z1 < Z2`. An arm
+whose improvement on the cell it was built to fix does not clear floor B is not
+adopted on that cell. **If no arm is eligible, adopt nothing**, report which cell
+fails and by how much, name the diagnosis, and name the next structure. No gate
+is relaxed to produce a winner and no cell is dropped after seeing a result.
+**The served default is not changed by this lane in any case**; the PM switches
+it.
+
+### 20.11 Decision 10: the closed loop, and the adapter no lane has written
+
+The round-9 exit rule carries a state term by design (the exit cell's time and
+margin bands) exactly as rounds 7's and 8's did, so the freeze is the right
+instrument and is required before any arm is served. Paired-stream runs over the
+fixed **500-game subset** of the F2 2025 slate (sorted by `game_id` ascending,
+every 11th row, the first 500), with `ENGINE_EVENT=round2_s1`,
+`ENGINE_FG_MAKE=round3_shooter_S_C_s1`, `ENGINE_CLOCK=reference` pinned and
+recorded in every `run_meta.json`, reporting margin SD ratio, home/away score
+correlation, possessions per game and per-player minutes MAE, live against
+`ENGINE_ROTATION_FREEZE=1`, **5 seeds**, on the arm the decision rule selects.
+
+**Stated plainly, because it is now the third round running: the freeze cannot be
+run for rounds 7, 8 or 9 because NO LANE HAS WRITTEN THE ENGINE ADAPTER.** It
+needs a vectorised `next_lineup_round9` in `engine/rotation_adapter.py` behind a
+new `ENGINE_ROTATION` value that is **default-off**, its parity tests, and two
+500-game paired runs (~11 min). Round 7 could not fit it (17.13) and round 8 did
+not (19.12). **Round 9 pre-registers writing that adapter, default-off and
+untested against any gate, as a deliverable CONDITIONAL ON THE WALL CLOCK after
+grading**, so that a later session can run the freeze without first writing code.
+If an arm passes conditions 1-5 offline and the freeze cannot be run by the hard
+stop, the arm is reported as **PASSES OFFLINE, FREEZE OUTSTANDING**, condition 6
+is recorded as unmet, the arm is **not adopted**, and the served default is left
+untouched. That is a reporting outcome, not a relaxed gate.
+
+An arm that moves margin SD ratio, home/away correlation or possessions outside
+the G1/G2 tolerances between live and frozen is not adopted, and no magnitude for
+the loop is quoted from the freeze alone (L31).
+
+### 20.12 Engine expressibility (a condition on adoption)
+
+The round-9 tables have the SAME shape as Y1's, (5, 18, 6, 6), and are gathered
+with the same four indices; only their fitted contents differ. Z2 adds no index
+either -- its gate is applied at FIT time, so the sim-side gather is identical.
+Round 9 is therefore expressible in the engine at exactly Y1's cost: one gather
+into a (size, cell, n_st, k_out) CDF and no operation added to the (2N, S) roster
+block, and the sim loop still makes no model call. Both ship behind
+**`ENGINE_ROTATION=round9`** plus **`ENGINE_ROTATION_ARM=Z1|Z2`**, wired in
+`engine/rotation_adapter.py` with S1 artifacts per month and a manifest in the
+`engine/manifest.py` format under `data/processed/models/rotation/round9/`.
+`ENGINE_ROTATION=reference` remains the default and `engine/adapters.py` is **not
+touched by this lane**.
+
+### 20.13 Disclosures
+
+1. **Z1 and Z2 draw the same uniforms as X1 and Y1, in the same order** (round
+   5's coupling draw, the wave draw, the size draw, the `k_out` uniform, K1's
+   `k_in` uniform, then the bench race vector), so the round-9 arms are
+   byte-aligned with rounds 7's and 8's arms and with each other. Y1's column is
+   nevertheless taken from round 8's own JSON and checked by the 1-seed
+   reproduction re-run of 20.6.
+2. `k` is FITTED by 20.4's stated leave-one-fold-out criterion on 2024 training
+   data over a grid declared before any fit; it is not hand-picked and it never
+   sees a gate cell. The 300-row UNDERPOWERED threshold that Z2's gate uses is
+   the project's own since round 5 and is not tuned.
+3. `n_starters_on_floor` is the model's own predicted five, not the game's; the
+   as-of starter benchmark of 14.6 measures what that identification costs and is
+   reported, as in every round since 4.
+4. No static column is run; floor B (20.10), the Decision 10 freeze and the
+   adapter (20.11) are all conditional on the wall clock and their absence, if
+   any, is reported.
+5. The support for the inverted parent was measured BEFORE this pre-registration,
+   in 19.1 and 19.7, and is published there.
+6. 19.13 item 4's prediction -- that the Decision 8 slope will NOT move, because
+   a within-game restoring force carries no between-team information -- is
+   recorded here in advance of the result.
+
+---
+
