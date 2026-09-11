@@ -6,13 +6,15 @@
 # same "COPY the tracked repo, fail the build if a required data file is
 # missing" discipline. The one structural difference: this project's engine
 # S1 artifact tree (`data/processed/models/engine/event_round2_s1_*/`) is
-# gitignored and NOT YET reachable by `scripts/hf_sync_data.py` (that script's
-# --dirs is locked to raw|results; see docs/ops/aws_launch_chain.md section 4).
-# So unlike cfb's "git clone is a complete sim input set", a CBB image build
-# needs that ~45 MB directory staged into the build context BEFORE `docker
-# build` runs (manual scp/rsync -- see the ops doc). The build fails loudly
-# (missing `test -d`) if it is absent, rather than silently shipping an image
-# that can only run ENGINE_EVENT=reference.
+# gitignored, so unlike cfb's "git clone is a complete sim input set", a CBB
+# image build needs that ~45 MB directory present in the build context BEFORE
+# `docker build` runs. PM decision 2026-09-10: `scripts/hf_sync_data.py` now
+# has an `engine_inputs` bulk dir covering all of
+# `data/processed/models/engine/` (docs/ops/aws_launch_chain.md section 4) --
+# `hf_sync_data.py pull --dirs engine_inputs` after the clone is the normal
+# path now, no manual scp/rsync needed. The build still fails loudly (missing
+# `test -d`) if it is absent for any reason, rather than silently shipping an
+# image that can only run ENGINE_EVENT=reference.
 #
 # NO SECRETS ARE BAKED IN. .env is excluded by .dockerignore; HF_TOKEN arrives
 # at RUN time as an environment variable:
@@ -79,8 +81,9 @@ print('numpy', numpy.__version__, '| lightgbm', lightgbm.__version__, \
 # (data/raw, results/**) out of the context. It deliberately does NOT exclude
 # data/processed/models/engine/event_round2_s1_F2_2025/ -- that directory is
 # gitignored (rebuildable via scripts/build_engine_event_round2.py) but IS
-# required in the build context; stage it manually before `docker build`
-# (docs/ops/aws_launch_chain.md section 2/4).
+# required in the build context. Get it with
+# `hf_sync_data.py pull --dirs engine_inputs` after cloning, BEFORE
+# `docker build` (docs/ops/aws_launch_chain.md section 2/4).
 COPY . /app
 
 # git's "dubious ownership" guard otherwise makes `git rev-parse HEAD` fail
@@ -105,10 +108,9 @@ RUN chmod +x /app/scripts/run_aws_sweep.sh \
  && test -f /app/data/processed/models/engine/event_round2_s1_F2_2025/index.json \
  && test -f /app/data/processed/models/engine/event_round2_s1_F2_2025/team_block.npz \
  || (echo "BUILD FAILED: a required engine input is missing from the build" \
-          "context. If it is event_round2_s1_F2_2025/, that directory is" \
-          "gitignored and not yet on HF (docs/ops/aws_launch_chain.md section 4)" \
-          "-- stage it manually into data/processed/models/engine/ before" \
-          "docker build. Do not relax this check." >&2; exit 1)
+          "context. If it is event_round2_s1_F2_2025/, run" \
+          "'hf_sync_data.py pull --dirs engine_inputs' before docker build" \
+          "(docs/ops/aws_launch_chain.md section 4). Do not relax this check." >&2; exit 1)
 
 # Sweep outputs (results/engine_v0/<tag>/) and the run log land here; bind-
 # mount a host dir so a spot interruption does not lose completed blocks.

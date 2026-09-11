@@ -1,14 +1,24 @@
 """Sync the gitignored bulk data dirs to/from a private HuggingFace dataset.
 
 Source/target: https://huggingface.co/datasets/mvpeav/cbb-sim-data (PRIVATE)
-Covers: data/raw, results
+Covers: data/raw, results, engine_inputs
 
-These two dirs are in .gitignore (rebuildable bulk, and results/raw pulls can
-exceed GitHub's size limits), so a `git clone` does not bring them. This
-script is the offline/second-device path: `pull` on the new machine instead
-of re-running the download / pull_*.py chain.
+`raw` and `results` are gitignored wholesale (rebuildable bulk, and
+results/raw pulls can exceed GitHub's size limits), so a `git clone` does not
+bring them. This script is the offline/second-device path: `pull` on the new
+machine instead of re-running the download / pull_*.py chain.
 
-Everything else the sim needs -- data/processed models+lookups and
+`engine_inputs` maps to `data/processed/models/engine/` -- unlike `raw` and
+`results`, most of that directory IS git-tracked (the engine's per-fold
+arrays/joblibs), but `event_round2_s1_*/` under it (the S1 possession-outcome
+artifacts, ~45 MB) is gitignored and has no other sync path (PM decision
+2026-09-10, docs/ops/aws_launch_chain.md section 4). Syncing the whole ~67 MB
+directory rather than carving out just the gitignored subdirectory is a
+deliberate simplification -- the duplication of already-tracked files on HF
+costs little and keeps `_root_for` a plain one-directory-in, one-prefix-out
+mapping like `raw` and `results`.
+
+Everything else the sim needs -- other data/processed models+lookups and
 data/reference -- IS tracked in git and arrives with the clone. Do not add
 them here.
 
@@ -32,12 +42,13 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 DATA_DIR = ROOT / "data"
 RESULTS_DIR = ROOT / "results"
+ENGINE_INPUTS_DIR = DATA_DIR / "processed" / "models" / "engine"
 REPO_ID = "mvpeav/cbb-sim-data"
-BULK_DIRS = ["raw", "results"]
+BULK_DIRS = ["raw", "results", "engine_inputs"]
 
 # Single wave -- unlike CFB there is no multi-wave priority split here yet.
 PUSH_WAVES = [
-    ("wave1-all", ["raw/**", "results/**"]),
+    ("wave1-all", ["raw/**", "results/**", "engine_inputs/**"]),
 ]
 
 
@@ -87,7 +98,11 @@ def with_retry(label: str, fn, max_attempts: int = 0, base_sleep: int = 30) -> b
 
 
 def _root_for(d: str) -> Path:
-    return RESULTS_DIR if d == "results" else DATA_DIR / d
+    if d == "results":
+        return RESULTS_DIR
+    if d == "engine_inputs":
+        return ENGINE_INPUTS_DIR
+    return DATA_DIR / d
 
 
 def push(dirs: list[str], token: str, max_attempts: int) -> None:
@@ -108,9 +123,9 @@ def push(dirs: list[str], token: str, max_attempts: int) -> None:
         status(token)
         return
 
-    # Both bulk dirs live at the repo root (data/raw, results), not both
-    # under data/, so push each dir as its own folder_path with a matching
-    # path_in_repo prefix.
+    # The three bulk dirs live at different real paths (data/raw, results,
+    # data/processed/models/engine), so push each as its own folder_path
+    # with a matching path_in_repo prefix (_root_for owns that mapping).
     failed = []
     for d in dirs:
         root = _root_for(d)
@@ -195,7 +210,7 @@ def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("action", choices=["push", "pull", "status"])
     ap.add_argument("--dirs", nargs="+", default=BULK_DIRS, choices=BULK_DIRS,
-                    help="subset of the bulk dirs (default: both)")
+                    help="subset of the bulk dirs (default: all three)")
     ap.add_argument("--max-attempts", type=int, default=0,
                     help="retries per wave; 0 = forever (default, for overnight runs)")
     args = ap.parse_args()

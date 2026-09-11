@@ -1,10 +1,21 @@
 # AWS launch chain -- CBB engine seed sweeps (PREPARED, NOT LAUNCHED)
 
-Status 2026-09-10: every file below is written and the parity gate has been
-proven on the home box. **No instance has been launched and no cost has been
-incurred.** This doc, `Dockerfile.cbb`, `requirements-cloud.txt`,
-`scripts/run_aws_sweep.sh` and `scripts/digest_engine_run.py` are the launch
-chain; nothing here executes anything on AWS.
+Status 2026-09-10 (updated, PM decisions applied same day): every file below
+is written and the parity gate has been proven on the home box. **No
+instance has been launched and no cost has been incurred.** This doc,
+`Dockerfile.cbb`, `requirements-cloud.txt`, `scripts/run_aws_sweep.sh`,
+`scripts/digest_engine_run.py` and `scripts/concat_engine_runs.py` are the
+launch chain; nothing here executes anything on AWS.
+
+**PM decisions applied in this update**: (1) `scripts/hf_sync_data.py` now
+has a third bulk dir, `engine_inputs` -> `data/processed/models/engine/`,
+and `engine_inputs` plus the previously-outstanding `raw`/`results` files
+have been pushed -- section 4's blocker is resolved. (2)
+`scripts/concat_engine_runs.py` (new) merges chunked `run_aws_sweep.sh`
+output into one gradeable `results/engine_v0/<tag>/` -- section 5's
+consolidation gap is resolved. (3) The AMI, instance type and security group
+are not yet chosen for this project; per PM instruction they are to be
+copied from cfb-props-sim's last launch when the time comes (section 10).
 
 Pattern reused from `C:\Users\devuser\cfb-props-sim`
 (`docs/ops/cloud_sweep_runbook.md`, `Dockerfile`,
@@ -78,13 +89,18 @@ the one gap -- section 4.**
    `event_round2_s1_F2_2025/`, because `data/processed/` is git-tracked by
    policy (`.gitignore`: "data/processed/ and data/reference/ ARE tracked in
    git ... unrecoverable state this repo exists to protect").
-2. `event_round2_s1_F2_2025/` (45 MB, 14 files) must be staged into
+2. `event_round2_s1_F2_2025/` (45 MB, 14 files) must be present in
    `data/processed/models/engine/` **before** `docker build` runs --
    `Dockerfile.cbb` hard-fails the build (`test -d` / `test -f` checks) if
-   it's missing, exactly like cfb's image-resident-parquet guard. See
-   section 4 for why this is a manual step today and what to do about it.
-3. Nothing else needs pulling. `--bootstrap raw` (`hf_sync_data.py pull --dirs raw`,
-   ~1.6 GB) is available in `run_aws_sweep.sh` but not needed for a sim run.
+   it's missing, exactly like cfb's image-resident-parquet guard. As of
+   section 4's fix, get it with:
+   `.venv/Scripts/python.exe scripts/hf_sync_data.py pull --dirs engine_inputs`
+   (or plain `pull` for all three bulk dirs) -- no manual `scp`/`rsync`
+   needed anymore.
+3. Nothing else needs pulling for a sim run. `--bootstrap raw`
+   (`hf_sync_data.py pull --dirs raw`, ~1.6 GB) is available in
+   `run_aws_sweep.sh` but not needed unless `SIM_USAGE_DIRICHLET`-style raw
+   rebuilds are ever added to this engine (they are not today).
 
 ---
 
@@ -130,40 +146,37 @@ docker build -f Dockerfile.cbb -t cbb-sweep .
 
 ---
 
-## 4. BLOCKER: the S1 event artifacts have no HF sync path today
+## 4. RESOLVED: the S1 event artifacts now have an HF sync path
 
 `docs/models/engine/RESUME.md` section 2 states: "Per PM decision
 2026-09-10, `data/processed/models/engine/event_round2_s1_*/` is now in
 `.gitignore` and syncs to the private HF dataset via `scripts/hf_sync_data.py`."
 
-**That is not currently true of the script.** `scripts/hf_sync_data.py`
-defines `BULK_DIRS = ["raw", "results"]` and its `--dirs` argparse `choices`
-are locked to exactly those two; `_root_for()` only maps `"raw"` ->
-`data/raw` and `"results"` -> `results/`. There is no `"processed"` option,
-so `event_round2_s1_F2_2025/` (or anything else under `data/processed/`)
-cannot be pushed or pulled through this script as it stands.
+**That was not true of the script when this doc was first written** --
+`BULK_DIRS` was locked to `["raw", "results"]` with no `"processed"` option,
+so `event_round2_s1_F2_2025/` could not be pushed or pulled through it.
 
-**Effect:** a fresh clone + `hf_sync_data.py pull` (any `--dirs`) does NOT
-reproduce a working `ENGINE_EVENT=round2_s1` input set. `docker build` will
-fail its own existence check on `event_round2_s1_F2_2025/index.json` rather
-than silently ship a broken image (that check does its job), but this stops
-the whole chain cold.
+**PM decision 2026-09-10 (same day): fixed.** `scripts/hf_sync_data.py` now
+has a third bulk key, `engine_inputs`, mapped to
+`data/processed/models/engine/` (the whole ~67 MB directory, not just the
+gitignored subdirectory -- the duplication of already-git-tracked files on
+HF costs little and keeps `_root_for()` a plain one-directory-in,
+one-prefix-out mapping like `raw` and `results`; `raw`/`results` behaviour is
+unchanged). `engine_inputs` plus the 27 files then outstanding under
+`raw`/`results` (24 originally reported, +3 from this session's own smoke
+runs) were pushed. Remote state after the push (`hf_sync_data.py status`):
 
-**This was not fixed as part of this task.** Editing `hf_sync_data.py` is a
-shared data-pipeline script six other workers may be using; per the worker
-discipline in `CLAUDE.md` ("never overwrite a data file another worker may
-be reading") this is flagged for the PM rather than changed unilaterally.
+| dir | local files | missing on remote |
+|---|---:|---:|
+| `raw` | 911 | 0 |
+| `results` | 47 | 0 |
+| `engine_inputs` | 20 | 0 |
 
-**Two ways to unblock, for the PM to choose between:**
-1. Extend `hf_sync_data.py` to add `"processed"` (or a narrower
-   `event_round2_s1`) to `BULK_DIRS`/the `--dirs` choices, mapped to
-   `data/processed`, then `push --dirs processed` once from this box.
-2. Stage the 45 MB directory manually per launch: `scp -r` or `rsync` it
-   straight into the clone on the box before `docker build`, e.g.
-   `scp -r data/processed/models/engine/event_round2_s1_F2_2025 \
-   user@box:/opt/CBB-redesign/data/processed/models/engine/`. No script
-   change, works today, must be repeated (or re-verified) every time the
-   directory is rebuilt (`scripts/build_engine_event_round2.py`).
+`mvpeav/cbb-sim-data` now carries 978 files total, fully mirrored. A fresh
+clone + `hf_sync_data.py pull --dirs engine_inputs` now reproduces a working
+`ENGINE_EVENT=round2_s1` input set without any manual `scp`/`rsync` step.
+`Dockerfile.cbb`'s build-time existence checks (section 3) are unchanged and
+still the thing that would catch a future regression here.
 
 ---
 
@@ -201,12 +214,34 @@ into `scripts/run_aws_sweep.sh` instead: it chunks the sweep **between**
 `--seed-offset` and its own `results/engine_v0/<tag>_off<N>_n<K>/` output,
 pushed to HF after every chunk. A kill costs at most one chunk's seeds, same
 guarantee cfb's `--chunk` gives, without touching the engine. The tradeoff:
-grading scripts (`eval_gates.py` etc.) expect one results directory, so
-whoever runs the real sweep needs a manual concat step over the chunk
-parquets afterward -- not built here, not requested by this task.
+grading scripts (`eval_gates.py`, `grade_market_games.py`,
+`grade_market_props.py`, `diag_engine_multilevel.py`) expect one results
+directory, so the chunk outputs need consolidating afterward.
+
+**PM decision 2026-09-10: `scripts/concat_engine_runs.py` (new) does that
+consolidation.** It finds every `results/engine_v0/<tag>_off*_n*/` chunk,
+validates that `fold`/`season`/`n_games`/`adapter_flags`/
+`engine_rules_from_data` are identical across all of them (refusing to merge
+chunks from different configs), **refuses overlapping seeds** (checked
+against each chunk's own `run_meta.json` `seeds` list, and independently
+re-checked as a duplicate-`(game_id,seed)`-row assertion on the concatenated
+frame), and writes `results/engine_v0/<tag>/{games.parquet,players.parquet,
+run_meta.json}` -- validated through the SAME `cbb_sim.eval.contract` module
+`eval_gates.py` uses, so "gradeable" means the same thing here as for a
+single run. The merged `run_meta.json` additionally records `"chunks"` (each
+chunk's tag, seed offset, seed list, runtime) and `"merged_from"`
+(tool/timestamp/chunk count), so a later reader can see the run was
+assembled rather than produced by one invocation. Refuses to overwrite an
+existing output directory without `--overwrite`
+(`.venv/Scripts/python.exe scripts/concat_engine_runs.py --tag <tag>
+--results-dir results/engine_v0`). Tested end-to-end today (2-chunk clean
+merge -> passes `cbb_sim.eval.contract.load_engine_results` with zero
+warnings; a deliberately overlapping 3rd chunk -> refused with the specific
+seed and chunk names named in the error).
 
 For a run without spot risk (on-demand, or a box you will babysit),
-`--chunk-seeds 0` runs the whole `--seeds` count in one invocation.
+`--chunk-seeds 0` runs the whole `--seeds` count in one invocation and no
+concat step is needed.
 
 ---
 
@@ -319,46 +354,61 @@ either, same as cfb's own "unproven until the first Linux run" list).
 
 ## 9. HF dataset state (`mvpeav/cbb-sim-data`, private)
 
-`scripts/hf_sync_data.py status` (read-only; nothing was pushed or pulled by
-this task):
+**Updated after the PM decision.** `hf_sync_data.py status` originally found
+24 files outstanding (14 `raw`, 10 `results`), all well under 1 GB combined
+(roster/preseason parquets and a handful of small engine result files); this
+session's own smoke/concat-test runs added 3 more `results` files before the
+push. Per PM decision, `engine_inputs` plus all outstanding `raw`/`results`
+files were pushed (`hf_sync_data.py push --dirs raw results engine_inputs`):
 
-| dir | local files | missing on remote |
-|---|---:|---:|
-| `raw` | 911 | 14 (roster parquets for 2024-2026, and the `preseason/2027/` batch: 9 files) |
-| `results` | 44 | 10 (mostly `results/engine_v0/F2_2025/*` and `results/engine_v0/seed_count/*`) |
+| dir | local files | missing on remote (before) | missing on remote (after push) |
+|---|---:|---:|---:|
+| `raw` | 911 | 14 | **0** |
+| `results` | 47 | 13 | **0** |
+| `engine_inputs` | 20 | 20 | **0** |
 
-24 files outstanding total, all well under 1 GB combined (roster/preseason
-parquets and a handful of small engine result files) -- **not pushed**, per
-this task's "stop and report before pushing >1 GB" instruction and because
-nothing here required it. `HF_TOKEN` is present in `.env` and confirmed
-working (the `status` call above authenticates and lists the remote repo).
-
-**`data/processed/models/engine/` (67 MB total) is not part of either bulk
-dir** and, per section 4, cannot be pushed through this script at all today.
+`mvpeav/cbb-sim-data` now carries **978 files, fully mirrored** (0 missing in
+any bulk dir). `HF_TOKEN` is present in `.env` and confirmed working (both
+the `status` calls and the push itself authenticated successfully). Total
+pushed this session: ~67 MB (`engine_inputs`) + a few MB of small `raw`/
+`results` files -- nowhere near the 1 GB stop-and-report threshold.
 
 Local sizes for reference: `data/raw` 1.6 GB, `data/processed` 780 MB,
-`results` 132 MB (+ 96 KB from this session's smoke runs), `data/processed/models/engine`
-67 MB (9.2 MB arrays + 45 MB `event_round2_s1_F2_2025/` + 1.4+2.7+8.1 MB
-joblibs + 76 KB parquet/json).
+`results` 132 MB, `data/processed/models/engine` 67 MB (9.2 MB arrays + 45 MB
+`event_round2_s1_F2_2025/` + 1.4+2.7+8.1 MB joblibs + 76 KB parquet/json).
 
 ---
 
 ## 10. Everything blocking an actual launch
 
-1. **Section 4's blocker**: `event_round2_s1_F2_2025/` has no HF sync path;
-   a fresh-clone box cannot build the image without a manual copy step or a
-   PM-approved `hf_sync_data.py` change.
-2. **No AMI/instance has been chosen or launched.** `c7a.48xlarge` (spot) is
-   the size implied by the existing 196-vCPU quota and the cost table above;
-   nobody has picked an AMI, security group, or key pair for THIS project.
-3. **`docker build -f Dockerfile.cbb` has never been run.** Untested, no
+1. ~~Section 4's blocker~~ **RESOLVED 2026-09-10**: `engine_inputs` now syncs
+   via `hf_sync_data.py`; pushed and confirmed fully mirrored (section 9).
+2. ~~No consolidation step~~ **RESOLVED 2026-09-10**: `scripts/concat_engine_runs.py`
+   merges chunked sweep output into one gradeable dir (section 5).
+3. **No AMI, instance type or security group has been chosen for this
+   project.** Per PM decision, these are to be **copied from
+   cfb-props-sim's last launch** when the time comes, rather than picked
+   fresh -- that project's own runbook
+   (`cfb-props-sim/docs/ops/cloud_sweep_runbook.md` section 6b) used a
+   spot `c7a` family instance (Amazon Linux 2023 AMI resolved via the
+   `resolve:ssm:/aws/service/ami-amazon-linux-latest/...` alias, not a
+   pinned AMI id), an SSH-only-from-your-IP security group, and the
+   `c7a.48xlarge` size implied by its 196-vCPU spot quota (`L-34B43A08`,
+   `us-east-2`). Nobody has re-verified that quota, AMI alias, or security
+   group still resolve the same way today, or that this project's key pair
+   is the same one -- copy the commands, re-verify each value at launch
+   time, do not assume they are still current.
+4. **`docker build -f Dockerfile.cbb` has never been run.** Untested, no
    Docker on this box, same caveat cfb's own Dockerfile carried before its
    first Linux run -- the 56 pins in `requirements-cloud.txt` installing
    cleanly on manylinux is unverified.
-4. **The parity gate has only been proven Windows-vs-Windows** (two runs on
-   this box, different worker counts, identical digest). Cross-platform
-   (glibc vs. MSVC float paths) is the real unproven variable, exactly as
-   cfb's own runbook section 9 flags for its libm risk.
-5. **No consolidation step exists** for the chunked sweep output described
-   in section 5 -- grading scripts read one `results/<tag>/` dir, and a real
-   multi-chunk run leaves several.
+5. **Linux parity is unproven until the first smoke run on the box.** Per PM
+   instruction, this is recorded explicitly rather than assumed: the parity
+   gate has only been proven Windows-vs-Windows so far (two runs on this
+   box, different worker counts, identical digest -- section 7). Whatever
+   box gets launched, its FIRST action must be `--parity only` against
+   `docs/ops/parity_reference_windows.json`, and a mismatch (most likely
+   cause: glibc vs. MSVC float paths in a sigmoid/exp/log call, exactly the
+   risk cfb's own runbook section 9 names for its libm concern) stops
+   everything -- no sweep, no upload, back to the PM, never a loosened
+   tolerance.

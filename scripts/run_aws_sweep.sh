@@ -42,7 +42,7 @@ PARITY_REF="docs/ops/parity_reference_windows.json"
 PARITY_GAMES=60
 PARITY_SEEDS=5
 PUSH="on"               # on | off  (hf_sync_data.py push --dirs results)
-BOOTSTRAP="none"        # none | raw | results
+BOOTSTRAP="none"        # none | raw | results | engine_inputs
 
 usage() {
   cat <<'EOF'
@@ -83,12 +83,18 @@ Usage: run_aws_sweep.sh --tag TAG [options]
                          uploads the WHOLE local results/ tree as one commit
                          (upload_folder, not per-file incremental) -- see
                          docs/ops/aws_launch_chain.md section 4.
-  --bootstrap none|raw|results
+  --bootstrap none|raw|results|engine_inputs
                          pull a gitignored bulk dir from HF before running
-                         (default none -- the engine's own inputs are git-
-                         tracked except event_round2_s1_*/, which must be
-                         staged into the build context BEFORE `docker build`;
-                         see the Dockerfile.cbb comment and the ops doc).
+                         (default none). NOTE: `engine_inputs`
+                         (data/processed/models/engine/, incl.
+                         event_round2_s1_*/) must already be present at
+                         `docker build` time -- Dockerfile.cbb's build-time
+                         checks run before this entrypoint ever executes, so
+                         this flag does not substitute for
+                         `hf_sync_data.py pull --dirs engine_inputs` before
+                         the build. It exists for re-pulling a fresher copy
+                         at container start if the image was built with an
+                         older one, or for non-Docker use.
   -h, --help              this text
 
 Environment: HF_TOKEN required when --push on or --bootstrap != none.
@@ -206,10 +212,11 @@ status "config git=$(git rev-parse HEAD 2>/dev/null || echo unknown) fold=$FOLD 
 #         Dockerfile.cbb build-time check) --------------------------------
 PHASE="bootstrap"
 case "$BOOTSTRAP" in
-  none)    echo "[cloud] bootstrap: none (tracked data/processed + staged S1 dir is the input set)" ;;
+  none)    echo "[cloud] bootstrap: none (tracked data/processed + the image's own engine_inputs is the input set)" ;;
   raw)     echo "[cloud] bootstrap: pulling data/raw from HF"; $PY -u scripts/hf_sync_data.py pull --dirs raw --max-attempts 6 ;;
   results) echo "[cloud] bootstrap: pulling results from HF"; $PY -u scripts/hf_sync_data.py pull --dirs results --max-attempts 6 ;;
-  *) echo "[cloud] FATAL: --bootstrap must be none|raw|results" >&2; exit 2 ;;
+  engine_inputs) echo "[cloud] bootstrap: re-pulling data/processed/models/engine from HF"; $PY -u scripts/hf_sync_data.py pull --dirs engine_inputs --max-attempts 6 ;;
+  *) echo "[cloud] FATAL: --bootstrap must be none|raw|results|engine_inputs" >&2; exit 2 ;;
 esac
 
 # ---- 1. PARITY GATE -------------------------------------------------------
