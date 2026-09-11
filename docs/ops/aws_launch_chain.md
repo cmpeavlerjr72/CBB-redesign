@@ -448,3 +448,150 @@ adopts a round2b fitted model into the engine's read path, pull it with:
 `Dockerfile.cbb`'s section-1/section-3 build-time existence checks would
 need a matching entry added if/when that happens -- not done yet, since no
 adopted engine config reads round2b today.
+
+---
+
+## 12. FIRST LAUNCH, 2026-09-11 (parity proven, box terminated)
+
+**Credentials.** `aws sts get-caller-identity` OK, account ending `9871`.
+
+**Parity reference regenerated as v2, NOT from the dirty working tree.**
+The working tree had uncommitted engine-path changes from a concurrent
+worker mid-session (`src/cbb_sim/engine/{adapters,loop}.py`,
+`rotation_adapter.py` -- a real rotation-lineup-timing fix, unreviewed/not
+yet bake-off-adopted). Emitting straight from that tree would have produced
+a reference the box's clean `git clone` could never match (not a real
+cross-platform defect, just an uncommitted local diff). Instead: a local
+`git clone --local` of this repo pinned to commit
+`718a3ebc4b55f1d8f79b444000fd12b11987037e` was made in a scratch dir, the
+two gitignored engine-input trees
+(`data/processed/models/engine/event_round2_s1_F2_2025/`,
+`data/processed/models/fg_make/round2b/S_C_s1/`) were copied in, and the
+60x5 smoke ran there with `ENGINE_EVENT=round2_s1 ENGINE_FG_MAKE=round2b_S_C_s1
+ENGINE_CLOCK=reference ENGINE_ROTATION=reference ENGINE_FG3=decision8
+--workers 4`. Reproducibility re-proven the same way as v1 (4 workers/1
+block vs. 2 workers/2 blocks of 30 games -- bit-identical). Reference:
+`docs/ops/parity_reference_windows_v2.json`, sha256
+`89275a1dc6dbbddcc8be1dfd8f9a4ca924ad0b5cdc502109ba105eda4f4279d9`, pinned to
+git `718a3ebc4b`. `docs/ops/parity_reference_windows.json` (v1) untouched.
+**Commit `718a3ebc4b` is the exact ref the box was told to clone and check
+out**, not "whatever `main` is" -- `main` advanced at least twice more
+during this session from other concurrent workers.
+
+`scripts/digest_engine_run.py` extended (`digest_version` 1 -> 2): every
+`ENGINE_*` key is pulled out of `run_meta.json`'s `adapter_flags` into its
+own top-level `flags` block in the digest doc, and `--compare` prints both
+sides' flags and warns explicitly on a flags mismatch, so a wrong-config run
+prints as one obvious line instead of being buried in a full metadata diff.
+This changed file (like the v2 reference) is NOT committed; it was `scp`'d
+onto the box into the cloned tree before `docker build` so the image baked
+in the same script version used to emit v2.
+
+**Launch.** Spot capacity was available on the first try -- no fallback to a
+smaller instance was needed.
+
+| | |
+|---|---|
+| Instance | `i-02092cafa1d72fdde`, spot, `c7a.48xlarge` (192 vCPU, 369 GiB RAM) |
+| Region / AZ | `us-east-2` / `us-east-2c` |
+| AMI | `ami-02b1d32fdf87a0437` (AL2023, `al2023-ami-2023.12.20260909.0-kernel-6.1-x86_64`) |
+| Key / SG | `cfb-sweep` / `sg-05aacf67a5a55fbf7` (`cfb-sweep-ssh`, copied from cfb-props-sim) |
+| Launch (real clock) | `2026-09-11T02:04:24Z` |
+| Terminate call | `2026-09-11T04:22:06Z`; `describe-instances` confirmed `terminated` ~15s later |
+| Wall duration | ~2h18m |
+| Cost (spot, measured rate $2.26-2.80/h in this session) | **~$5.2-6.4** |
+
+**On-box setup.** `dnf install docker git` (AL2023), repo cloned via HTTPS
+(public read, no token needed) and checked out to `718a3ebc4b`. `hf_sync_data.py`
+needs `huggingface_hub` on the bare-metal host (not just in the container) to
+stage `event_round2_s1_F2_2025/` and `fg_make/round2b/` before `docker build`;
+the pinned `huggingface_hub==1.31.0` from `requirements-cloud.txt` needs Python
+>=3.10 and AL2023's system `python3` is 3.9, so a throwaway venv on
+`huggingface_hub==0.34.6` was used for this staging step only (host-side
+utility, not inside the parity-sensitive image; irrelevant to the digest).
+
+**BUG FOUND: `hf_sync_data.py pull` for `engine_inputs`/`model_artifacts` lands
+one directory too deep.** `push()` uploads with `path_in_repo=<dirname>`
+(e.g. `engine_inputs/...`), but `pull()`'s `snapshot_download(local_dir=root,
+allow_patterns=[f"{d}/**"])` does not strip that prefix, so files land at
+`root/<d>/...` instead of `root/...` -- e.g.
+`data/processed/models/engine/engine_inputs/arrays_F2_2025.npz` instead of
+`data/processed/models/engine/arrays_F2_2025.npz`. Confirmed on first pull
+(engine_inputs: 67 files, model_artifacts: 773 files, both nested one level
+under a spurious `engine_inputs/`/`model_artifacts/` subdirectory). Worked
+around by hand on the box (`cp -a .../model_artifacts/. ...models/; rm -rf
+.../model_artifacts`, similarly for `engine_inputs`) rather than patched, given
+the session's time-box; `raw`/`results` likely have the same defect (untested
+here -- `raw` was skipped entirely per section 1, "not needed for a sim run").
+**This needs a real fix in `hf_sync_data.py`'s `pull()` before the next cloud
+launch** (either pass `local_dir=root.parent` plus a post-move, or strip the
+`f"{d}/"` prefix from downloaded paths) -- PM/worker follow-up, not done here.
+Separately, an early pull attempt against the pinned `huggingface_hub==1.31.0`
+(before the py3.9 incompatibility was caught) and a stray inline
+`HF_TOKEN='...'` shell-variable prefix together caused the token to appear
+briefly in this session's own `pgrep -af` tool output (not printed
+deliberately, not included in this doc) -- flagging per this repo's own
+"revoke/rotate whenever a token is exposed" posture; **the HF token used
+tonight should be rotated.**
+
+**Parity result: PASS on every simulated value; one cosmetic metadata diff.**
+`digest_engine_run.py --compare` against v2 from inside the built container
+(same flags, `OMP_NUM_THREADS=1`, 60 games x 5 seeds) reported **zero**
+differing `games.*` or `players.*` fields -- every possession-level box score
+and player row is bit-identical between the Windows reference and this Linux
+box. The ONE reported diff was `meta.adapter_flags` as a whole, and inspecting
+it shows the entire difference is `sources.*.path` strings rendered with
+Windows backslashes (`data\processed\models\...`) on the reference vs. POSIX
+forward slashes (`data/processed/models/...`) on Linux -- `str(Path(...))`
+being OS-native, embedded in provenance metadata that happens to be hashed.
+**No computed value differs.** Per CLAUDE.md/this script's own rule, this is
+not this worker's tolerance call to make -- reported to the PM rather than
+patched; the fix, when decided, is almost certainly normalizing `sources.*.path`
+to posix in `adapters.py` (or excluding raw path strings from the digest hash
+the way `runtime_s`/`workers` already are) rather than anything about the
+simulation itself.
+
+**Throughput, measured (200/2,000-seed estimates are now real numbers).**
+First attempt at 192 workers used `--games-per-block 60 --seeds-per-block 25`
+(copied from the 4-worker smoke) -- with only 60 games and 25 seeds total that
+forms exactly ONE block, so only 1 of 192 workers ever ran; measured 3,260
+poss/s was a single-core number mislabelled, not a finding about the box.
+Corrected with `--games-per-block 1 --seeds-per-block 5` (300 blocks, enough to
+spread across 192 workers):
+
+| run | workers | blocking | wall | possessions | throughput |
+|---|---|---|---|---:|---|
+| box_throughput60x25_v2 | 192 | 300 blocks of 1 game x 5 seeds | 13.85s | 210,605 | **15,963 poss/s (83 poss/s/core)** |
+
+**83 poss/s/core is well below the home box's measured ~817-880 poss/s/core**,
+and this run's wall time (13.85s) is short enough that 192-process pool
+spin-up/model-load is a real, un-amortized fraction of it -- this number should
+be read as a conservative floor, not a clean per-core rate. A longer follow-up
+(more games/seeds, several hundred blocks per worker instead of ~1.5) is needed
+before trusting a revised cost table; that follow-up was not done here
+(time-boxed). Using this measured number as-is (honest, not extrapolated
+past what was seen):
+
+| seeds | possessions (5,710-game slate) | wall @ 192 vCPU (measured rate) | + ~15min clone/build/gate | spot cost (~$2.3-2.8/h) |
+|---|---:|---:|---:|---:|
+| 200 | ~160M | ~2.8h | ~3.05h | ~$7-8.5 |
+| 2,000 | ~1.6B | ~28h | ~28.25h | ~$65-79 |
+
+These are **worse than the prior doc's estimate** (section 8: ~0.7h / ~3.3h at
+192 vCPU) because the measured per-core rate here (83 poss/s/core) is ~10x
+lower than the ~850 poss/s/core the prior estimate assumed by extrapolating
+from the home box. Given the pool-startup caveat above, this may be
+pessimistic rather than a real 10x regression -- **do not size a real sweep off
+this number without a second, longer measurement** (e.g. 60 games x 200 seeds,
+or the full 5,710-game slate x a handful of seeds, so startup is <5% of wall
+time).
+
+**Files written this session:** `docs/ops/parity_reference_windows_v2.json`
+(new), `scripts/digest_engine_run.py` (flags field, `digest_version` 2),
+this section. `docs/ops/parity_reference_windows.json` (v1) untouched.
+`main` moved at least twice from other workers while this ran (`259d42da42`
+-> `718a3ebc4b` -> `2a7f6242d5` observed); `718a3ebc4b` is the commit
+everything above describes and the one the box actually ran.
+
+**Termination confirmed:** `describe-instances` returned `terminated` for
+`i-02092cafa1d72fdde` at `2026-09-11T04:22:2x Z`, ~2h18m after launch.

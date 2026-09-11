@@ -65,7 +65,14 @@ ROOT = Path(__file__).resolve().parents[1]
 # run_meta fields that describe WHAT was computed (hashed) vs HOW FAST / WHEN
 # (metadata only, never hashed -- a faster box must not fail the gate).
 META_HASHED_KEYS = ("fold", "season", "n_games", "adapter_flags", "engine_rules_from_data")
-DIGEST_VERSION = 1
+DIGEST_VERSION = 2
+
+# Every ENGINE_* switch pulled out of run_meta.json's `adapter_flags` into its
+# own top-level `flags` block (digest_version 2). `adapter_flags` already
+# carries these (and was already hashed via META_HASHED_KEYS), so this does
+# not change WHAT is checked -- it exists so a config mismatch (e.g. a box
+# that ran with the wrong ENGINE_FG_MAKE) prints as one obvious `flags.*`
+# line instead of being buried in a full adapter_flags blob diff.
 
 
 def _round(x):
@@ -129,6 +136,8 @@ def build_digest(results_dir: Path) -> dict:
         player_rows = []
 
     hashed_meta = {k: meta.get(k) for k in META_HASHED_KEYS if k in meta}
+    adapter_flags = meta.get("adapter_flags", {}) or {}
+    flags = {k: v for k, v in adapter_flags.items() if k.startswith("ENGINE_")}
 
     return {
         "digest_version": DIGEST_VERSION,
@@ -137,6 +146,7 @@ def build_digest(results_dir: Path) -> dict:
         "games": game_rows,
         "players": player_rows,
         "meta": hashed_meta,
+        "flags": flags,
     }
 
 
@@ -163,6 +173,8 @@ def _flatten(doc: dict) -> dict:
     out["n_player_rows"] = doc["n_player_rows"]
     for k, v in doc["meta"].items():
         out[f"meta.{k}"] = v
+    for k, v in doc.get("flags", {}).items():
+        out[f"flags.{k}"] = v
     return out
 
 
@@ -190,6 +202,7 @@ def cmd_emit(results_dir: Path, out_path: Path) -> int:
     out_path.parent.mkdir(parents=True, exist_ok=True)
     out_path.write_text(json.dumps(ref, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     print(f"[digest] {doc['n_game_rows']} game rows, {doc['n_player_rows']} player rows")
+    print(f"[digest] flags: {doc['flags']}")
     print(f"[digest] wrote {out_path}")
     print(f"[digest] SHA256 {sha}")
     return 0
@@ -204,9 +217,15 @@ def cmd_compare(results_dir: Path, ref_path: Path) -> int:
     print(f"[digest] reference : {ref_sha}")
     print(f"[digest]   built on: {rmeta.get('platform')} git {str(rmeta.get('git_sha'))[:10]}")
     print(f"[digest]   versions: {rmeta.get('versions')}")
+    print(f"[digest]   flags   : {ref_frame.get('flags')}")
     print(f"[digest] this box  : {cur_sha}")
     print(f"[digest]   platform: {platform.platform()} git {_git_sha()[:10]}")
     print(f"[digest]   versions: {_versions()}")
+    print(f"[digest]   flags   : {cur_frame.get('flags')}")
+    if ref_frame.get("flags") != cur_frame.get("flags"):
+        print("[digest] WARNING: flags differ between reference and this box -- "
+              "this is not the same engine config, any sha match/mismatch below "
+              "is not a meaningful parity result.")
     if ref_sha == cur_sha:
         print("[digest] PASS -- bit-identical digest. Sweep may proceed.")
         return 0
