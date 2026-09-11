@@ -392,3 +392,205 @@ def test_engine_fg_make_flag_defaults_to_the_round1_winner_and_rejects_junk():
         FgMakeAdapter.load(inp, "F2", "decision8", "round2_NOT_AN_ARM")
     assert set(FG.R2_ARMS) == {"S_A", "S_B", "S_C", "S_D", "S_E"}
     assert os.environ.get("ENGINE_FG_MAKE") in (None, "winner")
+
+
+# ---------------------------------------------------------------------------
+# 14. the inputs VERSION is explicit, never a silent substitution
+# ---------------------------------------------------------------------------
+def test_inputs_version_resolution_is_explicit_and_never_silent(monkeypatch):
+    """`ENGINE_INPUTS_VERSION` picks the arrays build. The failure this guards
+    is a run that ASKS for one build and quietly gets another -- the L22
+    pattern (a fallback that manufactures data) applied to a whole input set.
+
+    So: a version named explicitly must exist or the load raises, naming the
+    build command; an unset version prefers the default and may fall back to
+    the bare tag (which is what keeps a pre-versioning directory loading), and
+    whichever it used is recorded in `meta`, never left implicit."""
+    from cbb_sim.engine.inputs import DEFAULT_INPUTS_VERSION, EngineInputs, resolve_tag
+
+    assert DEFAULT_INPUTS_VERSION == "v2"
+
+    # explicit, present
+    monkeypatch.setenv("ENGINE_INPUTS_VERSION", "v2")
+    assert resolve_tag(INPUT_DIR, TAG) == (f"{TAG}_v2", "v2")
+    # explicit, absent -> raises, and says how to build it
+    monkeypatch.setenv("ENGINE_INPUTS_VERSION", "v999")
+    with pytest.raises(FileNotFoundError, match="version v999"):
+        resolve_tag(INPUT_DIR, TAG)
+    # explicit v1 is the bare tag
+    monkeypatch.setenv("ENGINE_INPUTS_VERSION", "v1")
+    assert resolve_tag(INPUT_DIR, TAG) == (TAG, "v1")
+    # unset -> the default
+    monkeypatch.delenv("ENGINE_INPUTS_VERSION", raising=False)
+    assert resolve_tag(INPUT_DIR, TAG) == (f"{TAG}_v2", "v2")
+
+    inp = EngineInputs.load(INPUT_DIR, TAG)
+    assert inp.meta["inputs_version_loaded"] == "v2"
+    assert inp.meta["inputs_tag_loaded"] == f"{TAG}_v2"
+    # v2 carries the round-4 shooter column; v1 does not, which is the whole
+    # reason ENGINE_FG_MAKE=round4_B1 could not be served before it existed.
+    for k in ("rim", "jump2", "three"):
+        assert f"shooter_shrunk_dev_c__{k}" in inp.slot_names
+    v1 = EngineInputs.load(INPUT_DIR, TAG, version="v1")
+    assert "shooter_shrunk_dev_c__rim" not in v1.slot_names
+    assert v1.meta["inputs_version_loaded"] == "v1"
+    # and every array v2 does not rewrite is byte-identical to v1
+    assert np.array_equal(inp.team_static, v1.team_static)
+    for a, b in ((inp.rot_share, v1.rot_share), (inp.rot_srank, v1.rot_srank),
+                 (inp.rot_fpm, v1.rot_fpm), (inp.rot_pavail, v1.rot_pavail),
+                 (inp.reb_rate, v1.reb_rate), (inp.roster_cbbd, v1.roster_cbbd)):
+        assert np.array_equal(a, b)
+    for col in ("shooter_ft_asof", "shooter_fta_asof", "prior_season_ft",
+                "has_prior_season_ft"):
+        assert np.array_equal(inp.slot_static[:, :, :, inp.slot_names[col]],
+                              v1.slot_static[:, :, :, v1.slot_names[col]]), col
+
+
+# ---------------------------------------------------------------------------
+# 15. every family that serves a SCHEDULE reports its artifact dates
+# ---------------------------------------------------------------------------
+def test_every_dated_family_reports_its_artifact_dates_in_run_meta(bundle):
+    """`run_meta.json` must let a grader re-assert `max_train_date < tipoff` on
+    EVERY family, not only the event model (`CLAUDE.md`: enforced in code).
+
+    The property: a family the engine serves from an `ArtifactManifest` reports
+    one refit_date / max_train_date pair per artifact, and its headline
+    `max_train_date` is the max over them. A family served by a single fitted
+    object reports null and says `static` -- it does NOT get a fabricated date,
+    which is the failure this test exists to prevent."""
+    import pandas as pd
+
+    inp, ad = bundle
+    block = ad.flags["max_train_date"]
+    assert set(block) == {"possession_outcome", "clock", "fg_make", "free_throw",
+                          "rebound", "usage", "rotation"}
+    earliest_tip = pd.to_datetime(inp.games["game_date"]).min()
+
+    n_dated = 0
+    for fam, node in block.items():
+        if node.get("scheme") == "static" or not node.get("keys"):
+            assert node["max_train_date"] is None, fam
+            continue
+        n_dated += 1
+        latest = None
+        for key, kn in node["keys"].items():
+            arts = kn["artifacts"]
+            assert len(arts) == kn["n_artifacts"] >= 1, (fam, key)
+            dates = [pd.Timestamp(a["refit_date"]) for a in arts]
+            assert dates == sorted(dates), (fam, key)          # sorted by the manifest
+            for a in arts:
+                assert a["max_train_date"] is not None, (fam, key, a["path"])
+                mt = pd.Timestamp(a["max_train_date"])
+                assert mt < pd.Timestamp(a["refit_date"]), (fam, key, a["path"])
+                latest = mt if latest is None else max(latest, mt)
+            # the FIRST artifact of a schedule must predate the season's first
+            # game, or some game has no eligible artifact at all
+            assert dates[0] <= earliest_tip, (fam, key)
+        assert node["max_train_date"] == str(latest.date()), fam
+    assert n_dated >= 6, "six families serve dated schedules under the adopted defaults"
+
+
+# ---------------------------------------------------------------------------
+# 16. a static rotation FitSet is the scalar fit, bit for bit
+# ---------------------------------------------------------------------------
+def test_a_static_rotation_fitset_is_arithmetically_the_scalar_fit():
+    """Rotation round 3b's S1 change was a GATHER, not a new decision rule.
+    This pins the second half: with ONE fit, every per-row form must equal the
+    scalar form EXACTLY (not approximately), so `ENGINE_ROTATION_SCHEME=static`
+    reproduces every gate report written before the schedule existed."""
+    from cbb_sim.engine import rotation_adapter as RA
+    from cbb_sim.models.rotation import RotationFit, margin_bucket, rank_bucket, time_bucket
+
+    path = ROOT / "data" / "processed" / "models" / "rotation" / "rotation_fit.json"
+    if not path.exists():
+        pytest.skip("rotation_fit.json not present")
+    fit = RotationFit.from_json(path)
+    m, S = 512, 15
+    fs = RA.FitSet.single(fit, m)
+    assert len(fs.fits) == 1 and fs.tilt_state.shape[0] == 1
+
+    rng = np.random.default_rng(7)
+    p = rng.random((m, S))
+    p /= p.sum(1, keepdims=True)
+    u = rng.random((m, S))
+    avail = rng.random((m, S)) < 0.9
+    assert np.array_equal(RA._dirichlet_rows(p, fit.alpha, u),
+                          RA._dirichlet_rows(p, fs.col("alpha"), u))
+    assert np.array_equal(RA._apply_min_target(p, avail, fit.min_share),
+                          RA._apply_min_target(p, avail, fs.col("min_share")))
+
+    srank = rng.integers(1, S + 1, (m, S))
+    rankb = rank_bucket(srank.astype(np.int64))
+    tb = time_bucket(rng.integers(1, 3, m), rng.integers(0, 1200, m))
+    mb = margin_bucket(rng.integers(-30, 30, m))
+    fouls = rng.integers(0, 5, (m, S))
+    assert np.array_equal(np.asarray(fit.tilt.state)[rankb, tb[:, None], mb[:, None]],
+                          fs.tilt_state[fs.seg[:, None], rankb, tb[:, None], mb[:, None]])
+    assert np.array_equal(
+        np.asarray(fit.tilt.foul)[fouls, np.broadcast_to(tb[:, None], fouls.shape)],
+        fs.tilt_foul[fs.seg[:, None], fouls, np.broadcast_to(tb[:, None], fouls.shape)])
+
+    d = rng.random(m) * 30.0
+    assert np.array_equal(np.exp(-d / max(fit.ema_horizon, 1.0)),
+                          np.exp(-d / np.maximum(fs.col("ema_horizon"), 1.0)))
+    path_, played = rng.random((m, S)), rng.random((m, S))
+    assert np.array_equal(
+        fit.lam_deficit * (path_ - played) / (5.0 * max(fit.ema_horizon, 1.0)),
+        fs.col("lam_deficit")[:, None] * (path_ - played)
+        / (5.0 * np.maximum(fs.col("ema_horizon"), 1.0)[:, None]))
+
+
+# ---------------------------------------------------------------------------
+# 17. the S1 rotation schedule actually varies (a collapsed schedule is not S1)
+# ---------------------------------------------------------------------------
+def test_the_rotation_s1_schedule_is_not_a_collapsed_static_fit(bundle):
+    """The mirror of test 16. A schedule whose fits are all equal would pass
+    every honesty check and be S0 wearing S1's name -- the failure the change
+    ledger warns about (a stale artifact degrades toward S0). So assert the
+    fits DIFFER, and that the per-game gather actually reaches every one."""
+    from cbb_sim.engine import rotation_adapter as RA
+
+    inp, ad = bundle
+    if ad.rot_s1 is None:
+        pytest.skip("ENGINE_ROTATION_SCHEME is not s1")
+    fits = ad.rot_s1["fits"]
+    assert len(fits) >= 2
+    moved = [k for k in ("alpha", "alpha_family", "alpha_starters", "alpha_bench",
+                         "min_share", "foul_rate_scale", "ema_horizon", "swap_threshold")
+             if len({round(float(getattr(f, k)), 9) for f in fits}) > 1]
+    assert len(moved) >= 4, f"only {moved} move across windows; this is S0 in S1 clothing"
+    st = np.stack([np.asarray(f.tilt.state) for f in fits])
+    assert np.abs(st - st[0]).max() > 1e-6
+    # and the whole season's games reach every window
+    used = np.unique(ad.rot_s1["seg_of_game"])
+    assert len(used) == len(fits), "some refit is never selected by any game"
+    fsl = RA.r2_s1_fitset(ad.rot_s1, np.arange(inp.n_games))
+    assert fsl.tilt_state.shape[0] == len(fits)
+    assert len(np.unique(fsl.seg)) == len(fits)
+
+
+# ---------------------------------------------------------------------------
+# 18. rebound and free_throw serve their adopted S1 schedules by default
+# ---------------------------------------------------------------------------
+def test_rebound_and_free_throw_serve_dated_schedules_by_default(bundle):
+    """Both models confirmed S1 as their scheme. The engine must therefore
+    select per game rather than serve one refit, and must SAY which -- a run
+    that quietly kept the static object would report `scheme_static_*=True` and
+    look like a deliberate choice."""
+    inp, ad = bundle
+    assert ad.reb.manifest is not None and not ad.reb.manifest.is_static
+    assert ad.ft.manifest is not None and not ad.ft.manifest.is_static
+    assert ad.flags["scheme_static_rebound"] is False
+    assert ad.flags["scheme_static_free_throw"] is False
+    assert len(ad.reb.models_by_seg) == len(ad.reb.manifest.entries) >= 2
+    assert len(ad.ft.models_by_seg) == len(ad.ft.manifest.entries) >= 2
+    # the per-game selection must reach more than one artifact over the season
+    assert len(ad.reb.manifest.used_segments(np.arange(inp.n_games))) >= 2
+    assert len(ad.ft.manifest.used_segments(np.arange(inp.n_games))) >= 2
+    # and a dated adapter must refuse to predict without the game index rather
+    # than quietly serving the last refit to every row
+    with pytest.raises(ValueError, match="game index"):
+        ad.reb.predict(np.zeros((3, len(inp.team_names))), np.zeros((3, 24)))
+    with pytest.raises(ValueError, match="game index"):
+        ad.ft.predict(np.zeros((3, len(inp.team_names))),
+                      np.zeros((3, len(inp.slot_names))), np.zeros((3, 24)))
