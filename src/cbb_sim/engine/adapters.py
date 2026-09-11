@@ -98,6 +98,14 @@ STATE_COLS: tuple[str, ...] = (
     "is_transition", "is_transition_f", "chance_elapsed_s",
     "prev_end_DREB", "prev_end_TOV", "prev_end_made_FG", "prev_end_made_FT", "prev_end_other",
     "miss_rim", "miss_jump2", "miss_three", "blocked_f",
+    # --- fg_make round 2 (experiments.md section 13). APPENDED, never
+    # inserted: every existing plan indexes this tuple by position, so a new
+    # column may only ever go on the end. `score_diff_pre` is the SAME live
+    # value as `score_diff` on the simulated side -- the engine's margin is
+    # already pre-shot -- and carries a different NAME because in TRAINING the
+    # two are different quantities (the training `score_diff` is post-outcome,
+    # `docs/tests/fg_make_state_confound_2026-09-10.md`).
+    "score_diff_pre", "gt_flag", "eg_trail", "eg_lead",
 )
 STATE_INDEX = {c: i for i, c in enumerate(STATE_COLS)}
 
@@ -366,8 +374,25 @@ class FgMakeAdapter:
     source: dict
     provisional: bool
 
+    #: `winner` (the adopted round-1 artifacts, the default and the historical
+    #: behaviour), `round2_S_A` .. `round2_S_E` (fg_make round 2,
+    #: `docs/models/fg_make/experiments.md` section 13) or `round2b_S_C_s1`
+    #: (round 2b, section 15: the same arm as a monthly S1 schedule).
+    mode: str = "winner"
+    #: round 2b only: one `ArtifactManifest` per shot class, and the fitted
+    #: model per (class, refit segment). The per-game artifact choice is made by
+    #: `cbb_sim.engine.manifest`, never here, because S1 is the standing scheme
+    #: for EVERY sub-model and that rule lives in one place.
+    manifests: dict = field(default_factory=dict)
+    models_by_seg: dict = field(default_factory=dict)
+
     @classmethod
-    def load(cls, inp: EngineInputs, fold: str = "F2", fg3: str = "decision8") -> FgMakeAdapter:
+    def load(cls, inp: EngineInputs, fold: str = "F2", fg3: str = "decision8",
+             mode: str = "winner") -> FgMakeAdapter:
+        if mode.startswith("round2b_"):
+            return cls._load_round2b(inp, fold, mode)
+        if mode != "winner":
+            return cls._load_round2(inp, fold, mode)
         plans, arms, models, fsets, src = {}, {}, {}, {}, {}
         for cls_name, key in (("FGA_rim", "rim"), ("FGA_jump2", "jump2"), ("FGA_3", "three")):
             path = FG_DIR / f"winner_{cls_name}.joblib"
@@ -397,12 +422,112 @@ class FgMakeAdapter:
                 feats, _alias(inp.team_names, FG_TEAM_ALIAS, key),
                 _alias(inp.slot_names, FG_SLOT_ALIAS, key), STATE_INDEX)
             src[cls_name] = {"path": str(path), "arm": arm, "feature_set": fs, "note": note}
-        return cls(plans, arms, models, fsets, src, False)
+        return cls(plans, arms, models, fsets, src, False, mode="winner")
+
+    @classmethod
+    def _load_round2(cls, inp: EngineInputs, fold: str, mode: str) -> FgMakeAdapter:
+        """One fg_make ROUND-2 arm, from its own versioned directory.
+
+        Nothing under `data/processed/models/engine/` and no
+        `winner_FGA_*.joblib` is read or written here: a round-2 arm lives in
+        `data/processed/models/fg_make/round2/<arm>/` and is selected only by
+        `ENGINE_FG_MAKE`, whose default value keeps the old path byte for byte."""
+        arm = mode.removeprefix("round2_")
+        if arm not in FG.R2_ARMS:
+            raise NotImplementedError(
+                f"ENGINE_FG_MAKE must be 'winner' (the adopted round-1 artifacts) or one of "
+                f"{['round2_' + a for a in FG.R2_ARMS]}; got {mode!r}")
+        d = FG_DIR / "round2" / arm
+        plans, arms_, models, fsets, src = {}, {}, {}, {}, {}
+        for cls_name, key in (("FGA_rim", "rim"), ("FGA_jump2", "jump2"), ("FGA_3", "three")):
+            p = d / f"fg_make_{cls_name}_{fold}.joblib"
+            if not p.exists():
+                raise FileNotFoundError(
+                    f"{p} missing; run scripts/train_fg_make_v2.py --export, or pass "
+                    "ENGINE_FG_MAKE=winner")
+            w = joblib.load(p)
+            model = w["model"]
+            try:
+                model.clf_.set_params(n_jobs=1)
+            except Exception:                                   # noqa: BLE001
+                pass
+            arms_[cls_name] = w["arm"]
+            models[cls_name] = model
+            fsets[cls_name] = w["feature_set"]
+            plans[cls_name] = plan_features(
+                w["features"], _alias(inp.team_names, FG_TEAM_ALIAS, key),
+                _alias(inp.slot_names, FG_SLOT_ALIAS, key), STATE_INDEX)
+            src[cls_name] = {"path": str(p), "arm": w["arm"],
+                             "feature_set": w["feature_set"], "round2_arm": arm,
+                             "note": w.get("note", "fg_make round 2 (experiments.md s13)"),
+                             "adopted": bool(w.get("adopted", False))}
+        # A round-2 arm is PROVISIONAL until the round-2 decision adopts it.
+        provisional = not all(v.get("adopted") for v in src.values())
+        return cls(plans, arms_, models, fsets, src, provisional, mode=mode)
+
+    @classmethod
+    def _load_round2b(cls, inp: EngineInputs, fold: str, mode: str) -> FgMakeAdapter:
+        """fg_make round 2b: one arm served as a dated S1 schedule per class."""
+        arm = mode.removeprefix("round2b_")
+        d = FG_DIR / "round2b" / arm
+        if not d.exists():
+            raise FileNotFoundError(
+                f"{d} missing; run scripts/train_fg_make_v2b_s1.py, or pass "
+                "ENGINE_FG_MAKE=winner")
+        plans, arms_, models, fsets, src, mans, by_seg = {}, {}, {}, {}, {}, {}, {}
+        for cls_name, key in (("FGA_rim", "rim"), ("FGA_jump2", "jump2"), ("FGA_3", "three")):
+            mpath = d / f"manifest_{cls_name}.json"
+            if not mpath.exists():
+                raise FileNotFoundError(f"{mpath} missing; run scripts/train_fg_make_v2b_s1.py")
+            obj = json.loads(mpath.read_text(encoding="utf-8"))
+            man = ArtifactManifest.from_obj(obj, d, inp.games)
+            loaded = tuple(joblib.load(e.path) for e in man.entries)
+            for w in loaded:
+                try:
+                    w["model"].clf_.set_params(n_jobs=1)
+                except Exception:                               # noqa: BLE001
+                    pass
+            feats = obj["features"]
+            arms_[cls_name] = "lgbm"
+            models[cls_name] = loaded[-1]["model"]
+            by_seg[cls_name] = tuple(w["model"] for w in loaded)
+            fsets[cls_name] = obj["feature_set"]
+            mans[cls_name] = man
+            plans[cls_name] = plan_features(
+                feats, _alias(inp.team_names, FG_TEAM_ALIAS, key),
+                _alias(inp.slot_names, FG_SLOT_ALIAS, key), STATE_INDEX)
+            src[cls_name] = {"path": str(d), "arm": "lgbm", "scheme": "S1",
+                             "feature_set": obj["feature_set"], "round2_arm": obj.get("arm"),
+                             "adopted": bool(loaded[-1].get("adopted", False)),
+                             **man.provenance(),
+                             "note": "fg_make round 2b (experiments.md s15): the round-2 "
+                                     "winner under the standing S1 scheme"}
+        provisional = not all(v.get("adopted") for v in src.values())
+        return cls(plans, arms_, models, fsets, src, provisional, mode=mode,
+                   manifests=mans, models_by_seg=by_seg)
 
     def predict(self, cls_name: str, team: np.ndarray, slot: np.ndarray,
-                state: np.ndarray) -> np.ndarray:
-        """P(make) for one shot class, one batched predict."""
+                state: np.ndarray, gidx: np.ndarray | None = None) -> np.ndarray:
+        """P(make) for one shot class.
+
+        One batched predict, except under an S1 schedule, where it is one
+        batched predict per refit segment over disjoint row sets -- the same
+        total row count, and still no per-game model call."""
         plan = self.plans[cls_name]
+        if self.manifests:
+            if gidx is None:
+                raise ValueError(
+                    f"ENGINE_FG_MAKE={self.mode} serves a dated S1 schedule and needs the "
+                    "per-row game index to select each game's refit")
+            out = np.empty(len(team), dtype=np.float64)
+            segs = self.manifests[cls_name].segments(gidx)
+            models = self.models_by_seg[cls_name]
+            for k in np.unique(segs):
+                r = np.flatnonzero(segs == k)
+                m = _assemble(plan, team[r], slot[r], state[r])
+                out[r] = models[k].predict_proba(
+                    np.ascontiguousarray(m, dtype=np.float32))[:, FG.CLASS_INDEX["MAKE"]]
+            return out
         m = _assemble(plan, team, slot, state)
         model = self.models[cls_name]
         p = model.predict_proba(np.ascontiguousarray(m, dtype=np.float32))
@@ -547,13 +672,14 @@ class Adapters:
         ck_mode = os.environ.get("ENGINE_CLOCK", "reference")
         rot_mode = os.environ.get("ENGINE_ROTATION", "reference")
         fg3 = os.environ.get("ENGINE_FG3", "decision8")
+        fg_mode = os.environ.get("ENGINE_FG_MAKE", "winner")
         if rot_mode != "reference":
             raise NotImplementedError(
                 "the rotation bake-off adopted nothing; ENGINE_ROTATION=reference "
                 "(R2 hierarchical Dirichlet + the fitted scheduler) is the only wired mode")
         event = EventAdapter.load(inp, ev_mode, fold, season)
         clock = ClockAdapter.load(inp, ck_mode, season)
-        fg = FgMakeAdapter.load(inp, fold, fg3)
+        fg = FgMakeAdapter.load(inp, fold, fg3, fg_mode)
         ft = FreeThrowAdapter.load(inp, fold)
         reb = ReboundAdapter.load(inp, fold)
         usage = UsageAdapter.load(inp)
@@ -561,6 +687,7 @@ class Adapters:
         flags = {
             "ENGINE_EVENT": ev_mode, "ENGINE_CLOCK": ck_mode,
             "ENGINE_ROTATION": rot_mode, "ENGINE_FG3": fg3,
+            "ENGINE_FG_MAKE": fg_mode,
             "provisional_event": event.provisional,
             "provisional_clock": clock.provisional,
             "provisional_rotation": True,

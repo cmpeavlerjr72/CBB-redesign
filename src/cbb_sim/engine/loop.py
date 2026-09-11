@@ -322,7 +322,7 @@ def simulate_chunk(inp: EngineInputs, ad: Adapters, game_index: np.ndarray,
                 xs[:, I["blocked_f"]] = 0.0
                 slot_blk = inp.slot_static[gidx[r], off[r], sh]
                 p_make = ad.fg.predict(SHOT_CLASSES[sc], inp.team_static[gidx[r], off[r]],
-                                       slot_blk, xs)
+                                       slot_blk, xs, gidx[r])
                 made = book.draw("fg_make", ar) < p_make
                 pv = SHOT_POINTS[sc]
                 if made.any():

@@ -710,7 +710,100 @@ def feature_set(name: str) -> list[str]:
         return c
     if name == "D_plus_lineup":
         return c + list(LINEUP_FEATURES)
+    if name in R2_FEATURE_SETS:
+        return list(R2_FEATURE_SETS[name])
     raise KeyError(f"unknown feature set {name!r}")
+
+
+# ===========================================================================
+# ROUND 2 (2026-09-10): state parametrisations
+# ---------------------------------------------------------------------------
+# Pre-registration: `docs/models/fg_make/experiments.md` section 13.
+# Evidence:         `docs/tests/fg_make_state_confound_2026-09-10.md`.
+#
+# THE DEFECT THIS EXISTS TO REPAIR. `_season_events` reads `score_diff` off the
+# feed's `homeScore`/`awayScore` on the attempt's OWN row, and that column is
+# the score AFTER the play: a made three already carries its own three points.
+# The feature is therefore POST-OUTCOME, in the same family as `blocked` and
+# `and_one`, and it manufactures 62-84% of the apparent margin effect. It is
+# NOT added to `BANNED_FEATURES` because arm S-A has to reproduce round 1's
+# numbers exactly; the round-2 decision and the change ledger carry its status.
+# ===========================================================================
+
+#: The corrected margin: the score difference BEFORE the attempt. Removing the
+#: attempt's own points can only take outcome information OUT (a miss is
+#: unchanged by construction), which is what makes the correction itself safe.
+R2_MARGIN_COL = "score_diff_pre"
+
+#: Thresholds FIXED IN THE PRE-REGISTRATION from the step-1 evidence grids, and
+#: never re-tuned afterwards. Both effects are flat across their grids, which is
+#: why an indicator is the right parametrisation and why the threshold is a
+#: reading rather than a fitted parameter.
+R2_GT_MARGIN = 15.0          # garbage time: |margin| at or beyond this
+R2_GT_SECONDS = 480.0        # ... with this many seconds or fewer left in regulation
+R2_EG_SECONDS = 120.0        # end game: seconds left in regulation
+R2_EG_LO, R2_EG_HI = 1.0, 9.0    # ... trailing / leading by 1 to 9 (one to three possessions)
+
+R2_SAFE_STATE: tuple[str, ...] = (
+    "period", "seconds_remaining", "in_bonus",
+    "chance_number", "chance_elapsed_s", "is_transition_f",
+)
+R2_INDICATORS: tuple[str, ...] = ("gt_flag", "eg_trail", "eg_lead")
+
+R2_ARMS: tuple[str, ...] = ("S_A", "S_B", "S_C", "S_D", "S_E")
+R2_ARM_FEATURE_SET: dict[str, str] = {
+    "S_A": "R2_A_round1_leaked",
+    "S_B": "R2_B_no_state",
+    "S_C": "R2_C_safe_state",
+    "S_D": "R2_D_safe_plus_indicators",
+    "S_E": "R2_E_safe_plus_continuous",
+}
+#: Tie-break order of the pre-registration: simpler wins inside the floor.
+R2_ARM_SIMPLICITY: dict[str, int] = {"S_B": 0, "S_C": 1, "S_D": 2, "S_E": 3, "S_A": 4}
+#: S-A is declared ineligible in the pre-registration, BEFORE the round ran,
+#: on the data-integrity ground above and not on any number it produced.
+R2_INELIGIBLE: frozenset[str] = frozenset({"S_A"})
+
+_R2_B = list(TEAM_FEATURES) + list(SHOOTER_FEATURES)
+R2_FEATURE_SETS: dict[str, list[str]] = {
+    "R2_A_round1_leaked": _R2_B + list(STATE_FEATURES),
+    "R2_B_no_state": list(_R2_B),
+    "R2_C_safe_state": _R2_B + list(R2_SAFE_STATE),
+    "R2_D_safe_plus_indicators": _R2_B + list(R2_SAFE_STATE) + list(R2_INDICATORS),
+    "R2_E_safe_plus_continuous": _R2_B + list(R2_SAFE_STATE) + [R2_MARGIN_COL],
+}
+
+
+def regulation_seconds_remaining(period: np.ndarray, sec: np.ndarray) -> np.ndarray:
+    """Seconds left in REGULATION. `seconds_remaining` is per period in this
+    feed (1200 in a half, 300 in overtime), so period 1 carries the second half
+    with it. Overtime rows keep their own period clock and are excluded from
+    every round-2 indicator by the `period <= 2` guard."""
+    per = np.asarray(period, dtype="float64")
+    s = np.asarray(sec, dtype="float64")
+    return np.where(per <= 1.0, s + 1200.0, s)
+
+
+def add_round2_state(d: pd.DataFrame) -> pd.DataFrame:
+    """Add `score_diff_pre` and the three round-2 indicators, in place.
+
+    The identical arithmetic lives in `cbb_sim.engine.loop._state_block` for the
+    simulated side, where the margin is already pre-shot; the two definitions
+    are pinned against each other by `tests/test_engine.py`."""
+    pts = np.where(d["shot_class"].to_numpy() == "FGA_3", 3.0, 2.0)
+    own = np.where(d["made"].to_numpy().astype(bool), pts, 0.0)
+    sd = d["score_diff"].to_numpy(dtype="float64") - own
+    d[R2_MARGIN_COL] = sd.astype("float32")
+    per = d["period"].to_numpy(dtype="float64")
+    gsr = regulation_seconds_remaining(per, d["seconds_remaining"].to_numpy())
+    reg = per <= 2.0
+    d["gt_flag"] = (reg & (np.abs(sd) >= R2_GT_MARGIN)
+                    & (gsr <= R2_GT_SECONDS)).astype("float32")
+    d["eg_trail"] = (reg & (sd <= -R2_EG_LO) & (sd >= -R2_EG_HI)
+                     & (gsr <= R2_EG_SECONDS)).astype("float32")
+    d["eg_lead"] = (reg & (sd >= R2_EG_LO) & (sd <= R2_EG_HI)
+                    & (gsr <= R2_EG_SECONDS)).astype("float32")
+    return d
 
 
 def build_design(
@@ -1372,6 +1465,10 @@ __all__ = [
     "MIN_STEPS_LOW_SPAN", "PRIOR_KINDS", "RESPONSIVENESS_MIN_STEPS",
     "RESPONSIVENESS_SPECS", "SELECTION_FOLD", "SHOT_CLASSES", "SHRINK_GRID",
     "SLOPE_BAND", "TREE_ARMS", "FittedFgMake", "LgbmArm", "RidgeArm",
+    "R2_ARMS", "R2_ARM_FEATURE_SET", "R2_ARM_SIMPLICITY", "R2_EG_HI", "R2_EG_LO",
+    "R2_EG_SECONDS", "R2_FEATURE_SETS", "R2_GT_MARGIN", "R2_GT_SECONDS",
+    "R2_INDICATORS", "R2_INELIGIBLE", "R2_MARGIN_COL", "R2_SAFE_STATE",
+    "add_round2_state", "regulation_seconds_remaining",
     "attach_lineup_features", "build_design", "build_fg_events", "chance_state",
     "class_slice", "decision8_verdict", "defender_rates", "design_matrix",
     "eb_predict", "efg_table", "feature_set", "fit_arm", "fit_by_class", "fit_eb",
