@@ -657,9 +657,11 @@ def main() -> None:
         b = b.iloc[0]
         _tr, te_ = PO.fold_slices(design, "F2", pop)
         se = None
-        if pop == "first" and ref_npy.exists():
-            se = round(PO.block_bootstrap_se(te_, np.load(ref_npy).astype("float64"),
-                                             n_rep=R1.N_BOOTSTRAP), 6)
+        pop_npy = R3_DIR / f"ref_pred_{pop}_F2_seed0.npy"
+        if pop_npy.exists():
+            pref = np.load(pop_npy).astype("float64")
+            if len(pref) == len(te_):
+                se = round(PO.block_bootstrap_se(te_, pref, n_rep=R1.N_BOOTSTRAP), 6)
         spread = (round(abs(float(b["log_loss"]) - float(alt.iloc[0]["log_loss"])), 6)
                   if len(alt) else None)
         f = {"population": pop, "seed0_log_loss": float(b["log_loss"]),
