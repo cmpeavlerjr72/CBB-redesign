@@ -802,9 +802,17 @@ class UsageAdapter:
                                if k.startswith("usage_prior_")}},
                    True)
 
-    def probs(self, rate_five: np.ndarray) -> np.ndarray:
+    def probs(self, rate_five: np.ndarray, **_state_kwargs) -> np.ndarray:
         """`usage.normalise` over the five on the floor, verbatim: a non-finite
-        or all-zero row falls back to the uniform, never to slot 0."""
+        or all-zero row falls back to the uniform, never to slot 0.
+
+        `**_state_kwargs` (game index, side, on-floor five, usage class, and
+        the live `score_diff`/`sec_remaining`/`period`/`chance_number`) is
+        accepted and IGNORED here -- it exists only so `loop.py`'s call site
+        can pass the same arguments to a Decision-10 closed-loop arm
+        (`cbb_sim.engine.usage_tree_adapter.UsageTreeAdapter`) without an
+        `if` at the call site. This is the served path and is unaffected by
+        it: the return value is identical to before this parameter existed."""
         return ROT_NORMALISE(rate_five)
 
 
@@ -823,6 +831,19 @@ def RA_SCHEME() -> str:                                       # noqa: N802
 def RA_MANIFEST() -> Path:                                    # noqa: N802
     from cbb_sim.engine.rotation_adapter import R2_S1_MANIFEST
     return R2_S1_MANIFEST
+
+
+def _load_usage(inp: EngineInputs, mode: str):
+    """`ENGINE_USAGE` dispatch. `reference` (the default, unchanged) is the
+    served `UsageAdapter` (U1 proportional). Every other mode is a Decision-10
+    closed-loop arm, NOT ADOPTED and NOT SERVED
+    (`docs/tests/usage_decision10_gate_2026-09-11.md`); the import is deferred
+    so this module has no new import-time dependency and no other lane's
+    default engine run is affected by this function existing."""
+    if mode == "reference":
+        return UsageAdapter.load(inp)
+    from cbb_sim.engine.usage_tree_adapter import UsageTreeAdapter
+    return UsageTreeAdapter.load(inp, mode)
 
 
 def _load_clock(inp: EngineInputs, mode: str, season: int):
@@ -986,7 +1007,13 @@ class Adapters:
         fg = FgMakeAdapter.load(inp, fold, fg3, fg_mode)
         ft = FreeThrowAdapter.load(inp, fold, ft_mode)
         reb = ReboundAdapter.load(inp, fold, rb_mode)
-        usage = UsageAdapter.load(inp)
+        # DEFAULT: `reference` (U1 proportional, unchanged). Decision-10
+        # closed-loop arms (`tree_v3`, `tree_v3_freeze`, `tree_v3_nostate`) are
+        # selectable for `scripts/run_usage_tree_closed_loop.py` only; the
+        # tree is NOT ADOPTED and this default never moves on its own
+        # (`docs/tests/usage_decision10_gate_2026-09-11.md`).
+        usage_mode = os.environ.get("ENGINE_USAGE", "reference")
+        usage = _load_usage(inp, usage_mode)
         # ROTATION, 2026-09-11: round 3b adopted S1 as the SCHEME (not an arm --
         # no rotation arm has ever passed the state-dependence gate, so
         # `provisional_rotation` stays True). The six dated R2 fits are selected

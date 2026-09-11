@@ -338,7 +338,17 @@ def simulate_chunk(inp: EngineInputs, ad: Adapters, game_index: np.ndarray,
             five = st.on_floor[a_rows, off[rows]]            # (k, 5) slot indices
             ucls = ucls_lut[cls]
             r5 = inp.usage_rate[gidx[rows][:, None], off[rows][:, None], five, ucls[:, None]]
-            pick = categorical(book.draw("usage", a_rows), ad.usage.probs(r5.astype(np.float64)))
+            # `gidx`/`off`/`five`/`ucls` plus the live state below are passed
+            # through for Decision-10 closed-loop arms only (`UsageTreeAdapter`,
+            # `docs/tests/usage_decision10_gate_2026-09-11.md`); the served
+            # `UsageAdapter.probs` ignores every kwarg and is byte-identical to
+            # before this line existed.
+            usage_probs = ad.usage.probs(
+                r5.astype(np.float64), inp=inp, gidx=gidx[rows], side=off[rows],
+                five=five, usage_class=ucls, score_diff=st.off_score_diff()[a_rows],
+                sec_remaining=st.usage_sec_remaining()[a_rows],
+                period=st.period[a_rows], chance_number=st.chance_number[a_rows])
+            pick = categorical(book.draw("usage", a_rows), usage_probs)
             shooter = five[np.arange(len(rows)), pick]
 
             cont = np.zeros(m, dtype=bool)       # step-space: chance continues on an OREB

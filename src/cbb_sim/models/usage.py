@@ -293,6 +293,7 @@ def build_usage_events(
     rim_override_max_ft: float = 0.0,
     pbp_dir: Path | str = ES.DEFAULT_PBP_DIR,
     shooter_key: str = DEFAULT_SHOOTER_KEY,
+    score_diff_mode: str = "own_row",
 ) -> pd.DataFrame:
     """One row per credited event with its offensive five (module docstring).
 
@@ -304,8 +305,36 @@ def build_usage_events(
     never imputed (module docstring, "THE SHOOTER LABEL").
 
     `shooter_key` defaults to the FIXED column; pass `"participant_1_id"` to
-    reproduce round 1."""
+    reproduce round 1.
+
+    `score_diff_mode` (round 3 of this bake-off, 2026-09-11; the pre-existing
+    default is preserved so every earlier caller is byte-identical unless it
+    opts in):
+
+      "own_row"      the historical default. `score_diff` is read off the
+                     event's OWN row's `home_score`/`away_score`. That is
+                     POST-OUTCOME for a made field goal or a made free throw --
+                     the row already carries its own points, the same defect
+                     L27 found in `fg_make`. Own-row delta test:
+                     `docs/tests/usage_state_confound_2026-09-11.md` --
+                     99.96-99.99% of made-shot rows in this model's own event
+                     population move by exactly the shot's own value (vs.
+                     0-move on 99.97-99.98% of misses/turnovers), across every
+                     one of the five usage event classes.
+      "pre_outcome"  CORRECTED: `score_diff` is reconstructed from the END of
+                     the PREVIOUS row of the SAME game (0 on a game's own first
+                     row, which IS the true pregame score), the same quantity
+                     `cbb_sim.engine.state.GameState.off_score_diff()` feeds the
+                     live engine before this event resolves. `sec_remaining`,
+                     `period` and `chance_number` are UNCHANGED by this
+                     parameter: the same evidence doc shows they are
+                     pre-outcome by construction (the clock cannot leak an
+                     outcome, and `_chance_number` is provably and empirically
+                     a function of strictly-prior rows' outcomes only)."""
     season = int(season)
+    if score_diff_mode not in ("own_row", "pre_outcome"):
+        raise ValueError("score_diff_mode must be 'own_row' or 'pre_outcome', "
+                         f"got {score_diff_mode!r}")
     stream = ES.build_stream(season, universe, rim_override_max_ft=rim_override_max_ft,
                              pbp_dir=pbp_dir, shooter_key=shooter_key)
     chance_no = _chance_number(stream)
@@ -317,14 +346,29 @@ def build_usage_events(
                  & (stream["trip_cause"].to_numpy() == "foul"))
     sel = (is_direct | is_fttrip) & (stream["side"].to_numpy() >= 0)
 
+    # `score_diff` computed over the FULL stream, before the `sel` subset, so
+    # "the previous row" means the previous row of the actual game feed, not
+    # the previous MODELLED event (which would skip rebounds, fouls etc. and
+    # silently reconstruct the wrong pre-outcome state).
+    g_full = stream["cbbd_game_id"].to_numpy()
+    hs_full = stream["home_score"].to_numpy(dtype="float64")
+    as_full = stream["away_score"].to_numpy(dtype="float64")
+    off_home_full = (stream["side"].to_numpy() == 0)
+    if score_diff_mode == "own_row":
+        score_diff_full = np.where(off_home_full, hs_full - as_full,
+                                   as_full - hs_full)
+    else:
+        same_prev = np.concatenate([[False], g_full[1:] == g_full[:-1]])
+        prev_hs = np.where(same_prev, np.concatenate([[0.0], hs_full[:-1]]), 0.0)
+        prev_as = np.where(same_prev, np.concatenate([[0.0], as_full[:-1]]), 0.0)
+        score_diff_full = np.where(off_home_full, prev_hs - prev_as, prev_as - prev_hs)
+
     ev_class = np.where(is_fttrip, "FT_trip", cls)
     s = stream.loc[sel].reset_index(drop=True)
     off = off_all[sel]
     period = s["period"].to_numpy()
     sec = s["sec"].to_numpy()
     off_home = (s["side"].to_numpy() == 0)
-    hs = s["home_score"].to_numpy()
-    as_ = s["away_score"].to_numpy()
 
     d = pd.DataFrame({
         "game_id": s["game_id"].to_numpy(),
@@ -340,7 +384,7 @@ def build_usage_events(
         "period": period.astype("int16"),
         "sec_in_period": sec.astype("int32"),
         "sec_remaining": np.where(period <= 2, (2 - period) * 1200 + sec, sec).astype("int32"),
-        "score_diff": np.where(off_home, hs - as_, as_ - hs).astype("int16"),
+        "score_diff": score_diff_full[sel].astype("int16"),
         "chance_number": chance_no[sel],
     })
 

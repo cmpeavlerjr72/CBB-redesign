@@ -1609,3 +1609,172 @@ happened on any class here.
 take the artifact with the LATEST `refit_date` at or before a game's own date;
 before the first refit date, use the `static` row. Nothing under
 `models/usage/` or `models/usage_v2/` was written or moved.
+
+---
+
+## 10. Round 3: the `score_diff` state-feature data fix
+
+Trigger: L28 flags that the adopted U5 tree consumes four engine-produced
+state features and that wiring it is blocked on an own-row delta audit of
+`score_diff` (the same audit L27 ran for `fg_make`). That audit is
+`docs/tests/usage_state_confound_2026-09-11.md`, run and committed BEFORE this
+section: **`score_diff` is post-outcome on every usage event class at
+99.7-99.99%**, the same construction and a cleaner reproduction of the fg_make
+defect. `sec_remaining`, `period` and `chance_number` are clean (pre-outcome by
+construction, the last confirmed empirically).
+
+### 10.1 The fix
+
+`usage.build_usage_events` gets a new keyword-only parameter,
+`score_diff_mode` (`"own_row"`, the historical default, byte-identical for
+every existing caller; `"pre_outcome"`, the correction, reconstructed from the
+END of the PREVIOUS row of the same game -- 0 on a game's own first row, the
+same quantity `GameState.off_score_diff()` feeds the live engine). Nothing
+else in the builder changes; `sec_remaining`, `period`, `chance_number` and
+every per-alternative feature are untouched. Verified byte-identical other
+columns and a 41% row-level change rate in `score_diff` on the corrected build
+(2025: 357,994 of 872,578 rows). Trainer:
+`scripts/train_usage_v3_lgbm_refit.py` (paired leaked-vs-corrected, same
+train/test split, same fixed shrinkage prior/m and LightGBM hyperparameters
+FROM ROUND 2 -- this round does not re-litigate the arm or the shrinkage
+choice, only the state feature). Corrected events table:
+`data/processed/models/usage_v3/events_v3_prestate.parquet` (a versioned
+sibling; nothing under `usage/` or `usage_v2/` touched).
+
+### 10.2 Pre-registration (authored 2026-09-11, BEFORE the refit numbers below
+were read)
+
+Question: does correcting `score_diff` change the ADOPTED arm's (lgbm, all
+five classes) F1 log loss, calibration, top-1/top-3 share gap, or Decision-8
+responsiveness slope beyond the round-2 noise floor (`docs/models/usage/
+experiments.md` section 8.10, R16: 1.0e-05 to 6.8e-05 seed SD against a
+0.0008-0.0017 block-bootstrap SE)? Decision rule: if the corrected arm's F1
+log loss stays within its class's round-2 noise floor of the leaked arm's,
+the DATA FIX changes nothing about which arm is adopted offline (round 2's
+verdict stands unchanged) and the round-3 corrected tree is simply the
+CANDIDATE the Decision-10 closed-loop gate (section 11) tests. If it moves
+outside the floor, that is reported and the offline verdict is re-examined
+before any closed-loop run.
+
+### 10.3 F1 results, paired leaked (`own_row`) vs corrected (`pre_outcome`),
+same split/prior/params/seed
+
+| class | leaked ll | corrected ll | delta | round-2 floor | inside floor? | leaked top3 gap (pp) | corrected top3 gap (pp) | leaked state imp% | corrected state imp% |
+|---|---:|---:|---:|---:|---|---:|---:|---:|---:|
+| `TOV` | 1.577452 | 1.577463 | +0.000011 | 0.000799 | YES | +0.004 | -0.003 | 27.2 | 27.5 |
+| `FGA_rim` | 1.502739 | 1.502941 | +0.000202 | 0.001156 | YES | -1.372 | -1.376 | 28.7 | 29.3 |
+| `FGA_jump2` | 1.488778 | 1.488748 | -0.000030 | 0.001656 | YES | -1.488 | -1.484 | 29.4 | 28.1 |
+| `FGA_3` | 1.417668 | 1.417789 | +0.000121 | 0.001366 | YES | -0.510 | -0.508 | 29.6 | 29.6 |
+| `FT_trip` | 1.523522 | 1.523499 | -0.000023 | 0.001435 | YES | -1.913 | -1.909 | 27.8 | 28.1 |
+
+Full per-arm calibration, responsiveness and game-level (top-1/top-3,
+per-role SD ratio) blocks for both arms of every class:
+`data/processed/models/usage_v3/lgbm_refit_v3.json`.
+
+### 10.4 Round-3 decision
+
+**The corrected `score_diff` moves every class's F1 log loss by less than its
+round-2 noise floor** (largest move: `FGA_rim` +0.000202 against a 0.001156
+floor, 17% of the floor; smallest: `TOV` +0.000011, 1.4% of the floor). Per the
+section 10.2 decision rule, **round 2's verdict is UNCHANGED**: `lgbm` stays
+the winner on all five classes (`TOV` stays UNCONFIRMED, reversing on the
+robustness fold, exactly as round 2 found -- this fix does not touch that).
+Top-3 usage-share gap and split importance also move by less than a rounding
+error on every class. **The round-3 corrected tree (`data/processed/models/
+usage_v3/lgbm_tree/*_corrected.joblib`) is therefore the SAME arm round 2
+adopted offline, with one honestly-built input column**, and it is this
+artifact -- not a re-decided arm -- that the Decision-10 closed-loop gate in
+section 11 evaluates.
+
+### 10.5 Why the manufactured effect is small here despite score_diff
+carrying ~27-29% of split importance
+
+Unlike `fg_make`, where `score_diff`'s own-row leak directly encodes the
+row's own target (a made shot's post-outcome margin literally contains
+whether the shot the model is predicting went in), usage's target is WHICH
+of five teammates took the shot -- an identity question the leak only
+touches indirectly, through whatever correlation exists between the
+leaked/corrected margin value and rotation patterns already captured by the
+alternative-level features (`share`, `usage_rank`, role). A tree can therefore
+extract nearly the same amount of USABLE signal from the leaked and the
+corrected column for THIS target, even though the corrected column is the
+honest one and the leaked one is not. This is why the log-loss deltas above
+sit far inside the round-2 noise floor while fg_make's leak was worth 35-38
+floors: the same construction defect, a much smaller offline consequence for
+this target. It is NOT evidence that the leak is harmless in the engine --
+Decision 10 exists precisely because an offline-invisible confound can still
+create a closed-loop skew once the ENGINE, not history, generates the state
+the tree conditions on (L27's headline: fg_make's leak "passed every offline
+gate"). Section 11 is the test that actually answers that question.
+
+---
+
+## 11. Decision-10 closed-loop gate: the corrected tree, live vs frozen vs
+refit-without-state (pre-registered 2026-09-11, BEFORE any arm is run)
+
+Authored and committed before `scripts/run_usage_tree_closed_loop.py` is
+invoked for any arm other than `reference` (the served baseline, run first
+only to confirm the harness reproduces the current engine-v1 gate numbers).
+
+### 11.1 Arms
+
+| arm | `ENGINE_USAGE` | what it is |
+|---|---|---|
+| served baseline | `reference` | `usage.draw_player`'s U1 proportional rule, unchanged (`adapters.UsageAdapter`) |
+| live | `tree_v3` | round-3 corrected LightGBM tree, state features (`score_diff`, `sec_remaining`, `period`, `chance_number`) read LIVE off `GameState` every step |
+| frozen | `tree_v3_freeze` | the SAME boosters, state features held at their pregame value for the whole game (`score_diff=0`, `sec_remaining=2400`, `period=1`, `chance_number=1`) -- the Decision-10 freeze ablation |
+| refit-without-state | `tree_v3_nostate` | a tree refit with NO state features at all (`LGBM_ALT_FEATURES` only), live otherwise -- L31/L33's refit-without arm, which SIZES a loop a freeze can only DETECT |
+
+All four share the pinned sub-models of the current engine-v1 baseline
+(`ENGINE_EVENT=round2_s1`, `ENGINE_FG_MAKE=round4_B1`,
+`ENGINE_CLOCK=v3c_srfloor_P3_s1`, `ENGINE_REBOUND=s1_weekly`,
+`ENGINE_FREE_THROW=s1_conf_aligned`, `ENGINE_ROTATION=reference`) and the same
+paired RNG streams (`StreamBook`), so the only thing that differs between runs
+is `ENGINE_USAGE`.
+
+### 11.2 Population and seeds
+
+F2 2025 slate, the SAME 500-game stride subset every other closed-loop report
+on this engine uses (`docs/tests/engine_v1_gates_F2_2025_s200_2026-09-11.md`,
+`run_rot5_closed_loop.py`, `run_clk3c_closed_loop.py`): sorted by `game_id`
+ascending, every 11th row, the first 500. 5-seed smoke first; scaled to 25
+seeds only if it fits the session's wall-clock budget. 6 engine workers (the
+lane's thread/worker cap).
+
+### 11.3 Gate lines
+
+- **G1-G5, G9**: no regression beyond the paired noise, read from
+ `scripts/eval_gates.py` against `docs/tests/
+ engine_v1_gates_F2_2025_s200_2026-09-11.md`'s existing `reference`-arm
+ numbers as the noise-floor baseline (same engine, same season, same subset
+ rule; the only lever is `ENGINE_USAGE`).
+- **Decision-10 core** (`ARCHITECTURE_DECISIONS.md`): margin SD ratio and
+ home/away score correlation inside the G1/G2 tolerances, possessions per
+ game unmoved, for BOTH the live and the frozen arm; the refit-without arm run
+ alongside per L31/L33 ("every closed-loop gate reports both the freeze and
+ the refit-without arm").
+- **Usage-specific** (this model's own G8-adjacent reads, since G8 in the
+ engine-v1 doc is rotation's minutes/players-used gate): per-player FGA share
+ distribution (p10/p50/p90), top-1 and top-3 usage-share gap vs the
+ `reference` arm's own simulated distribution (not vs a fresh real-world
+ grade -- that comparison already exists in the engine-v1 gate doc for
+ `reference` and is not re-run here), and the per-player quintile
+ responsiveness slope (pregame `rate_total` quintile vs simulated FGA share),
+ the same Decision-8 amendment gate (slope ratio in [0.8, 1.2]) applied
+ offline in section 7.
+
+### 11.4 Decision rule
+
+Wire the tree (name which arm -- live or frozen) only if: (a) it clears every
+gate in 11.3, (b) live and frozen do NOT differ from each other beyond the
+paired-seed noise (a difference here is the closed-loop signature L27/L31
+describe -- a real feedback effect the offline fold cannot see), and (c) live
+beats refit-without on the usage-specific reads (otherwise the state buys
+nothing worth the extra model complexity and the simpler nostate arm is
+preferred, ties going to the simpler model per `CLAUDE.md`'s bake-off rule).
+Any gate not run before the session's deadline is reported as NOT RUN, never
+as a pass.
+
+### 11.5 Results
+
+See `docs/tests/usage_decision10_gate_2026-09-11.md`.

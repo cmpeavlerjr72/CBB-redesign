@@ -77,6 +77,10 @@ data/processed/models/*/*_s1/
 !data/processed/models/clock/v3b_s1/
 data/processed/models/usage_v2/
 data/processed/models/usage_s1/
+# usage round 3 (2026-09-11): score_diff state-feature fix event/design caches
+# and the LightGBM tree boosters for the Decision-10 closed-loop gate.
+# Rebuildable from scripts/train_usage_v3*.py; see experiments.md section 10-11.
+data/processed/models/usage_v3/
 
 # fg_make rounds 3-4 (2026-09-10): the shot_shooter_id event/design caches and
 # the corrected engine-input sibling. All rebuildable from
