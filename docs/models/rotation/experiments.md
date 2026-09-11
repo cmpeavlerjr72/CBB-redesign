@@ -3018,6 +3018,32 @@ spread (0.00-3.10 pp) is round 5's own (0.08-2.31 pp) to within its two thinnest
 cells, and the objects have no knobs: they are counts with a declared shrinkage
 constant and a likelihood argmax over a declared grid.
 
+**Floor B was also run on K1**, which 14.8 allows for the arm the decision rule
+would select and which this round's conclusion leans on. One `CompFit` artifact
+carries all three objects, so the seed-101 refit already existed and this is a
+grading run only; it writes a versioned sibling
+(`rotation_F1_round6_floorB_K1.json`) and overwrites nothing.
+
+| cell | ACTUAL (150 games) | K1 seed 1 | K1 seed 2 | \|delta\| |
+|---|---:|---:|---:|---:|
+| final 8:00, \|m\| <= 5 | 0.7436 | 0.6993 | 0.7181 | 1.88 pp |
+| final 8:00, \|m\| 6-15 | 0.7186 | 0.6721 | 0.6824 | 1.03 pp |
+| final 8:00, \|m\| > 15 | 0.5518 | 0.5031 | 0.5072 | 0.41 pp |
+| starters at >= 4 fouls | 0.4362 | 0.4154 | 0.4453 | 2.99 pp |
+| H2 tip, \|m\| <= 5 | 0.9655 | 0.9224 | 0.9500 | 2.76 pp |
+| H2 tip, \|m\| 6-15 | 0.9662 | 0.9270 | 0.9365 | 0.95 pp |
+| H2 tip, \|m\| > 15 | 0.9611 | 0.9611 | 0.9333 | 2.78 pp |
+| H1 20:00-10:00, \|m\| <= 5 | 0.7710 | 0.7317 | 0.7282 | 0.35 pp |
+| substitutions per boundary | -- | 0.1545 | 0.1585 | 0.0040 |
+| distinct lineups per team-game | -- | 14.377 | 14.510 | 0.133 |
+
+K1's refit-to-refit spread (0.35-2.99 pp) is A1's and round 5's W1's, and its two
+new cells move 2.6% and 0.9% of their own level. **The K1 - W4 gap the decision
+turns on is not a refit artefact in either direction**: the pooled MAE gain
+(+0.066) and the Q2 loss (+0.060) are both smaller than this spread on the state
+cells but are measured on 1,600 games x 3 seeds against a 0.016-minute seed floor,
+which is the comparison 14.8 rule 4 names.
+
 ### 15.7 The W4 reproduction check (14.4)
 
 A 1-seed re-run of W4 inside this round, against round 5's own 3-seed column:
