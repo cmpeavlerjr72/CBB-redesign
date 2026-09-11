@@ -2697,3 +2697,297 @@ only by an explicit `ENGINE_CLOCK=v5_glat_shared` (section 19.4).
 for `corr(P, eFG%)` and for the within-game possession SD; re-run section
 18.2's gate at 25 seeds; and pre-register the MEAN and the VARIANCE as one
 joint target, since section 20.3 shows they are not separable.
+
+---
+
+## 21. Round 5b pre-registration -- a MEAN-CONSISTENT per-game pace latent (2026-09-11)
+
+Appended VERBATIM BEFORE any round-5b arm, module change, engine mode or fitted
+parameter existed, and committed on its own. Sections 8, 10, 12, 14, 16, 17, 18,
+19 and 20 are STATIC and are NOT edited. `experiments.md` is append-only.
+
+**WHAT THIS ROUND IS.** Round 5 (sections 16-20) established three things and
+left one open. Established: (i) the clock's conditional law is right and its
+JOINT law is missing, 98.9% of the per-game `Var(Dbar)` gap being a within-game
+LEVEL; (ii) `CLAUDE.md`'s standing modeling rule -- *"One pace realisation per
+simulated game, both teams scaled by it"* -- is NOT implemented in the clock
+path, and implementing it as arm A1 moves the offline per-game possession-SD
+ratio 0.6877 -> 1.0043 (56 floors) and, in the closed loop, 0.662 -> 0.907 with
+G5 total SD ratio 0.6577 -> 0.7471, `corr(home, away)` 0.0010 -> 0.1106 and
+`corr(P, eFG%)` -0.2269 -> -0.1088, each within 2% to 30% of an independently
+published prediction; (iii) it costs **+0.230 possessions per team-game on the
+G1 MEAN** (all-500 set), on a line already failing at +1.610.
+
+Left open: whether that cost is INTRINSIC to adding dispersion or is an artefact
+of HOW the latent was specified. Section 20.3 attributed it to Jensen's
+inequality on the convex map `P = 1200 / Dbar` and called it "mechanical rather
+than a defect of the fit". **That attribution is correct about the mechanism and
+incomplete about the conclusion**, and round 5b exists to test the difference:
+
+    A ~ LogN(-s2/2, s2)      =>  E[A] = 1        (round 5, arm A1)
+                             but E[1/A] = e^{s2} = 1.002235 at s = 0.047248
+
+    P_game = 1200 / Dbar,  Dbar = A * mu  (the latent scales every duration)
+    =>  E[P] rises by a factor e^{s2},  i.e. by  ~68 * 0.002235 = +0.152
+        possessions per team-game, BEFORE any rounding or horn truncation.
+
+A1 imposes `E[A] = 1` on the DURATION scale. The quantity every gate reads is
+the possession COUNT, which is the RECIPROCAL of the duration mean. A latent
+that is mean-1 in durations is **not** mean-1 in counts, and the +0.152 analytic
+figure sits between the two measured costs (+0.095 clock-complete, +0.230
+all-500). **The mean cost is therefore a specification choice, not a property of
+dispersion**, and this round asks whether specifying the latent so that the
+possession count's expectation is preserved removes it.
+
+**WHAT IS NOT ALLOWED, STATED FIRST.** A post-hoc rescale of simulated
+possessions, a multiplier on `Dbar`, a cap, a clip, an offset or a calibration
+curve applied to engine output to restore the mean is BANNED (`CLAUDE.md`
+no-hand-tuning rule; `docs/SIM_GUARDRAILS.md` core principle and section 5).
+Every arm below changes the **location parameter of the fitted random-effects
+law**, walk-forward, on training rows only, and the mean must come out of the
+law. The distinguishing test, stated so it can be checked rather than asserted:
+each arm's latent location is either an analytic identity of the family (B1) or
+a method-of-moments estimate on TRAINING seasons (B2, B3), and no arm reads the
+test fold, the engine's output, or any gate value.
+
+### 21.1 What round 5b decides, and what it does not
+
+DECIDES: whether a per-game pace latent that is MEAN-CONSISTENT ON THE
+POSSESSION-COUNT SCALE keeps round 5's dispersion gain while removing round 5's
+G1 possession-mean cost, and whether the remaining tempo-quintile responsiveness
+failure (Q2) is addressable by a fitted dispersion function.
+
+DOES NOT DECIDE, out of scope and inherited unchanged: the family, the
+censoring rule, the state parametrisation `P3`, the refit scheme `S1`
+(rounds 1-4); the `prev_end` composition term L34 (upstream, and section 17.1
+prices it at -0.3% of the variance gap, the wrong way); the per-offence latent
+A2/A3 and the AR(1) arm A4 (round 5, decided: A4 fails by a pre-registered
+prediction, A2/A3 are not wired at the call site); the served default, which
+this lane does not change under any outcome.
+
+STATED IN ADVANCE, arithmetic, and falsifiable:
+
+1. **B1's predicted G1 possession-mean move against R is 0.000 to first
+   order**, against A1's +0.152 analytic / +0.230 measured. Residual movement
+   comes only from integer rounding of `round(A*T)` and from the horn
+   truncation `min(T, R)`, both second-order. PRE-REGISTERED: B1's G1 mean must
+   land within 1 floor of R, and if it does not, the Jensen attribution of
+   section 20.3 is incomplete and this round says so.
+2. **B1's predicted primary metric equals A1's within the floor.** The latent
+   VARIANCE that matches `Var_g(rbar)` is the same moment condition under either
+   location; only `sigma` shifts, by the factor `e^{-s2} = 0.9978` on the
+   variance, i.e. in the fourth decimal of `sigma`. PRE-REGISTERED:
+   `|P SD(B1) - P SD(A1)| <= 0.0242` (round 5's measured floor). A larger gap
+   falsifies the claim that location and dispersion are separable here.
+3. **B1 IMPROVES round 4's mean gate `E[min(T,R)]`, it does not merely hold
+   it.** `E[A] = e^{s2}` under B1, so the marginal mean duration rises by about
+   `17.4965 * 0.002235 = +0.039 s`, moving the gap -0.1561 -> about -0.117
+   toward the actual 17.6526. This is a CONSEQUENCE of the count-scale
+   constraint, not a target, and it is stated in advance so it cannot be
+   presented afterwards as a designed win.
+4. **B3 is predicted to FAIL criterion 4 at Q2.** Round 5's A6 fitted `sigma`
+   LINEAR in pregame tempo and closed both ends (Q1 0.711 -> 1.004, Q5
+   0.631 -> 0.958) while Q2 stayed at 1.157. Q2's needed dispersion is a
+   non-monotone 4-SE dip BELOW the tempo trend (section 17.4); a monotone linear
+   function of tempo cannot reproduce a non-monotone dip, by construction. B3 is
+   run anyway because the prediction is worth testing and because the
+   alternative is asserting it. The mechanism B3 tests is that the latent's CV
+   is a function of pregame game STATE (measured: 4.11 / 3.36 / 3.98 / 4.58 /
+   5.40 % across pregame-tempo quintiles Q1..Q5) -- it is a fitted dispersion
+   function, not a per-quintile knob, and no arm is permitted a per-quintile
+   free parameter.
+5. **The MEAN and the VARIANCE are gated JOINTLY**, as section 20.4 demanded.
+   No arm may buy the primary at the cost of the G1 mean, and no arm may buy the
+   G1 mean by shrinking the dispersion.
+
+### 21.2 Arms
+
+All arms wrap the round-4 reference artifact set (`empirical_km3_srfloor`,
+`P3`, `S1` monthly walk-forward, censoring and Kaplan-Meier tail rule exactly as
+round 3 section 8.3). They differ ONLY in the LOCATION of the per-game latent,
+and in B3 additionally in whether `sigma` is a constant or a fitted function of
+pregame tempo. Round 5's code, tables and fitted artifacts are reused BYTE FOR
+BYTE; only what is new is fitted.
+
+The family, written once, is the whole round:
+
+    A = exp(sigma * z + m),   z ~ N(0,1),   one draw per (seed, game)
+    D = round(A * T),         T ~ the served cell law
+
+| id | name | `m` | what it is |
+|---|---|---|---|
+| R | `v3c_srfloor_P3_s1` | -- | **THE REFERENCE**, the arm served today. No latent, independent inverse-CDF draws |
+| A1 | `v5_glat_shared` | `-sigma^2/2` | round 5's candidate, UNCHANGED and re-run as the round-5b reference. `E[A] = 1` on the duration scale, `E[1/A] = e^{s2} > 1` on the count scale |
+| B1 | `v5b_glat_pmean` | `+sigma^2/2` | **the count-scale mean-preserving latent**: `E[1/A] = 1` exactly, so `E[P_game] = P_mean` by construction. Identically: `P_game = P_mean * exp(eps)` with `E[exp(eps)] = 1` and durations DERIVED as `T / exp(eps)`. One fitted scalar, same as A1 |
+| B2 | `v5b_glat_joint` | fitted | **the location and the dispersion re-estimated JOINTLY** on the same training fold: `(m, sigma)` solve two moment conditions -- match `Var_g(rbar)` AND match the training-fold per-possession mean duration under the latent, integer rounding and horn truncation included. B1's `m = +s2/2` is the analytic solution when rounding and truncation are ignored; B2 estimates it instead. Two fitted scalars |
+| B3 | `v5b_glat_pmean_tempo` | `+sigma(x)^2/2` | B1 with `sigma^2(x) = a + b * tempo_prior_game`, the SAME fitted dispersion function round 5's A6 used, re-fitted under the B1 location. Two fitted coefficients. Predicted (item 4) to fail criterion 4 |
+
+**No arm contains a post-hoc multiplier, cap, clip, offset, calibration curve or
+blend.** Every fitted quantity (`sigma`, `m`, `a`, `b`) is estimated by method of
+moments on TRAINING rows only, under the same `max_train_date < game_date` rule
+the round-4 artifacts already pass, per S1 refit `k`, using artifact `k`'s own
+predictions. Nothing in the fitting touches the test fold, the engine, or any
+gate value. F1's fitted values are recorded before F2 is read and reported as
+robustness.
+
+**Fitting rule, fixed here:**
+
+    B1:  sigma^2  solves   mean_g[ V_iid(g)(1+s2) + s2 * mbar_g^2 ] = Var_g(rbar)
+                           under m = +s2/2 (the same equation round 5 used for
+                           A1 under m = -s2/2; the code path is identical and
+                           the location enters only through E[A])
+    B2:  (m, sigma^2) solve that equation TOGETHER with a match of the
+                           TRAINING-fold marginal mean duration under the arm's
+                           own Gauss-Hermite law with round() applied -- i.e.
+                           the law's own mean, estimated on training rows, not a
+                           rescale of anything
+    B3:  (a, b)      by weighted least squares of the per-game latent variance
+                           estimate on `tempo_prior_game`, round 5's A6
+                           estimator unchanged, then m = +sigma^2(x)/2 per row
+
+### 21.3 Decision 10
+
+Vacuous, for the same reason section 16.3 gave and for the same reason round 4
+gave: no round-5b arm introduces a SIMULATION-PRODUCED state feature. The latent
+is drawn from the `(seed, game_id, family)` stream before the game starts and is
+a constant of the game; `tempo_prior_game` is a PREGAME feature. A "frozen" arm
+and its "refit-without" counterpart are the same object. Stated rather than
+silently skipped.
+
+### 21.4 Universe, folds, seal, subset, seeds, pairing
+
+Unchanged from rounds 3, 3c, 4 and 5. D-I, hoopR not truncated, CBBD
+points-complete, `DURATION_CAP = 90`. **F1 trains {2022, 2023} and tests 2024;
+F2 trains {2022, 2023, 2024} and tests 2025 and is the SELECTION fold. The 2026
+season is SEALED.** Offline universe: the 2025 clock-complete regulation
+possessions, **270,530 rows over 1,991 games**, needed per-team-game possession
+SD **4.2795**. Closed loop: the section 14.4 subset -- the F2 2025 slate sorted
+by `game_id` ascending, every 11th row, first 500 games (159 clock-complete) --
+paired by construction through the `(seed, game_id, family)` streams, every
+other sub-model pinned by explicit environment value on EVERY run and written
+into `run_meta.json` (`ENGINE_EVENT=round2_s1`,
+`ENGINE_FG_MAKE=round3_shooter_S_C_s1`, `ENGINE_FG3=decision8`,
+`ENGINE_ROTATION=reference`). 5 seeds screening for every arm; **25 seeds for
+the best arm and for R**, which is section 18.2's gate. New results directories
+(`clk5b_*`); no existing results file is overwritten. Engine flags default-off.
+
+### 21.5 Metrics
+
+**PRIMARY (offline, F2), UNCHANGED from round 5:** the per-game possession-count
+SD the arm produces through the section-16 bridge, against 4.2795:
+
+    P_sd_produced(arm) = 3.8509 * sqrt( Var_arm(Dbar) );  ratio = P_sd / 4.2795
+
+**HARD NO-REGRESSION LINE, new this round and the reason the round exists:**
+
+| id | metric | reference | rule |
+|---|---|---|---|
+| **M1** | **G1 possessions per team-game MEAN, closed loop, both game sets** | R: +1.610 (all 500), +1.052 (cc) | **the arm's gap must not be worse than R's by more than 1 floor.** 25-seed floors are round 4's measured 0.074 (all) / 0.180 (cc) where a 25-seed run exists; at 5 seeds the scale reference is `sqrt(5)` times those (0.165 / 0.402) and is labelled a SCALE REFERENCE, not a measured floor, unless re-measured |
+
+**NO-REGRESSION LINES (offline, F2), each against R and each with its own
+floor**, carried from section 16.5 unchanged: N1 `CRPS_trunc` (floor 0.00684);
+N2 `E[min(T,R)]` against the actual 17.6526 (the round-4 mean gate); N3 PIT
+worst-cell K-S D and leaking-cell count; N4 implied possessions per team-game
+mean. Each must not worsen by more than 1 floor.
+
+**CLOSED-LOOP LINES,** read on both game sets: G1 possession mean and within-game
+SD, the G5-definition possession SD ratio, G5 total SD ratio, G5 margin SD
+ratio, `corr(home pts, away pts)`, `corr(P, eFG%)`, G9 calibration slope, PPP,
+total bias, end-of-half mean last-possession duration, responsiveness slope
+ratio.
+
+**FLOORS TO BE MEASURED, not assumed (section 18.2 item 4, and section 20.4's
+first instruction for a round 6):** two R runs at `--seed-offset 0` and
+`--seed-offset 1000`, 5 seeds each, give the 5-seed seed-offset floor for
+`corr(P, eFG%)` and for the within-game possession SD; `corr(P, eFG%)` stays
+REPORT-ONLY until such a floor exists and becomes a readable line once it does.
+
+**MULTI-LEVEL EVIDENCE (the standing rule), reported for every arm:** overall;
+by `prev_end` cell; by round-2 clock bucket; by period; by pregame-tempo
+quintile; and the per-game distribution of the mean residual and of the
+possession count. Cells with fewer than 300 possessions are UNDERPOWERED and are
+not read.
+
+### 21.6 Noise floor
+
+Offline: the arms are deterministic given the fitting window, so the floor is a
+SPEC-IDENTICAL REFIT under a second seed -- game-block bootstrap of the fitting
+window (games drawn with replacement, all of a game's possessions moving
+together) under `seed = 20260911` and `seed = 20260912`, each refit graded by the
+same blind path, the larger absolute delta per metric being that metric's floor.
+Round 5's measured value on the primary, **0.0242 possessions**, is carried and
+RE-MEASURED under each new location. `CRPS_trunc` carries round 4's measured
+game-block SE 0.00684.
+
+Closed loop: the seed-offset floor is MEASURED on R at 5 seeds for
+`corr(P, eFG%)` and the within-game possession SD (above); round 4's 25-seed
+floors (G1 cc 0.180, G1 all 0.074, margin SD 0.101, corr 0.013) are carried for
+the lines where a 25-seed run exists and are labelled a carried prior wherever
+they are not re-measured. **A 5-seed number is never presented as a measured
+floor.**
+
+### 21.7 Decision rule
+
+Adopt the SIMPLEST arm satisfying ALL of:
+
+1. **PRIMARY**: `|P_sd_produced / 4.2795 - 1| <= 0.10` on F2 and the improvement
+   over R exceeds the measured floor;
+2. **M1**: the closed-loop G1 possession-mean gap is not worse than R's by more
+   than 1 floor, on BOTH game sets;
+3. **N1-N4**: no offline no-regression line worse than R by more than 1 floor;
+4. **RESPONSIVENESS**: the produced/needed SD ratio per pregame-tempo quintile
+   is monotone in at least 4 of 5 and **no quintile outside [0.85, 1.15]** --
+   carried from section 16.7 criterion 3 **VERBATIM AND UNSOFTENED**. Round 5
+   failed every latent arm on it and round 5b does not lower it;
+5. **no other closed-loop gate regressed** beyond its floor (`CLAUDE.md`).
+
+**The criterion-4 defect of section 17.7 is FIXED HERE rather than carried.**
+Round 5's criterion 4 broke a primary tie on the S1/S2 structure (per-offence
+latent variance, offence-pair correlation). Section 17.7 showed that on a
+clock-complete game the possessions alternate and tile 2400 s, so
+`n_h*Dbar_h + n_a*Dbar_a = 2400`: the SUM of the two offences' mean durations is
+a deterministic function of the possession count while the DIFFERENCE is free,
+and the variance splits 1.2349 (the pace level, the target) against 1.7487 (which
+offence played slower, which no gate reads). S1/S2 are dominated by the
+orthogonal, partly mechanical component. **Round 5b's tie-break is therefore
+REPLACED, in advance of any result:**
+
+> **Tie-break (round 5b), replacing section 16.7 criterion 4.** S1 and S2 are
+> REPORTED for every arm as structural evidence and **do not break ties**. A tie
+> is a gap inside the measured floor on the primary, and it is broken on the
+> PACE-LEVEL component `(Dbar_h + Dbar_a)/2` alone -- the coordinate the
+> possession count is a function of -- and then on the closed-loop G1 possession
+> MEAN. If two arms tie on those as well, `CLAUDE.md`'s standing rule applies and
+> the SIMPLER arm wins.
+
+Simplicity order, fixed here: `R` (no latent) < `A1` = `B1` (one fitted scalar;
+`A1` is listed first only because it already exists, and `B1` wins any line it
+takes beyond a floor) < `B2` (two fitted scalars) < `B3` (two fitted
+coefficients and a state-dependent dispersion).
+
+If NO arm qualifies, adopt nothing, report the decomposition, and **do not
+soften a gate**. If an arm passes 1, 2, 3 and 5 and fails ONLY 4, that is
+reported as such, nothing is adopted by this lane, and the Q2 question is handed
+to the PM as an adjudication with the evidence attached -- exactly as round 5
+handed over the mean. **An offline winner is a CANDIDATE, not an adoption**, and
+**this lane does not change the served default under any outcome; the PM
+switches it.**
+
+### 21.8 Execution and artifacts
+
+Additive only. `src/cbb_sim/models/clock_v5.py` gains a location parameter on
+`LatentArm` (default `-sigma^2/2`, so every round-5 object and number is
+reproduced BIT FOR BIT); new fitter+grader `scripts/exp_clk5b_mean_consistent.py`
+which fits and scores every arm through ONE code path, reusing round 5's
+`fit_params`, `node_moments` and `clock_v3.score_arm_v3` unedited so no arm gets
+a bespoke scorer; new `V5_MODES` entries in
+`src/cbb_sim/engine/clock_adapter_v3.py`; `adapters.py` DEFAULTS ARE NOT TOUCHED.
+Closed loop by `scripts/run_clk4_closed_loop.py` (unedited), graded by
+`scripts/grade_clk3c_closed_loop.py` and `scripts/grade_clk5_dispersion_loop.py`
+(both unedited). Artifacts take a `v5b_` prefix under
+`data/processed/models/clock/`, gitignored and HF-synced. Results in NEW
+directories `results/engine_v0/clk5b_*`; nothing existing is overwritten.
+Threads capped at 6 and the engine pool at 6 workers; other lanes share the
+machine. Results are appended to this file as section 22, the evidence goes to
+`docs/tests/clock_mean_consistent_latent_2026-09-11.md`, and a row goes to
+`docs/models/change_ledger.md` only if an arm passes every line.
