@@ -342,3 +342,118 @@ existing column bit-identical and adds two counters, so nothing the model alread
 3. `G3` -- the two-level prior, the one arm no population has rejected, and the winner of `cont`'s
    log loss and weeks-0-3 cell -- is still NOT RUN on the tree and is the next cell either way.
 4. Nothing here touches the alignment cells or Decision 9.
+
+## ADDENDUM 3, 13:28 ET: `G3` and the second-seed floor landed -- the ladder is complete, the floor is measured, and the winner changes
+
+Round 4b (experiments.md section 11) fitted the two cells round 4 left NOT RUN, concurrently at
+three threads each: `G3` on the tree (1558 s) and the spec-identical `G0` retrain under **seed 1**
+(1559 s), both launched 13:01:43 ET and finished 13:27:52 ET. Both reproduced round 3's stored
+reference through stage 0 to 0.00e+00 before their own cell was read. This section supersedes every
+earlier statement in this document that `G3` or the floor cell is NOT RUN. Nothing else is
+superseded except where said so below. Artifacts in the versioned sibling
+`data/processed/models/possession_outcome/round4b/`; round 4's own directory is byte-unchanged.
+
+### 1. The floor, measured
+
+| quantity | seed 0 | seed 1 | spread |
+|---|---|---|---|
+| fold-2 log loss | 1.515428 | 1.515541 | **0.000113** |
+| weeks-0-3 gap (decision cell) | 3.832 | 3.704 | 0.128 pp |
+| non-conference gap (decision cell) | 2.492 | 2.625 | 0.133 pp |
+
+The seed spread is seven times smaller than the 200-replicate game-block bootstrap SE, so the
+**applied floor stays 0.000804**, exactly the value round 4 carried. The floor was not optimistic
+and no "beats the reference" claim moves because of it. Both pre-registered decision cells move
+0.128-0.133 pp under a spec-identical retrain, so the 0.25 pp segment threshold is now backed by a
+measurement instead of an assertion. Two seeds against the five round 1 asked for: still **PARTIAL**.
+
+### 2. The per-week buckets are noisier than the differences this document has been reading
+
+| week | n | `G0` seed 0 | `G0` seed 1 | seed spread |
+|---|---|---|---|---|
+| wk0 | 36,499 | 6.418 | 5.615 | **0.803** |
+| wk1 | 40,718 | 5.216 | 5.219 | 0.003 |
+| wk2 | 43,658 | 3.313 | 3.301 | 0.012 |
+| wk3 | 43,562 | 2.751 | 3.552 | **0.801** |
+| wk4-7 | 111,232 | 1.369 | 2.062 | **0.693** |
+| wk8+ | 466,356 | 0.939 | 0.890 | 0.049 |
+
+**This is the finding with the longest reach in the round.** The four-week pooled decision cell is
+stable to 0.13 pp, but single-week and wk4-7 buckets move by up to 0.80 pp under nothing but a seed
+change. Sections 4 and "ADDENDUM 2" of this document argued against `G1` on the ground that it
+"pushes weeks 4-7 across the 2.0 pp gate" (1.369 -> 2.692). **The reference itself crosses that gate
+under seed 1, at 2.062.** `G1` is still 0.63 pp above the seed-1 reference -- about one measured
+bucket spread -- so the concern is not withdrawn, but it must stop being written as a clean crossing
+that only the arms cause. Any per-week bucket difference under ~0.8 pp anywhere in this document is
+at or inside seed noise. The wk0 and wk3 spreads say the same thing twice.
+
+### 3. The completed `first` tree ladder
+
+| arm | rank | log loss | gain vs ref | floors | overall gap | weeks 0-3 | wk4-7 | wk8+ | non-conf | slope | gates |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| `G0` reference (s0) | 0 | 1.515428 | 0.0 | -- | **0.980** | 3.832 | **1.369** | 0.939 | 2.492 | 0.9473 | PASS |
+| `G0` floor (s1) | 0 | 1.515541 | -0.000113 | -0.14 | 0.977 | 3.704 | 2.062 | 0.890 | 2.625 | 0.9485 | PASS |
+| `G1` league-mean shrink | 1 | 1.515519 | -0.000091 | -0.11 | 1.456 | **2.766** | 2.692 | 1.141 | 2.351 | **0.9745** | PASS |
+| `G4` reliability counters | 1 | 1.515626 | -0.000198 | -0.25 | 1.108 | 3.467 | 1.410 | 0.868 | 2.430 | 0.9537 | PASS |
+| `G2` prior-season shrink | 2 | 1.514837 | +0.000591 | +0.74 | 1.318 | 3.359 | 1.956 | 0.902 | 2.500 | 0.9156 | PASS |
+| `G3` two-level EB | 3 | **1.514615** | **+0.000813** | **+1.01** | 1.362 | 3.371 | 2.323 | **0.833** | **2.315** | 0.9530 | PASS |
+
+`G3` per week: wk0 5.323, wk1 4.482, wk2 2.889, wk3 2.685, wk4-7 2.323, wk8+ 0.833. On `cont` it
+takes that population's best log loss too (1.498677), weeks-0-3 2.422, non-conference 2.175, both
+gates PASS -- the only arm in the round no population has rejected on any gate.
+
+**`G3` is the first arm in four rounds to beat the reference on the primary metric beyond the
+floor, and it does so by 1.01 floors.** Both halves of that sentence are the result. It is a genuine
+crossing of the pre-registered line and it is as marginal as a crossing can be.
+
+### 4. What changes in the verdict, and why
+
+Through `decide_v4`, unmodified: all four arms beat the reference beyond the floor (three on the
+weeks-0-3 segment, `G3` on both log loss and segment), none moves error between the two
+pre-registered segments, all pass both gates. The best beater by log loss is now `G3` (1.514615), so
+the eligibility band is 1.514615 + 0.000804 = **1.515419** -- and `G1` (1.515519) and `G4`
+(1.515626) fall outside it. **They were eligible in round 4 only because nothing had pulled the band
+down.** Among the eligible arms, `G2` (rank 2) is simpler than `G3` (rank 3).
+
+**Winner: `G2`, on both populations.** `cont` selects `G2` by the same mechanism. The `G1`
+recommendation in ADDENDUM 2 is superseded; so is the `G4` recommendation, on eligibility, with its
+`cont` calibration failure (2.010 pp) unchanged.
+
+**No arm dominates the reference on every cell -- not one.** `G3` gives up the overall gated gap and
+weeks 4-7; `G2` gives up non-conference (-0.008), the overall gap, weeks 4-7 and, importantly, the
+responsiveness slope (0.9156, the round's worst, *further from 1.0 than the reference's own
+0.9473*); `G1` gives up the overall gap, weeks 4-7 and week 8+; `G4` gives up log loss and `cont`
+calibration. The premise of round 4 -- that the damage is in a segment and a segment fix costs
+something elsewhere -- survives the completed ladder intact.
+
+### 5. Recommendation
+
+1. **`G2` is what the pre-registered rule selects for `first`, and the ship is the PM's call.** This
+   worker does not overrule a decision rule fixed before the run, in either direction.
+2. The PM should weigh three measured things against it: `G3` is better than `G2` on the primary
+   metric (0.28 floors) and on non-conference (0.185 pp) and worse only on the overall gated gap
+   (0.04 pp); `G2` alone regresses the matchup-responsiveness slope; and `G3` is the only arm no
+   population has rejected.
+3. **No fold-1 confirmation exists for any tree shrinkage arm** (round 4 stage 9, NOT RUN). Whatever
+   ships should be confirmed on fold 1 first.
+4. `A1`/`A2` are still NOT RUN, so **Decision 9c remains unresolved for this sub-model** and nothing
+   here amends Decision 9.
+5. The seed-1 evidence in section 2 should be applied retroactively when reading sections 4, and the
+   two earlier addenda, of this document.
+
+### 6. Reproducing round 4b
+
+```
+$env:PYTHONIOENCODING="utf-8"; $env:CBB_THREADS="3"
+.venv/Scripts/python.exe scripts/train_possession_outcome_v4.py --stages 5 \
+    --ckpt ckpt_c_g3.json --no-summary --stop-at 13:35
+.venv/Scripts/python.exe scripts/train_possession_outcome_v4.py --stages 6 \
+    --ckpt ckpt_d_floor.json --no-summary --stop-at 13:35
+.venv/Scripts/python.exe scripts/run_po_r4b_merge.py
+.venv/Scripts/python.exe scripts/diag_po_r4b_ladder.py
+```
+
+`run_po_r4b_merge.py` is round 4's own `--render-only --merge` path with the output directory
+rebound to `round4b/`; it imports the trainer and the report renderer unmodified and fits nothing.
+Its no-op correctness was checked before the new cells landed by merging round 4's three checkpoints
+alone: 23 cells, `grid_results.csv` identical to round 4's.

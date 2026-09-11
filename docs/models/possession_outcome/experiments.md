@@ -1862,3 +1862,128 @@ before the numbers arrive: the measured seed-1 spread **replaces the block-boots
 floor of 0.000804** in section 9.2 for `first`, and every "beats the reference beyond the floor"
 claim in 9.3, 9.10 and 9.11 is re-read against whichever floor is larger. Two seeds is still PARTIAL
 against round 1's five and stays labelled PARTIAL.
+
+### 11.1 Round 4b results (run 2026-09-11 13:01:43-13:27:52 ET, both cells concurrent at three threads each)
+
+**Correction to the start time recorded in section 11 before fitting:** the note was written a few
+minutes ahead of the launch and said 13:06 ET; the actual launch was **13:01:43 ET** and both cells
+finished at **13:27:52 ET**, 1558 s (`G3`) and 1559 s (floor seed 1). Both reproduced round 3's
+reference through stage 0 to 0.00e+00 before their own cell was read.
+
+Artifacts: `data/processed/models/possession_outcome/round4b/` (versioned sibling; round 4's own
+directory is byte-unchanged, verified by re-running the merge on round 4's three checkpoints alone
+and diffing `grid_results.csv` -- IDENTICAL, 23 cells). The merge is round 4's `--render-only
+--merge` path with the output directory rebound by `scripts/run_po_r4b_merge.py`; the trainer, the
+grader and the decision function are imported unmodified. 25 cells merged. Over 20 MB (the design
+cache is hard-linked, not copied), so gitignored and synced under the `engine_inputs` bulk key.
+
+### 11.2 The floor is MEASURED, and it does not move
+
+| quantity | seed 0 | seed 1 | spread | carried floor | applied floor |
+|---|---|---|---|---|---|
+| fold-2 log loss | 1.515428 | 1.515541 | **0.000113** | 0.000804 (block bootstrap SE) | **0.000804, UNCHANGED** |
+| weeks-0-3 gap (decision cell) | 3.832 | 3.704 | 0.128 pp | 0.25 pp threshold | threshold stands |
+| non-conference gap (decision cell) | 2.492 | 2.625 | 0.133 pp | 0.25 pp threshold | threshold stands |
+
+**The second seed confirms the carried floor rather than changing it.** The seed spread on the
+primary metric is 0.000113, seven times smaller than the 200-replicate game-block bootstrap SE, so
+the bootstrap term stays binding and the applied floor is 0.000804 exactly as round 4 carried it
+from round 3. **No "beats the reference beyond the floor" claim in 9.3, 9.10 or 9.11 changes because
+of the floor.** The 0.25 pp segment threshold, asserted in round 3 and re-asserted in 8.4, is now
+measured against a real spec-identical retrain: both decision cells move 0.128-0.133 pp under a seed
+change, half the threshold. The floor is now 2 seeds and stays labelled **PARTIAL** against the five
+round 1 pre-registered.
+
+**The per-week BUCKETS are a different matter and this is the round's most consequential
+measurement.** The seed-1 reference's own bucket gaps are wk0 5.615 (seed 0: 6.418), wk1 5.219
+(5.216), wk2 3.301 (3.313), wk3 3.552 (2.751), **wk4-7 2.062 (1.369)**, wk8+ 0.890 (0.939). A
+spec-identical retrain moves single-week buckets by up to **0.80 pp** and weeks 4-7 by **0.69 pp**.
+Section 9.11's central argument against `G1` -- that it "pushes weeks 4-7 across the 2.0 pp gate" --
+is therefore weaker than it was written: **the reference itself crosses that gate under seed 1**
+(2.062). `G1`'s 2.692 is still 0.63 pp above the seed-1 reference, about one measured bucket spread,
+so the concern is not retired, but it can no longer be stated as a clean gate crossing that only the
+arms cause. Every per-week bucket difference under ~0.8 pp in 9.10, 9.11 and the test doc is at or
+inside seed noise and must be read that way.
+
+### 11.3 The completed `first` tree ladder, fold 2, `S1_monthly`, against the measured floor 0.000804
+
+| arm | rank | log loss | gain vs ref | floors | overall gap | **weeks 0-3** (cell) | wk4-7 | wk8+ | non-conf | slope | gates | beats ref beyond floor |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| `G0` reference (seed 0) | 0 | 1.515428 | 0.0 | -- | **0.980** | 3.832 | **1.369** | 0.939 | 2.492 | 0.9473 | PASS | -- |
+| `G0` floor cell (seed 1) | 0 | 1.515541 | -0.000113 | -0.14 | 0.977 | 3.704 | 2.062 | 0.890 | 2.625 | 0.9485 | PASS | no (it is the floor) |
+| `G1` shrink to league mean | 1 | 1.515519 | -0.000091 | -0.11 | 1.456 | **2.766 (+1.066)** | 2.692 | 1.141 | 2.351 (+0.141) | **0.9745** | PASS | YES (segment only) |
+| `G4` reliability counters | 1 | 1.515626 | -0.000198 | -0.25 | 1.108 | 3.467 (+0.365) | 1.410 | 0.868 | 2.430 (+0.062) | 0.9537 | PASS | YES (segment only) |
+| `G2` shrink to prior season | 2 | 1.514837 | +0.000591 | +0.74 | 1.318 | 3.359 (+0.473) | 1.956 | 0.902 | 2.500 (-0.008) | 0.9156 | PASS | YES (segment only) |
+| `G3` two-level EB | 3 | **1.514615** | **+0.000813** | **+1.01** | 1.362 | 3.371 (+0.461) | 2.323 | **0.833** | **2.315 (+0.177)** | 0.9530 | PASS | **YES (log loss AND segment)** |
+
+`G3` on `cont` (fold 2, cascade): log loss **1.498677**, the best of that population's ladder too;
+weeks-0-3 2.422, non-conference 2.175, slope 0.8425, both gates PASS.
+
+**`G3` is the first arm in four rounds to beat the reference on the PRIMARY METRIC beyond the
+floor** -- and it beats it by 1.01 floors, which is to say by one hundredth of one floor more than
+nothing. That is a real crossing under the pre-registered rule and it is a marginal one; it is
+reported as both. `G3` also takes the best non-conference gap and the best week-8+ gap in the round,
+and its quintile slope (0.9530) improves on the reference (0.9473). Its cost is weeks 4-7: 2.323
+against the seed-0 reference's 1.369 (+0.954) but against the seed-1 reference's 2.062 (+0.261,
+inside the 0.69 pp bucket spread the floor cell just measured).
+
+### 11.4 The verdict, re-stated with the measured floor -- THE WINNER CHANGES, and it changes because of `G3`, not because of the floor
+
+Run through `decide_v4` unmodified:
+
+* Winners (arms that beat the reference beyond the floor on log loss OR by >0.25 pp on either
+  decision cell, pass both gates, and give back no more than 0.25 pp on the other segment):
+  **`G1`, `G2`, `G3`, `G4`** -- all four.
+* Best beater by log loss: **`G3`, 1.514615**. Eligibility band = best + floor = **1.515419**.
+* `G1` (1.515519) and `G4` (1.515626) now fall **outside** that band and lose eligibility. In
+  round 4 they were eligible only because no arm had pulled the band down; `G3` pulls it down by
+  0.000222.
+* Eligible: `G2` (rank 2) and `G3` (rank 3). Simplest wins. **Winner: `G2`.**
+
+**`cont`'s feature ladder independently selects `G2` as well**, by the same mechanism (its best
+beater is `G3` at 1.498677). Two populations, one winner, no tie-break invoked.
+
+The scheme ladder is unchanged and still holds only the reference and its floor cell: `A1`
+(`S1_conf_aligned`) and `A2` (`S1_weekly`) remain **NOT RUN**, so **Decision 9c is still unresolved
+for this sub-model** and nothing here amends Decision 9.
+
+**Does any arm dominate the reference on every cell? No -- not one.** `G3` loses the overall gated
+gap (1.362 vs 0.980) and weeks 4-7. `G2` loses non-conference (-0.008), the overall gap, weeks 4-7,
+and its quintile slope (0.9156) is the round's worst and is further from 1.0 than the reference's.
+`G1` loses the overall gap, weeks 4-7 and week 8+. `G4` loses log loss and the overall gap, and
+fails `cont` calibration (2.010 pp). The round-4 finding stands: **this is a segment result, and
+every arm buys its segment somewhere.**
+
+### 11.5 What is shippable, and whose call it is
+
+**Under the pre-registered decision rule of 8.5, read against the measured floor, the shippable arm
+for `first` is `G2`** -- the same arm `cont` selects, passing both gates on both populations. Section
+9.11's recommendation of `G1` is **SUPERSEDED**: `G1` was the winner only while the eligibility band
+sat above it, and the band moved when `G3` landed. Section 9.11's separate multi-level argument for
+`G4` is also superseded on eligibility, and `G4`'s `cont` calibration failure (2.010 pp) is
+unchanged.
+
+Three things the PM should weigh against the rule's answer, stated as evidence and not as an
+overrule:
+
+1. `G2` wins by the tie-break, not by dominating. On the primary metric `G3` is better by 0.000222
+   (0.28 floors) and on non-conference `G3` is better by 0.185 pp; `G2`'s only cell-level win over
+   `G3` is the overall gated gap (1.318 vs 1.362, 0.04 pp).
+2. `G2` carries the round's worst responsiveness slope, 0.9156 against the reference's 0.9473 -- a
+   matchup-responsiveness regression that passes the gate but moves the wrong way, which the
+   standing matchup-specific rule says to look at explicitly.
+3. `G3` is the only arm that beats the reference on the primary metric at all, and the only arm no
+   population has rejected on any gate.
+
+**The ship is the PM's call, not this worker's.** Nothing here changes a served default, and no arm
+is adopted by this section. Status recorded in `docs/models/change_ledger.md` in the same commit.
+
+### 11.6 Cells still NOT RUN after round 4b
+
+| cell | population | arm | fold | features | scheme | status |
+|---|---|---|---|---|---|---|
+| `A1` | first | lgbm | F2 | `G0` | `S1_conf_aligned` | NOT RUN (round 4 stage 7) |
+| `A2` | first | lgbm | F2 | `G0` | `S1_weekly` | NOT RUN (round 4 stage 8) |
+| stage 9 | first | lgbm | **F1** | winner | `S1_monthly` | NOT RUN -- no fold-1 confirmation exists for ANY tree shrinkage arm |
+
+Seeds 2-5 of the noise floor are also not run; the floor is 2 seeds and PARTIAL.
