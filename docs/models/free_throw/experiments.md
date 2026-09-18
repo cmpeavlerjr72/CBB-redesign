@@ -379,3 +379,195 @@ rate is READ from `engine_rules_from_data` / fitted on training folds; an arm wh
 rate is chosen so that 2025 FTA/FGA lands on 0.32955 is banned and is not on the
 list. Technical attempts stay excluded from the FT-2 training universe. The
 2025-26 season stays sealed.
+
+---
+
+## 9.9 Amendment (PM conditions, written by the free-throw-technicals worker
+before any modelling, 2026-09-18): measurement confirmation, per-possession
+re-expression, two added arms, possession-retention rule, extra evidence cuts
+
+The PM approved section 9 as written subject to five conditions. This
+amendment satisfies each in turn, append-only; nothing in sections 9.1-9.8 is
+edited or retracted.
+
+### 9.9.1 Measurement confirmation (condition a)
+
+**Identification.** Both feeds carry a single, flat event category for a
+technical foul and nothing finer: CBBD's `playType` is literally `"Technical
+Foul"` (`src/cbb_sim/pbp/events.py`, `FAM_TECHNICAL`); hoopR's `type_text` is
+also exactly `"Technical Foul"` (1,888 of 2,190,101 2025 pbp rows), confirmed
+by a direct value-count on `data/raw/hoopr/pbp/play_by_play_2025.parquet` —
+searching that column for `Flagrant`/`Intentional`/`Administrative`/
+`Unsport`/`Bench`/`Coach`/`Delay` returns zero rows, extending
+`ft_trip_reconciliation_2026-09-10.md`'s existing CBBD-side finding (0 of
+462,118 2025 rows contain "flagrant"/"violation" in `playText`) to hoopR: the
+flagrant / intentional / administrative / unsporting distinction the PM asked
+for **is not observable in either feed, at all**. One coarser distinction IS
+recoverable from hoopR's free text and is reported as the closest available
+proxy: `"Technical Foul on <Team Name>."` (a bench/coaching-staff technical,
+no athlete id attached) versus `"Technical Foul on <Player Name>."` (an
+individual technical). This is not flagrant/intentional/administrative/
+unsporting, and no arm below conditions on it (the pre-registered candidates
+do not, and this round does not add one to the list post hoc).
+
+**Grading is against the verified box, and the box does include technicals.**
+Already established and re-cited rather than re-derived:
+`ft_trip_reconciliation_2026-09-10.md` sections 1-2 show netting technical FTA
+out of the CBBD event layer's `fta` explains 94.3% of all disagreeing
+team-games EXACTLY (to the attempt) and 96-109% of the season aggregate
+`box_fta - ev_fta` gap in every season 2022-2025 (1,805/1,654 in 2022,
+2,439/2,487 in 2023, 2,053/2,059 in 2024, 1,961/2,044 in 2025). This is the
+box-vs-pbp disagreement the PM asked to have quantified, and it is the same
+number section 9's opening paragraph already cites as the -0.282 pp channel.
+
+**New cross-source check (not previously run): does CBBD's own technical-trip
+count understate the true incidence?** The candidate arms below are trained
+on `trips_v1_era.parquet`'s `foul_class == "technical"` count, which comes
+from CBBD's pbp through `possessions.py`. hoopR's independently-collected pbp
+carries its own technical-foul events and lets that count be cross-checked
+without touching a box total. Two things have to be netted out first: (1)
+**offsetting simultaneous technicals** (one assessed on each team at the same
+game clock) are a real NCAA out — no free throws are shot — and are not a
+missed trip; (2) a technical is identified as a `(game_id, period,
+clock)` "moment" so that a moment with a technical on exactly one team is
+the population that MUST produce a trip.
+
+| season | hoopR technical events | hoopR offsetting moments (both teams, same clock — no FTs) | hoopR single-team moments (should produce a trip) | CBBD-derived technical trips (`trips_v1_era`) | ratio CBBD / hoopR |
+|---|---:|---:|---:|---:|---:|
+| 2022 | 1,942 | 269 | 1,326 | 902 | 0.680 |
+| 2023 | 2,742 | 283 | 2,115 | 1,355 | 0.641 |
+| 2024 | 2,106 | 322 | 1,391 | 954 | 0.686 |
+| 2025 | 1,888 | 301 | 1,211 | 879 | 0.726 |
+| 2026 (descriptive only, sealed) | 2,288 | 385 | 1,452 | 1,045 | 0.720 |
+
+**Finding: CBBD's own technical-trip table — the training target for every
+arm below — captures only 64-73% of the technical incidents hoopR's pbp
+implies should have produced a free-throw trip, rising monotonically each
+season (0.641 -> 0.726) but never closing.** This is a genuine, one-directional
+measurement gap, distinct from the already-known exclusion channel: even a
+perfectly-calibrated arm fit on CBBD data is fit against an UNDER-COUNTED
+target, so it should be expected to close less than the full -0.282 pp
+technical channel even at its own internal calibration optimum. This is
+**reported as a ceiling on what this round can close, not corrected by
+re-scaling the rate** — CLAUDE.md bans exactly that kind of after-the-fact
+adjustment (section 9.8), and switching the training source to hoopR pbp
+without a pre-registered comparison would be an unregistered arm change, not
+this round's job. Flagged for a future free-throw round, not fixed here.
+
+**Trip-length era check** (same method as section 3.1's bonus-threshold
+check, applied to `foul_class == "technical"`):
+
+| season | 1 attempt | 2 attempts | 3 | 4 | 5 | 6 |
+|---|---:|---:|---:|---:|---:|---:|
+| 2022 | 202 | 588 | 28 | 79 | 4 | 1 |
+| 2023 | 522 | 690 | 38 | 103 | 1 | 1 |
+| 2024 | 148 | 642 | 44 | 113 | 6 | 1 |
+| 2025 | 73 | 652 | 39 | 111 | 3 | 1 |
+| 2026 | 84 | 784 | 55 | 118 | 4 | 0 |
+
+2 attempts is the modal outcome every season (54-66% share), consistent with
+one stable NCAA rule (2 shots) across the whole window: **no era boundary
+detected**, same negative result as section 3.1's bonus-threshold check, so
+no new GameState era flag is created (`FT.TRIP_RULES["technical"]` already
+carries "1 or 2 by infraction" and needs no change). 2023's outlier
+1-attempt share (522, against 73-202 every other season) coincides with
+2023's already-documented worse general feed completeness elsewhere in this
+project and is flagged as a season-specific DATA-QUALITY wrinkle, not a rule
+change — it is not treated as signal by any arm below.
+
+**Possession is retained — confirmed by reading the engine code, not
+assumed.** `src/cbb_sim/pbp/possessions.py::_handle_technical` /
+`_handle_ft_trip` (read-only, no edit): a technical trip increments
+`n_tech_trips` and its points go into `tech_points_off`/`tech_points_def`, but
+the routine never opens, closes, or advances a `_Chance` object — the
+currently open possession (if any) is untouched and continues exactly as it
+was, and if no possession is open the points are buffered in `pending_tech`
+until one opens. **Consequence for every arm below and for any future
+engine wiring: a simulated technical trip must not consume one of the
+engine's simulated possession/chance slots and must not change which team is
+next to inbound.** This is the mechanism, stated plainly, behind "possession
+is retained": the ball does not change hands and no extra chance is created.
+
+**WHO shoots — already pre-registered, data supports testing it.**
+`trips_v1_era.parquet` carries `shooter_id` on technical rows too (verified:
+non-null on the same basis as every other trip), so X1's "as-of attempt-share"
+shooter rule and X3's "best as-of shooter" rule are both directly testable
+against the actual chosen shooter's own as-of FT rate. See 9.9.4.
+
+### 9.9.2 Rates per possession, not counts (condition b, re-expression of X1/X2)
+
+`engine_rules_from_data`'s `technical_trip_rate_per_team_game` (0.098052) is a
+PER-GAME constant and is the wrong shape for the standing modelling rule
+("Rates per possession, not counts", `CLAUDE.md`) — a fixed count per game
+does not scale with a simulated game's own realised pace. X1 and X2 are
+therefore RE-EXPRESSED, not replaced: the denominator becomes the number of
+team-chances exposed, read from `data/processed/possessions_v2/chances_{season}.parquet`
+(one row per offensive chance; each chance exposes BOTH teams once — the
+offence to "did we just draw a technical" and the defence to the same
+question from their own side — so exposure per game is 2x the chance count).
+`chances.start_clock`, `chances.period` and `chances.start_score_diff` are
+used for any state conditioning below because they are named and built as
+PRE-OUTCOME quantities (the state AT THE START of the chance) — the L27
+caution about a possessions-table `score_diff`/`duration_s` being post-outcome
+on most rows applies to a different, unprefixed column in a different table;
+this table's field is explicitly `start_score_diff`/`start_clock` and no
+end-of-chance field is used anywhere in this round.
+
+### 9.9.3 Two arms added (condition b, items iii and iv)
+
+Section 9.1's `X2` conditions on PRE-GAME static covariates only (season,
+conference-game flag, neutral site) — it does not cover the PM's item (iii)
+("period/minute, score margin bucket"), which is an IN-GAME state, not a
+pre-game one. Section 9.1 also has no arm at all matching item (iv) ("team/coach
+as-of rate shrunk toward league"). Both are added here, append-only; `X0-X3`
+are unchanged and still run exactly as pre-registered.
+
+| arm | what it is |
+|---|---|
+| `X4` | rate conditioned on IN-GAME state: `game_phase` (`H1_early` 0-9 min, `H1_late` 10-19, `H2_early` 20-29, `H2_late_OT` 30-40+OT, from `chances.period`/`start_clock`), `margin_bucket` (`trailing` <= -5, `close` -4..4, `leading` >= 5, from `start_score_diff`, the ACTOR's own margin — the team being asked "do you commit a technical here"), and `site` (home / away / neutral) — 4 x 3 x 3 = 36 cells, each a trips-per-team-chance rate, shrunk toward `X1`'s pooled rate (Poisson-conjugate, pseudo-exposure `k` chosen the same way `eb_shrink` chooses its strength elsewhere: grid search minimising held-out Poisson deviance on a chronological split of the training fold itself) |
+| `X5` | team-level as-of technical-trip rate: each team's own trips-per-team-chance rate on games STRICTLY BEFORE the one being scored, shrunk toward `X1`'s pooled league rate (empirical-Bayes, strength fitted the same way), expressed relative to the SNAPSHOT'S league mean per the standing "every rating feature relative to its own snapshot's league mean" rule, `site` (home/away/neutral) carried alongside as a feature since the standing rule makes it first-class in every scoring-stage model |
+
+`X2`, `X4` and `X5` all carry `site` in their feature list, satisfying
+"home/away/neutral in every feature list" for every arm that has one; `X0`,
+`X1` and `X3` are rate CONSTANTS with no conditioning features by
+construction (the same exemption a pure floor/reference arm gets everywhere
+else in this project) and are not retrofitted with a feature they were never
+registered to carry.
+
+**Decision-rule ordering extended** (section 9.7 rule 2's tie-break order),
+by parameter count, least to most: `X0 < X1 < X3 < X2 < X4 < X5`. `X3` ties
+`X1`'s parameter count (it changes the shooter rule, not the rate) and is
+kept after `X1` per the original text's own ordering. Everything else in
+section 9.7 (eligibility beyond the measured band, no-regression clauses,
+the 23%-of-the-gap caveat, ties to the simpler model) applies unchanged to
+`X4` and `X5`.
+
+A team/coach-level arm was pre-registered as "team/coach"; this round fits
+the TEAM identity only. A coach identity crosswalk (`data/raw/coaches/`) is
+on disk but wiring team-to-coach-to-season reliably is out of this round's
+scope and is not attempted rather than attempted informally — recorded as a
+scope limit, not a silent gap.
+
+### 9.9.4 Extra evidence cuts (conditions c and d)
+
+1. **Period/minute is added as its own cut** to section 9.5's list (it was
+   implicit in `X4`'s conditioning set but not listed as a reported
+   breakdown): report the technical-trip rate by `game_phase` (as defined in
+   9.9.3) on both the actual and every arm's prediction, test fold only.
+2. **Power calculation for the team-level quintile cut (section 9.5 item 3),
+   stated explicitly rather than left as a label.** At the league technical
+   rate (~0.08-0.12 trips/team-game) and ~72 teams per quintile-season (the
+   same grouping G4's OREB%/FT-rate quintile cuts used), expected technical
+   trips per quintile-season are on the order of 72 games/team x 0.1
+   trips/team-game / — computed exactly at run time from each quintile's own
+   team-game count and the ACTUAL test-season rate, with the Poisson standard
+   error stated alongside every quintile's observed rate. A quintile slope is
+   only read as a refutation of responsiveness when the between-quintile gap
+   exceeds several such standard errors; otherwise it is labelled
+   UNDERPOWERED and reported, never presented as a flat-and-therefore-no-signal
+   finding.
+
+Nothing in this amendment changes section 9.3 (folds), 9.4 (primary metric),
+9.6 (noise floor form), 9.7 (decision rule, beyond the ordering extension
+above) or 9.8 (prohibitions) — all remain exactly as PM-approved and are
+carried into the run below unchanged.
