@@ -2510,3 +2510,201 @@ would use the 192 vCPUs regardless of LightGBM's own thread scaling and is the m
 
 Artifacts: none promoted (both containers' checkpoints held only the auto-run stage-0 entry).
 Session record: `docs/ops/aws_launch_chain.md` section 16.
+
+
+---
+
+## 13. Run R1 -- round 5, the `G2` / `G3` paired closed loop against the served model, 25 seeds (2026-09-18)
+
+Pre-registration section 12 committed **d57d351** BEFORE the engine modes
+`round4b_G2` / `round4b_G3` existed and before any `po4b_*` directory existed;
+wiring, builder, runner, grader and tests **6215ac8**. Sections 1 through 12
+are STATIC and are NOT edited. `experiments.md` is append-only. Evidence,
+multi-level: `docs/tests/possession_outcome_closed_loop_2026-09-18.md`.
+
+**VERDICT, STATED FIRST. `G2` IS NOT PUT FORWARD FOR SERVING.** Both halves of
+section 12.5's decision rule fail, and neither failure is marginal: condition 1
+fails on the G5 dispersion lines at **1.5 to 22.2 measured floors** with a
+PASS -> FAIL flip on the margin SD ratio, and condition 2 -- the PM's
+responsiveness line -- fails at **5.17 floors** on the headline slope and
+**15.95 floors** on the `off_tov_c` driver, under BOTH readings of the line.
+`G3`, the comparator, fails condition 1 on the same dispersion lines. **No
+default was changed, `docs/models/change_ledger.md` was not edited, and the
+ship decision is the PM's.**
+
+### 13.1 The precondition -- the served path, and the one honest caveat
+
+Run before any arm artifact was fitted. A 60-game x 5-seed smoke on the
+unchanged default (`results/engine_v0/smoke60x5_po4b_wiring`) reproduces
+`results/engine_v0/smoke60x5_default_v5b` **exactly on every simulated value**:
+300 game rows and 4,882 player rows compare EQUAL column for column, and all
+nine `ENGINE_*` switches match. `scripts/digest_engine_run.py --compare`
+nonetheless reports a sha mismatch, and this round reports it rather than
+waiving it: the diff is **exactly one field, `meta.adapter_flags`, on exactly
+three of its 248 leaves** -- `provisional_clock` True -> False,
+`sources.clock.adopted` False -> True, and `sources.clock.note` -- all three
+the CLOCK lane's adoption strings from that lane's own UNCOMMITTED edits
+present in this shared checkout, none in the possession-outcome path, none a
+computed value. **The property the precondition exists to establish holds, and
+holds across a week and two other lanes' commits; the literal sha equality
+section 12.2 asked for does not, for a reason outside this lane.** Both are on
+the record. `tests/test_event_adapter_round4b.py` 10 passed,
+`tests/test_engine.py` 20 passed.
+
+The four builder preconditions of 12.1 all passed for both arms: all 16
+`TEAM_COLS` identical to `round2/design.parquet` at **max abs diff 0.0** over
+10,890 team-games (the arms differ ONLY by the shrinkage); team-block coverage
+530/529/1 identical to the reference's; six S1 refit dates and the per-game
+segment array identical; per-refit training row counts and `max_train_date`
+identical, with the per-GAME leak assertion passing.
+
+### 13.2 The runs
+
+500 games of the standing subset, 25 paired seeds, players kept, 8 workers, the
+SERVED stack pinned on all four and asserted against `adapters.py`'s own
+defaults at startup. `po4b_R_s25` 412 s, `po4b_G2_s25` 563 s, `po4b_G3_s25`
+635 s, `po4b_R_s25_floor` (seeds 1000-1024) 603 s. The clock lane's
+`clk5b_B1_s25` was NOT reused as the reference and 12.3 said so before the run;
+every floor below is measured here, on this stack, in this round.
+
+### 13.3 Condition 1 -- the gates, priced in floors measured in this round
+
+`scripts/eval_gates.py` blind over all four directories,
+`scripts/diag_pair_gate_reports.py` for the A/B/N pairing, both UNEDITED.
+`floor = |N - R|`; a line regresses when it moves AWAY from its own target by
+more than one floor, or flips PASS -> FAIL.
+
+| gate | line | target | R | floor | `G2` | floors | `G3` | floors |
+|---|---|---:|---:|---:|---:|---:|---:|---:|
+| **G5** | **total SD ratio** | 1.000 | **0.8355** | **0.0009** | **0.8155** | **22.2 AWAY** | **0.8156** | **22.1 AWAY** |
+| **G5** | **total SD (points)** | 18.96 | **15.8421** | **0.0119** | **15.6209** | **18.6 AWAY** | **15.5804** | **22.0 AWAY** |
+| **G5** | **margin SD (points)** | 12.60 | **12.2264** | **0.0506** | **12.0942** | **2.61 AWAY, PASS->FAIL** | **12.0653** | **3.18 AWAY** |
+| **G5** | **margin SD ratio** | 1.000 | **0.9695** | **0.0135** | **0.9495** | **1.48 AWAY, PASS->FAIL** | 0.9560 | 1.00 away |
+| G5 | home/away corr | 0.2374 | 0.1063 | 0.0115 | 0.0966 | 0.84 away | **0.0925** | **1.20 AWAY** |
+| G3 | three_pa_share pooled | 0.3906 | 0.389413 | 0.0000032 | 0.388942 | 147 AWAY (0.05 pp) | 0.389063 | 109 AWAY (0.03 pp) |
+| G3 | rim_share pooled | 0.3733 | 0.372052 | 0.000644 | 0.370572 | **2.30 AWAY** | 0.371367 | 1.06 away |
+| G4 | efg_pct pooled | 0.5086 | 0.4990 | 0.0006 | 0.4986 | 0.67 away, **PASS->FAIL** | 0.4988 | 0.33 away |
+| G9 | total bias | 0 | -0.9624 | 0.3534 | -1.0857 | 0.35 away, **PASS->FAIL** | -0.9992 | 0.10 away |
+| G1 | possessions/game SD | 5.191 | 5.609 | 0.057 | 5.539 | 1.23 **toward** | 5.547 | 1.09 **toward** |
+| G4 | oreb_pct pooled | 0.2984 | 0.2836 | 0.0002 | 0.2840 | 2.00 **toward** | 0.2840 | 2.00 **toward** |
+| G4 | tov_pct pooled | 0.1739 | 0.1762 | 0.0004 | 0.1759 | 0.75 toward | 0.1754 | 2.00 **toward** |
+| G8 | rotation minutes SD ratio | 1.000 | 1.2304 | 0.0003 | 1.2296 | 2.67 **toward** | 1.2287 | 5.67 **toward** |
+| G9 | margin bias | 0 | +0.1117 | 0.2209 | +0.0194 | 0.42 toward | +0.0219 | 0.41 toward |
+
+Every other scored line moves under one floor. Lines the reference itself
+reports NEEDS-INSTRUMENTATION or UNDERPOWERED are reported and NOT scored, per
+12.4: G1 by month (0 powered months on 500 games), G2's nine PPP terciles
+(2/9 powered, identical in all four runs), the four per-team G3/G4 breakdowns
+(0 powered teams), G7's half-share, G8's top-1 FGA share, G9's three
+by-breakdown counts and G6's neutral-site cell. **Gate-level statuses are
+identical in all four runs** (G1 F, G2 F, G3 NI, G4 F, G5 F, G6 P, G7 F, G8 F,
+G9 F): no arm changes an overall verdict, which is exactly why the round is
+decided on floors.
+
+**Condition 1 turns on one thing, and it is mechanical.** Both arms compress
+between-game dispersion, and the engine's dispersion is already its worst
+defect: the total SD ratio is 0.8355 against a target of 1.0 and both arms push
+it to 0.816. Shrinking every team's style profile toward a prior makes teams
+less different from one another, and a simulator fed less distinct teams
+produces less distinct games. **The arm does exactly what it was designed to
+do, and that is the wrong direction for the gate the engine is furthest from.**
+
+### 13.4 Condition 2 -- the PM's responsiveness line
+
+998 team-games, bucketed into five quintiles of the offence team's own as-of
+driver value taken from the SERVED round-2 block, so all four runs are cut on
+identical rows (quintile n 197-200, all powered). No driver is exempt.
+
+| driver | R | floor | `G2` | signed fall | floors | `G3` | signed fall | floors |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|
+| `off_3pa_c` | 1.0307 | 0.0148 | 1.0475 | -0.0168 | rises | 1.0717 | -0.0410 | rises |
+| `off_rim_c` | **0.8881** | **0.0065** | **0.8545** | **+0.0336** | **5.17 FAIL** | 0.9044 | -0.0163 | rises |
+| `off_tov_c` | **1.0835** | **0.0115** | **0.9001** | **+0.1834** | **15.95 FAIL** | **0.9428** | **+0.1407** | **12.23 FAIL** |
+| **headline** | **0.8881** | **0.0065** | **0.8545** | **+0.0336** | **5.17 FAIL** | 0.9044 | -0.0163 | rises |
+
+**`G2` fails under BOTH readings**, so the pre-registered choice of the signed
+fall as the scored reading does not carry the verdict: on `off_rim_c`
+`|slope - 1|` worsens 0.1119 -> 0.1455, and on `off_tov_c` 0.0835 -> 0.0999.
+The rim quintile detail shows where it goes: the rim-heaviest quintile drops
+from 35.21 pp to 34.88 pp against a realised 35.84 pp -- **`G2` flattens the top
+of the distribution**, which is section 11.5's point 2 (offline slope 0.9156 vs
+the reference's 0.9473) reproducing closed-loop at 5.17 measured floors.
+
+**The one place the two readings disagree is `G3`'s `off_tov_c`**, and it is
+reported before the verdict rather than chosen after it: 1.0835 -> 0.9428 is a
+12.23-floor signed fall (scored: FAIL) and a 2.3-floor improvement in
+`|slope - 1|`. The reference OVER-slopes that driver, which the one-sided
+wording of the line does not contemplate. Nothing turns on it -- `G3` is a
+comparator and is not put forward under any outcome -- but the PM should note
+that the line as written fits a slope below 1.0 and not one above it.
+
+### 13.5 The segments, and what this round could NOT measure
+
+| cell | n team-games | status | `G2` - R points bias | floor-run - R |
+|---|---:|---|---:|---:|
+| weeks 0-3 | 220 | **UNDERPOWERED** | +0.009 | -0.533 |
+| weeks 4-7 | 156 | **UNDERPOWERED** | -0.122 | +0.076 |
+| weeks 8+ | 622 | scored | -0.071 | -0.119 |
+| conference | 640 | scored | -0.067 | -0.121 |
+| non-conference | 358 | scored | -0.052 | -0.284 |
+| ALL | 998 | scored | -0.062 | -0.180 |
+
+**Every arm-vs-reference movement in this table is smaller than the seed-offset
+movement in the same cell, so the segment table says nothing either way.** And
+the two cells round 4 was actually about are UNDERPOWERED at 220 and 156
+team-games, exactly as 12.4 predicted in advance. **This round can neither
+confirm nor refute the early-season improvement `G2` was selected for.** The
+standing 500-game subset is a stride sample of the whole season, not an
+early-season sample; a round that wants to price that cell closed-loop needs a
+week-stratified subset, and that is a new pre-registration, not a re-read of
+this one.
+
+### 13.6 Multi-level evidence
+
+* **Per game.** Paired on (game, seed): the per-game total moves by SD 2.29
+  points under `G2` and 2.32 under `G3`, against **4.80** for the seed-offset
+  reference run. An arm perturbs an individual game about half as much as a
+  seed change does, so the arms' effect is a systematic compression, not a
+  re-ordering of which games are high or low.
+* **Per team.** 347 teams, **157 UNDERPOWERED at under 3 subset games and
+  excluded**. On the 190 powered teams the mean absolute per-team points bias
+  moves 5.988 -> **6.254** (`G2`) and **6.223** (`G3`) against a floor of
+  0.037: **7.1 and 6.3 floors WORSE**. Against the quantity the arm
+  manipulates, `corr(shrinkage, |per-team bias change|)` is +0.107 / +0.164
+  against a floor correlation of +0.013 / +0.026 -- the arm reaches the teams it
+  is meant to reach, weakly, and what it does when it gets there is not
+  systematically in either direction (the by-quintile means are not monotone).
+* **Per possession type.** The engine's standing mix errors (too few threes,
+  too many two-point jumpers, too few FT trips, too few offensive rebounds) are
+  unchanged by either arm except that `G2` pushes the jump-2 share 0.0018
+  further from the actual against a 0.0008 floor -- the same direction as the
+  pooled rim-share and three-point-share regressions.
+* **Player level NOT read**, as 12.4 fixed: no arm touches the player layer and
+  both scored G8 lines move toward their targets.
+
+### 13.7 What the round establishes beyond the verdict
+
+The offline selection and the closed loop disagree about `G2`, and the
+disagreement is explainable rather than mysterious. `G2` buys an offline
+segment by making every team's style profile more like the league's; the
+engine's largest standing defect is that its games are already not different
+enough from one another. **An early-season shrinkage arm that does not also
+preserve between-team dispersion cannot ship into this engine.** That is a
+constraint on the next round's arms, not a property of `G2` alone: the
+reliability problem round 4 identified is real and unaddressed, but it needs a
+form that shrinks a team's ESTIMATE without shrinking the SPREAD of estimates
+-- a variance-preserving or hierarchical-with-rescaling shrinkage rather than a
+plain posterior mean. `G3`'s partial rescue of two responsiveness slopes is the
+first evidence that the two-level form moves in that direction, and `G3`'s
+identical dispersion failure is evidence that two levels alone are not enough.
+
+### 13.8 What round 5 did not do
+
+`A1` and `A2` are still NOT RUN and **Decision 9c is still unresolved for this
+sub-model** (11.6 unchanged). No fold-1 confirmation exists for any tree
+shrinkage arm. Nothing was refit on the bake-off's frame, no round-4 or
+round-4b artifact was rewritten, the sealed 2025-26 season was not touched, and
+no market line was read. `ENGINE_EVENT=round4b_G2` and `round4b_G3` stay
+selectable, default-off, for reproduction. **The served default stays
+`round2_s1`; the PM makes the ship decision from the table above and records it
+in `docs/models/change_ledger.md`.**

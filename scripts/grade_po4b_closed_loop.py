@@ -42,11 +42,12 @@ RESULTS = Path("results/engine_v0")
 ENGINE_DIR = Path("data/processed/models/engine")
 #: Decision 8's own driver/class pairs, imported rather than restated.
 DRIVERS = PO.RESPONSIVENESS_SPECS
-#: driver -> (sim numerator column stem, actual numerator column, actual source)
+#: driver -> (sim numerator column, actual numerator column AS RENAMED by
+#: `actual_team_long`, which source the actual comes from)
 DRIVER_STATS = {
-    "off_3pa_c":  ("fga3",      "tpa",        "box"),
+    "off_3pa_c":  ("fga3",      "a_tpa",      "box"),
     "off_rim_c":  ("fga2_rim",  "ev_fga_rim", "event"),
-    "off_tov_c":  ("tov",       "tov",        "box"),
+    "off_tov_c":  ("tov",       "a_tov",      "box"),
 }
 MIN_CELL_N = 300          # docs/gates.yaml min_cell_n
 MIN_SPAN_PP = 2.0         # Decision 8's narrow-span exemption
