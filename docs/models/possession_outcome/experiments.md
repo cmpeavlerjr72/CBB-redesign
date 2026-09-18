@@ -1987,3 +1987,244 @@ is adopted by this section. Status recorded in `docs/models/change_ledger.md` in
 | stage 9 | first | lgbm | **F1** | winner | `S1_monthly` | NOT RUN -- no fold-1 confirmation exists for ANY tree shrinkage arm |
 
 Seeds 2-5 of the noise floor are also not run; the floor is 2 seeds and PARTIAL.
+
+
+---
+
+## 12. Round 5 pre-registration -- the SHIP GATE: `G2` and `G3` WIRED, paired closed loop against the served possession-outcome model (2026-09-18)
+
+Appended VERBATIM **BEFORE** the engine modes `round4b_G2` and `round4b_G3` existed, before any
+`po4b_*` results directory existed, before any engine artifact for either arm was fitted, and before
+any closed-loop number was read. Sections 1 through 11 are STATIC and are NOT edited.
+`experiments.md` is append-only.
+
+**PREMISE.** Section 11.4 ran the pre-registered decision rule of 8.5 against the round-4b measured
+floor and selected **`G2`** (shrink the early-season as-of style rate toward the SAME TEAM's
+prior-season centred rate) as the OFFLINE winner on both populations -- `first` by the eligibility
+band plus the simplicity tie-break, `cont` independently. **`G3`** (two-level empirical Bayes) is the
+only arm in four rounds to beat the reference on the PRIMARY metric beyond the floor (1.01 floors)
+and holds the round's best non-conference and week-8+ gaps. Section 11.5 recorded the ship as the
+PM's call and named three things to weigh, one of which is the standing matchup-specific rule:
+**`G2` carries the round's worst responsiveness slope, 0.9156 against the reference's 0.9473.**
+
+The CLAUDE.md standing rule is that **an offline winner ships only after a paired-seed sim run shows
+no gate regressed.** That run has never been done for any possession-outcome arm. Round 5 is that
+run and nothing else. **It changes no default under any outcome; the PM switches the served arm or
+does not.**
+
+### 12.1 The arms, and what "wired" means here
+
+| arm | `ENGINE_EVENT` value | what it is | status |
+|---|---|---|---|
+| **R** | `round2_s1` (the DEFAULT, untouched) | the served possession-outcome model: round-2 winners `lgbm`+S1 on `first`, `cascade`+S1 on `cont`, feature set `C_plus_state`, raw-centred style columns | REFERENCE |
+| **G2** | `round4b_G2` | identical in every respect except that the eight style columns are `w*raw_c + (1-w)*prior_c` (section 8.1 arm `G2`) | ARM UNDER TEST, DEFAULT-OFF |
+| **G3** | `round4b_G3` | identical except the eight style columns are `w*raw_c + (1-w)*w2*prior_c` (section 8.1 arm `G3`) | COMPARATOR, DEFAULT-OFF |
+
+`adapters.py` DEFAULTS ARE NOT TOUCHED. `ENGINE_EVENT` stays `round2_s1`; the only change in that
+file is widening the `EventAdapter.load` dispatch so a `round4b_*` mode resolves its artifact
+directory the same way `round2_s1` already does. Every other sub-model default is untouched.
+
+**The shrunk columns are READ, never re-derived.** `off_{r}_g2` / `opp_def_{r}_g2` (and the `_g3`
+pair) come out of `data/processed/models/possession_outcome/round4/design_v4.parquet` exactly as
+round 4b's grade scored them, under round 3c's standing rule "the fitted object is READ, never
+reimplemented". The fitted `k_r` are not re-estimated in the engine: they are already baked into
+those columns and are recorded in `round4/design_v4.meta.json`.
+
+**The arms differ from the reference ONLY by the shrinkage.** Pre-registered precondition, checked in
+the builder and aborting it on failure: over the 10,890 season-2025 team-games common to
+`round2/design.parquet` and `design_v4.parquet`, the eight NON-style `TEAM_COLS`
+(`off_rating_off_c`, `off_rating_def_c`, `def_rating_off_c`, `def_rating_def_c`, `site_home`,
+`site_away`, `season_idx`, `days_since_start`) and the eight raw style columns themselves must agree
+to **0.0 exactly**. (Confirmed read-only before this pre-registration was written, on all sixteen
+columns: max abs diff 0.000e+00. The builder re-asserts it rather than trusting that check.)
+
+**No booster is persisted by `train_possession_outcome_v4.py`**, exactly as none is by the round-2
+trainer. So the engine refits each arm's OWN spec -- `feature_set_v4(arm, pop)` through
+`cbb_sim.models.possession_outcome.fit_arm`, seed 0, the same `lgbm`/`cascade` choice per population
+round 2 adopted -- on the SAME S1 monthly schedule the served model uses (six refits,
+2024-11-01 .. 2025-04-01), and re-asserts the per-GAME legality property
+(`max_train_date < tipoff`) that `build_engine_event_round2.py::_assert_no_leak` enforces. This is
+`build_engine_event_round2.py`'s procedure applied to a different feature set; it is a new script
+(`scripts/build_engine_event_round4b.py`), and the round-2 builder and its output directory are not
+touched.
+
+**Lookup, not live modelling.** The sim loop makes no per-game or per-possession model call under any
+arm: the adapter assembles one contiguous matrix per (population, monthly refit) over the whole
+active batch and makes exactly one batched call, which is the `round2_s1` path unchanged and is what
+"vectorised, no live model calls" means everywhere in this engine. The team block is a precomputed
+`(G, 2, 16)` array. Thread counts are pinned to 1 in every worker.
+
+### 12.2 The precondition: the served path must stay BIT-IDENTICAL
+
+Run BEFORE any arm artifact is fitted and before any G2 or G3 number is read, exactly as clock round
+5d ran it (section 26.1 of `docs/models/clock/experiments.md`): a 60-game x 5-seed smoke on the
+UNCHANGED engine default, digested by `scripts/digest_engine_run.py --compare` against the digest of
+`results/engine_v0/smoke60x5_default_v5b` -- sha256
+`492300a7fd1e6dc388a3c47b822f61e04da6501720ef762bde0afe7ba15451a1`, the digest the PM's clock
+serving decision (`e3ccce5`) and the two lanes after it were verified on. **A mismatch of any kind
+fails round 5 outright and the round reports a wiring defect, not a possession-outcome result.**
+`pytest tests/test_engine.py` must pass unchanged.
+
+### 12.3 The closed loop
+
+500 games of the standing subset rule (the F2 2025 slate sorted by `game_id` ascending, every 11th
+row, first 500) -- **the same game sample the clock 3c, 4, 5, 5b and 5d closed loops used**, so this
+round's table sits beside theirs. `scripts/run_po4b_closed_loop.py`, a copy of
+`run_clk4_closed_loop.py`'s harness with the varying flag moved from `ENGINE_CLOCK` to
+`ENGINE_EVENT`.
+
+**Pinned sub-models: the SERVED STACK, read from `adapters.py`'s own defaults and written into every
+`run_meta.json`** -- `ENGINE_CLOCK=v5b_glat_pmean` (ADOPTED 2026-09-11), `ENGINE_FG_MAKE=round4_B1`,
+`ENGINE_FG3=decision8`, `ENGINE_REBOUND=s1_weekly`, `ENGINE_FREE_THROW=s1_conf_aligned`,
+`ENGINE_ROTATION=reference`, `ENGINE_ROTATION_SCHEME=s1`, `ENGINE_USAGE=reference`, inputs v2.
+`ENGINE_EVENT` is the ONLY flag that differs between arms.
+
+**DEVIATION FROM THE CLOCK-LANE PRECEDENT, DECLARED HERE BEFORE THE RUN.** Clock 5d reused
+`results/engine_v0/clk5b_B1_s25` as its reference. That run pins
+`ENGINE_FG_MAKE=round3_shooter_S_C_s1`, the *superseded interim* fg_make model; the served default is
+`round4_B1`. Reusing it would price a possession-outcome arm on a stack that is not the served one,
+which is exactly what a ship gate must not do. **The reference is therefore RE-RUN here on the served
+stack rather than reused**, at a cost of one extra run. The clock lane's floors are for the same
+reason NOT carried over: every floor in this round is measured on this stack, in this round.
+
+**Pairing.** All three arms draw from the same RNG families at the same ordinals; no arm introduces a
+family, an ordinal or a draw the others do not make. `(seed, game_id, family)` seeding is unchanged,
+so for a given (game, seed) the three arms consume the SAME uniform stream and differ only in the
+probability vector the event draw is compared against. Trajectories diverge downstream of the first
+differing terminal event, which is inherent to a closed loop over a changed sub-model and is the same
+sense in which rounds 3c, 4, 5, 5b and 5d were paired.
+
+**Seeds.** 25 paired seeds `0..24` on each of the three arms, and a fourth run -- the **noise-floor
+run** -- of the REFERENCE arm on seeds `1000..1024`, spec-identical in every other respect. That
+fourth run is the floor: `|N - R|` on each line is the seed-offset noise band, and `|arm - R|` is the
+movement being judged. Compute cap: **at most 8 engine worker processes at any instant**, other lanes
+share this 20-core machine.
+
+### 12.4 The lines, and how a floor is applied
+
+**Primary: gates G1-G9, no regression.** One grading path, `scripts/eval_gates.py` (UNEDITED) at
+`docs/gates.yaml`'s tolerances, run blind over all four results directories; the arm's identity is
+read from `run_meta.json` and used only to label the row. The four reports are put side by side by
+`scripts/diag_pair_gate_reports.py` (UNEDITED) with `--a` the reference, `--b` the arm and `--noise`
+the floor run, which is the harness's own A/B/N contract. Every headline check of every gate is a
+line; a line whose movement does not exceed its own floor is reported INSIDE FLOOR and is a
+non-finding.
+
+"**Regresses**" means: the line moves AWAY from its gate target (or, where the target is a band, away
+from the centre of the band) by **more than one measured floor**, OR its gate status changes from
+PASS to FAIL. A line whose status is NEEDS-INSTRUMENTATION or UNDERPOWERED in the reference is
+reported and never scored.
+
+**The PM's added line -- responsiveness, and it is a one-sided line.** The standing matchup-specific
+rule, read CLOSED-LOOP rather than offline, by a new grader
+`scripts/grade_po4b_closed_loop.py`. For each of the three Decision-8 drivers in
+`PO.RESPONSIVENESS_SPECS` -- (`off_3pa_c`, FGA_3), (`off_rim_c`, FGA_rim), (`off_tov_c`, TOV) -- the
+1,000 team-games of the 500-game subset are bucketed into **five quintiles of the OFFENCE team's own
+as-of driver value**, taken from the ROUND-2 raw-centred team block, which is **identical in all
+three arms**, so every arm is cut on exactly the same rows. Per quintile: the engine's realised
+per-possession rate (`fga3/poss`, `fga2_rim/poss`, `tov/poss`, averaged over seeds then over
+team-games) and the ACTUAL per-possession rate on the same team-games (`tpa/poss_team` and
+`tov/poss_team` from `reference.load_actual_team_box`; `ev_fga_rim/poss_team` from
+`reference.load_team_shot_truth`, the event layer, because a box score has no rim class).
+
+    slope_ratio(driver) = (sim Q5 - sim Q1) / (actual Q5 - actual Q1)
+
+which is `train_possession_outcome_v3.responsiveness_by`'s span-ratio definition, transported to the
+closed loop. The **headline slope** is the driver whose `slope_ratio` is furthest from 1.0, matching
+`train_possession_outcome_v4.quintile_slope_worst`. A driver whose realised ACTUAL quintile span is
+under 2 pp is EXEMPT under Decision 8 and is reported as exempt, never scored.
+
+> **The line, as the PM set it: the responsiveness slope must not FALL BELOW the reference's by more
+> than the floor** -- per driver and on the headline -- where the floor is `|N - R|` on that same
+> quantity. It is one-sided on purpose. Offline every measured slope sits below 1.0 (reference
+> 0.9473, `G2` 0.9156, `G3` 0.9530), so "falls" and "flattens toward the league mean" are the same
+> movement. **If a closed-loop slope comes out ABOVE 1.0 the two readings stop coinciding**; in that
+> case both readings are reported -- the signed fall, and the change in `|slope - 1|` -- and the
+> round states which one it scored the line on before it states the verdict, and does not choose
+> after seeing the answer: **the scored reading is the signed fall**, fixed here.
+
+**Pre-registered SEGMENT evidence, every cell on every arm, all four runs.** These are EVIDENCE, not
+gates; they are where round 4's whole premise says the arms act, and a regression here is reported
+even though it cannot by itself fail the round.
+
+| cell | definition |
+|---|---|
+| weeks 0-3 | games in calendar weeks 0-3 of the test season, the round-4 decision cell |
+| weeks 4-7 | the cell round 4 found the shrinkage arms pay for |
+| weeks 8+ | the settled season |
+| conference | conference games, by the published schedule's own flag |
+| non-conference | the round-4 second decision cell |
+
+Per cell, per arm: n games, margin MAE, margin bias, total MAE, total bias, possessions/team-game
+mean, PPP, and the three shot-mix rates -- against the actuals on the SAME games, never against a
+season-wide figure. **A cell with fewer than `min_cell_n` = 300 team-games is labelled UNDERPOWERED
+and is never read as signal or as the absence of signal.** On a 500-game subset the week-0-3 and
+week-8+ cells are expected to be thin and the round says so in advance.
+
+**Multi-level evidence, per the standing rule.** Overall (the gate table); per-game (the paired
+per-game margin/total/possession deltas, their distribution, and the count of games moving more than
+one per-game floor); per-team (the teams appearing in the subset, their own margin and PPP bias under
+each arm, and the relation between an arm's per-team change and the size of the shrinkage that arm
+applies to that team); per-possession-type (the engine's realised terminal-event mix per possession
+against the event layer's own actual mix on the same games). Player-level is NOT read: no arm here
+touches the player layer, and the runs carry `keep_players=False`.
+
+### 12.5 Decision rule
+
+**`G2` is the arm this lane puts forward for SERVING if and only if BOTH:**
+
+1. **no gate line G1-G9 regresses beyond its measured floor**, in the sense fixed in 12.4; and
+2. **the responsiveness line holds**: neither the headline slope nor any non-exempt driver's slope
+   falls below the reference's by more than that quantity's own floor.
+
+**`G3` is read as a COMPARATOR on the identical table and is not put forward**, because the
+pre-registered offline rule of 8.5 already selected `G2` over it on simplicity within the eligibility
+band (11.4) and this round does not re-open the offline selection. If `G2` fails either condition and
+`G3` passes both, that is reported as a stated finding and handed to the PM, who may re-open 8.5; this
+worker does not.
+
+If both conditions hold for `G2`, **ties go to the simpler model and `G2` is the recommendation**. If
+(1) fails, `G2` is NOT put forward regardless of (2). If (1) holds and (2) does not, `G2` is recorded
+as **BLOCKED ON RESPONSIVENESS** and the reference stays the arm put forward -- the standing
+matchup-specific rule is not waived because the aggregate gates are clean, and section 11.5's point 2
+is exactly the risk this clause exists for.
+
+**A failing line is not waived because the offline table is good.** The offline pass of 11.3 carries
+no weight against a closed-loop regression.
+
+**This lane does not change the served default under any outcome**, does not edit
+`docs/models/change_ledger.md`, and does not touch `HANDOFF.md`, `PROJECT_STATUS.md`,
+`ARCHITECTURE_DECISIONS.md` or `CLAUDE.md`. Results go to section 13 and to
+`docs/tests/possession_outcome_closed_loop_2026-09-18.md`. The PM makes the ship decision from the
+table.
+
+### 12.6 Budget, drop order, and what is written if the clock runs out
+
+Stage order IS the drop order. Anything not reached is written to the results as **NOT RUN** and
+never as a result.
+
+| stage | what | cost |
+|---|---|---|
+| 0 | bit-identity smoke on the unchanged default + `pytest` | minutes |
+| 1 | build the `G2` and `G3` engine artifacts (two processes, 4 threads each) | ~20-40 min |
+| 2 | adapter unit tests + a served-path agreement probe | minutes |
+| 3 | reference run `po4b_R_s25`, seeds 0..24 | ~10 min |
+| 4 | `po4b_G2_s25`, seeds 0..24 | ~10 min |
+| 5 | `po4b_G3_s25`, seeds 0..24 | ~10 min |
+| 6 | floor run `po4b_R_s25_floor`, seeds 1000..1024 | ~10 min |
+| 7 | grade: `eval_gates.py` x4, `diag_pair_gate_reports.py`, `grade_po4b_closed_loop.py` | minutes |
+| 8 | docs | -- |
+
+**If stage 6 does not finish, the round has no floor and reports no verdict**, only a table with the
+movements unpriced; it does not substitute the clock lane's floors from a different stack. If stage 5
+does not finish, `G3` is reported NOT RUN and `G2` is still decidable, because `G3` is a comparator
+and not a condition of the rule.
+
+### 12.7 What round 5 cannot say
+
+It cannot re-open the offline grade: nothing is refitted on the bake-off's frame, no round-4 or
+round-4b artifact is rewritten, and the shrunk columns are read as committed. It cannot resolve
+Decision 9c -- `A1` and `A2` are still NOT RUN (11.6). It cannot give a fold-1 confirmation: no tree
+shrinkage arm has one, and running the engine on F1 is not one. It cannot price either arm on any
+game set other than the 500-game subset, on the sealed 2025-26 season, or against market lines. And a
+PASSING verdict here is a RECOMMENDATION, not an adoption: adoption is the PM's, on the full list.
