@@ -629,3 +629,284 @@ identity alone.
 this choice alongside the responsiveness tension above rather than having it
 resolved by the tie-break's text, which was written before that tension was
 visible. Ledger row: `docs/models/change_ledger.md`.
+
+---
+
+## 10. Round 1b: target adjudication and pre-registration (2026-09-18)
+
+### 10.0 PM ruling on round 1 (2026-09-18)
+
+Recorded verbatim-in-substance, as instructed. **NOTHING is selected from
+round 1.** (a) `CLAUDE.md` requires grading truth to be verified against a
+second source before any grade is trusted; a target two sources disagree on
+by ~30% is not verified, so round 1's table cannot select an arm. (b) The
+tie-goes-to-simpler rule applies only among ELIGIBLE arms; the standing
+matchup-specific rule makes a powered responsiveness failure disqualifying,
+so `X1` (flat against a 5.5-sigma team slope, section 9.9.4/3.1) is not
+eligible as a final answer regardless of aggregate deviance; it stays in the
+table as the baseline. (c) The 115-134% offline FTA/FGA closure is not
+evidence of anything.
+
+### 10.1 Target adjudication (job step 1, before any modelling)
+
+**Method.** Built a THIRD estimate from verified box finals per the job spec
+(box FTA minus pbp-accounted non-technical FTA), and — because that
+comparison alone could not explain round 1's 64-73% CBBD-vs-hoopR gap —
+two NEW, independent same-clock reconstructions of technical free-throw
+ATTEMPTS (not just moment counts) directly from each vendor's own raw pbp:
+`scripts/build_ft_technical_target_v1.py`. A technical free-throw trip is a
+dead ball: every free-throw row belonging to it carries the IDENTICAL
+period-scoped clock as the technical-foul row itself (confirmed by hand on
+game 401700212/401700182, both vendors, before being trusted at scale — see
+the results doc). So: group technical-foul rows into `(game, period, clock)`
+moments; a moment with exactly one distinct offending team is a
+single-team moment that MUST produce a trip (an offsetting pair produces
+none, the real NCAA out, re-confirmed here); scan forward from the first
+technical row of the moment while the clock is frozen, counting free-throw
+rows credited to the team that was NOT called. Run independently on
+`data/raw/hoopr/pbp/` and on `data/raw/cbbd/pbp/` (the latter is NOT
+`trips_v1_era.parquet` — it is a fresh scan of CBBD's OWN raw feed,
+independent of the `possessions.py` pipeline that built `trips_v1_era`).
+
+**Finding 1 — the two VENDORS essentially agree; round 1 was comparing the
+wrong pair.** CBBD's raw pbp technical-attempt count matches hoopR's
+independent raw-pbp count to within 0-0.6% every season, not 64-73%:
+
+| season | hoopR raw-scan FTA | CBBD raw-scan FTA | ratio | `trips_v1_era` (round-1 target) FTA | ratio to hoopR |
+|---|---:|---:|---:|---:|---:|
+| 2022 | 2,411 | 2,411 | 1.000 | 1,804 | 0.748 |
+| 2023 | 3,285 | 3,285 | 1.000 | 2,439 | 0.743 |
+| 2024 | 2,666 | 2,666 | 1.000 | 2,052 | 0.770 |
+| 2025 | 2,420 | 2,435 | 1.006 | 1,959 | 0.809 |
+
+**Finding 2 — the mechanism is a `possessions.py` bug, not a CBBD vendor
+gap.** `_handle_technical(self, i, t)` (`src/cbb_sim/pbp/possessions.py`,
+read-only — not edited, per this lane's scope restriction) looks only ONE
+row ahead of the `technical` event for a free throw:
+```
+def _handle_technical(self, i, t):
+    j = i + 1
+    if j < self.n and ev["cls"][j] in ("FT_made", "FT_missed"):
+        return self._handle_ft_trip(j, ...)
+    return i + 1
+```
+CBBD's raw feed routinely inserts ONE administrative row between the
+`Technical Foul` event and its free throws — an automated census of the row
+immediately following every one of the 1,228 team-games where
+`trips_v1_era` recorded ZERO technical attempts but the raw scan found some
+shows it is `Lost Ball Turnover` (crediting the technical'd team's
+interrupted possession) 89% of the time and a companion `PersonalFoul` row
+10% of the time, pooled across all four seasons (1,141 and 126 of 1,280
+matched instances). When that happens, `_handle_technical` gives up
+immediately and the trip is never tagged `foul_class == "technical"`; its
+free throws are then swept up by the GENERIC (non-technical) free-throw
+handler on a later loop iteration and land in `trips_v1_era` tagged
+`foul_class in {"foul", "none"}` instead. **Confirmed by hand, not just by
+the aggregate pattern**: 15 full pbp transcripts were read line-by-line
+(both vendors' text, `data/raw/cbbd/pbp/plays_{season}.parquet` `playText`
+and `data/raw/hoopr/pbp/play_by_play_{season}.parquet` `text`), e.g. game
+401364434 (2022): `OfficialTVTimeOut -> Technical Foul on A.J. Hoggard ->
+Lost Ball Turnover (A.J. Hoggard) -> MadeFreeThrow x2` — and for each, an
+EXACT match was verified between the raw-scan's `(game, period, clock,
+team_id, opp_id)` and a `trips_v1_era` row at that identical key carrying
+`foul_class in {"foul","none"}` instead of `"technical"` (5-for-5 on the
+first hand-read batch, then generalized to the full 1,228-team-game
+population by the automated next-row census above — a complete census of
+the affected population, not a 30-game extrapolation).
+
+**Finding 3 — the job's own suggested third estimate (box-implied) is
+confounded by the SAME bug, in the opposite direction, and is REJECTED as
+an adjudication source.** `box_implied_fta = box_fta - ev_fta` is smaller
+than either raw-pbp scan every season (2022: 1,654 vs 2,411; 2025: 2,044 vs
+2,435) and even smaller than `trips_v1_era` in two of four seasons. Reason:
+the mis-tagged technical attempts land in `ev_fta`'s NON-technical bucket
+(via `_handle_ft_trip(..., technical=False)`), which inflates `ev_fta` and
+therefore SHRINKS `box_fta - ev_fta` — the exact opposite direction from
+what an under-counted technical target would predict, on top of whatever
+independent event-layer noise `ev_fta` already carries for unrelated
+reasons. Box-implied is a residual of two entangled biases and cannot
+isolate the technical rate; it helped surface the puzzle (round 1 already
+used it to size the channel) but cannot adjudicate it.
+
+**Finding 4 — a smaller, disjoint edge case cuts the other way.**
+`trips_v1_era`'s own forward-iterating state machine correctly handles a
+case this round's moment-scanner does not: two `Technical Foul` rows on the
+SAME team at the IDENTICAL frozen clock (a companion/second disciplinary
+technical logged after the first one's free throws), e.g. game 401364790
+(2022): `PersonalFoul -> Lost Ball Turnover -> Technical Foul -> FT -> FT ->
+Technical Foul` (all at one clock value). The scanner's original
+"last-technical-row" convention walked past the free throws; found by
+hand-reading this exact game, fixed in `build_ft_technical_target_v1.py`
+(scan from the FIRST technical row of a moment, not the last — safe because
+the inner while-loop does not break on encountering a second technical row)
+and confirmed to shrink, not eliminate, this bucket (135 -> 127 team-games
+of 43,925, ~0.29%, pooled four seasons).
+
+**Verified target.** A moment-level UNION (not a max of two counts, which
+can silently mismatch which trips are being counted) of (a) the CBBD raw
+same-clock scan and (b) `trips_v1_era`'s own technical trips, keyed on exact
+`(season, game_id, beneficiary team, period, clock)`, built by
+`scripts/build_ft_technical_target_v2_verified.py`. Of 5,909 pooled
+technical moments recognised by either source: 3,868 (65%) are found by
+BOTH, 1,882 (32%) by the raw scan only (finding 2's mechanism), 159 (3%) by
+`trips_v1_era` only (finding 4's mechanism). Cross-validated against hoopR's
+fully independent raw-pbp scan — the CLAUDE.md "second source" requirement:
+
+| season | verified trip count | verified FTA | hoopR raw-scan FTA (2nd source) | residual vs hoopR |
+|---|---:|---:|---:|---:|
+| 2022 | 1,281 | 2,606 | 2,411 | +8.1% |
+| 2023 | 2,082 | 3,610 | 3,285 | +9.9% |
+| 2024 | 1,342 | 2,907 | 2,666 | +9.0% |
+| 2025 | 1,204 | 2,644 | 2,420 | +9.3% |
+
+The residual is fully attributed, not a mystery: hoopR's OWN same-clock scan
+(before folding in `trips_v1_era`'s finding-4 corrections) ALSO has 56-87
+zero-attempt moments a season (the identical double/multi-technical-
+same-clock edge case, symmetric across vendors — this is an algorithmic
+scanning limitation, not a CBBD- or hoopR-specific defect), and
+`trips_v1_era` only resolves 159 of the pooled total correctly, leaving a
+small further residual honestly reported as unresolved (order 1-3% of
+moments) rather than patched to close it (`CLAUDE.md` 9.8 bans exactly
+that). One hand-confirmed hoopR-side event-ordering anomaly (game
+401700380, 2025: hoopR's own `sequence_number` order is non-monotonic in
+its clock field for one play cluster) accounts for the small
+hoopR-scan-vs-CBBD-raw-scan gap (11 of 11,179 2025 team-games, 0 in
+2022-2024) on the OTHER side of this comparison.
+
+**Verdict: the CBBD-trip-table target (`trips_v1_era`, round 1's target) is
+REJECTED — it is not a vendor-under-logging problem as round 1 characterized
+it, it is a root-caused, hand-confirmed pipeline defect that undercounts by
+19-29%. The box-implied estimate is REJECTED as confounded by the same
+defect in reverse. The VERIFIED target for round 1b is the moment-level
+union described above** (`data/processed/models/free_throw/
+technical_target_verified_v1.parquet`, one row per `(season, game_id,
+team_id)`: `verified_trip_count`, `verified_fta`), residual disagreement
+against the second (hoopR) source quantified at 8-10% and fully explained by
+a shared, named algorithmic edge case rather than a mechanism gap. No file
+this round overwrites `trips_v1_era.parquet`, `attempts_v1_era.parquet`, or
+any existing table; three new versioned siblings were written:
+`technical_target_hoopr_v1.parquet`, `technical_target_cbbd_raw_v1.parquet`,
+`technical_target_reconciliation_v1.parquet` (attempt grain, all four
+sources side by side, 43,925 team-game rows), plus
+`technical_target_verified_v1.parquet` (trip grain, the round 1b target).
+`possessions.py::_handle_technical`'s narrow lookahead is a real,
+now-precisely-located defect worth fixing at the source — flagged for the
+engine-core owner, NOT fixed here (this lane may not touch `src/cbb_sim/`
+and the fix belongs to whoever owns that file next).
+
+### 10.2 Pre-registration: round 1b arms (BEFORE any modelling)
+
+**Folds, unchanged from round 1** (`section 9.3`): F1 trains through 2022-23,
+tests 2023-24; F2 trains through 2023-24, tests 2024-25, **F2 selects**;
+2025-26 stays sealed (`assert_not_sealed` on every load).
+
+**Target, changed from round 1**: `technical_target_verified_v1.parquet`'s
+`verified_trip_count` (a Poisson count of technical trips per team-game),
+replacing `trips_v1_era`'s `foul_class == "technical"` count everywhere.
+Exposure unchanged from section 9.9.2 (team-chances, both teams exposed
+per chance, `data/processed/possessions_v2/chances_{season}.parquet`).
+
+**Arms.**
+
+| arm | what it is | site feature? | team-keyed? |
+|---|---|---|---|
+| `X0` | reference: no technical rule | n/a (constant zero) | no |
+| `X1` | league-constant rate, pooled equally over all training seasons (round 1's `X1`, re-run on the verified target) | no (rate constant, same exemption as round 1) | no |
+| `X5` | team as-of rate, EB-shrunk toward `X1`'s pooled rate (round 1's `X5`, re-run on the verified target) | yes (carried forward from 9.9.3) | **yes** |
+| `X6` | **recency-weighted training window** (job-mandated addition): pooled rate over training seasons weighted by `exp(-ln(2)*(last_train_season - season)/halflife)`, `halflife` in seasons chosen from grid `{0.5, 1, 2, 4, 999}` (999 ~= uniform = reproduces `X1`) by the SAME chronological internal-validation split `grid_search_shrinkage` already uses (fit on all-but-last train season, validate on the last) | no (rate constant) | no |
+| `X7` | **league-level in-season as-of rate** (job-mandated addition): for each test-season exposure row, an EB blend of the test season's OWN cumulative rate strictly before that row's game date (`games_universe.game_date`, a pre-outcome join, never the chance table's own post-hoc fields per the L27 caution already noted in 9.9.2) and `X6`'s recency-weighted prior level, pseudo-exposure `k` fit the same grid-search way; multiplied by a `site` ratio (home/away/neutral rate / overall rate) fit once on the training pool — this is what makes `X7` a genuine multi-feature arm ("league-level ... so a one-season spike does not set the level", features relative to the snapshot's own in-season mean) rather than a second flat constant | **yes** (multiplicative site ratio) | no |
+| `X5r` | **added beyond the job's literal four-arm list, in its spirit** ("plus the arms the round-1 overshoot calls for"): `X5`'s team-shrinkage machinery unchanged, but shrunk toward `X6`'s recency-weighted level instead of `X1`'s flat all-season pooled level — the direct, obvious fix for round 1's exact tension (`X1` passes level, fails responsiveness; `X5` passes responsiveness, inherits `X1`'s bad level as its own shrinkage target) | yes (carried from `X5`) | **yes** |
+
+`X0`/`X1`/`X6` are rate constants with no conditioning feature and are
+exempt from "home/away/neutral in every feature list" on the same standing
+basis round 1's `X0`/`X1`/`X3` were. **`X6` and `X7` are PRE-DECLARED
+STRUCTURALLY INELIGIBLE for final adoption, stated before running rather
+than discovered after**: neither varies by team, so the team-quintile
+responsiveness check (below) is not merely "not attempted" for them the way
+it was for round 1's `X2`/`X4` (a genuine exemption for an
+orthogonally-conditioned arm) — it is UNPASSABLE for them by construction,
+and adopting a structurally team-flat arm as the final answer would
+reproduce exactly the tension the PM ruling (10.0.b) just resolved against
+`X1`. They are run and reported in full (they are the pieces `X5r`
+consumes, and their own primary/level numbers are the direct test of
+whether recency-weighting and in-season adaptation fix round 1's overshoot
+at all) but cannot be the round's WINNER. `X5i` (an in-season-as-of variant
+of the team arm, paralleling `X5r` but drawing on `X7`'s in-season level
+instead of `X6`'s recency level) is NOT attempted this round — flagged as a
+stated scope limit for a future round, not attempted informally.
+
+**`X3` shooter-rule variants** (who-shoots, orthogonal to the rate arms
+above — every rate arm pairs with every shooter rule, since the technical is
+additive and never touches the rate model, section 9.9.1): `X3-avg` (team
+attempt-share-weighted average shooter, `X1`'s original assumption),
+`X3-best` (team's best as-of shooter that game), `X3-blend` (linear
+interpolation `avg + f*(best - avg)`, `f` FITTED per fold on that fold's OWN
+TRAINING-season who-shoots data only, then scored out-of-sample on the test
+season — round 1's section 4 pooled all four seasons including the test
+season into one number, which is leakage for a per-fold decision rule; this
+round fixes that). Metric: predicted vs actual technical make rate (pp
+gap), test season only, per fold.
+
+**Primary metric, unchanged in form from round 1 (9.4/section 2)**:
+predicted vs actual trip count on the test fold's real chance-level
+exposure, pooled Poisson deviance of that one aggregate comparison.
+
+**Eligibility line 1 (responsiveness, carried from 9.9.4/3.1, POWERED,
+stated in advance): team 2024-prior-season-quintile slope.** Attempted for
+`X0`, `X1`, `X5`, `X5r` (team-keyed); not attempted for `X6`/`X7` (not
+team-keyed, same mechanical exemption as round 1's `X2`/`X4`, but see the
+structural-ineligibility note above — the exemption from the CHECK does not
+exempt them from the ADOPTION rule). Power is recomputed fresh on the
+verified target's own (larger) counts at run time and reported per fold,
+not assumed to match round 1's ~5.5 sigma exactly.
+
+**Eligibility line 2 (level calibration, NEW this round, closes the exact
+gap round 1 left open).** An arm's primary-metric predicted pooled rate,
+summed over the FULL test season, must be within **10% relative** of the
+test season's own realised pooled rate. Round 1's `X1/X2/X4/X5` overshot by
+22-25% and this round's job exists specifically because nothing flagged
+that — 10% is chosen as roughly half of round 1's own overshoot, tight
+enough to bind on `X1` (which is expected to fail it again, unless the
+verified target's own multi-season trend happens to be flatter than
+`trips_v1_era`'s was) and loose enough not to fail on pure sampling noise
+(the measured noise floor, below, is two further orders of magnitude
+smaller than 10% of the rate in every fold).
+
+**Noise floor, same convention as round 1 (section 2)**: game-level block
+bootstrap SE on the pooled rate, 200 replicates, two seeds (0 and 1). Used
+(a) to confirm an arm's primary-metric improvement over `X0`/`X1` exceeds
+pure resampling noise, and (b) as the "spec-identical rerun under another
+seed" the standing bake-off rule requires before any winner is named.
+
+**Decision rule.** Among arms that are BOTH team-keyed (i.e. eligible for
+adoption at all — `X0`, `X1`, `X5`, `X5r`) AND pass BOTH eligibility lines,
+the winner is the lowest primary; ties inside the noise floor go to the
+simpler model, ordered by parameter count `X0 < X1 < X5 < X5r`. `X6`/`X7`
+are reported in full (primary, level-calibration gap, segment cuts) but
+cannot win by the structural-ineligibility clause above; if `X5r` is the
+only arm that clears BOTH eligibility lines, it wins by elimination, not by
+beating a field of eligible competitors, and this is stated plainly rather
+than dressed up as a clean sweep. If NO team-keyed arm clears both lines,
+**no arm is adopted** and that is an explicitly legitimate outcome, exactly
+as round 1's own rule 9.7.6 already provided for.
+
+**Multi-level evidence, unchanged in shape from 9.9.4**: game_phase,
+margin_bucket, site, month, conference-game, and the team-quintile power
+calculation, all on the test fold, all with underpowered cells labelled
+rather than smoothed over.
+
+**What this round may not do, unchanged from 9.8**: no post-hoc multiplier,
+cap, clip, offset or blend on sim output; the verified target is not
+re-scaled to hit any number; technical attempts stay excluded from FT-2's
+training universe (a separate, newly-discovered contamination channel —
+`possessions.py`'s bug also LEAKS technical attempts INTO `attempts_v1_era`
+under `foul_class in {"foul","none"}`, diluting FT-2's training population
+with coach-selected-shooter attempts mislabelled as ordinary trips; flagged
+for the engine-core owner alongside the `_handle_technical` fix, NOT
+corrected by this lane, which may not touch `src/cbb_sim/` or retrain FT-2).
+2025-26 stays sealed throughout.
+
+**Run offline only, one grading script, blind, exactly as round 1 (section
+6)**: no engine wiring, no closed-loop paired-seed run this round (the same
+concurrency conditions apply — other lanes are running closed loops on this
+tree right now under the 2-worker compute cap).
