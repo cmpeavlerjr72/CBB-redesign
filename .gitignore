@@ -56,6 +56,14 @@ data/processed/models/**/*_design.parquet
 # the private HF dataset via scripts/hf_sync_data.py (PM decision 2026-09-10).
 data/processed/models/engine/event_round2_s1_*/
 
+# Possession-outcome round-5 ship-gate ARM artifacts (`ENGINE_EVENT=round4b_G2`
+# / `round4b_G3`, default-off): the same S1 schedule shape as the served
+# directory above, ~47MB per arm per (fold, season). Rebuildable by
+# scripts/build_engine_event_round4b.py from round4/design_v4.parquet and
+# synced under the `engine_inputs` bulk key (CLAUDE.md >20MB model-artifact
+# rule; experiments.md section 12).
+data/processed/models/engine/event_round4b_*/
+
 # fg_make round-2 bake-off artifacts (grid checkpoints + fitted boosters,
 # ~21-25MB each): rebuildable, gitignored, synced to the private HF dataset
 # via `scripts/hf_sync_data.py --dirs model_artifacts` (PM decision

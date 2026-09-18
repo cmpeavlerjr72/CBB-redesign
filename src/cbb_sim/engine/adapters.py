@@ -211,10 +211,21 @@ class EventAdapter:
             return cls(plans["first"], plans["cont"], arms["first"], arms["cont"],
                        models["first"], models["cont"], True, src, mode="reference")
 
-        if mode != "round2_s1":
+        # `round4b_G2` / `round4b_G3` (possession-outcome round 5 ship gate,
+        # experiments.md section 12) are DEFAULT-OFF round-4b shrinkage arms.
+        # They are the SAME code path as `round2_s1` -- same S1 schedule, same
+        # batched-predict-per-(population, refit), same `(G, 2, 16)` block --
+        # with eight of the sixteen team columns replaced by their shrunk
+        # siblings and the arms refit on them by
+        # `scripts/build_engine_event_round4b.py`. Nothing here is a new
+        # adapter: the directory name and two provenance fields are the whole
+        # difference, so the served path stays bit-identical (12.2).
+        is_r4b = mode.startswith("round4b_")
+        if mode != "round2_s1" and not is_r4b:
             raise NotImplementedError(
-                "ENGINE_EVENT must be 'reference' (round-1 best-loss arms, not adopted) "
-                "or 'round2_s1' (the round-2 winners: lgbm+S1 first, cascade+S1 cont)")
+                "ENGINE_EVENT must be 'reference' (round-1 best-loss arms, not adopted), "
+                "'round2_s1' (the round-2 winners: lgbm+S1 first, cascade+S1 cont) or "
+                "'round4b_G2'/'round4b_G3' (round-4b shrinkage arms, NOT ADOPTED, default-off)")
 
         # ---- round 2, scheme S1 -------------------------------------------
         # S1 is a SCHEDULE, not a model: one refit per calendar month of the
@@ -223,10 +234,12 @@ class EventAdapter:
         # own date. `scripts/build_engine_event_round2.py` replayed that
         # schedule and asserted, per GAME, that the selected model's last
         # training date precedes that game's tipoff. The engine only indexes.
-        d = ENGINE_DIR / f"event_round2_s1_{fold}_{season}"
+        d = ENGINE_DIR / f"event_{mode}_{fold}_{season}"
         if not d.exists():
+            builder = ("scripts/build_engine_event_round4b.py --arm " + mode.split("_", 1)[1]
+                       if is_r4b else "scripts/build_engine_event_round2.py")
             raise FileNotFoundError(
-                f"{d} missing; run scripts/build_engine_event_round2.py --fold {fold} "
+                f"{d} missing; run {builder} --fold {fold} "
                 f"--season {season}, or pass ENGINE_EVENT=reference")
         idx = json.loads((d / "index.json").read_text(encoding="utf-8"))
         z = np.load(d / "team_block.npz")
@@ -268,14 +281,19 @@ class EventAdapter:
             plans[pop] = plan_features(info["features"], r2_names, {}, STATE_INDEX)
             src[pop] = {
                 "path": str(d), "arm": info["arm"], "feature_set": info["feature_set"],
-                "adopted": True, **man.provenance(),
-                "note": "round-2 winner; train_possession_outcome_v2.py persists no booster, so "
-                        "the engine refits the winner's own spec (as for rebound/free_throw)",
+                "adopted": not is_r4b, **man.provenance(),
+                "note": ("round-2 winner; train_possession_outcome_v2.py persists no booster, so "
+                         "the engine refits the winner's own spec (as for rebound/free_throw)")
+                        if not is_r4b else
+                        (f"round-4b shrinkage arm {mode.split('_', 1)[1]}, NOT ADOPTED, "
+                         f"default-off (experiments.md section 12); the shrunk style columns are "
+                         f"READ from round4/design_v4.parquet and the arm's own spec is refit by "
+                         f"scripts/build_engine_event_round4b.py on the served S1 schedule"),
             }
         src["team_block"] = idx["team_block_provenance"]
         return cls(plans["first"], plans["cont"], arms["first"], arms["cont"],
-                   loaded["first"][-1], loaded["cont"][-1], False, src,
-                   mode="round2_s1", models_first=loaded["first"],
+                   loaded["first"][-1], loaded["cont"][-1], bool(is_r4b), src,
+                   mode=mode, models_first=loaded["first"],
                    models_cont=loaded["cont"], team_block=team_block, manifests=mans)
 
     def predict(self, team: np.ndarray, state: np.ndarray, is_first: np.ndarray,
