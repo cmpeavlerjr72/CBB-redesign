@@ -2708,3 +2708,150 @@ no market line was read. `ENGINE_EVENT=round4b_G2` and `round4b_G3` stay
 selectable, default-off, for reproduction. **The served default stays
 `round2_s1`; the PM makes the ship decision from the table above and records it
 in `docs/models/change_ledger.md`.**
+
+---
+
+## 15. Round 6 AMENDMENT A -- the PM's conditions on section 13, and three findings that change the target definition (written 2026-09-18 by the foul-accrual lane BEFORE any fitting; append-only; section 13 is NOT edited)
+
+The PM approved running section 13 with conditions. Section 13 does not already
+satisfy all of them, and three facts found while reading the data change what
+the target *is*. Both are recorded here, before any arm is fitted, and the round
+runs on this amendment plus section 13.
+
+### 15.1 The target: what a "silent foul" actually is in this data layer
+
+Section 13 speaks of "the arrival process for personal fouls that award no
+trip". Three measured facts fix the definition:
+
+1. **The accrual has two channels, and the engine has one.** Fouls charged to a
+   team while it is on OFFENCE (offensive/charge fouls) count as team fouls
+   under NCAA rules and `possessions.py` counts them (module docstring, "Always
+   increments that team's period foul count -- including offensive fouls"). The
+   engine increments `team_fouls` ONLY on the defence (`loop.py`: the two FT
+   trip classes, the and-one, and the `silent_foul` draw). So the served
+   constant 0.123346 is a pooled `(all personal fouls - trip fouls) / possessions`
+   that silently re-attributes every offensive foul to the defending team. The
+   round therefore models **the total team-foul accrual of both sides per
+   possession**, and reports the offence channel separately; an arm that fixes
+   the defensive rate while leaving offensive fouls mis-attributed has not fixed
+   the accrual law.
+2. **The possessions table cannot be differenced naively.** `off_team_fouls` /
+   `def_team_fouls` are read at possession OPEN, and `_handle_ft_trip` ->
+   `_ensure` OPENS the possession at the foul whenever the previous possession
+   already closed (a bonus foul after a made basket is the common case). Measured
+   on 2025: a possession ending in `FT_trip_bonus` shows a mean defence-side
+   increment of only **0.158** over its own window (against **1.023** for an
+   and-one, where the possession was already live), so most bonus-trip fouls fall
+   in the PREVIOUS window, which is a window in which the fouling team is the
+   OFFENCE. A naive difference therefore books defensive trip fouls as offensive
+   fouls and yields a negative silent rate (-0.081/possession). **The target is
+   built by an instrumented replay of the segmenter in this lane's own process**
+   (the `diag_late_game_tap_v1.py` pattern: `_handle_foul` / `_handle_technical`
+   wrapped, `src/cbb_sim/` UNCHANGED), which records for every personal foul the
+   possession that was open when it happened, the side charged, and whether it
+   awarded a trip. Fouls committed with no possession open are attributed to the
+   next possession opened and counted separately.
+3. **Technicals are not in the accrual target** (`_handle_technical` never
+   increments `team_fouls`), so the technical-FT labelling defect cannot touch
+   Block F. It does touch Block T -- see 15.4.
+
+**Unit.** One row per possession, matching the engine's draw (`loop.py` draws
+`foul_accrual` once per possession, after the chance loop). Target `y_def` =
+number of non-trip personal fouls charged to the DEFENCE during that possession;
+`y_off` = the same for the offence. Both the Bernoulli indicator and the count
+are reported, because a Bernoulli law cannot reproduce a mean count above
+`P(>=1)` and the engine's law is a Bernoulli.
+
+### 15.2 Block F, extended arm table (supersedes 13.1's `F` table by ADDITION; `F0`-`F4` keep their meaning)
+
+| arm | what it is |
+|---|---|
+| `F0` | **reference**: the served constant, one number for the whole game |
+| `F1` | the same constant fitted separately per half |
+| `F2` | rate table over `(period, seconds_remaining bucket)` |
+| `F2m` | **NEW (PM condition a.ii)**: `F2` + a **score-margin bucket**, using the PRE-outcome margin only |
+| `F3` | Bernoulli GLM over the served state block + `def_team_fouls`, `off_team_fouls` |
+| `F3b` | **NEW (PM condition a.iii)**: `F3` + `off_in_bonus`, `def_in_bonus` (opponent-in-bonus) as explicit state |
+| `F3c` | **NEW (PM condition a.iv)**: `F3b` + the defence's as-of foul-committed rate and the offence's as-of foul-DRAWN rate, both league-centred on their own snapshot |
+| `F3d` | **NEW (PM condition a.vi)**: `F3c` with prior-season carry on the two new as-of rates |
+| `F5` | **NEW (PM condition a.v)**: a GBM (LightGBM) over `F3c`'s feature list |
+| `H1` | `site_home`/`site_away` interacted with the accrual rate (13.1 Block H, kept as an explicit arm) |
+| `D9a` | **NEW (Decision 9)**: `F3c` with the two new as-of rates opponent-adjusted |
+| `D9b` | **NEW (Decision 9)**: `F3c` + a conference-game flag |
+| `D9c` | **NEW (Decision 9)**: `F3c` refit on the conference-aligned cadence rather than pooled |
+
+`site_home`/`site_away` are in EVERY arm's feature list including `F2`/`F2m`
+(cell-based arms carry them as a separate cell dimension), per the standing rule.
+`F4` (promotion to a seventh possession-outcome class) stays on the section-13
+list and is explicitly **NOT RUN** tonight: it rewrites `PO.CLASSES` and every
+stored round-2/3/4 artifact, which is not a one-evening change and not a
+prerequisite for pricing the law.
+
+**L27 discipline.** `score_diff` on the possessions table is `start_score_diff`,
+read at possession OPEN from the running score BEFORE the possession's own
+events (`_open`), so it is pre-outcome and is the same column `possession_outcome`
+and `clock` already use (L27 records both as clean). `duration_s` and
+`is_transition` are POST-outcome at the possession level and are **excluded from
+every `F` arm's feature list**. `def_team_fouls` / `off_team_fouls` are open-time
+values and are pre-outcome.
+
+### 15.3 Block T, redefined as its own object (PM condition b)
+
+Section 13.4 gave Block T the six-class log loss as its primary. That primary
+pools ~94% of its mass into classes this round does not own, and scoring it
+honestly means a full `S1` refit ladder per arm (round 4's stages ran 2-6 h
+each). **Block T is therefore scored as its own binary object**: log loss of the
+`FT_trip_bonus` indicator on fold-2 chances **where the offence is in the bonus**,
+which is literally the conditional the G4 diagnostic decomposes (0.16058 sim vs
+0.16763 actual). This is a declared deviation from 13.4 and is the reason it is
+written here rather than assumed. Block T is fitted and scored **independently of
+Block F** so neither absorbs the other's error (bottom-up rule); the closed-loop
+reading in 13.4 remains the only place the two are combined. The bonus rule
+itself (1-and-1 vs two-shot, the per-half reset, the era thresholds) stays in
+`GameState` / `bonus_era.json` and is not an arm.
+
+### 15.4 The technical-FT anti-join (PM instruction, 2026-09-18)
+
+`_handle_technical` looks exactly one row ahead for the free throw, and the CBBD
+feed inserts an administrative row first on a large minority of technicals, so
+those attempts fall through to the generic `FT_made` branch and are classified as
+ordinary `FT_trip_bonus` / `FT_trip_shooting` chances. Evidence:
+`docs/tests/free_throw_technicals_round1b_2026-09-18.md`, free_throw
+`experiments.md` section 10. **Every Block T training and grading row, and every
+bonus-occupancy / bonus-trip-rate truth number in this round, is anti-joined
+against `data/processed/models/free_throw/technical_target_verified_trips_v1.parquet`
+on (season, game_id, period, clock).** The round reports how many rows drop, how
+much the -1.384 pp channel moves, and how much the by-minute occupancy curve
+moves. Block F is unaffected by construction (15.1 point 3) and the round says so
+rather than assuming it. `src/cbb_sim/pbp/possessions.py` is **NOT edited** --
+another lane owns that fix as a versioned sibling.
+
+### 15.5 Spread of team estimates (PM condition, from the round-5 closed loop)
+
+Round 5 (section 13 results, commit 063b7d4) showed that shrinking team rates
+toward a prior reduced the engine's between-game spread by 22 floors and
+flattened responsiveness, and was not shipped. **Every arm in this round reports
+the SD of its team-level predicted accrual rate against the SD of the realised
+team-level rate on the test fold, and the ratio**, alongside the reliability
+gain. An arm that buys its primary by compressing that SD is reported as such and
+is not recommended, whatever its log loss.
+
+### 15.6 Eligibility and evidence, as amended
+
+13.7's rules stand. Added: (i) the team prior-quintile slope of 13.5.7 is scored
+on **powered cells only with the power stated**; (ii) the bonus-occupancy-by-
+game-minute curve of 13.4 is an eligibility line, not only a closed-loop reading;
+(iii) ties go to the simpler **ELIGIBLE** arm; (iv) evidence is reported overall,
+per game, per team, by period and game minute, home/away/neutral, conference vs
+non-conference and early vs late season, with underpowered cells labelled
+(min cell n = 300); (v) the final 2:00 of regulation (`period <= 2 and
+seconds_remaining > 120` is the FIT and PRIMARY mask) is a held-out segment,
+reported never fitted, and `docs/models/late_game/` is not edited.
+
+### 15.7 Scope tonight, stated before the run
+
+The machine this lane runs on shuts down tonight. The round runs the OFFLINE
+tables for Block F and Block T. **The paired closed loop of 13.7 rule 7 is NOT
+run tonight**; no engine file is edited, no flag is added, and no default is
+changed. Nothing is adopted on offline evidence, and the round says so in its
+results section rather than leaving it implied.
