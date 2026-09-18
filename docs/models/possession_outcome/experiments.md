@@ -2854,4 +2854,80 @@ The machine this lane runs on shuts down tonight. The round runs the OFFLINE
 tables for Block F and Block T. **The paired closed loop of 13.7 rule 7 is NOT
 run tonight**; no engine file is edited, no flag is added, and no default is
 changed. Nothing is adopted on offline evidence, and the round says so in its
+
+---
+
+## 16. `A1`/`A2` EXECUTION-SCHEME AMENDMENT (written 2026-09-18, BEFORE this attempt's
+     run, by the alignment-cells lane) -- parallel across refit dates, nothing else changes
+
+Section 14 left `A1` (`first`/lgbm/F2/`G0`/`S1_conf_aligned`) and `A2`
+(`first`/lgbm/F2/`G0`/`S1_weekly`) NOT RUN after three attempts (local wall-clock twice,
+AWS once) and named the fix for next time: parallelise ACROSS REFIT DATES with
+`joblib.Parallel` (process-based) instead of relying on LightGBM's own thread pool, since
+each refit is an independent fit on an as-of data cut and nothing in the walk-forward loop
+requires fit order. **This amendment changes only HOW the two cells are computed. Nothing
+below is reopened**: the arms (`G0`, reference features only), the folds (F2 selection,
+2025-26 sealed), the primary metric (fold-2 multiclass log loss via `R1.score`), the noise
+floor (0.000804, the larger of the seed-1 spread 0.000113 and the 200-replicate block-
+bootstrap SE, carried from sections 8.4/11.2), the decision cells (weeks-0-3 gap,
+non-conference gap, both at the 0.25 pp threshold), the segment/gate/tie-break rules of
+8.5, or the grader (`R1.score`, `R3.conf_window_calibration`, `R3.responsiveness_by`, and
+round 4's own `per_week_table`/`quintile_slope_worst`/`grade`/`decide_v4`, every one
+imported unmodified). `planned_cells()` stages 7 and 8 in
+`scripts/train_possession_outcome_v4.py` are the cell definitions; this amendment does not
+touch that file.
+
+**The execution change.** A versioned sibling trainer,
+`scripts/train_possession_outcome_v4_par.py`, replaces the serial per-cut loop
+(`R3.fit_predict_walkforward`) with a joblib-parallel equivalent
+(`fit_predict_walkforward_joblib`) that: (a) computes each refit date's training slice and
+scoring segment in the main process exactly as the serial function does (same
+strictly-before rule, same segment boundaries), (b) dispatches each cut's fit+predict to a
+separate worker PROCESS via `joblib.Parallel(backend="loky")`, capped at **6 concurrent
+workers** (the shared-machine compute cap this lane was given), (c) pins every worker to a
+single thread (`OMP_NUM_THREADS=OPENBLAS_NUM_THREADS=MKL_NUM_THREADS=NUMEXPR_NUM_THREADS=1`)
+and forces `LgbmArm.PARAMS["n_jobs"] = 1` by patching the class attribute at runtime from
+the trainer script -- **`src/cbb_sim/` is not edited**, the patch lives only in the new
+script and only for the lifetime of its own worker processes, and every date is fit with
+the SAME seed and the SAME `LgbmArm.PARAMS` (`n_estimators=400`, `learning_rate=0.06`,
+`num_leaves=63`, `min_child_samples=400`, `subsample=0.8`, `subsample_freq=1`,
+`colsample_bytree=0.9`, `reg_lambda=1.0`) as every prior round, and (d) checkpoints **per
+refit date**, not per cell: each finished cut's prediction segment and fit metadata are
+written to disk (`data/processed/models/possession_outcome/round4_a1a2/cuts/<cell_key>/`)
+as soon as that cut's worker returns, so an interrupted run resumes by re-reading that
+directory and only dispatching the cuts still missing -- no cut is ever refit twice. A cell
+is graded only once every one of its refit dates is present.
+
+**Local threading finding (30-second benchmark, this Windows venv, `lightgbm==4.7.0`,**
+`.venv/Scripts/python.exe`, 300000x50 random rows, 6-class random labels,
+`n_estimators=100, num_leaves=63`): `n_jobs=1` fits in **39.85 s**; `n_jobs=20` fits in
+**217.75 s** -- more than 5x SLOWER, not faster. Unlike the AWS container (section 14),
+this wheel DOES spin up multiple OS threads under `n_jobs=20` (it is not silently falling
+back to one core), but thread-management overhead exceeds any histogram-building gain at
+this problem size on this box, so internal LightGBM threading is actively harmful here,
+independent of the container issue. This confirms the joblib-across-dates design is the
+right fix on this machine too, not only a workaround for a broken cloud wheel: single-
+threaded fits dispatched across processes are the fast path either way.
+
+**Serial-vs-parallel identity check (before any A1/A2 cell is read as a result).** Two real
+refit dates from fold F1's `first`/`S1_monthly` calendar (chosen for speed only -- the code
+path is fold- and scheme-agnostic, so this proves the refactor, not an A1/A2 number) are fit
+twice: once through `R3.fit_predict_walkforward` with the same single-thread pinning, once
+through the new `fit_predict_walkforward_joblib` at `n_jobs=2`. The predictions and every
+segment-metadata field must match exactly before A1 or A2 is started. Result recorded in
+section 17 below, run first.
+
+### 16.1 Scope tonight, stated before the run (PM instruction, 2026-09-18 ~19:50 ET)
+
+The machine this lane runs on is confirmed down at 22:00 ET tonight; this lane's own
+processes must stop cleanly by **21:10 ET** regardless of completion, grading whatever is
+complete and labelling the rest PARTIAL with the exact resume command. If both `A1` and
+`A2` cannot finish by ~21:00 ET, **`A1` runs to completion first** and `A2` is attempted
+only with time left over; a completed `A1` and a NOT-RUN `A2` is preferred over two
+half-finished cells, and the per-refit-date checkpoint above is what makes a genuinely
+half-finished cell resumable next session without recomputing any completed date. Nothing
+in 16's decision rule, floor, or arm definitions changes because of tonight's clock; only
+how much of the pre-registered grid this session reaches does.
+
+---
 results section rather than leaving it implied.
