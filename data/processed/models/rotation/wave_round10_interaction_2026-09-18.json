@@ -1,0 +1,1568 @@
+{
+  "config": {
+    "sim_games": 400,
+    "sim_seed": 0,
+    "n_team_games": {
+      "ACTUAL": 800,
+      "V3_wave_both": 800,
+      "V5_wave_entry": 800
+    }
+  },
+  "by_n_st": {
+    "ACTUAL": [
+      {
+        "n_st": 0,
+        "n_boundaries": 1655,
+        "n_waves": 162,
+        "n_single_swaps": 96,
+        "p_starter_leaves_size1": 0.0,
+        "p_wave": 0.09789,
+        "mean_size": 1.6543,
+        "p_size1": 0.5926,
+        "mean_k_out": 0.0,
+        "mean_k_in": 0.6852,
+        "mean_drift": 0.6852,
+        "occupancy": 0.01637,
+        "underpowered": false
+      },
+      {
+        "n_st": 1,
+        "n_boundaries": 4524,
+        "n_waves": 790,
+        "n_single_swaps": 434,
+        "p_starter_leaves_size1": 0.3249,
+        "p_wave": 0.17462,
+        "mean_size": 1.6962,
+        "p_size1": 0.5494,
+        "mean_k_out": 0.3785,
+        "mean_k_in": 1.3076,
+        "mean_drift": 0.9291,
+        "occupancy": 0.04282,
+        "underpowered": false
+      },
+      {
+        "n_st": 2,
+        "n_boundaries": 16402,
+        "n_waves": 2989,
+        "n_single_swaps": 1834,
+        "p_starter_leaves_size1": 0.4144,
+        "p_wave": 0.18223,
+        "mean_size": 1.5176,
+        "p_size1": 0.6136,
+        "mean_k_out": 0.5828,
+        "mean_k_in": 1.0445,
+        "mean_drift": 0.4617,
+        "occupancy": 0.15403,
+        "underpowered": false
+      },
+      {
+        "n_st": 3,
+        "n_boundaries": 32129,
+        "n_waves": 5377,
+        "n_single_swaps": 3598,
+        "p_starter_leaves_size1": 0.5086,
+        "p_wave": 0.16736,
+        "mean_size": 1.4168,
+        "p_size1": 0.6691,
+        "mean_k_out": 0.7543,
+        "mean_k_in": 0.7913,
+        "mean_drift": 0.037,
+        "occupancy": 0.30216,
+        "underpowered": false
+      },
+      {
+        "n_st": 4,
+        "n_boundaries": 31018,
+        "n_waves": 4312,
+        "n_single_swaps": 3172,
+        "p_starter_leaves_size1": 0.7178,
+        "p_wave": 0.13902,
+        "mean_size": 1.3282,
+        "p_size1": 0.7356,
+        "mean_k_out": 0.99,
+        "mean_k_in": 0.426,
+        "mean_drift": -0.564,
+        "occupancy": 0.29171,
+        "underpowered": false
+      },
+      {
+        "n_st": 5,
+        "n_boundaries": 20682,
+        "n_waves": 1621,
+        "n_single_swaps": 1094,
+        "p_starter_leaves_size1": 1.0,
+        "p_wave": 0.07838,
+        "mean_size": 1.4485,
+        "p_size1": 0.6749,
+        "mean_k_out": 1.4485,
+        "mean_k_in": 0.0,
+        "mean_drift": -1.4485,
+        "occupancy": 0.19291,
+        "underpowered": false
+      }
+    ],
+    "V3_wave_both": [
+      {
+        "n_st": 0,
+        "n_boundaries": 1214,
+        "n_waves": 150,
+        "n_single_swaps": 99,
+        "p_starter_leaves_size1": 0.0,
+        "p_wave": 0.12356,
+        "mean_size": 1.6133,
+        "p_size1": 0.66,
+        "mean_k_out": 0.0,
+        "mean_k_in": 1.4,
+        "mean_drift": 1.4,
+        "occupancy": 0.01153,
+        "underpowered": false
+      },
+      {
+        "n_st": 1,
+        "n_boundaries": 5594,
+        "n_waves": 1039,
+        "n_single_swaps": 594,
+        "p_starter_leaves_size1": 0.3148,
+        "p_wave": 0.18573,
+        "mean_size": 1.616,
+        "p_size1": 0.5717,
+        "mean_k_out": 0.3532,
+        "mean_k_in": 1.2926,
+        "mean_drift": 0.9394,
+        "occupancy": 0.05287,
+        "underpowered": false
+      },
+      {
+        "n_st": 2,
+        "n_boundaries": 18279,
+        "n_waves": 3373,
+        "n_single_swaps": 2100,
+        "p_starter_leaves_size1": 0.3914,
+        "p_wave": 0.18453,
+        "mean_size": 1.4907,
+        "p_size1": 0.6226,
+        "mean_k_out": 0.5393,
+        "mean_k_in": 0.9914,
+        "mean_drift": 0.4521,
+        "occupancy": 0.17245,
+        "underpowered": false
+      },
+      {
+        "n_st": 3,
+        "n_boundaries": 30578,
+        "n_waves": 5388,
+        "n_single_swaps": 3723,
+        "p_starter_leaves_size1": 0.5248,
+        "p_wave": 0.17621,
+        "mean_size": 1.3706,
+        "p_size1": 0.691,
+        "mean_k_out": 0.7088,
+        "mean_k_in": 0.67,
+        "mean_drift": -0.0388,
+        "occupancy": 0.28815,
+        "underpowered": false
+      },
+      {
+        "n_st": 4,
+        "n_boundaries": 30474,
+        "n_waves": 4359,
+        "n_single_swaps": 3194,
+        "p_starter_leaves_size1": 0.6706,
+        "p_wave": 0.14304,
+        "mean_size": 1.3265,
+        "p_size1": 0.7327,
+        "mean_k_out": 0.9537,
+        "mean_k_in": 0.3393,
+        "mean_drift": -0.6144,
+        "occupancy": 0.28625,
+        "underpowered": false
+      },
+      {
+        "n_st": 5,
+        "n_boundaries": 20271,
+        "n_waves": 1770,
+        "n_single_swaps": 1187,
+        "p_starter_leaves_size1": 1.0,
+        "p_wave": 0.08732,
+        "mean_size": 1.4226,
+        "p_size1": 0.6706,
+        "mean_k_out": 1.4226,
+        "mean_k_in": 0.0,
+        "mean_drift": -1.4226,
+        "occupancy": 0.18876,
+        "underpowered": false
+      }
+    ],
+    "V5_wave_entry": [
+      {
+        "n_st": 0,
+        "n_boundaries": 739,
+        "n_waves": 95,
+        "n_single_swaps": 65,
+        "p_starter_leaves_size1": 0.0,
+        "p_wave": 0.12855,
+        "mean_size": 1.5158,
+        "p_size1": 0.6842,
+        "mean_k_out": 0.0,
+        "mean_k_in": 1.1789,
+        "mean_drift": 1.1789,
+        "occupancy": 0.00698,
+        "underpowered": false
+      },
+      {
+        "n_st": 1,
+        "n_boundaries": 3804,
+        "n_waves": 712,
+        "n_single_swaps": 426,
+        "p_starter_leaves_size1": 0.3239,
+        "p_wave": 0.18717,
+        "mean_size": 1.5772,
+        "p_size1": 0.5983,
+        "mean_k_out": 0.3652,
+        "mean_k_in": 1.3441,
+        "mean_drift": 0.9789,
+        "occupancy": 0.03589,
+        "underpowered": false
+      },
+      {
+        "n_st": 2,
+        "n_boundaries": 17294,
+        "n_waves": 3208,
+        "n_single_swaps": 1966,
+        "p_starter_leaves_size1": 0.3937,
+        "p_wave": 0.1855,
+        "mean_size": 1.5,
+        "p_size1": 0.6128,
+        "mean_k_out": 0.5443,
+        "mean_k_in": 1.1197,
+        "mean_drift": 0.5754,
+        "occupancy": 0.16332,
+        "underpowered": false
+      },
+      {
+        "n_st": 3,
+        "n_boundaries": 34169,
+        "n_waves": 6049,
+        "n_single_swaps": 4184,
+        "p_starter_leaves_size1": 0.521,
+        "p_wave": 0.17703,
+        "mean_size": 1.3701,
+        "p_size1": 0.6917,
+        "mean_k_out": 0.7102,
+        "mean_k_in": 0.72,
+        "mean_drift": 0.0098,
+        "occupancy": 0.32204,
+        "underpowered": false
+      },
+      {
+        "n_st": 4,
+        "n_boundaries": 30567,
+        "n_waves": 4426,
+        "n_single_swaps": 3241,
+        "p_starter_leaves_size1": 0.6788,
+        "p_wave": 0.1448,
+        "mean_size": 1.3278,
+        "p_size1": 0.7323,
+        "mean_k_out": 0.9593,
+        "mean_k_in": 0.3064,
+        "mean_drift": -0.653,
+        "occupancy": 0.2872,
+        "underpowered": false
+      },
+      {
+        "n_st": 5,
+        "n_boundaries": 19837,
+        "n_waves": 1693,
+        "n_single_swaps": 1128,
+        "p_starter_leaves_size1": 1.0,
+        "p_wave": 0.08535,
+        "mean_size": 1.42,
+        "p_size1": 0.6663,
+        "mean_k_out": 1.42,
+        "mean_k_in": 0.0,
+        "mean_drift": -1.42,
+        "occupancy": 0.18457,
+        "underpowered": false
+      }
+    ]
+  },
+  "decomposition": {
+    "V3_wave_both": {
+      "sim": {
+        "mean_n_st": 3.1919485187584167,
+        "p_le2": 0.27772385329200033,
+        "p_le1": 0.07975285968770773,
+        "dist": [
+          0.01524,
+          0.06451,
+          0.19797,
+          0.30743,
+          0.26503,
+          0.14982
+        ]
+      },
+      "actual": {
+        "mean_n_st": 3.22042833284308,
+        "p_le2": 0.25563217008773353,
+        "p_le1": 0.09042768647564398,
+        "dist": [
+          0.03872,
+          0.05171,
+          0.1652,
+          0.30742,
+          0.2687,
+          0.16825
+        ]
+      },
+      "swaps": {
+        "A": {
+          "sim_plus_actual": {
+            "mean_n_st": 3.209664465727472,
+            "p_le2": 0.27235694698269164,
+            "p_le1": 0.08255483932052718,
+            "dist": [
+              0.01788,
+              0.06468,
+              0.1898,
+              0.30668,
+              0.25946,
+              0.1615
+            ]
+          },
+          "actual_minus": {
+            "mean_n_st": 3.2104792771740267,
+            "p_le2": 0.25866959506160536,
+            "p_le1": 0.08564186953359802,
+            "dist": [
+              0.03377,
+              0.05187,
+              0.17303,
+              0.30934,
+              0.27543,
+              0.15657
+            ]
+          },
+          "mean_n_st_share_in": 0.6220527604706474,
+          "mean_n_st_share_out": 0.34933710028714193,
+          "p_le2_share_in": 0.24293786307202375,
+          "p_le2_share_out": 0.13749178574519744
+        },
+        "S": {
+          "sim_plus_actual": {
+            "mean_n_st": 3.194104292428726,
+            "p_le2": 0.2773720947853503,
+            "p_le1": 0.08085651127660723,
+            "dist": [
+              0.01623,
+              0.06463,
+              0.19652,
+              0.30561,
+              0.26548,
+              0.15154
+            ]
+          },
+          "actual_minus": {
+            "mean_n_st": 3.2299795849506516,
+            "p_le2": 0.2525382073860073,
+            "p_le1": 0.08641079580094543,
+            "dist": [
+              0.03524,
+              0.05117,
+              0.16613,
+              0.31078,
+              0.2692,
+              0.16748
+            ]
+          },
+          "mean_n_st_share_in": 0.07569479435156141,
+          "mean_n_st_share_out": -0.3353691874244116,
+          "p_le2_share_in": 0.015922666616099954,
+          "p_le2_share_out": -0.14005101707816764
+        },
+        "O": {
+          "sim_plus_actual": {
+            "mean_n_st": 3.1333171835428213,
+            "p_le2": 0.2927646092751013,
+            "p_le1": 0.08759854783464494,
+            "dist": [
+              0.0165,
+              0.0711,
+              0.20517,
+              0.31363,
+              0.25702,
+              0.13658
+            ]
+          },
+          "actual_minus": {
+            "mean_n_st": 3.2833498718663243,
+            "p_le2": 0.2418626625316431,
+            "p_le1": 0.0836560006475032,
+            "dist": [
+              0.03656,
+              0.0471,
+              0.15821,
+              0.29868,
+              0.27349,
+              0.18597
+            ]
+          },
+          "mean_n_st_share_in": -2.0586979620477686,
+          "mean_n_st_share_out": -2.2093381240549865,
+          "p_le2_share_in": -0.6808334088457312,
+          "p_le2_share_out": -0.6232892002285724
+        },
+        "I": {
+          "sim_plus_actual": {
+            "mean_n_st": 3.2802597987092357,
+            "p_le2": 0.24183845394942824,
+            "p_le1": 0.07500961359093011,
+            "dist": [
+              0.02848,
+              0.04653,
+              0.16683,
+              0.30478,
+              0.28117,
+              0.17221
+            ]
+          },
+          "actual_minus": {
+            "mean_n_st": 3.1505708193446864,
+            "p_le2": 0.28719517962753016,
+            "p_le1": 0.09146640221648353,
+            "dist": [
+              0.02023,
+              0.07123,
+              0.19573,
+              0.31199,
+              0.25216,
+              0.14865
+            ]
+          },
+          "mean_n_st_share_in": 3.1008376560427076,
+          "mean_n_st_share_out": 2.4528781434711973,
+          "p_le2_share_in": 1.6243850235748976,
+          "p_le2_share_out": 1.4287281438881276
+        },
+        "reset": {
+          "sim_plus_actual": {
+            "mean_n_st": 3.1919485187584167,
+            "p_le2": 0.27772385329200033,
+            "p_le1": 0.07975285968770773,
+            "dist": [
+              0.01524,
+              0.06451,
+              0.19797,
+              0.30743,
+              0.26503,
+              0.14982
+            ]
+          },
+          "actual_minus": {
+            "mean_n_st": 3.22042833284308,
+            "p_le2": 0.25563217008773353,
+            "p_le1": 0.09042768647564398,
+            "dist": [
+              0.03872,
+              0.05171,
+              0.1652,
+              0.30742,
+              0.2687,
+              0.16825
+            ]
+          },
+          "mean_n_st_share_in": 0.0,
+          "mean_n_st_share_out": 0.0,
+          "p_le2_share_in": -0.0,
+          "p_le2_share_out": -0.0
+        }
+      }
+    },
+    "V5_wave_entry": {
+      "sim": {
+        "mean_n_st": 3.2575531954490615,
+        "p_le2": 0.23967219336289428,
+        "p_le1": 0.051725380649390695,
+        "dist": [
+          0.00882,
+          0.04291,
+          0.18795,
+          0.34653,
+          0.26983,
+          0.14397
+        ]
+      },
+      "actual": {
+        "mean_n_st": 3.22042833284308,
+        "p_le2": 0.25563217008773353,
+        "p_le1": 0.09042768647564398,
+        "dist": [
+          0.03872,
+          0.05171,
+          0.1652,
+          0.30742,
+          0.2687,
+          0.16825
+        ]
+      },
+      "swaps": {
+        "A": {
+          "sim_plus_actual": {
+            "mean_n_st": 3.271615351787738,
+            "p_le2": 0.23467446075048776,
+            "p_le1": 0.05393460688897665,
+            "dist": [
+              0.01068,
+              0.04325,
+              0.18074,
+              0.34649,
+              0.26677,
+              0.15207
+            ]
+          },
+          "actual_minus": {
+            "mean_n_st": 3.218802096603952,
+            "p_le2": 0.2574515505640641,
+            "p_le1": 0.08453608314653244,
+            "dist": [
+              0.03279,
+              0.05175,
+              0.17292,
+              0.30919,
+              0.27314,
+              0.16022
+            ]
+          },
+          "mean_n_st_share_in": -0.37878002372488095,
+          "mean_n_st_share_out": -0.04380450525534593,
+          "p_le2_share_in": -0.3131415977962119,
+          "p_le2_share_out": -0.11399643669272905
+        },
+        "S": {
+          "sim_plus_actual": {
+            "mean_n_st": 3.2575488959625982,
+            "p_le2": 0.24045925238224702,
+            "p_le1": 0.05307174711906677,
+            "dist": [
+              0.0095,
+              0.04357,
+              0.18739,
+              0.34426,
+              0.26998,
+              0.1453
+            ]
+          },
+          "actual_minus": {
+            "mean_n_st": 3.2206134525964645,
+            "p_le2": 0.2552049320550661,
+            "p_le1": 0.08885470048808303,
+            "dist": [
+              0.03709,
+              0.05176,
+              0.16635,
+              0.30991,
+              0.26799,
+              0.16689
+            ]
+          },
+          "mean_n_st_share_in": 0.00011581151178743285,
+          "mean_n_st_share_out": 0.004986409117506516,
+          "p_le2_share_in": 0.049314546814332845,
+          "p_le2_share_out": 0.026769339331334376
+        },
+        "O": {
+          "sim_plus_actual": {
+            "mean_n_st": 3.214352192324629,
+            "p_le2": 0.25099003639073036,
+            "p_le1": 0.05522297173164661,
+            "dist": [
+              0.00905,
+              0.04617,
+              0.19577,
+              0.35312,
+              0.26217,
+              0.13372
+            ]
+          },
+          "actual_minus": {
+            "mean_n_st": 3.2736182947462735,
+            "p_le2": 0.24349533879338253,
+            "p_le1": 0.08536682539022886,
+            "dist": [
+              0.03759,
+              0.04778,
+              0.15813,
+              0.29957,
+              0.2738,
+              0.18314
+            ]
+          },
+          "mean_n_st_share_in": 1.1636676903814813,
+          "mean_n_st_share_out": 1.4327315488737604,
+          "p_le2_share_in": 0.7091390684938531,
+          "p_le2_share_out": 0.7604541976218476
+        },
+        "I": {
+          "sim_plus_actual": {
+            "mean_n_st": 3.2703933401055396,
+            "p_le2": 0.24493326544640068,
+            "p_le1": 0.07804144336992033,
+            "dist": [
+              0.03025,
+              0.04779,
+              0.16689,
+              0.30446,
+              0.27759,
+              0.17301
+            ]
+          },
+          "actual_minus": {
+            "mean_n_st": 3.2269349050471003,
+            "p_le2": 0.24682235444424291,
+            "p_le1": 0.058828256013704255,
+            "dist": [
+              0.01169,
+              0.04713,
+              0.18799,
+              0.35142,
+              0.25924,
+              0.14252
+            ]
+          },
+          "mean_n_st_share_in": -0.3458637623189275,
+          "mean_n_st_share_out": 0.17526185276634934,
+          "p_le2_share_in": 0.3296415887197598,
+          "p_le2_share_out": 0.5519942663687907
+        },
+        "reset": {
+          "sim_plus_actual": {
+            "mean_n_st": 3.2575531954490615,
+            "p_le2": 0.23967219336289428,
+            "p_le1": 0.051725380649390695,
+            "dist": [
+              0.00882,
+              0.04291,
+              0.18795,
+              0.34653,
+              0.26983,
+              0.14397
+            ]
+          },
+          "actual_minus": {
+            "mean_n_st": 3.22042833284308,
+            "p_le2": 0.25563217008773353,
+            "p_le1": 0.09042768647564398,
+            "dist": [
+              0.03872,
+              0.05171,
+              0.1652,
+              0.30742,
+              0.2687,
+              0.16825
+            ]
+          },
+          "mean_n_st_share_in": -0.0,
+          "mean_n_st_share_out": -0.0,
+          "p_le2_share_in": 0.0,
+          "p_le2_share_out": 0.0
+        }
+      }
+    }
+  },
+  "by_cell": {
+    "ACTUAL": [
+      {
+        "time_cell": "H1",
+        "margin_band": "|m|<=5",
+        "n_boundaries": 31490,
+        "n_waves": 4163,
+        "p_wave": 0.1322,
+        "mean_size": 1.5076,
+        "mean_k_out": 0.8931,
+        "mean_k_in": 0.7086,
+        "mean_drift": -0.1845,
+        "mean_n_st_at_boundary": 3.5159,
+        "underpowered": false,
+        "p_wave_by_nst": [
+          0.1066,
+          0.1849,
+          0.178,
+          0.1659,
+          0.1293,
+          0.0644
+        ],
+        "n_bnd_by_nst": [
+          319,
+          1179,
+          4916,
+          8645,
+          8385,
+          8046
+        ]
+      },
+      {
+        "time_cell": "H1",
+        "margin_band": "|m| 6-15",
+        "n_boundaries": 17754,
+        "n_waves": 3002,
+        "p_wave": 0.16909,
+        "mean_size": 1.4797,
+        "mean_k_out": 0.8328,
+        "mean_k_in": 0.7405,
+        "mean_drift": -0.0923,
+        "mean_n_st_at_boundary": 3.2166,
+        "underpowered": false,
+        "p_wave_by_nst": [
+          0.1385,
+          0.1814,
+          0.197,
+          0.1779,
+          0.1636,
+          0.1147
+        ],
+        "n_bnd_by_nst": [
+          195,
+          849,
+          3223,
+          6436,
+          4750,
+          2301
+        ]
+      },
+      {
+        "time_cell": "H1",
+        "margin_band": "|m|>15",
+        "n_boundaries": 3010,
+        "n_waves": 507,
+        "p_wave": 0.16844,
+        "mean_size": 1.428,
+        "mean_k_out": 0.7574,
+        "mean_k_in": 0.7298,
+        "mean_drift": -0.0276,
+        "mean_n_st_at_boundary": 2.9558,
+        "underpowered": false,
+        "p_wave_by_nst": [
+          0.1429,
+          0.1312,
+          0.1846,
+          0.1722,
+          0.1591,
+          0.183
+        ],
+        "n_bnd_by_nst": [
+          49,
+          221,
+          661,
+          1115,
+          811,
+          153
+        ]
+      },
+      {
+        "time_cell": "H2 20:00-08:00",
+        "margin_band": "|m|<=5",
+        "n_boundaries": 10688,
+        "n_waves": 1409,
+        "p_wave": 0.13183,
+        "mean_size": 1.3364,
+        "mean_k_out": 0.8652,
+        "mean_k_in": 0.5955,
+        "mean_drift": -0.2697,
+        "mean_n_st_at_boundary": 3.5981,
+        "underpowered": false,
+        "p_wave_by_nst": [
+          0.1471,
+          0.1662,
+          0.1752,
+          0.1521,
+          0.1366,
+          0.079
+        ],
+        "n_bnd_by_nst": [
+          68,
+          355,
+          1444,
+          2893,
+          3105,
+          2823
+        ]
+      },
+      {
+        "time_cell": "H2 20:00-08:00",
+        "margin_band": "|m| 6-15",
+        "n_boundaries": 13870,
+        "n_waves": 1815,
+        "p_wave": 0.13086,
+        "mean_size": 1.3983,
+        "mean_k_out": 0.8523,
+        "mean_k_in": 0.6727,
+        "mean_drift": -0.1796,
+        "mean_n_st_at_boundary": 3.5154,
+        "underpowered": false,
+        "p_wave_by_nst": [
+          0.1327,
+          0.1708,
+          0.1785,
+          0.159,
+          0.1217,
+          0.0701
+        ],
+        "n_bnd_by_nst": [
+          98,
+          439,
+          2095,
+          3988,
+          4085,
+          3165
+        ]
+      },
+      {
+        "time_cell": "H2 20:00-08:00",
+        "margin_band": "|m|>15",
+        "n_boundaries": 6700,
+        "n_waves": 1019,
+        "p_wave": 0.15209,
+        "mean_size": 1.4652,
+        "mean_k_out": 0.8842,
+        "mean_k_in": 0.6634,
+        "mean_drift": -0.2208,
+        "mean_n_st_at_boundary": 3.2322,
+        "underpowered": false,
+        "p_wave_by_nst": [
+          0.1622,
+          0.1816,
+          0.1827,
+          0.1696,
+          0.1387,
+          0.0979
+        ],
+        "n_bnd_by_nst": [
+          111,
+          479,
+          1259,
+          1940,
+          1716,
+          1195
+        ]
+      },
+      {
+        "time_cell": "final 8:00",
+        "margin_band": "|m|<=5",
+        "n_boundaries": 7246,
+        "n_waves": 1098,
+        "p_wave": 0.15153,
+        "mean_size": 1.2049,
+        "mean_k_out": 0.5974,
+        "mean_k_in": 0.674,
+        "mean_drift": 0.0765,
+        "mean_n_st_at_boundary": 3.6438,
+        "underpowered": false,
+        "p_wave_by_nst": [
+          0.125,
+          0.2698,
+          0.2351,
+          0.1742,
+          0.1471,
+          0.0781
+        ],
+        "n_bnd_by_nst": [
+          48,
+          63,
+          536,
+          2382,
+          2963,
+          1254
+        ]
+      },
+      {
+        "time_cell": "final 8:00",
+        "margin_band": "|m| 6-15",
+        "n_boundaries": 9612,
+        "n_waves": 1373,
+        "p_wave": 0.14284,
+        "mean_size": 1.268,
+        "mean_k_out": 0.6839,
+        "mean_k_in": 0.638,
+        "mean_drift": -0.0459,
+        "mean_n_st_at_boundary": 3.49,
+        "underpowered": false,
+        "p_wave_by_nst": [
+          0.0894,
+          0.1383,
+          0.168,
+          0.1676,
+          0.1379,
+          0.0847
+        ],
+        "n_bnd_by_nst": [
+          123,
+          188,
+          1036,
+          3073,
+          3893,
+          1299
+        ]
+      },
+      {
+        "time_cell": "final 8:00",
+        "margin_band": "|m|>15",
+        "n_boundaries": 6040,
+        "n_waves": 865,
+        "p_wave": 0.14321,
+        "mean_size": 1.6382,
+        "mean_k_out": 0.9827,
+        "mean_k_in": 0.5353,
+        "mean_drift": -0.4474,
+        "mean_n_st_at_boundary": 2.5921,
+        "underpowered": false,
+        "p_wave_by_nst": [
+          0.0559,
+          0.1664,
+          0.1623,
+          0.1648,
+          0.145,
+          0.0919
+        ],
+        "n_bnd_by_nst": [
+          644,
+          751,
+          1232,
+          1657,
+          1310,
+          446
+        ]
+      }
+    ],
+    "V3_wave_both": [
+      {
+        "time_cell": "H1",
+        "margin_band": "|m|<=5",
+        "n_boundaries": 31490,
+        "n_waves": 4220,
+        "p_wave": 0.13401,
+        "mean_size": 1.4808,
+        "mean_k_out": 0.8815,
+        "mean_k_in": 0.637,
+        "mean_drift": -0.2445,
+        "mean_n_st_at_boundary": 3.491,
+        "underpowered": false,
+        "p_wave_by_nst": [
+          0.137,
+          0.184,
+          0.1705,
+          0.1671,
+          0.1259,
+          0.0751
+        ],
+        "n_bnd_by_nst": [
+          292,
+          1446,
+          5057,
+          8197,
+          8710,
+          7788
+        ]
+      },
+      {
+        "time_cell": "H1",
+        "margin_band": "|m| 6-15",
+        "n_boundaries": 17754,
+        "n_waves": 3062,
+        "p_wave": 0.17247,
+        "mean_size": 1.466,
+        "mean_k_out": 0.8063,
+        "mean_k_in": 0.6963,
+        "mean_drift": -0.1101,
+        "mean_n_st_at_boundary": 3.13,
+        "underpowered": false,
+        "p_wave_by_nst": [
+          0.1407,
+          0.1874,
+          0.1894,
+          0.184,
+          0.1638,
+          0.1252
+        ],
+        "n_bnd_by_nst": [
+          199,
+          1190,
+          3760,
+          5613,
+          4939,
+          2053
+        ]
+      },
+      {
+        "time_cell": "H1",
+        "margin_band": "|m|>15",
+        "n_boundaries": 3010,
+        "n_waves": 549,
+        "p_wave": 0.18239,
+        "mean_size": 1.4517,
+        "mean_k_out": 0.7286,
+        "mean_k_in": 0.7559,
+        "mean_drift": 0.0273,
+        "mean_n_st_at_boundary": 2.9897,
+        "underpowered": false,
+        "p_wave_by_nst": [
+          0.05,
+          0.1787,
+          0.2078,
+          0.2044,
+          0.1598,
+          0.0995
+        ],
+        "n_bnd_by_nst": [
+          20,
+          291,
+          616,
+          1047,
+          845,
+          191
+        ]
+      },
+      {
+        "time_cell": "H2 20:00-08:00",
+        "margin_band": "|m|<=5",
+        "n_boundaries": 10688,
+        "n_waves": 1419,
+        "p_wave": 0.13277,
+        "mean_size": 1.3601,
+        "mean_k_out": 0.8302,
+        "mean_k_in": 0.494,
+        "mean_drift": -0.3362,
+        "mean_n_st_at_boundary": 3.7631,
+        "underpowered": false,
+        "p_wave_by_nst": [
+          0.1489,
+          0.1672,
+          0.1964,
+          0.1604,
+          0.1327,
+          0.0862
+        ],
+        "n_bnd_by_nst": [
+          47,
+          293,
+          1064,
+          2494,
+          3633,
+          3157
+        ]
+      },
+      {
+        "time_cell": "H2 20:00-08:00",
+        "margin_band": "|m| 6-15",
+        "n_boundaries": 13870,
+        "n_waves": 1906,
+        "p_wave": 0.13742,
+        "mean_size": 1.3793,
+        "mean_k_out": 0.7959,
+        "mean_k_in": 0.521,
+        "mean_drift": -0.2749,
+        "mean_n_st_at_boundary": 3.6289,
+        "underpowered": false,
+        "p_wave_by_nst": [
+          0.1314,
+          0.1971,
+          0.1898,
+          0.1684,
+          0.1305,
+          0.0846
+        ],
+        "n_bnd_by_nst": [
+          137,
+          416,
+          1791,
+          3468,
+          4359,
+          3699
+        ]
+      },
+      {
+        "time_cell": "H2 20:00-08:00",
+        "margin_band": "|m|>15",
+        "n_boundaries": 6700,
+        "n_waves": 982,
+        "p_wave": 0.14657,
+        "mean_size": 1.4145,
+        "mean_k_out": 0.8595,
+        "mean_k_in": 0.5692,
+        "mean_drift": -0.2902,
+        "mean_n_st_at_boundary": 3.4581,
+        "underpowered": false,
+        "p_wave_by_nst": [
+          0.1029,
+          0.1936,
+          0.1708,
+          0.1751,
+          0.159,
+          0.0784
+        ],
+        "n_bnd_by_nst": [
+          68,
+          346,
+          1118,
+          1730,
+          1793,
+          1645
+        ]
+      },
+      {
+        "time_cell": "final 8:00",
+        "margin_band": "|m|<=5",
+        "n_boundaries": 7246,
+        "n_waves": 1214,
+        "p_wave": 0.16754,
+        "mean_size": 1.2257,
+        "mean_k_out": 0.5535,
+        "mean_k_in": 0.589,
+        "mean_drift": 0.0354,
+        "mean_n_st_at_boundary": 3.1637,
+        "underpowered": false,
+        "p_wave_by_nst": [
+          0.1048,
+          0.2027,
+          0.1946,
+          0.18,
+          0.1517,
+          0.107
+        ],
+        "n_bnd_by_nst": [
+          105,
+          365,
+          1269,
+          2633,
+          2248,
+          626
+        ]
+      },
+      {
+        "time_cell": "final 8:00",
+        "margin_band": "|m| 6-15",
+        "n_boundaries": 9612,
+        "n_waves": 1689,
+        "p_wave": 0.17572,
+        "mean_size": 1.2688,
+        "mean_k_out": 0.5992,
+        "mean_k_in": 0.5891,
+        "mean_drift": -0.0101,
+        "mean_n_st_at_boundary": 3.0426,
+        "underpowered": false,
+        "p_wave_by_nst": [
+          0.0929,
+          0.1686,
+          0.1909,
+          0.1953,
+          0.1651,
+          0.1125
+        ],
+        "n_bnd_by_nst": [
+          183,
+          605,
+          2043,
+          3343,
+          2665,
+          773
+        ]
+      },
+      {
+        "time_cell": "final 8:00",
+        "margin_band": "|m|>15",
+        "n_boundaries": 6040,
+        "n_waves": 1038,
+        "p_wave": 0.17185,
+        "mean_size": 1.4644,
+        "mean_k_out": 0.8362,
+        "mean_k_in": 0.7592,
+        "mean_drift": -0.0771,
+        "mean_n_st_at_boundary": 2.7725,
+        "underpowered": false,
+        "p_wave_by_nst": [
+          0.1288,
+          0.1931,
+          0.1883,
+          0.1739,
+          0.1568,
+          0.1209
+        ],
+        "n_bnd_by_nst": [
+          163,
+          642,
+          1561,
+          2053,
+          1282,
+          339
+        ]
+      }
+    ],
+    "V5_wave_entry": [
+      {
+        "time_cell": "H1",
+        "margin_band": "|m|<=5",
+        "n_boundaries": 31490,
+        "n_waves": 4211,
+        "p_wave": 0.13372,
+        "mean_size": 1.4742,
+        "mean_k_out": 0.9048,
+        "mean_k_in": 0.6623,
+        "mean_drift": -0.2425,
+        "mean_n_st_at_boundary": 3.5238,
+        "underpowered": false,
+        "p_wave_by_nst": [
+          0.1122,
+          0.1764,
+          0.1711,
+          0.1655,
+          0.1285,
+          0.0737
+        ],
+        "n_bnd_by_nst": [
+          205,
+          1032,
+          4881,
+          9094,
+          8503,
+          7775
+        ]
+      },
+      {
+        "time_cell": "H1",
+        "margin_band": "|m| 6-15",
+        "n_boundaries": 17754,
+        "n_waves": 3099,
+        "p_wave": 0.17455,
+        "mean_size": 1.4521,
+        "mean_k_out": 0.8183,
+        "mean_k_in": 0.7251,
+        "mean_drift": -0.0933,
+        "mean_n_st_at_boundary": 3.2062,
+        "underpowered": false,
+        "p_wave_by_nst": [
+          0.1111,
+          0.1913,
+          0.1964,
+          0.1857,
+          0.1657,
+          0.1212
+        ],
+        "n_bnd_by_nst": [
+          117,
+          779,
+          3468,
+          6382,
+          4978,
+          2030
+        ]
+      },
+      {
+        "time_cell": "H1",
+        "margin_band": "|m|>15",
+        "n_boundaries": 3010,
+        "n_waves": 546,
+        "p_wave": 0.1814,
+        "mean_size": 1.4322,
+        "mean_k_out": 0.7473,
+        "mean_k_in": 0.7821,
+        "mean_drift": 0.0348,
+        "mean_n_st_at_boundary": 3.0512,
+        "underpowered": false,
+        "p_wave_by_nst": [
+          0.1667,
+          0.1796,
+          0.1758,
+          0.2015,
+          0.1734,
+          0.1159
+        ],
+        "n_bnd_by_nst": [
+          6,
+          206,
+          620,
+          1181,
+          790,
+          207
+        ]
+      },
+      {
+        "time_cell": "H2 20:00-08:00",
+        "margin_band": "|m|<=5",
+        "n_boundaries": 10688,
+        "n_waves": 1414,
+        "p_wave": 0.1323,
+        "mean_size": 1.3784,
+        "mean_k_out": 0.8289,
+        "mean_k_in": 0.512,
+        "mean_drift": -0.3168,
+        "mean_n_st_at_boundary": 3.7907,
+        "underpowered": false,
+        "p_wave_by_nst": [
+          0.1818,
+          0.1722,
+          0.2064,
+          0.1596,
+          0.1314,
+          0.0824
+        ],
+        "n_bnd_by_nst": [
+          22,
+          151,
+          1066,
+          2706,
+          3601,
+          3142
+        ]
+      },
+      {
+        "time_cell": "H2 20:00-08:00",
+        "margin_band": "|m| 6-15",
+        "n_boundaries": 13870,
+        "n_waves": 1929,
+        "p_wave": 0.13908,
+        "mean_size": 1.367,
+        "mean_k_out": 0.8035,
+        "mean_k_in": 0.5464,
+        "mean_drift": -0.2571,
+        "mean_n_st_at_boundary": 3.6435,
+        "underpowered": false,
+        "p_wave_by_nst": [
+          0.1792,
+          0.189,
+          0.1902,
+          0.1698,
+          0.133,
+          0.0848
+        ],
+        "n_bnd_by_nst": [
+          106,
+          365,
+          1614,
+          3793,
+          4397,
+          3595
+        ]
+      },
+      {
+        "time_cell": "H2 20:00-08:00",
+        "margin_band": "|m|>15",
+        "n_boundaries": 6700,
+        "n_waves": 997,
+        "p_wave": 0.14881,
+        "mean_size": 1.4092,
+        "mean_k_out": 0.8746,
+        "mean_k_in": 0.5767,
+        "mean_drift": -0.2979,
+        "mean_n_st_at_boundary": 3.4396,
+        "underpowered": false,
+        "p_wave_by_nst": [
+          0.1184,
+          0.1926,
+          0.1702,
+          0.1772,
+          0.1543,
+          0.0841
+        ],
+        "n_bnd_by_nst": [
+          76,
+          270,
+          1122,
+          1907,
+          1815,
+          1510
+        ]
+      },
+      {
+        "time_cell": "final 8:00",
+        "margin_band": "|m|<=5",
+        "n_boundaries": 7246,
+        "n_waves": 1236,
+        "p_wave": 0.17058,
+        "mean_size": 1.2144,
+        "mean_k_out": 0.5583,
+        "mean_k_in": 0.5655,
+        "mean_drift": 0.0073,
+        "mean_n_st_at_boundary": 3.2579,
+        "underpowered": false,
+        "p_wave_by_nst": [
+          0.2174,
+          0.1786,
+          0.1885,
+          0.1926,
+          0.154,
+          0.0899
+        ],
+        "n_bnd_by_nst": [
+          23,
+          224,
+          1146,
+          2944,
+          2286,
+          623
+        ]
+      },
+      {
+        "time_cell": "final 8:00",
+        "margin_band": "|m| 6-15",
+        "n_boundaries": 9612,
+        "n_waves": 1694,
+        "p_wave": 0.17624,
+        "mean_size": 1.268,
+        "mean_k_out": 0.6257,
+        "mean_k_in": 0.6063,
+        "mean_drift": -0.0195,
+        "mean_n_st_at_boundary": 3.1247,
+        "underpowered": false,
+        "p_wave_by_nst": [
+          0.1273,
+          0.1887,
+          0.1917,
+          0.1889,
+          0.1628,
+          0.1079
+        ],
+        "n_bnd_by_nst": [
+          55,
+          408,
+          1862,
+          3875,
+          2782,
+          630
+        ]
+      },
+      {
+        "time_cell": "final 8:00",
+        "margin_band": "|m|>15",
+        "n_boundaries": 6040,
+        "n_waves": 1057,
+        "p_wave": 0.175,
+        "mean_size": 1.4361,
+        "mean_k_out": 0.8079,
+        "mean_k_in": 0.7852,
+        "mean_drift": -0.0227,
+        "mean_n_st_at_boundary": 2.9048,
+        "underpowered": false,
+        "p_wave_by_nst": [
+          0.1085,
+          0.2168,
+          0.1927,
+          0.1784,
+          0.1611,
+          0.1077
+        ],
+        "n_bnd_by_nst": [
+          129,
+          369,
+          1515,
+          2287,
+          1415,
+          325
+        ]
+      }
+    ]
+  },
+  "per_team": {
+    "V3_wave_both": {
+      "n_teams_powered": 139,
+      "n_teams_underpowered": 191,
+      "mean_n_st_sim": 3.371,
+      "mean_n_st_act": 3.4046,
+      "sd_n_st_sim": 0.2792,
+      "sd_n_st_act": 0.396,
+      "corr_n_st": 0.125,
+      "mean_abs_dev_n_st": 0.3575,
+      "p_wave_sim": 0.15,
+      "p_wave_act": 0.14481,
+      "corr_p_wave": 0.1122
+    },
+    "V5_wave_entry": {
+      "n_teams_powered": 139,
+      "n_teams_underpowered": 191,
+      "mean_n_st_sim": 3.4196,
+      "mean_n_st_act": 3.4046,
+      "sd_n_st_sim": 0.2468,
+      "sd_n_st_act": 0.396,
+      "corr_n_st": 0.0894,
+      "mean_abs_dev_n_st": 0.3475,
+      "p_wave_sim": 0.15249,
+      "p_wave_act": 0.14481,
+      "corr_p_wave": 0.1518
+    }
+  },
+  "occupancy": {
+    "ACTUAL": {
+      "observed": [
+        0.01637,
+        0.04282,
+        0.15403,
+        0.30216,
+        0.29171,
+        0.19291
+      ],
+      "chain_stationary": [
+        0.03872,
+        0.05171,
+        0.1652,
+        0.30742,
+        0.2687,
+        0.16825
+      ],
+      "observed_mean": 3.3888,
+      "chain_mean": 3.2204,
+      "observed_p_le2": 0.2132,
+      "chain_p_le2": 0.2556,
+      "reset_rate": 0.00746,
+      "n_fallback_O": 0,
+      "n_fallback_I": 130
+    },
+    "V3_wave_both": {
+      "observed": [
+        0.01153,
+        0.05287,
+        0.17245,
+        0.28815,
+        0.28625,
+        0.18876
+      ],
+      "chain_stationary": [
+        0.01524,
+        0.06451,
+        0.19797,
+        0.30743,
+        0.26503,
+        0.14982
+      ],
+      "observed_mean": 3.351,
+      "chain_mean": 3.1919,
+      "observed_p_le2": 0.2368,
+      "chain_p_le2": 0.2777,
+      "reset_rate": 0.00746,
+      "n_fallback_O": 0,
+      "n_fallback_I": 130
+    },
+    "V5_wave_entry": {
+      "observed": [
+        0.00698,
+        0.03589,
+        0.16332,
+        0.32204,
+        0.2872,
+        0.18457
+      ],
+      "chain_stationary": [
+        0.00882,
+        0.04291,
+        0.18795,
+        0.34653,
+        0.26983,
+        0.14397
+      ],
+      "observed_mean": 3.4003,
+      "chain_mean": 3.2576,
+      "observed_p_le2": 0.2062,
+      "chain_p_le2": 0.2397,
+      "reset_rate": 0.00746,
+      "n_fallback_O": 1,
+      "n_fallback_I": 131
+    }
+  },
+  "seconds": 237.0
+}

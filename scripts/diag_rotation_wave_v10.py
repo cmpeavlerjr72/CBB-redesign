@@ -78,6 +78,9 @@ from cbb_sim.models.rotation_v8 import N_ST  # noqa: E402
 
 OUT = (ROOT / "data" / "processed" / "models" / "rotation"
        / "wave_support_round10_2026-09-18.json")
+#: 23.1's own two arms. `--arms` points the SAME measurement at the round-10
+#: arms for 23.9's report-only objects; the default is unchanged, so the support
+#: measurement the pre-registration was written on is reproducible verbatim.
 ARMS = ["K1_cond_class", "Z1_exit_marg"]
 MW1 = MAX_WAVE + 1
 UP = 300          # the project's UNDERPOWERED threshold since round 5
@@ -312,11 +315,20 @@ def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--sim-games", type=int, default=400)
     ap.add_argument("--sim-seed", type=int, default=0)
+    ap.add_argument("--arms", type=str, default="")
+    ap.add_argument("--out", type=str, default="")
     args = ap.parse_args()
     t0 = time.time()
+    global ARMS, OUT
+    if args.arms:
+        ARMS = [a for a in args.arms.split(",") if a]
+    if args.out:
+        OUT = ROOT / "data" / "processed" / "models" / "rotation" / args.out
 
     import train_rotation_v5 as V5T
+    import train_rotation_v10 as V10T
     import train_rotation_v9 as V9T
+    make_arm = V10T.make_arm10
     args_d = {"test_games": args.sim_games, "seeds": 1, "noise_seeds": 3,
               "noise_games": 30, "wave_team_games": 6000, "min_prior_games": 3,
               "fit_seed": 11, "floor_fit_seed": 101, "floor_seed": 23,
@@ -367,7 +379,7 @@ def main() -> None:
             if not gl:
                 continue
             pw = V5T.priors_for("S1", tag)
-            arm = V9T.make_arm9(name, tag, "")
+            arm = make_arm(name, tag, "")
             for gid in gl:
                 keys = [k for k in c["keys_by_game"][gid] if k in pw]
                 if len(keys) != 2:
@@ -403,8 +415,12 @@ def main() -> None:
                         * np.arange(MW1)[None, :]).sum() / wv)
             ki = float((acc["kin_h"][:, :, n, :]
                         * np.arange(MW1)[None, None, :]).sum() / wv)
+            s1 = acc["kout_h"][0, n]
             rows.append({
                 "n_st": n, "n_boundaries": int(nb[n]), "n_waves": int(nw[n]),
+                "n_single_swaps": int(s1.sum()),
+                "p_starter_leaves_size1": (round(float(s1[1] / s1.sum()), 4)
+                                           if s1.sum() else None),
                 "p_wave": round(float(nw[n] / nb[n]), 5) if nb[n] else None,
                 "mean_size": round(float((sz * np.arange(1, MAX_WAVE + 1)).sum()
                                          / max(sz.sum(), 1.0)), 4) if sz.sum() else None,
@@ -459,6 +475,14 @@ def main() -> None:
                     "mean_drift": round(float((ki - ko) / nw), 4) if nw else None,
                     "mean_n_st_at_boundary": round(nst_mean, 4),
                     "underpowered": bool(nb < UP),
+                    # the (cell x n_st) INTERACTION the product parent cannot carry
+                    "p_wave_by_nst": [
+                        (round(float(acc["ce_wave"][ces, j].sum()
+                                     / acc["ce_bnd"][ces, j].sum()), 4)
+                         if acc["ce_bnd"][ces, j].sum() else None)
+                        for j in range(N_ST)],
+                    "n_bnd_by_nst": [int(acc["ce_bnd"][ces, j].sum())
+                                     for j in range(N_ST)],
                 })
         res["by_cell"][k] = rows
 
