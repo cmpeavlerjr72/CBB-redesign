@@ -571,3 +571,61 @@ Nothing in this amendment changes section 9.3 (folds), 9.4 (primary metric),
 9.6 (noise floor form), 9.7 (decision rule, beyond the ordering extension
 above) or 9.8 (prohibitions) — all remain exactly as PM-approved and are
 carried into the run below unchanged.
+
+---
+
+## 9.10 Round 1 results: OFFLINE ONLY (run 2026-09-18,
+`scripts/exp_free_throw_technicals_v1.py`; full detail
+`docs/tests/free_throw_technicals_2026-09-18.md`)
+
+**No closed-loop paired-seed run this round** (job permission exercised: "if
+time does not allow, stop at the offline table and say so" — reasons in the
+results doc section 6: a first-time engine-file wiring change plus a
+500x25-seed run on top of four other lanes' closed loops running on the same
+tree right now, under a 2-worker compute cap). **NOTHING ADOPTED, no served
+default changed.**
+
+`X0` is degenerate on both folds as pre-declared (9.4). `X1`, `X2`, `X4` and
+`X5` are statistically indistinguishable from each other on the aggregate
+offline primary (pooled Poisson deviance 42-49 on both folds; `X2`'s and
+`X4`'s internal shrinkage search picks a pseudo-exposure at or near the grid
+maximum, i.e. both collapse toward `X1`) and all four overshoot the test
+season's own realised rate by ~22-25% in both folds (the pooled training
+window is inflated by 2023's anomalous technical spike). Every arm clears
+rule 9.7.1's eligibility (noise floor ~1.2-1.6e-05 on the rate, ~0.008 pp of
+FTA/FGA — two orders of magnitude below any positive-rate arm's effect).
+
+**Offline analytic FTA/FGA closure** (additive, closed-form — a technical
+trip never touches an existing chance, confirmed by reading
+`possessions.py`): 115-134% of the -0.282 pp technical channel, ~26-27% of
+the -1.229 pp total FTA/FGA gap, essentially identical across `X1/X2/X4/X5`.
+Flagged, not celebrated: this lands near 100% of the channel because a
+~25% training-pool overshoot (above) happens to be a similar size to, and
+opposite in sign from, a newly-measured CBBD-vs-hoopR technical-count
+disagreement (CBBD's own trip table, the training target for every arm,
+sits at 64-73% of what hoopR's independent pbp implies the true incidence
+is, every season, not explained by clock-precision grouping — checked to a
+10-second tolerance). Neither bias is corrected here (9.8); this is reported
+as an unvalidated coincidence, not a calibration.
+
+**Section 3.1's team-level quintile check is POWERED (~5.5 sigma end to
+end) and finds a real, two-fold-replicated persistence effect** (2025
+actual rate rises monotonically 0.000380 → 0.000644 across 2024-prior-rate
+quintiles). `X1` fails this by construction (flat, slope ratio 0.0); `X5`
+reproduces it on both folds (4/4 monotone, slope ratio 1.336 F2 / 0.893 F1)
+despite scoring marginally worst on the aggregate deviance metric above —
+the same shape of tension Decision 8 was written to resolve elsewhere in
+this cascade, not resolved here.
+
+**Who shoots (X1 vs X3):** the actual technical shooter's as-of FT rate
+(0.798, n=4,090) sits closer to the team's best as-of shooter that game
+(0.862) than to the attempt-share-weighted average (0.708), favouring `X3`'s
+shooter rule; the as-of machinery already explains the elevated observed
+technical make rate (0.798 predicted vs 0.796 observed) through shooter
+identity alone.
+
+**Mechanically applying the pre-registered tie-break** (`X0 < X1 < X3 < X2
+< X4 < X5`) selects `X1` (paired with `X3`'s shooter rule). The PM is handed
+this choice alongside the responsiveness tension above rather than having it
+resolved by the tie-break's text, which was written before that tension was
+visible. Ledger row: `docs/models/change_ledger.md`.
