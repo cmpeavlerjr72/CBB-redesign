@@ -762,3 +762,81 @@ morning's 200-seed `v3c` read are all inside the 75-seed noise floor.
 automatically by `run_aws_sweep.sh` mid-run; the locally-consolidated `F2_2025_s200_v5b_{A,B}/`
 dirs were not re-pushed before the deadline), a fresh Windows parity reference for
 `v5b_glat_pmean`, and the PO alignment cells.
+
+---
+
+## 15. Windows parity reference v6 for `v5b_glat_pmean`, and `provisional_clock` retirement (2026-09-18)
+
+Closes this section's own open item ("a fresh Windows parity reference for `v5b_glat_pmean`").
+Local box, no cloud instance. Two pieces of housekeeping, both label-only, neither touching the
+sim loop, an RNG stream, or a fitted coefficient.
+
+**1. `provisional_clock` retired for the one ADOPTED clock arm.**
+`docs/models/change_ledger.md`'s row "Clock `v5b_glat_pmean` (round 5b B1, ...) **ADOPTED
+2026-09-11 13:45 EDT (PM)**" was never wired through to `run_meta.json`:
+`LatentClockAdapter.provisional` (`src/cbb_sim/engine/clock_adapter_v3.py`) inherited an
+unconditional `True` from the wrapped `ClockAdapterV3` via `__getattr__`, so every gate/report
+kept calling the served clock provisional after it was adopted. Fixed: a new
+`ADOPTED_MODES = frozenset({"v5b_glat_pmean"})` constant, and an explicit `provisional` dataclass
+field on `LatentClockAdapter` (shadows the inner delegate so normal attribute lookup wins), set at
+`load()` to `mode not in ADOPTED_MODES`; `source["adopted"]`/`source["note"]` flip the same way for
+consistency. `reference`, every `v3c_*`/`v4_*` arm and the other two `v5*` arms (`v5_glat_shared`,
+`v5b_glat_joint`, `v5d_glat_pquad`) are untouched and still report `provisional_clock=True`,
+confirmed by the existing `tests/test_clock_adapter_v5d.py::test_the_engine_runs_under_v5d`
+(pins `provisional_clock is True` under `ENGINE_CLOCK=v5d_glat_pquad`). `adapters.py` gets two
+comment-only updates next to `ENGINE_CLOCK`'s adoption-state docstring and default, correcting
+"PROVISIONAL SERVING CHOICE, NOT AN ADOPTION" to record the 13:45 EDT decision.
+
+**Verified behaviour-neutral**, on this lane's parent commit `09c7ae1` (before the possession-
+outcome round-5 and rotation round-10 lanes' own commits landed on top of it, unrelated to this
+fix): two 60-game x 5-seed smokes at 2 workers, `.venv/Scripts/python.exe scripts/run_engine.py
+--seeds 5 --max-games 60 --workers 2 --tag <tag>`, thread-count env vars pinned to 1.
+`parity_v6_before_provisional` (the two touched files held at `09c7ae1`'s content for this one run
+only, then restored) digests sha256 `492300a7fd1e6dc388a3c47b822f61e04da6501720ef762bde0afe7ba15451a1`
+-- the SAME digest the served B1 path has produced on every prior check since the round 5b serving
+decision (section 14 above; `docs/models/change_ledger.md` rows for `smoke60x5_default_v5b` /
+`smoke60x5_v5d_wiring`). `parity_v6_after_provisional` (the fix applied) digests sha256
+`0d4ddccc64d7700a7493db2427bcab2d06204f54a12db307f7b897729639029f`. `scripts/digest_engine_run.py`
+reports these as a mismatch (it hashes the whole `adapter_flags` block, which legitimately
+changed), so the two digests' `games`/`players` row lists and `flags` (`ENGINE_*`) blocks were
+diffed directly instead: **300 game rows and 4,882 player rows bit-identical, `flags`/`fold`/
+`season`/`n_games`/`engine_rules_from_data` identical**; the only differing fields anywhere in
+either digest are `meta.adapter_flags.provisional_clock` (`True` -> `False`) and
+`meta.adapter_flags.sources.clock.{adopted,note}` -- exactly the fields this lane changed and
+nothing else. `pytest tests/ -q`: **542 passed** (6 pre-existing pandas deprecation warnings,
+unrelated), run after the fix.
+
+**Concurrency note.** Two other lanes committed to this same working tree while this one was
+running (`d57d351` PO round-5 pre-registration, `83aa854` rotation round-10 pre-registration,
+`6215ac8` PO round-5 `round4b_G2`/`G3` engine wiring) -- none touched
+`src/cbb_sim/engine/clock_adapter_v3.py`, and `6215ac8`'s `adapters.py` change landed in a
+different function (`EventAdapter.load`) than this lane's two comment edits (near `ENGINE_CLOCK`'s
+default). Checked before committing: `git diff -- src/cbb_sim/engine/adapters.py` against the new
+HEAD showed only this lane's two hunks: nothing of another lane's uncommitted or committed work
+was included in this lane's commit (`9c02f85`), and nothing of this lane's was lost.
+
+**2. Fresh Windows parity reference for the served `v5b_glat_pmean` stack.** Same procedure as
+`..._v5.json` (section 13): `.venv/Scripts/python.exe scripts/run_engine.py --seeds 5 --max-games
+60 --workers 2 --tag parity_windows_v6_smoke60x5`, then `scripts/digest_engine_run.py --emit
+--results results/engine_v0/parity_windows_v6_smoke60x5 --out
+docs/ops/parity_reference_windows_v6.json`. Engine commit `9c02f85405a3bad156396b86b80fe3d92491f2fe`
+(this lane's fix commit; `run_meta.json` records `engine_tree_dirty: false`). Game sample: the
+first 60 games (by input row order) of the fold-2/season-2025 slate (5,710-game universe);
+`--max-games 60` truncates deterministically to those 60, and which 60 does not matter because RNG
+is seeded on `(seed, game_id, family)` (CLAUDE.md) -- only that both boxes run the identical set.
+Seeds 0-4. `ENGINE_CLOCK=v5b_glat_pmean` at its own default (not pinned via env var); every other
+`ENGINE_*` flag likewise at its current default (`ENGINE_EVENT=round2_s1`,
+`ENGINE_ROTATION=reference`, `ENGINE_FG3=decision8`, `ENGINE_FG_MAKE=round4_B1`,
+`ENGINE_REBOUND=s1_weekly`, `ENGINE_FREE_THROW=s1_conf_aligned`). SHA256
+`0d4ddccc64d7700a7493db2427bcab2d06204f54a12db307f7b897729639029f` -- identical to
+`parity_v6_after_provisional` above, confirming the fix reproduces byte-for-byte between the
+dirty-tree proof run and this clean-commit reference run. `docs/ops/parity_reference_windows.json`/
+`..._v2.json`/`..._v3.json`/`..._v4.json`/`..._v5.json` are untouched and remain the correct
+references for the configs each was emitted under (`..._v5.json` in particular is still the one to
+use for any box serving `v3c_srfloor_P3_s1`, not `v5b_glat_pmean`); `..._v6.json` is the one to use
+for any future box serving the current `v5b_glat_pmean` default.
+
+**Files this session**: `src/cbb_sim/engine/clock_adapter_v3.py`, `src/cbb_sim/engine/adapters.py`
+(comments only), `docs/ops/parity_reference_windows_v6.json` (new), `docs/models/change_ledger.md`,
+this section. `results/engine_v0/parity_v6_{before,after}_provisional/` and
+`results/engine_v0/parity_windows_v6_smoke60x5/` kept locally as evidence (gitignored, not pushed).
