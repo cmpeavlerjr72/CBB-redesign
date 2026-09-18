@@ -643,6 +643,17 @@ V5_MODES: dict[str, dict] = {
                        "params_root": None},
 }
 
+#: Clock housekeeping, 2026-09-11 13:45 EDT (PM), `docs/models/change_ledger.md`
+#: (row: "Clock `v5b_glat_pmean` (round 5b B1, ...) ADOPTED 2026-09-11 13:45 EDT
+#: (PM)"): `v5b_glat_pmean` is the only clock arm this project has ever adopted
+#: (every other `V5_MODES` entry, and every plain `ClockAdapterV3`/`ClockAdapter`
+#: arm, remains a provisional serving choice or an un-adopted bake-off arm).
+#: This is a LABEL ONLY -- it drives `LatentClockAdapter.provisional` below,
+#: which is read into `run_meta.json`'s `adapter_flags.provisional_clock`, and
+#: nothing else. It does not touch `pmf`, `draw`, any fitted coefficient, or any
+#: RNG stream, so it cannot change a single simulated number.
+ADOPTED_MODES: frozenset[str] = frozenset({"v5b_glat_pmean"})
+
 #: The pregame tempo feature the round-5d dispersion function is a function of.
 #: It is a TEAM_COLS member the served round-3c frame already carries, and it is
 #: game-level in the engine inputs (both team rows of a game carry the same
@@ -701,6 +712,12 @@ class LatentClockAdapter:
     unit: str
     mode: str
     source: dict
+    #: Overrides `inner.provisional` (which stays hard-coded True, per
+    #: `ClockAdapterV3`, for every round-3c/round-4 arm it also serves directly).
+    #: An explicit dataclass field so normal attribute lookup finds it BEFORE
+    #: `__getattr__` would delegate to `inner` -- set once, at `load()`, from
+    #: `ADOPTED_MODES`. Label only; see the comment on `ADOPTED_MODES`.
+    provisional: bool = True
     eoh: EohAccumulator = field(default_factory=EohAccumulator)
     wants_game_index: bool = True
     #: `loop.py` reads this and passes the active rows' (seed, game_id, "clock")
@@ -748,6 +765,7 @@ class LatentClockAdapter:
         if sigma_fn is not None:
             beta = tuple(float(b) for b in fitted[spec["beta_param"]])
             tbar = float(fitted[spec["centre_param"]])
+        adopted = mode in ADOPTED_MODES
         inner = ClockAdapterV3.load(inp, spec["base_mode"], season)
         src = dict(inner.source)
         src.update({
@@ -755,9 +773,13 @@ class LatentClockAdapter:
             "latent_sigma": sigma, "latent_sigma_source": str(pf),
             "latent_loc_kind": loc_kind, "latent_log_c": log_c,
             "latent_sigma_fold": "F2 train {2022,2023,2024}, method of moments",
-            "adopted": False,
-            "note": ("round-5 closed-loop candidate (experiments.md section 16); "
-                     "E[A]=1 scale mixture on the served cell law, NOT a default"),
+            "adopted": adopted,
+            "note": (("`v5b_glat_pmean` (arm B1): ADOPTED 2026-09-11 13:45 EDT "
+                      "(PM), docs/models/change_ledger.md. E[A]=1 scale mixture "
+                      "on the served cell law, and the served DEFAULT.")
+                     if adopted else
+                     ("round-5 closed-loop candidate (experiments.md section 16); "
+                      "E[A]=1 scale mixture on the served cell law, NOT a default")),
         })
         if sigma_fn is not None:
             src.update({
@@ -769,8 +791,8 @@ class LatentClockAdapter:
                          "per game. NOT a default, NOT adopted."),
             })
         return cls(inner=inner, sigma=sigma, unit=str(spec["unit"]), mode=mode,
-                   source=src, loc_kind=loc_kind, log_c=log_c,
-                   sigma_fn=sigma_fn, beta=beta, tbar=tbar)
+                   source=src, provisional=not adopted, loc_kind=loc_kind,
+                   log_c=log_c, sigma_fn=sigma_fn, beta=beta, tbar=tbar)
 
     def __getattr__(self, name: str):
         """Everything this wrapper does not override is the inner adapter's.

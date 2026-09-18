@@ -37,15 +37,19 @@ Adoption state as of 2026-09-10 (each model's own verdict file is the source):
                         `ENGINE_EVENT=reference` (round 1's best-loss but
                         NOT-ADOPTED arms) stays wired and still sets
                         provisional_event=True.
-    clock               NO ARM ADOPTED (0 of 20 eligible offline, 0 of 6 in the
-                        round-3c closed loop, 0 of 5 in round 5b). The DEFAULT
-                        since 2026-09-11 (round 5b) is
-                        `ENGINE_CLOCK=v5b_glat_pmean` (arm B1), a PROVISIONAL
-                        SERVING CHOICE over the prior served arm
-                        `v3c_srfloor_P3_s1`, which stays selectable; `reference`
-                        still wires round 1's best-CRPS
-                        `reference_not_adopted_lgbm_quantile.pkl`.
-                        -> provisional_clock=True either way
+    clock               `v5b_glat_pmean` (arm B1) ADOPTED 2026-09-11 13:45 EDT
+                        (PM), `docs/models/change_ledger.md`, after round 5b
+                        (0 of 5) served it provisionally over the prior
+                        `v3c_srfloor_P3_s1` and rounds 5c/5d resolved both open
+                        lines. The DEFAULT since round 5b is
+                        `ENGINE_CLOCK=v5b_glat_pmean`; `v3c_srfloor_P3_s1` and
+                        `reference` (round 1's best-CRPS
+                        `reference_not_adopted_lgbm_quantile.pkl`, 0 of 20
+                        eligible) stay selectable and unchanged.
+                        -> provisional_clock=False for `v5b_glat_pmean` only
+                        (`clock_adapter_v3.ADOPTED_MODES`); every other clock
+                        mode (`reference`, `v3c_*`, `v4_*`, the other `v5*`
+                        arms) still reports provisional_clock=True
     rotation            NO ARM ADOPTED (state-dependence veto, both rounds).
                         `ENGINE_ROTATION=reference` wires R2 hierarchical
                         Dirichlet + the fitted scheduler from
@@ -994,19 +998,23 @@ class Adapters:
         # still sets provisional_event=True.
         ev_mode = os.environ.get("ENGINE_EVENT", "round2_s1")
         # DEFAULT, 2026-09-11 (PM decision, clock round 5b + change ledger):
-        # `v5b_glat_pmean` (arm B1), a PROVISIONAL SERVING CHOICE, NOT AN
-        # ADOPTION -- `provisional_clock` stays True. B1 wins the pre-
-        # registered primary (per-game possession SD ratio 0.688 -> 1.009
-        # offline; 25-seed paired closed loop 0.804 -> 1.032) and restores the
-        # CLAUDE.md rule "one pace realisation per simulated game, both teams
-        # scaled by it", which the prior served clock (`v3c_srfloor_P3_s1`)
-        # violated (docs/tests/pace_efficiency_sign_2026-09-11.md). It is NOT
-        # adopted because two pre-registered lines fail: tempo-quintile-2
-        # responsiveness 1.174 vs [0.85, 1.15], and the G5 margin SD ratio
-        # 0.9704 -> 0.9563 (1.2 floors, inside the 0.95-1.05 gate). Round 5c
-        # targets the Q2 band with a per-team or tempo-conditioned latent SD.
+        # `v5b_glat_pmean` (arm B1). SERVED PROVISIONALLY the same day (round
+        # 5b: per-game possession SD ratio 0.688 -> 1.009 offline; 25-seed
+        # paired closed loop 0.804 -> 1.032) and restores the CLAUDE.md rule
+        # "one pace realisation per simulated game, both teams scaled by it",
+        # which the prior served clock (`v3c_srfloor_P3_s1`) violated
+        # (docs/tests/pace_efficiency_sign_2026-09-11.md). Round 5b's two open
+        # lines (tempo-quintile-2 responsiveness 1.174 vs [0.85, 1.15]; the
+        # G5 margin SD ratio 1.2-floor slip) were RESOLVED with evidence, not
+        # waived (round 5c: the Q2 read is unpowered and does not replicate;
+        # round 5d: all five B1 quintiles are inside the band closed-loop; the
+        # margin-SD slip does not appear at 75-seed scale). **ADOPTED
+        # 2026-09-11 13:45 EDT (PM)** -- `docs/models/change_ledger.md`,
+        # `docs/models/clock/experiments.md` sections 21-27. `provisional_clock`
+        # is False for this one mode (`clock_adapter_v3.ADOPTED_MODES`);
         # `reference` and `v3c_srfloor_P3_s1` (the prior served default) stay
-        # selectable for reproduction of every gate report before this date.
+        # selectable, unchanged, and provisional, for reproduction of every
+        # gate report before this date.
         ck_mode = os.environ.get("ENGINE_CLOCK", "v5b_glat_pmean")
         rot_mode = os.environ.get("ENGINE_ROTATION", "reference")
         fg3 = os.environ.get("ENGINE_FG3", "decision8")
