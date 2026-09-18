@@ -472,3 +472,250 @@ not on the list above; `A1`-`A4` all change what the model is trained on or told
 never what its output is multiplied by afterwards. The 2025-26 season stays
 sealed. `data/processed/models/rebound/` is not overwritten: this round writes to
 a versioned sibling `round3/` and the PM switches the manifest.
+
+---
+
+## 10. Round 3 AMENDMENT (PM conditions a-e), written 2026-09-18 by the rebound round-3 lane BEFORE any modelling, committed before the first fit
+
+Section 9 is PROPOSED and the PM approves running it **as written, with the five
+conditions below**. This section is the amendment those conditions require. It is
+APPEND-ONLY: nothing in section 9 is edited, deleted or reinterpreted. Where a
+condition is already satisfied by section 9 that is stated and nothing is added;
+where it is not, the arm, the metric or the constraint is added here and the
+round runs the union of section 9 and section 10.
+
+Nothing below is adopted. No served default changes. `data/processed/models/rebound/`
+is not overwritten; this round writes only to `data/processed/models/rebound/round3/`.
+
+### 10.1 Condition (a): the drift arms must be honest walk-forward
+
+**Constraint (binding, added).** No arm may use the test season's league level,
+in any form: not its realised OREB%, not a quantity computed from test rows the
+arm's own refit has not yet legitimately absorbed, not a coefficient or offset
+fitted on test outcomes. Every level an arm carries is either (i) trained from
+completed seasons, or (ii) read from the test season's own **expanding as-of**
+history strictly before the row's date, which is the same leak discipline
+`team_rebound_form` already enforces on the team features. Each added column is
+built by the same `expanding_asof` machinery or from train-only seasons, and the
+round reports that provenance per arm rather than asserting it.
+
+**Section 9 already covers.** `A2` (recency-weighted training) is condition
+(a)(i). `A0` is condition (a)(iii), the served reference.
+
+**Added: what `A1` actually is, and a genuine trend arm.** A gradient-boosted
+tree **does not extrapolate**: with `season_idx` in {0,1,2} in the training pool
+and a test row at `season_idx = 3`, every split sends the row to the bin the
+2024 rows occupy. `A1` is therefore *not* a trend extrapolation -- it is "use the
+most recent completed season's level", which is a legitimate and conservative
+arm but is not the thing condition (a) asks to be made visible. So:
+
+| arm | what it is | extrapolating? |
+|---|---|---|
+| `A5` | `A0` + one feature `trend_level_c`: the value at this row's date of an OLS fit of season league OREB% on season index, **fitted on completed training seasons only** and extrapolated forward, expressed as a deviation from the training pool's own mean level | **YES -- flagged** |
+
+`A5` is the trend/`season_idx` extrapolation arm condition (a) names. It is
+reported as an extrapolation everywhere it appears, and rule 10.6 below binds it.
+
+**Added: condition (a)(ii), the within-season as-of league anchor.** Section 9's
+`A4` is this arm and is hereby restated in the words of the CLAUDE.md rule it
+serves: the league's own **expanding as-of** OREB% to the row's date, within the
+current season, centred on the training pool's mean league level, entered as a
+feature so the model's level is carried by a covariate that is measured inside
+the test season rather than by an intercept fitted outside it. This is the
+condition-(a)(ii) arm. It reads only rows strictly before the current date and is
+the same object `team_rebound_form` already computes as `lg_orebs / lg_opps`.
+Restating it here costs nothing and makes the comparison the condition demands
+explicit: **`A5` (extrapolation) vs `A2` (recency) vs `A4` (within-season as-of
+anchor) vs `A0` (served reference)**, all four on the same table.
+
+**Added: fold 1 is mandatory for every Block-A arm, not only for the winner.**
+Section 9.7 rule 6 required fold-1 confirmation only of the fold-2 winner. Every
+`A*` arm now runs on **both folds** and both rows appear in the results table, so
+a trend arm that wins on fold 2 only because 2025 continued the 2022-2024 trend
+is visible as such: fold 1 tests 2024, whose league level (0.29155) also sits
+above its training pool, so a genuine drift mechanism must help on both, while a
+lucky extrapolation may help on one. An `A5` that wins fold 2 and loses fold 1 is
+reported as **"wins by continuation, not by mechanism"** and cannot be
+recommended, per 10.6.
+
+### 10.2 Condition (b): the `blocked_f` channel needs a real shot-block sub-model
+
+Section 9's `B3` names a block sub-model as an arm but proposes no model for it
+and would defer it. Condition (b) supersedes that: the sub-model is specified
+now, as its own small bake-off, in **`docs/models/shot_block/experiments.md`**
+(new, written and committed in the same commit as this amendment). Section 9's
+`B2` (feed the as-of measured cell rate) survives unchanged as the cheap arm to
+beat, and is precisely the "team-defence as-of rate" arm the block bake-off's own
+arm list contains -- the two rounds meet there on purpose.
+
+**Where it sits in the cascade, and why that placement is the one that does not
+double count.** `fg_make` lists `blocked` in `BANNED_FEATURES` ("a `Block Shot`
+row exists only because the attempt missed; it is a post-outcome field, not a
+pre-release one") and does not build it. `fg_make` therefore predicts
+`P(make | shot context)` **marginally over block status**: blocked attempts are
+already inside its miss population at their natural rate. A block draw placed
+*before* the make draw would therefore double count -- it would remove shots from
+a make model that has already priced them as misses. The honest placement, and
+the one this round specifies, is
+
+    shot selection  ->  make / miss  ->  [if miss] BLOCK draw  ->  rebound
+
+i.e. the sub-model's target is **`P(blocked | the attempt missed, context)`**, not
+`P(blocked | attempt)`. That conditional is exactly the quantity `loop.py`'s
+rebound block needs, is the quantity the rebound model's `blocked_f` column means
+at the rows it is used on, and leaves `fg_make` untouched and un-double-counted.
+This is recorded here and in `docs/models/shot_block/experiments.md` section 1 so
+the placement is a pre-registered decision and not an implementation accident.
+
+**Consequences for section 9's Block B.** `B3` is now a real arm with a real
+candidate behind it. `B2` and `B3` are distinguished as:
+
+| arm | what the engine feeds `blocked_f` |
+|---|---|
+| `B0` | `0.0` (served status quo) |
+| `B1` | nothing -- the column is dropped and the model refit |
+| `B2` | the **as-of measured** block rate for the (miss type, defence) cell, a continuous value in [0,1] |
+| `B3` | a realised **0/1 draw** from the `shot_block` winner, per missed FGA |
+| `B3e` | the `shot_block` winner's **predicted probability**, fed continuously (added: it isolates how much of `B3` is the model and how much is the draw's own Jensen gap through a non-linear `lgbm`) |
+
+`B0`-`B3e` are evaluated against the **same** trained rebound model (`A0`'s) except
+`B1`, which must be refit. That is deliberate: Block B is an engine-FEED question,
+and holding the rebound model fixed is what makes the four feeds comparable.
+
+### 10.3 Condition (c): prior-season carry arms
+
+Section 9's `C1`/`C2`/`C3` already are the prior-season carry ladder and are the
+direct analogue of `possession_outcome` round 4's `G1`/`G2`/`G3`. To remove any
+ambiguity about what "the same idea that won PO round 4b as G2" means here, the
+construction is pinned to PO round 4's, transcribed rather than re-invented:
+
+    w      = D / (D + k)                 D      = as-of denominator mass (live opportunities)
+    w_prev = D_prev / (D_prev + k)       D_prev = the prior season's denominator mass
+
+    C3  ("G1"):  w * raw_c
+    C1  ("G2"):  w * raw_c + (1 - w) * prior_c
+    C2  ("G3"):  w * raw_c + (1 - w) * w_prev * prior_c
+
+with `k = s2 / tau2` the method-of-moments empirical-Bayes weight computed by the
+formula in `scripts/train_possession_outcome_v4.fit_k`, on **completed prior
+seasons only**, per test season, never on the test season and never tuned. Both
+sides get their own `k`: the offence's OREB rate and the defence's allowed-OREB
+rate. `prior_c` is the team's completed prior-season rate minus that season's
+league rate, shifted forward one season so it is available to the next season
+only; a team with no prior season (a new D-I member, a reclassifying school) gets
+`prior_c = 0.0` and `D_prev = 0.0`, which collapses `C1` and `C2` to `C3` for
+that team rather than fabricating a level. The count of such team-seasons is
+reported.
+
+**Added: `C4`, roster-continuity weighting.** The roster-continuity table
+(`scripts/build_roster_continuity.py`) is checked for usability FIRST: coverage of
+the 2022-2025 team-seasons, and whether its continuity share is knowable strictly
+before the season starts. If it is usable, `C4` is `C1` with the prior-season
+weight multiplied by the team's returning share `c` in [0,1]:
+
+    C4:  w * raw_c + (1 - w) * c * prior_c
+
+which says a team that returns nobody carries none of its prior season. If the
+table is NOT usable (coverage below 90% of team-seasons, or it can only be
+computed after the season starts), `C4` is reported as **NOT RUN, with the
+measured reason**, and never silently dropped.
+
+### 10.4 Condition (d): Decision 9's mandatory arms, unbundled
+
+Section 9 held the refit calendar fixed and proposed no opponent-adjustment or
+conference-flag arm. Decision 9 makes all three mandatory wherever a model
+consumes team rates, which this model does (`off_oreb_c`, `opp_def_dreb_c`).
+Added as **Block D**, each a separate arm, never bundled into another block's
+winner:
+
+| arm | what it is |
+|---|---|
+| `D0` | reference (= `A0B0C0`) |
+| `D1` | `off_oreb_c` / `opp_def_dreb_c` opponent-adjusted by `cbb_sim.features.opponent_adjust`, method `one_pass` |
+| `D2` | the same, method `iterative` |
+| `D3` | `A0` + a conference-game flag (`cbb_sim.features.conference.build_conference_flags`) as a feature |
+| `D4` | refit cadence / conference alignment |
+
+`D4` is **already on record for this exact arm, feature set and folds**: section 8
+ran `S0`, `S1_monthly`, `S1_conf_aligned` and `S1_weekly` on `lgbm/C_plus_state`
+and adopted `S1_weekly`. Those numbers are **cited, not refit** (the same
+treatment section 7.2 gave `S0`'s F1 number), and section 8's open conf4 caveat is
+carried forward verbatim. Re-running 23-fit calendars for a question already
+answered on the same cells would buy nothing and would cost the hours this round
+needs for the arms that have never been run. This citation is declared here,
+before the run, so it is a pre-registered economy and not a retrospective
+omission.
+
+### 10.5 Condition (e): folds, grader, floor, evidence -- and the two-stage budget
+
+Folds, the seal, the single blind grader, the "ties to the simpler model" rule and
+the multi-level evidence list are sections 9.3, 9.4, 9.5, 9.6 and 9.7 and are
+unchanged. Added or made explicit:
+
+- **Segments.** Section 9.5's list already carries per-miss-type, per-month,
+  per-quintile (including the Nov-Dec / Jan / Feb-Apr split), site and conference
+  cuts. Added to it: **per-game** level error (mean, median, SD, MAE over
+  test-season games) so the evidence is multi-level in the CLAUDE.md sense rather
+  than pooled-plus-team. Minimum cell n stays 300 and every cell below it is
+  printed with the label `UNDERPOWERED` and excluded from every pass/fail.
+- **Noise floor.** Section 9.6 stands. Operationally: a spec-identical second-seed
+  retrain of the reference **and** of each block's leading arm at the stage each
+  is decided at, and -- per this model's own standing convention, "the floor the
+  decision rule uses is the larger" (section 8.2) -- the floor is the larger of
+  that spread and the already-published 5-seed SD for this arm (6.7e-05,
+  section 3). The block-bootstrap SE for this cell (0.001412, section 3) is
+  reported alongside as the wider, game-clustered reading.
+- **Two-stage budget (added, and binding).** The served calendar is `S1_weekly` =
+  23 LightGBM refits per cell per fold at a measured ~190 s each, i.e. ~1.2 h per
+  cell. The arm list above is 20+ cells on two folds; run entirely on the served
+  calendar it is a 40-hour job on a machine four other workers are using. The
+  round therefore runs in two pre-declared stages:
+
+  **Stage 1 -- screen.** Every arm, both folds, on the **`S0` static calendar**
+  (one fit per cell), with `A0B0C0 / S0` as the stage-1 reference. `S0` is not a
+  contrivance: it is section 8's own reference cell and its F2 log loss
+  (0.645565) is the number round 1 adopted, so stage 1's reference is a published,
+  reproducible quantity. Stage 1 ranks arms; it decides nothing.
+
+  **Stage 2 -- confirm.** The leading arm of each block, the combined arm, and the
+  reference are re-run on the **served `S1_weekly` calendar on fold 2**, and **the
+  decision in 9.7 is taken on stage-2 numbers only.** Any arm stage 2 does not
+  reach is reported `NOT RUN`, never as a result. Stage 2 is where `A4`'s
+  within-season anchor and `A1`'s "latest season" behaviour can actually differ
+  from stage 1, because only under a refit calendar does the training pool contain
+  test-season rows at all -- and that difference is itself a reported finding, not
+  a nuisance.
+
+  A stage-1 winner that stage 2 does not confirm is **not** a winner.
+
+### 10.6 Additions to the decision rule (9.7 otherwise unchanged)
+
+9. An arm that carries an **extrapolated** level (`A5`, and `A1` only if the
+   fitted model is shown to extrapolate) must win on **both** folds to be
+   recommended. Winning fold 2 while losing fold 1 is reported as "wins by
+   continuation, not by mechanism" and is recommended against, whatever its
+   fold-2 margin.
+10. A Block-D arm (Decision 9's mandatory arms) is reported on its own row and is
+    **never** folded into the combined arm unless it independently clears rule 1
+    at stage 2. Decision 9 stays PENDING EVIDENCE unless a `D*` arm beats the
+    reference beyond the floor here AND on a second sub-model.
+11. The `shot_block` sub-model is decided by **its own** pre-registration
+    (`docs/models/shot_block/experiments.md`), on its own primary metric. Its
+    winner enters this round only as the `B3` / `B3e` feed. A `shot_block` arm
+    that wins its own bake-off but whose feed does not clear rule 1 here is
+    reported as such and neither is adopted.
+12. The round **adopts nothing and changes no default**. It produces a table,
+    `docs/tests/rebound_round_drift_block_carry_2026-09-18.md`, and a
+    recommendation. The PM decides.
+
+### 10.7 Artifacts, scripts and paths
+
+    scripts/build_rebound_round3_design_v1.py   design cache: the round-3 arm columns
+    scripts/train_rebound_v3_round3.py          the rebound ladder, stages 1 and 2
+    scripts/train_shot_block_v1.py              the shot-block bake-off
+    data/processed/models/rebound/round3/       all rebound round-3 artifacts
+    data/processed/models/shot_block/           all shot-block artifacts
+
+Artifact directories over 20 MB are gitignored and HF-synced per CLAUDE.md. The
+status change `PROPOSED -> RUN` goes to `docs/models/change_ledger.md` in the same
+commit as the results.
