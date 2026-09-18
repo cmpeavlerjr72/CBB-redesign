@@ -910,3 +910,55 @@ corrected by this lane, which may not touch `src/cbb_sim/` or retrain FT-2).
 6)**: no engine wiring, no closed-loop paired-seed run this round (the same
 concurrency conditions apply — other lanes are running closed loops on this
 tree right now under the 2-worker compute cap).
+
+---
+
+### 10.3 Round 1b results: OFFLINE ONLY (run 2026-09-18,
+`scripts/grade_ft_technical_round1b_v1.py`; full detail
+`docs/tests/free_throw_technicals_round1b_2026-09-18.md`)
+
+`X0`/`X1`/`X6` fail eligibility line 1 (responsiveness) BY CONSTRUCTION
+(flat — the F2 monotone-step count read 2/4 on a raw floating-point
+comparison of a mathematically-constant sequence before a tolerance guard
+was added; fixed so both folds now correctly read 0/4 for all three). `X6`
+(recency-weighted training window) reproduces `X1` almost exactly on both
+folds — its own internal validation found UNIFORM pooling beats every
+recency-weighting candidate, because the anomalous season (2023, still the
+single highest-rate season on the VERIFIED target: 2,082 trips against
+1,204-1,342 elsewhere) sits in the MIDDLE of the training window, so
+recency-weighting it MORE heavily makes the fit worse — the opposite of the
+mechanism motivating the arm. `X7` (league in-season as-of rate x site)
+closes the level gap dramatically on F2 (predicted/actual rate 0.000689 vs
+0.000679, **+1.5%**, against `X1`'s +33.6%) but is not team-keyed and is
+pre-declared structurally ineligible for adoption; it also FAILS its own
+level-calibration line on F1 (+10.9%, just over the 10% bar), so it is not
+uniformly good even on its own metric. `X5`/`X5r` reproduce round 1's team
+responsiveness on the verified target (POWERED: quintile power **6.93
+sigma** F2 / **9.76 sigma** F1, both above round 1's cited ~5.5 sigma;
+monotone 4/4 both folds, slope ratio 1.187 F2 / 0.929 F1) but do not close
+the level gap at all (+31.4% F2 / +28.4-29.8% F1, essentially unchanged from
+`X1`, because `X5r`'s shrinkage target `X6` barely differs from `X1`'s).
+
+**No arm on either fold is both team-keyed and passing both pre-registered
+eligibility lines. NOTHING IS ELIGIBLE. NOTHING IS ADOPTED** — the
+pre-registered legitimate outcome (section 10.2, decision rule), reached
+because fixing the target (section 10.1) did not by itself resolve round 1's
+tension, and neither in-season adaptation nor recency-weighting closes it
+alone: one is accurate but cannot be team-keyed, the other is team-keyed but
+inherits the training pool's own bad level. `X5i` (a team-as-of rate shrunk
+toward `X7`'s in-season level instead of a fixed pooled prior — the
+combination that could plausibly clear both lines at once) was named and
+explicitly NOT attempted this round (section 10.2's stated scope limit),
+and is the clear next candidate.
+
+`X3-blend` (who-shoots, orthogonal to the rate arms, fixed this round to fit
+its blend fraction on TRAIN-only data per fold rather than round 1's pooled
+all-four-seasons number) is the clear best-supported shooter rule on both
+folds (gap **-0.29 pp** F1, **-1.58 pp** F2, vs -8 to +7 pp for the pure
+average/best rules), fitted fractions f=0.531 (F1) / 0.514 (F2), close to
+round 1's pooled 0.59 but leakage-free and fold-specific. This axis has no
+rate arm to pair with this round, since none was adopted.
+
+No served default changed; no `src/cbb_sim/` file was read for editing;
+2025-26 stayed sealed throughout (`assert_not_sealed` on every load in both
+scripts).

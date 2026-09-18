@@ -137,6 +137,18 @@ def main():
         f"{(merged['found_by']=='raw_scan_only').sum()} raw-only, "
         f"{(merged['found_by']=='trip_table_only').sum()} trip-table-only)", t0)
 
+    # trip-grain sibling: one row per verified trip, carrying (period, clock,
+    # beneficiary) -- needed by the round 1b grading script for the per-trip
+    # game_phase/margin_bucket/site segment cuts (9.9.4), which the team-game
+    # aggregate below cannot support. Same union, just not yet summed to
+    # team-game grain. Offender identity is not carried (not needed by any
+    # round 1b arm or segment cut, all of which key on the beneficiary/actor
+    # side, per 9.9.3's own convention for margin_bucket).
+    trips_path = OUT_DIR / "technical_target_verified_trips_v1.parquet"
+    merged[["season", "game_id", "period", "clock", "beneficiary",
+            "n_attempts_verified", "found_by"]].to_parquet(trips_path, index=False)
+    log(f"written {trips_path} ({len(merged):,} trip rows)", t0)
+
     team_game = merged.groupby(["season", "game_id", "beneficiary"]).agg(
         verified_trip_count=("n_attempts_verified", "size"),
         verified_fta=("n_attempts_verified", "sum"),
