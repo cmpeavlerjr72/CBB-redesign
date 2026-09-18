@@ -284,3 +284,191 @@ it is selected on the primary metric alone (log loss), which the pre-registered 
 loss is outside the corrected floor of `S1_weekly`'s. So for THIS sub-model, Decision 9's predicted
 damage segment (first four weeks of conference play) is not resolved by any refit calendar tested;
 it is carried forward as an open item rather than reported as fixed.
+
+---
+
+## 9. Round 3 pre-registration: the two level defects and the team-slope compression behind gate G4's OREB% miss (PROPOSED, written 2026-09-18 by the G4 diagnostic lane BEFORE any modelling; NOT RUN, NOT ADOPTED, no served default changed)
+
+Evidence this round is written against: `docs/tests/g4_oreb_fta_diagnostic_2026-09-18.md`.
+That document decomposes the engine's -1.561 pp pooled OREB% miss on fold 2 into
+four channels that close exactly (residual +0.0000 pp), of which **three belong to
+this sub-model or to how the engine feeds it**:
+
+| channel | pp | share |
+|---|---:|---:|
+| grading source (box -> pbp event layer) | +0.082 | -5.3% |
+| **fold-2 calibration of the served `S1_weekly` arm** | **-1.137** | **+72.9%** |
+| **engine feeds `blocked_f = 0` (no shot-block model exists)** | **-0.740** | **+47.4%** |
+| sim state / mix distribution (mix +0.055, state +0.070, MC +0.074, subset +0.035) | +0.234 | -15.0% |
+
+and, on top of those levels, a **responsiveness** defect: bucketed by 2024
+prior-season OREB%, the engine's 2025 team span is 0.0426 against the actual's
+0.0631 (**slope ratio 0.676**, monotone 4/4), with the gap running -0.42 pp in Q1
+to -2.47 pp in Q5. By season segment the slope ratio is **0.561 (Nov-Dec) / 0.799
+(Jan) / 0.738 (Feb-Apr)** -- worst while the as-of form features are still pinned
+at their league-mean start value of 0.0.
+
+Ruled out in that document and therefore **not** arms here: the rotation (this is a
+team-level model and `loop.py` passes it no slot block), the miss-type mix
+(+0.055 pp, wrong sign), dead-ball / team-rebound bookkeeping (DEAD cancels in
+`oreb/(oreb+dreb)`; hoopR `total_rebounds - (oreb+dreb) = 0` on all 11,400 2025
+team-games), OREB-chain truncation (9 events in 428,250 game-sims), and the
+grading source (+0.096 pp, wrong sign).
+
+### 9.1 Candidates
+
+Three blocks, tested as a ladder against the served reference so each block's
+marginal value is readable, plus one engine-side arm that this model does not own
+but must be evaluated jointly because it changes what the model is asked at
+serve time.
+
+**Block A -- season drift / level** (the 73% channel). The served arm pools
+2022-to-date with no season term and no recency weight; its training pool sits at
+0.28704-0.29015 against a 2025 level of 0.29923, and its own mean prediction
+(0.28786) tracks the pool, not the test season.
+
+| arm | what it is |
+|---|---|
+| `A0` | **reference**: the served `lgbm / C_plus_state / S1_weekly`, unchanged |
+| `A1` | `A0` + `season_idx` as a feature (already computed by `build_design`, in no feature set) |
+| `A2` | `A0` + exponential recency sample weights over game date, half-life in {60, 120, 240} days, grid pre-declared |
+| `A3` | `A0` trained on a rolling window of the most recent N team-games only, N in {1 season, 2 seasons}, pre-declared |
+| `A4` | `A0` + a league-level as-of OREB% offset feature (the league's own expanding mean to date, centred), so the level is carried by a covariate rather than by the fit's intercept |
+
+**Block B -- the `blocked_f` feed** (the 47% channel). The feature is in the
+served bundle, the model uses it correctly (on blocked rows it predicts 0.4225 /
+0.3995 / 0.3997 against actuals 0.4237 / 0.4113 / 0.4274), and `loop.py` hard-sets
+it to 0.0 on every opportunity because the cascade has no block model. Blocked
+misses are 26.2% of rim, 8.2% of jump2 and 1.4% of three opportunities.
+
+| arm | what it is |
+|---|---|
+| `B0` | **reference**: `blocked_f` in the bundle, engine feeds 0.0 (the status quo) |
+| `B1` | drop `blocked_f` from the bundle entirely and refit, so the model marginalises over the block rate instead of being told a false value |
+| `B2` | keep `blocked_f`, and have the engine feed the **as-of measured block rate** for the (shot class, defence) cell rather than 0.0 -- a continuous value in [0,1], which is what the trained column's conditional expectation means |
+| `B3` | keep `blocked_f`, and have the engine **draw** a block indicator per missed FGA from a block sub-model, then feed the realised 0/1 |
+
+`B3` requires a block sub-model that does not exist. It is carried as an arm so
+the round reports what it would be worth rather than deferring it silently, and
+if it wins, the deliverable is a pre-registration for that sub-model, not a ship.
+`B2` is the cheapest arm that is not a false statement to the model, and is the
+one to beat.
+
+**Block C -- prior-season carry for the as-of form features** (the slope
+compression). `off_oreb_c` and `opp_def_dreb_c` are expanding within-season means
+that begin at exactly 0.0 for every team. This is the same defect
+`possession_outcome` round 4 found for its own style rates and round 4b resolved
+in favour of `G2`; it has never been run against this model.
+
+| arm | what it is |
+|---|---|
+| `C0` | **reference**: as-of expanding mean, league-centred, 0.0 with no prior games |
+| `C1` | empirical-Bayes shrinkage of the as-of rate toward the team's **prior-season** value, with the shrinkage weight fitted on the training folds (the direct analogue of `possession_outcome`'s `G2`) |
+| `C2` | `C1` with the prior-season target itself shrunk by its own reliability (the analogue of `G3`) |
+| `C3` | shrink toward the league mean with a fitted pseudo-count instead of toward the prior season (the simpler control that separates "any shrinkage" from "prior-season information") |
+
+Ladder: the round runs `A0B0C0` (reference), each block alone against it, then the
+single best arm of each block combined. Blocks are not crossed exhaustively.
+
+### 9.2 Features
+
+Base bundle is the served `C_plus_state` (`rebound.feature_set`), unchanged in
+name and order. Additions are declared per arm above and nowhere else. Every
+rating feature stays expressed relative to its own snapshot's league mean;
+`site_home` / `site_away` stay in every arm (CLAUDE.md: home/away/neutral is a
+first-class feature). No arm may add a feature that is not listed in 9.1, and
+`docs/models/rebound/features.md` is updated in the same commit as any arm that
+wins.
+
+### 9.3 Folds
+
+Fold 1 trains {2022, 2023} and tests 2024. Fold 2 trains {2022, 2023, 2024} and
+tests 2025. **Fold 2 selects.** Season 2026 is SEALED and `fold_slices` calls
+`assert_not_sealed` on both slices. The S1 refit schedule is part of each arm's
+spec and is held at the served `S1_weekly` for every arm, so this round is not
+also a scheme bake-off. Arms `A2`/`A3` change what the schedule *trains on*, never
+when it refits.
+
+### 9.4 Primary metric
+
+**Three-class log loss on fold 2**, the same primary this model's rounds 1 and 2
+used, so the ladder is comparable with them.
+
+Two pre-declared **level** readings, reported next to the primary and binding
+through the decision rule in 9.7 rather than replacing it:
+
+- `L1` **fold-2 level error**: mean predicted P(OREB | live) minus the realised
+  rate on the fold-2 live rows, with the TRUE `blocked_f`. Served value **-1.137
+  pp**; target |L1| <= 0.25 pp.
+- `L2` **engine-feed level error**: the same quantity with `blocked_f` fed as the
+  engine feeds it under that arm. Served value **-1.877 pp** (= -1.137 - 0.740);
+  target |L2| <= 0.35 pp.
+
+### 9.5 Segment breakdowns (every arm, every fold)
+
+Reported for every arm whether or not it wins, with underpowered cells labelled
+and never folded into a pass or a fail (min cell n = 300 opportunities):
+
+1. by miss type (rim / jump2 / three / ft) -- level and log loss;
+2. by `blocked` (true value), within each miss type;
+3. by **month** of the test season (Nov, Dec, Jan, Feb, Mar; Apr is expected
+   underpowered) -- this is where the season-drift arms must show their work;
+4. by **2024 prior-season OREB% quintile of the offence** -- slope ratio,
+   monotone steps, and the per-quintile level gap (served: 0.676, 4/4, -0.42 to
+   -2.47 pp);
+5. the same quintile cut **split Nov-Dec / Jan / Feb-Apr** (served: 0.561 / 0.799
+   / 0.738) -- block C's own target;
+6. home / away / neutral (served level gap -1.51 / -1.56 / -1.73 pp);
+7. conference vs non-conference game (served -1.42 / -1.81 pp), and the first
+   four weeks of conference play, which section 8 left open for this model;
+8. by period (1, 2, OT) and by five-minute game-minute bucket (served: flat
+   -1.21 to -2.43 pp, which is the reading any winning arm must flatten further
+   rather than tilt).
+
+### 9.6 Noise floor
+
+A **spec-identical retrain under a second seed** for the reference and for each
+block's leading arm, on fold 2, including the identical refit calendar. The floor
+is the observed log-loss spread; a winner must beat the reference by more than it.
+For the level readings `L1`/`L2` the floor is the same retrain's level spread.
+Minimum two seeds; more if the first two disagree by more than the smallest
+claimed margin. The fold-2 live-row Monte-Carlo floor on any realised sim OREB%
+quoted in this round is 0.074 pp (one binomial SE on 368,826 opportunities) and
+is not to be confused with the offline floor.
+
+### 9.7 Decision rule
+
+1. An arm is eligible only if it beats `A0B0C0` on the **primary** (fold-2 log
+   loss) by more than the measured floor.
+2. Among eligible arms, the winner is the one with the **lowest fold-2 log loss**;
+   ties inside one floor go to the **simpler** arm, with simplicity ordered
+   `A0 < A1 < A4 < A2 < A3`, `B0 < B1 < B2 < B3`, `C0 < C3 < C1 < C2`, and fewer
+   blocks beating more.
+3. A winner must additionally **pass both existing gates** (calibration: worst
+   decile gap <= 2 pp on classes with a >= 5% share; responsiveness: predicted
+   OREB share by quintile of the offence's as-of OREB% monotone 4 of 4, and the
+   same for the defence's as-of DREB%) -- the round-1 gates, unchanged.
+4. A winner must **not worsen** `L1` or `L2`, and the round reports whether it
+   meets their targets. An arm that improves log loss while leaving |L1| above
+   0.25 pp is reported as a partial result, not a fix for G4.
+5. A winner must **not reduce** the 2024-prior-quintile slope ratio in any of the
+   three season segments of breakdown 5.
+6. **Fold 1 confirmation is required** before any ship recommendation: the fold-2
+   winner is refitted on fold 1 and must not reverse sign on the primary.
+7. **Nothing ships on offline evidence.** An offline winner ships only after a
+   paired-seed closed-loop sim run at >= 25 seeds on the served stack shows no
+   gate regressed, per Decision 10, and the closed loop must move the engine's
+   pooled OREB% toward 0.29841 without moving G2's PPP terciles, G4's TOV% or
+   eFG%, or G1 beyond their own measured bands.
+8. Ties at every level go to the simpler model. If no arm clears rule 1, **no arm
+   is adopted** and the round says so.
+
+### 9.8 What this round may not do
+
+No post-hoc multiplier, cap, clip, offset, calibration curve or blend on the
+model's output or on sim output (`docs/SIM_GUARDRAILS.md`, CLAUDE.md). An arm that
+adds an intercept correction fitted on the TEST season is banned outright and is
+not on the list above; `A1`-`A4` all change what the model is trained on or told,
+never what its output is multiplied by afterwards. The 2025-26 season stays
+sealed. `data/processed/models/rebound/` is not overwritten: this round writes to
+a versioned sibling `round3/` and the PM switches the manifest.

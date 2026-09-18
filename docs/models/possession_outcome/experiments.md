@@ -2228,3 +2228,219 @@ Decision 9c -- `A1` and `A2` are still NOT RUN (11.6). It cannot give a fold-1 c
 shrinkage arm has one, and running the engine on F1 is not one. It cannot price either arm on any
 game set other than the 500-game subset, on the sealed 2025-26 season, or against market lines. And a
 PASSING verdict here is a RECOMMENDATION, not an adoption: adoption is the PM's, on the full list.
+
+---
+
+## 13. Round 6 pre-registration: the team-foul accrual law that sets the bonus state, and the `FT_trip_bonus` conditional -- gate G4's FTA/FGA miss (PROPOSED, written 2026-09-18 by the G4 diagnostic lane BEFORE any modelling; NOT RUN, NOT ADOPTED, no served default changed)
+
+Evidence this round is written against: `docs/tests/g4_oreb_fta_diagnostic_2026-09-18.md`.
+That document decomposes the engine's -1.229 pp pooled FTA/FGA miss on fold 2 into
+channels that close (unexplained residual +0.001 pp). FTA/FGA is a ratio of two
+per-possession rates, so the engine's +2.0 possessions/game cancels exactly and is
+not a channel:
+
+| channel | pp | share |
+|---|---:|---:|
+| technical FTs + event/box feed gap (no technical-FT rule in the engine) | -0.282 | +23.0% |
+| and-one FTA / FGA | +0.122 | -10.0% |
+| shooting-foul trip FTA / FGA | +0.378 | -30.8% |
+| **bonus-trip FTA / FGA** | **-1.384** | **+112.6%** |
+| other event-layer FTA (168 chances) | -0.044 | +3.6% |
+| tap-subset vs full-run offset (measurement) | -0.020 | +1.6% |
+
+**The miss is one thing: the bonus-trip rate is 10.4% low** (5.2586 vs 5.8686
+trips per 100 possessions). It is not trip SIZE -- attempts per trip are right on
+every kind (and-one 1.000x, shooting 1.022x, bonus 1.004x actual), the 1-and-1 vs
+double-bonus split is right (52.9% double-bonus trips vs the actual's 51.4%), and
+the bonus-era flag is not implicated. It is also not the FGA denominator: FGA/poss
+is slightly LOW in the sim, which pushes the ratio the wrong way for the gate.
+
+Split of the bonus-trip rate gap (Shapley, residual 9e-19):
+**bonus-state OCCUPANCY 59.0%, CONDITIONAL trip rate 41.0%.**
+
+| | sim | actual |
+|---|---:|---:|
+| P(offence in bonus) | 0.28373 | 0.30201 |
+| P(`FT_trip_bonus` \| in bonus) | 0.16058 | 0.16763 |
+| P(`FT_trip_bonus` \| not in bonus) | 0.00034 | 0.00037 |
+
+and the mechanism behind the occupancy half is visible by game minute. The engine
+accrues non-shooting team fouls from **one constant**,
+`silent_foul_per_possession = 0.123346`
+(`engine_rules_from_data`; `loop.py`, "non-shooting foul that awards no attempt"),
+applied identically in both halves and independent of clock, score and role:
+
+| game minute | sim P(in bonus) | actual | delta pp | sim P(trip \| bonus) | actual |
+|---|---:|---:|---:|---:|---:|
+| 5-9 | 0.0580 | 0.0317 | +2.63 | -- | -- |
+| 10-14 | 0.3039 | 0.2343 | **+6.95** | 0.1070 | 0.1212 |
+| 15-19 | 0.6102 | 0.5790 | +3.13 | 0.1255 | 0.1301 |
+| 25-29 | 0.0975 | 0.1431 | -4.56 | 0.1385 | 0.1391 |
+| 30-34 | 0.3984 | 0.5432 | **-14.48** | 0.1576 | 0.1567 |
+| 35-37 | 0.6533 | 0.8060 | **-15.27** | 0.1736 | 0.1710 |
+| 38-40 | 0.7935 | 0.8037 | -1.02 | 0.2480 | 0.2696 |
+
+Every cell is powered (57k-112k chances). **The engine reaches the bonus too early
+in the first half and up to 15 pp too rarely in the second**, and conditional on
+actually being in the bonus the served event model is right to within 1% through
+minutes 25-37. So most of the "41% conditional" is the engine querying a
+correctly-shaped model at the wrong (bonus, clock) states. The FT supply follows
+with the same sign flip: sim FTA/FGA is **+1.8 pp too high** in minutes 5-14 and
+**-6.1 pp too low** in minutes 30-34. A fix that raises the overall foul rate makes
+the first half worse.
+
+**Scope, stated before any arm is run.** The final 2:00 of regulation carries
+-0.254 pp = **20.7%** of the FTA/FGA miss, and it is already inside
+`docs/models/late_game/experiments.md` section 1 (arm rank 1, the fouling
+channel). **This round does not pre-register anything about that window and must
+not be run in a way that collides with it**: every arm below is fitted and graded
+on `period <= 2 and seconds_remaining > 120` and reports the window as a
+held-out segment only. The technical-FT channel (23%) belongs to
+`docs/models/free_throw/experiments.md` section 9 and is not an arm here either.
+What this round owns is the other ~56%, which sits in minutes 25-37.
+
+### 13.1 Candidates
+
+**Block F -- the foul-accrual law** (the occupancy half, 59%). What the engine
+needs is the arrival process for personal fouls that award no trip, i.e. the thing
+that moves `team_fouls` and therefore `in_bonus`. Today it is one scalar.
+
+| arm | what it is |
+|---|---|
+| `F0` | **reference**: the served constant `silent_foul_per_possession`, one number for the whole game |
+| `F1` | the same constant, **fitted separately per half** (the minimum arm that can produce the observed sign flip) |
+| `F2` | a rate table over `(period, seconds_remaining bucket)` -- clock only, no score, no role |
+| `F3` | a fitted Bernoulli model of "this possession produces a non-shooting personal foul on the defence", over the state block already in `STATE_FEATURES` plus `def_team_fouls`, `off_team_fouls`, `is_transition` and the defence's as-of foul rate, league-centred |
+| `F4` | `F3` promoted to a **seventh possession-outcome class** (`FOUL_no_FT`), fitted inside the existing multinomial rather than as a side Bernoulli |
+
+`F4` is the structurally cleanest arm and the most invasive: it changes
+`PO.CLASSES`, every downstream index, and the meaning of every stored round-2/3/4
+artifact. It is on the list because the round must report what the clean form is
+worth, not because it is expected to be cheap. `F1` is the cheapest arm that can
+reproduce the measured sign flip and is the one to beat.
+
+**Block T -- the `FT_trip_bonus` conditional** (41%, most of which `F` is expected
+to absorb by fixing the query states). Run only after the best `F` arm is known,
+against it, so `T` is measured on the residual and is not credited with `F`'s work.
+
+| arm | what it is |
+|---|---|
+| `T0` | **reference**: the served `first`/`cont` arms, unchanged |
+| `T1` | `T0` + the defence's own as-of team-foul rate and the offence's as-of drawn-foul rate, both league-centred, as features |
+| `T2` | `T0` + `def_team_fouls` and `off_team_fouls` as counts (today the model sees only the binary `in_bonus`, so it cannot tell 7 fouls from 11) |
+| `T3` | `T1` + `T2` |
+
+**Block H -- the site asymmetry** (a separate, smaller finding the diagnostic
+turned up and that no other lane owns). The actual FT rate is 0.3486 at home
+against 0.3068 away, a +4.18 pp home whistle; the sim gives +2.99 pp, reproducing
+72%. `site_home`/`site_away` are already in the served bundle, so this is not a
+missing column.
+
+| arm | what it is |
+|---|---|
+| `H0` | **reference** |
+| `H1` | `site_home` / `site_away` interacted with the FT-trip classes (explicit interaction terms for the linear arms; for the tree arms, a pre-declared monotone-free split budget so the round reports whether the tree simply is not finding it) |
+
+### 13.2 Features
+
+Base bundle is the served `C_plus_state` (`possession_outcome.feature_set`),
+unchanged in name and order. Additions are declared per arm above and nowhere
+else. Every rate feature is expressed relative to its own snapshot's league mean;
+`site_home`/`site_away` stay in every arm. Per Decision 9 (PENDING EVIDENCE),
+opponent adjustment of the as-of rate features, a conference-game flag, and refit
+cadence/conference alignment are carried as mandatory bake-off cells for any new
+rate feature `T1` introduces, reported even where they lose.
+
+### 13.3 Folds
+
+Fold 1 trains through 2022-23 and tests 2023-24. Fold 2 trains through 2023-24 and
+tests 2024-25. **Fold 2 selects.** 2025-26 is SEALED. The refit schedule is held at
+the served `S1` for every arm so this is not also a scheme bake-off.
+
+### 13.4 Primary metric
+
+Two primaries, one per block, because `F` and `T` predict different things and
+pooling them would hide which one moved:
+
+- **Block F:** log loss of the non-shooting-foul indicator on fold-2 possessions
+  (`F4` scored on the same indicator, marginalised out of its seven-class
+  prediction, so every `F` arm is compared on one number).
+- **Block T (and H):** six-class log loss on fold-2 chances, the model's existing
+  primary, so the ladder stays comparable with rounds 1-4b.
+
+One pre-declared **closed-loop** reading, binding through 13.7 rule 7 rather than
+replacing the primaries: the engine's **bonus-state occupancy profile by
+five-minute game-minute bucket** against the actual's, scored as the maximum
+absolute per-bucket gap over minutes 0-37. Served value **15.27 pp**; target
+<= 4 pp.
+
+### 13.5 Segment breakdowns (every arm, every fold)
+
+Underpowered cells labelled, never folded into a pass or a fail (min cell n = 300
+chances):
+
+1. by **five-minute game-minute bucket** (0-4 ... 35-37), the round's own target
+   cut -- occupancy, bonus-trip rate, and FTA/FGA;
+2. by half, and by `in_bonus` x half;
+3. by `def_team_fouls` count (0-3, 4-6, 7-9, 10+);
+4. home / away / neutral (served FTA/FGA gap -0.43 / -1.62 / -2.63 pp);
+5. conference vs non-conference (served -0.61 / -2.28 pp) and the first four
+   weeks of conference play;
+6. by **month** (served -2.99 Nov, -1.21 Dec, -0.95 Jan, -0.20 Feb, -0.67 Mar) --
+   this miss is largely an early-season one and any arm must say what it does
+   there;
+7. by **2024 prior-season FT-rate quintile of the offence** -- slope ratio,
+   monotone steps, per-quintile gap (served: **0.523**, 4/4, -0.09 pp in Q1 to
+   -2.11 pp in Q5), and the same cut split Nov-Dec / Jan / Feb-Apr (served
+   **0.356 / 0.636 / 0.663**);
+8. the **final 2:00 of regulation as a HELD-OUT segment**, reported and never
+   fitted on, so this round and the late-game lane can be read against each other
+   without either claiming the other's ground.
+
+### 13.6 Noise floor
+
+A **spec-identical retrain under a second seed** for the reference and each
+block's leading arm on fold 2, including the identical refit calendar; the floor
+is the observed spread on that block's primary. Round 4b measured this model's
+own floor at 0.000113 on six-class log loss against an applied floor of 0.000804,
+and measured that per-week buckets move up to 0.80 pp under nothing but a seed
+change -- **that bucket-noise figure applies to breakdown 6 here and no monthly
+difference under ~0.8 pp may be read as an arm effect.** Minimum two seeds.
+
+### 13.7 Decision rule
+
+1. An arm is eligible only if it beats its block's reference on that block's
+   **primary** by more than the measured floor.
+2. Among eligible arms the winner is the lowest primary; ties inside one floor go
+   to the **simpler** arm, ordered `F0 < F1 < F2 < F3 < F4`, `T0 < T2 < T1 < T3`,
+   `H0 < H1`.
+3. A winner must pass this model's existing round-1 gates (calibration and
+   responsiveness) unchanged.
+4. A winner must **reduce** the maximum per-bucket bonus-occupancy gap of 13.4
+   and must **not** convert the sign flip into a uniform shift: the round reports
+   the signed per-bucket gaps and an arm that fixes minutes 30-37 by making
+   minutes 5-14 worse than +2.63 pp is rejected.
+5. A winner must **not reduce** the 2024-prior-quintile FT-rate slope ratio in any
+   of the three season segments of breakdown 7.
+6. **Fold 1 confirmation is required** before any ship recommendation.
+7. **Nothing ships on offline evidence.** An offline winner ships only after a
+   paired-seed closed-loop run at >= 25 seeds on the served stack shows no gate
+   regressed (Decision 10), the occupancy target of 13.4 is met, and the engine's
+   pooled FTA/FGA moves toward 0.32955 without moving G1's possession mean, G2's
+   PPP terciles, or G4's TOV% / OREB% / eFG% beyond their measured bands. Because
+   free throws stop the clock, **G1's possession count and the clock lane's own
+   gates are explicit no-regression lines for this round**, not afterthoughts.
+8. Ties at every level go to the simpler model. If no arm clears rule 1, **no arm
+   is adopted** and the round says so.
+
+### 13.8 What this round may not do
+
+No post-hoc multiplier, cap, clip, offset, calibration curve or blend on model or
+sim output. In particular, **tuning `silent_foul_per_possession` to hit the gate is
+banned**: `F1`-`F4` all replace the constant with a law fitted on training folds,
+and an arm whose scalar is chosen to make the 2025 FTA/FGA land on 0.32955 is not
+on the list and may not be added to it. The 2025-26 season stays sealed. The
+final-2:00 window is held out (13.5 breakdown 8) and `docs/models/late_game/` is
+not edited by this round. Artifacts go to a versioned sibling
+`data/processed/models/possession_outcome/round6/`; rounds 1-4b directories are
+not overwritten.

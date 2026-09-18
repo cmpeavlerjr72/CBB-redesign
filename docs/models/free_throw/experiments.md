@@ -257,3 +257,125 @@ Noise floor: primary-metric floor (S0 second-seed refit) = **0.000147**. conf4 s
 - `S1_weekly`: log loss 0.57536 (gain -0.000079 vs S0), conf4 gain 0.214 pp, gates PASS, beats reference: False
 
 **WINNER: S1_conf_aligned** -- beats the S0 reference beyond the floor; simplest arm within the floor of the best beater
+
+---
+
+## 9. Technical free throws: the engine's missing scoring rule, now sized at 23% of gate G4's FTA/FGA miss (PROPOSED, written 2026-09-18 by the G4 diagnostic lane BEFORE any modelling; NOT RUN, NOT ADOPTED, no served default changed)
+
+This is the open item `model.md` section 9 has carried since 2026-09-10 and that
+`docs/tests/ft_trip_reconciliation_2026-09-10.md` identified and priced at
+~1,960-2,490 technical attempts a season (~0.14-0.22 points per team-game). It is
+pre-registered here because the G4 diagnostic has now shown it is not a rounding
+error on a gate: it is **23.0% of the engine's -1.229 pp FTA/FGA miss on fold 2**
+(`docs/tests/g4_oreb_fta_diagnostic_2026-09-18.md` section 2).
+
+The measurement, on the 11,179 2025 team-games carrying both sources:
+
+| | box / team-game | pbp event layer / team-game | pbp - box |
+|---|---:|---:|---:|
+| FTA | 19.117 | 18.934 | **-0.1828** |
+| FGA | 58.006 | 57.949 | -0.0578 |
+
+pooled FTA/FGA: box **0.32957**, event layer **0.32674**, difference **-0.282 pp**,
+of which -0.318 pp is the FTA count and +0.035 pp the FGA count. Technical
+attempts explain 94.3% of disagreeing team-games exactly and 96% of the 2025
+aggregate (1,961 of a 2,044-attempt gap). `possessions.py`'s `_handle_ft_trip`
+buffers technical free throws into `tech_points_off`/`tech_points_def` and never
+into `fta`/`ftm` -- **correctly**, per `model.md` section 9 -- so FT-2 is trained
+without them and the engine has no rule that can produce them. The engine is
+therefore structurally short by ~0.18 FTA and ~0.13 FTM per team-game against the
+box that G4 grades it on, and it is short **one-directionally, every game**.
+
+`engine_rules_from_data` already carries the measured
+`technical_trip_rate_per_team_game = 0.098052`, read from data and **used
+nowhere** in `loop.py`.
+
+### 9.1 Candidates
+
+| arm | what it is |
+|---|---|
+| `X0` | **reference**: no technical rule; the engine scores no technical free throws (the status quo) |
+| `X1` | a per-team-game Poisson draw of technical TRIPS at the measured league rate, each trip two attempts, shooter drawn from the five on the floor by as-of FT-attempt share, makes drawn by the served FT-2 model |
+| `X2` | `X1` with the trip rate conditioned on the pre-game state the feed can actually support (season, conference game, neutral site), fitted on the training folds rather than taken as a league constant |
+| `X3` | `X1` with the shooter rule changed to "the team's best as-of FT shooter among the five on the floor", which is what the coach's choice approximates and what `model.md` section 9 says pooling would bias |
+
+`X1` is the simplest arm that closes the scope gap and is the one to beat. Note
+that `X2`'s conditioning set is deliberately thin: CBBD's play-by-play has no
+flagrant or lane-violation play type at all (`ft_trip_reconciliation` section 2,
+0 of 462,118 2025 rows), so anything richer is not observable in this feed and is
+not on the list.
+
+### 9.2 Features
+
+`X1` has none beyond the rate constant. `X2` adds only season, conference-game
+flag and neutral site, all already available pre-game and all expressed relative
+to the league. The FT-2 make model itself is **not** re-fitted by this round: the
+served `S1_conf_aligned` shooter-keyed arm is used unchanged, and technical
+attempts stay out of its training universe (the section-9 exclusion is correct and
+this round does not disturb it).
+
+### 9.3 Folds
+
+Fold 1 trains through 2022-23 and tests 2023-24. Fold 2 trains through 2023-24 and
+tests 2024-25. **Fold 2 selects.** 2025-26 is SEALED.
+
+### 9.4 Primary metric
+
+Because `X0` predicts a structural zero, an offline likelihood comparison is
+degenerate. The primary is therefore **closed-loop and pre-declared**: the
+engine's pooled **FTA/FGA against the verified box** on fold 2, paired-seed, with
+`X0` as the reference. Served value **0.31726** against a box actual of
+**0.32955**; an arm's primary is the absolute residual `|sim - 0.32955|`.
+
+Two named secondaries: pooled **FTM per team-game** against the box (the engine is
+short ~0.13/team-game), and **G9 total bias** (technical free throws add points,
+so this arm cannot be read without the points gate next to it).
+
+### 9.5 Segment breakdowns
+
+Underpowered cells labelled, never folded into a pass or a fail:
+
+1. per team-game distribution of technical trips (the arm must not produce a
+   different SHAPE from the actual, only a matching mean);
+2. by month, home/away/neutral, conference vs non-conference -- the served
+   FTA/FGA gaps are -2.99 pp (Nov) to -0.20 pp (Feb), -0.43 / -1.62 / -2.63 pp by
+   site, -2.28 / -0.61 pp by conference;
+3. by 2024 prior-season FT-rate quintile of the offence (served slope ratio
+   **0.523**); a league-constant technical rate must be shown NOT to flatten it
+   further;
+4. a stated **overlap check** against `docs/models/possession_outcome/`
+   experiments.md section 13 and `docs/models/late_game/` section 1: this arm and
+   those rounds all move FTA/FGA, so any joint read must be paired-seed and must
+   report each arm's marginal contribution, never their sum.
+
+### 9.6 Noise floor
+
+A **seed-offset paired closed-loop run at matched seed count**, the same floor
+form the engine gates use. The existing 200-seed paired band on the FTA/FGA line
+is **0.0001** (`docs/tests/gate_noise_band_F2_2025_s200_v1_clockv3c_2026-09-11.md`),
+and the 20-seed floor already on record is the fallback where 200 seeds are not
+affordable. A winner must beat `X0` on the primary by more than the measured band.
+
+### 9.7 Decision rule
+
+1. An arm is eligible only if it beats `X0` on the primary by more than the
+   measured paired-seed band.
+2. Among eligible arms the winner is the lowest primary; ties inside one band go
+   to the simpler arm, ordered `X0 < X1 < X3 < X2`.
+3. A winner must **not** regress G9 total bias, G9 calibration slope, G1's
+   possession mean, or G2's PPP terciles beyond their own measured bands
+   (technical free throws stop no clock in this engine, but they do add points).
+4. A winner must not flatten the 2024-prior-quintile FT-rate slope ratio.
+5. **This arm may not be graded alone as a fix for G4.** It is 23% of the FTA/FGA
+   miss by construction; the other 77% is owned elsewhere (section 13 of
+   `possession_outcome`, and the late-game lane). A report that shows FTA/FGA
+   improving must state which arms were live.
+6. Ties go to the simpler model. If no arm clears rule 1, **no arm is adopted**.
+
+### 9.8 What this round may not do
+
+No post-hoc multiplier, cap, clip, offset or blend on sim output. The technical
+rate is READ from `engine_rules_from_data` / fitted on training folds; an arm whose
+rate is chosen so that 2025 FTA/FGA lands on 0.32955 is banned and is not on the
+list. Technical attempts stay excluded from the FT-2 training universe. The
+2025-26 season stays sealed.
