@@ -840,3 +840,108 @@ for any future box serving the current `v5b_glat_pmean` default.
 (comments only), `docs/ops/parity_reference_windows_v6.json` (new), `docs/models/change_ledger.md`,
 this section. `results/engine_v0/parity_v6_{before,after}_provisional/` and
 `results/engine_v0/parity_windows_v6_smoke60x5/` kept locally as evidence (gitignored, not pushed).
+
+---
+
+## 16. FOURTH LAUNCH, 2026-09-18: v5b served-stack gate finished to 200 seeds, parity
+    double-confirmed against v6, `A1`/`A2` attempted and NOT RUN (LightGBM threading defect found)
+
+**Instance.** `i-08fad9b7a1a6df011`, **spot**, `c7a.48xlarge`, `us-east-2` / `us-east-2c`
+(subnet `subnet-02b40dd48e9ed2bd9`). Spot succeeded on the third subnet tried in this region
+(`us-east-2b` and `us-east-2a` both returned `InsufficientInstanceCapacity`; `us-east-2c` succeeded
+immediately) -- `us-east-1`/`us-west-2` were never needed. AMI `ami-07fe8b0906617a32e`
+(`al2023-ami-2023.12.20260917.1-kernel-6.1-x86_64`, re-resolved fresh via `describe-images` since
+`ssm:GetParameters` is denied for this IAM user). Root volume explicitly set to 80 GB gp3 at launch
+(`--block-device-mappings`), avoiding section 14's 8 GB-default rediscovery. Key pair: `cfb-sweep`
+(the on-disk `.pem`/`-ohio.pem` files both had CRLF line endings from a prior Windows edit, which
+made OpenSSH fail with "error in libcrypto" on the FIRST key; `cfb-sweep-ohio.pem`, LF-fixed, is the
+one that actually authenticates -- `cfb-sweep.pem` failed `Permission denied` even after the CRLF fix,
+so the two on-disk files are not the same keypair as each other; worth reconciling before the next
+launch so this is not rediscovered).
+
+| | |
+|---|---|
+| Launch | 2026-09-18T21:57:19Z |
+| Terminate call | 2026-09-18T23:23:05Z |
+| Terminated (confirmed, `describe-instances`) | 2026-09-18T23:23:40Z |
+| Wall duration | ~1h26m |
+| Spot rate (measured, `describe-spot-price-history`) | $3.3851/h |
+| **Cost estimate** | **~$4.87** |
+
+Pulled results before terminating; `hf_sync_data.py status --dirs results` on the box reported
+`TOTAL still to upload: 0 files` immediately before the terminate call.
+
+### 16.1 Parity: TWO checks, both PASS
+
+Ran the parity gate before anything else, per the runbook. No fresh Windows reference for
+`v5b_glat_pmean` was known to be pushed yet at session start, so the **Linux-vs-previous-AWS-run
+digest continuity check** was used first: a reference digest was emitted locally (this machine, not
+the box) from the already-on-disk `results/engine_v0/smoke60x5_default_v5b` directory
+(sha256 `492300a7fd1e6dc388a3c47b822f61e04da6501720ef762bde0afe7ba15451a1`, the same digest
+`docs/models/rotation/experiments.md` section 22.2 already validated as the served-R2-path Linux/AWS
+reference), scp'd to the box, and used as `--parity-ref` for `run_aws_sweep.sh --parity only`
+against engine commit `09c7ae17ef220fefc7eaf5a001180e7fb4fd8020`: **PASS, bit-identical.**
+
+Mid-session the PM reported `docs/ops/parity_reference_windows_v6.json` newly on `origin/main`
+(section 15, commit `9c02f85`, reachable as `54a57d1bed0ceb75ce8c20e8cd117705a182a40f`). The box was
+re-fetched, re-checked out to `54a57d1`, and the image rebuilt (fast -- only the `COPY . /app` and
+final-check layers re-ran, ~26 s); a second parity run against the canonical v6 reference:
+**PASS, bit-identical**, `flags` matching including `provisional_clock: false`. Both checks are kept
+in the record rather than only the second, since the continuity check is what the runbook specifies
+for exactly this situation (a lane running before the canonical reference lands) and it is worth
+showing that it agreed with the canonical reference once available.
+
+### 16.2 v5b served-stack gate: 200/200 seeds, both streams
+
+Ran seeds 75-199 (A) and 1075-1199 (B) -- the 125 seeds section 14 left undone -- at engine commit
+`09c7ae1` (confirmed above to be simulation-identical to `d940b41` and to `54a57d1` for the served
+config; the mixed-commit consolidation is addressed explicitly in
+`docs/tests/engine_v1_gates_F2_2025_s200_v5b_full_2026-09-18.md` section 1). Two concurrent
+containers, `--workers 70` each, `--chunk-seeds 25`, `--engine-clock v5b_glat_pmean` (needed
+explicitly: `run_aws_sweep.sh`'s own `ENGINE_CLOCK` default is `reference`, which would have
+overridden the adapter's `v5b_glat_pmean` default via the always-set env-prefix). 5 chunks per
+stream, all `CHUNK done_seeds=.../125`, `END COMPLETE`, `push=OK`, ~21 minutes wall
+(22:08:05Z-22:29:02Z). Pulled to the local machine and merged with the 2026-09-11 session's off0/25/50
+chunks via `scripts/concat_engine_runs.py`: full 200/200 seeds, `partial=False`, 0 dropped, for both
+A and B. Regraded with `scripts/eval_gates.py` and `scripts/diag_gate_noise_band.py` at the full
+200 seeds. **No gate-line verdict changed from the 75-seed provisional read.** Full account:
+`docs/tests/engine_v1_gates_F2_2025_s200_v5b_full_2026-09-18.md`,
+`docs/tests/gate_noise_band_F2_2025_s200_v5b_full_2026-09-18.md`.
+
+### 16.3 `A1`/`A2` (possession-outcome tree alignment cells, Decision 9c): attempted, NOT RUN
+
+Full account: `docs/models/possession_outcome/experiments.md` section 14. Summary: a missing
+`data/raw/hoopr/schedules/` dependency (not covered by `engine_inputs`/`model_artifacts`, excluded
+from the Docker build context by `.dockerignore`) was found and worked around by pulling the four
+needed parquet files directly from HF and bind-mounting them at runtime. Once past that, an isolated
+benchmark showed **`lightgbm==4.7.0` in this container image does not multi-thread at all**
+(`n_jobs=1` and `n_jobs=150` timed identically on a 300k-row fit) -- `Dockerfile.cbb`'s baked
+`OMP_NUM_THREADS=1` also silently defeated the trainer's own `CBB_THREADS` env-var contract via
+`os.environ.setdefault`, though fixing that (`-e OMP_NUM_THREADS=150` at `docker run`) made no
+measured difference once the underlying wheel's threading was confirmed dead. `A1` and `A2` ran as
+two independent single-core containers for 41 minutes with **zero cells completed** (checkpoint
+files never grew past their auto-run stage-0 entry) before the session's time budget forced a stop.
+**Not run; carried forward**, with the fix identified (parallelize across refit dates with
+`joblib.Parallel` rather than relying on LightGBM's own broken thread scaling, or fix the wheel).
+
+### 16.4 Rotation Decision-10 freezes (K1/Z1, 25 seeds): NOT ATTEMPTED
+
+No time remained inside the session budget after 16.3's 41-minute unsuccessful attempt; this was the
+lowest-priority item ("only if time remains") and the clock did not reach it. Clean skip, not a
+failed attempt -- no process was started, no artifact exists.
+
+### 16.5 What was NOT done, carried forward
+
+1. `A1`/`A2` -- see 16.3. Next attempt should fix LightGBM threading or the trainer's own
+   parallelism before re-running, or budget for the true single-threaded cost (unmeasured here
+   beyond "more than 41 minutes per cell").
+2. Rotation K1/Z1 25-seed freezes -- not attempted (16.4).
+3. The `data/raw/hoopr/schedules/` gap in the cloud image's build-time checks / bulk-sync keys is
+   unresolved; it will recur for any future cloud run of this trainer.
+
+**Files this session**: `docs/tests/engine_v1_gates_F2_2025_s200_v5b_full_2026-09-18.md` (new),
+`docs/tests/gate_noise_band_F2_2025_s200_v5b_full_2026-09-18.md` (new),
+`docs/tests/gates_engine_v0_F2_2025_s200_v5b_A_full_2026-09-18.md` (new, `eval_gates.py` output),
+`docs/models/possession_outcome/experiments.md` section 14, this section. `results/engine_v0/
+F2_2025_s200_v5b_{A,B}_full/` and the eight new `_off{75,100,125,150,175,1075,1100,1125,1150,1175}_n25`
+chunk dirs kept locally (gitignored) and pushed to `mvpeav/cbb-sim-data`.

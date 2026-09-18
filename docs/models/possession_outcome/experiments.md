@@ -2444,3 +2444,69 @@ final-2:00 window is held out (13.5 breakdown 8) and `docs/models/late_game/` is
 not edited by this round. Artifacts go to a versioned sibling
 `data/processed/models/possession_outcome/round6/`; rounds 1-4b directories are
 not overwritten.
+
+---
+
+## 14. `A1`/`A2` attempted on AWS box three (2026-09-18): NOT RUN -- LightGBM in the
+     cloud image does not parallelize, and the two cells cost far more than "minutes"
+
+Section 11.6 leaves `A1` (`first`/lgbm/F2/`G0`/`S1_conf_aligned`, ~29 refits) and `A2`
+(`first`/lgbm/F2/`G0`/`S1_weekly`, ~23 refits) NOT RUN, estimated at ~6 h and ~4.8 h on a
+shared 20-core box at a 3-thread cap, "minutes on the 196-core box." This section reports an
+attempt on a dedicated `c7a.48xlarge` (192 vCPU) AWS box under `scripts/train_possession_outcome_v4.py
+--stages 7` / `--stages 8` and why it did **not** land a result.
+
+**Setup.** `data/processed/models/possession_outcome/round4/design_v4.parquet` (94.8 MB) and the
+round-4 checkpoints synced via the `model_artifacts` HF bulk key (already fully mirrored, no push
+needed). One dependency was missing from that sync: `build_conference_flags` reads
+`data/raw/hoopr/schedules/mbb_schedule_{2022..2025}.parquet` directly (not through `model_artifacts`
+or `engine_inputs`), and `.dockerignore` excludes `data/raw/`, so the first launch attempt crashed
+immediately (`FileNotFoundError: no hoopR schedule for season 2022`). Fixed by pulling the four
+schedule parquets directly from the HF dataset (`raw/hoopr/schedules/mbb_schedule_<year>.parquet`)
+and bind-mounting them into the container at runtime, rather than a full `--dirs raw` pull (~1.6 GB,
+not worth the time cost for four files). **Worth fixing properly**: either add these four files to
+the `Dockerfile.cbb` build-time check / `engine_inputs` sync, or note the dependency in this trainer's
+own docstring, so the next cloud run does not rediscover it.
+
+**LightGBM does not multi-thread in this container image, confirmed by an isolated benchmark.**
+`CBB_THREADS=150` was passed at first (matching the trainer's own env-var contract), but
+`Dockerfile.cbb` bakes `OMP_NUM_THREADS=1` as an image-level `ENV`, and the trainer's
+`os.environ.setdefault("OMP_NUM_THREADS", _THREADS)` is a no-op when the variable is already set --
+so `CBB_THREADS` never reached LightGBM. Fixed by passing `-e OMP_NUM_THREADS=150` (and the sibling
+`MKL_/OPENBLAS_/NUMEXPR_/LIGHTGBM_NUM_THREADS`) directly at `docker run`, which does override the
+image default. **CPU usage stayed at ~100% (one core) regardless.** An isolated timed benchmark
+inside the running container settles the question without ambiguity:
+
+```
+X = np.random.rand(300000, 50); y = 6-class random labels
+lgb.LGBMClassifier(n_estimators=100, num_leaves=63, n_jobs=1).fit  ->  18.13 s
+lgb.LGBMClassifier(n_estimators=100, num_leaves=63, n_jobs=150).fit -> 18.32 s
+```
+
+**`n_jobs` has zero measured effect** on this image's `lightgbm==4.7.0` wheel (pinned in
+`requirements-cloud.txt`) -- a known class of issue with some manylinux LightGBM wheels not linking
+a working OpenMP runtime in a slim base image (`python:3.12-slim`), silently falling back to
+single-threaded execution rather than erroring. This is an infrastructure finding independent of
+possession-outcome: it means the `c7a.48xlarge`'s 192-vCPU advantage is **not** realised by this
+trainer at all -- every refit runs on one core no matter the box size, so "minutes on the 196-core
+box" was never true for this trainer, only for the possession-loop-vectorized engine sweep (which
+does not call LightGBM inside the timed path).
+
+**What was run and what it cost.** `A1` and `A2` were launched as two independent single-threaded
+containers (splitting the two cells across two dedicated cores rather than one 2-stage sequential
+process) at 22:41:46Z. **Neither had completed a single cell after 41 minutes** (checkpoint files
+unchanged in size from their stage-0-only state at 23:22:34Z, when the session's time budget forced
+a stop). Stage 0's reference re-score reproduced round 3's log loss to 0.00e+00 on both, confirming
+the trainer, the design cache and the grader all work correctly on this box -- the blocker is purely
+wall-clock cost from the broken threading, not a correctness defect.
+
+**Verdict: `A1` and `A2` are STILL NOT RUN.** No log loss, gate, or segment-gap number is reported
+for either cell from this session; nothing here amends section 11.6's table or Decision 9. Carried
+forward, with a concrete fix for next time: either (a) get a working multi-threaded LightGBM wheel
+into the image (a different base image or an explicit OpenMP-linked wheel), or (b) restructure the
+trainer to parallelize ACROSS refit dates with `joblib.Parallel` (each refit is an independent fit on
+an as-of data cut; nothing in the walk-forward loop requires them to run in fit order) -- the latter
+would use the 192 vCPUs regardless of LightGBM's own thread scaling and is the more robust fix.
+
+Artifacts: none promoted (both containers' checkpoints held only the auto-run stage-0 entry).
+Session record: `docs/ops/aws_launch_chain.md` section 16.
