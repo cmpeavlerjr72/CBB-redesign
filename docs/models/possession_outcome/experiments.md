@@ -3258,3 +3258,15 @@ plain LF text and the orphaned fragment restored to its paragraph; the diff agai
 original commit is a clean append with no line churn. This section was appended using the
 same byte-safe method (a script write, not an interactive editor) to avoid repeating that
 defect on a document at least one other lane was also appending to tonight.
+
+## 19. A1 and A2 completed by the PM from the section-18 checkpoints (2026-09-18, 21:09-21:34 ET)
+
+Run by the PM on the then-idle machine with the section-16 runner, unchanged (`scripts/train_possession_outcome_v4_par.py --mode run --stage 7|8 --n-jobs 6`), same seeds and parameters; A1 resumed from its 24 checkpoints (5 dates, 308 fit-seconds, 21:09-21:14), A2 run whole (23 dates, 1,150 fit-seconds, 21:14-21:34). Graded by the round's own `R4.grade`. Floor 0.000804 (section 10); a spec-identical retrain moves per-week cells by up to 0.8 pp.
+
+| cell | scheme | log loss | vs reference | floors | weeks 0-3 gap pp | non-conf gap pp |
+|---|---|---:|---:|---:|---:|---:|
+| reference | `F0 x S1_monthly` | 1.515428 | -- | -- | 3.832 | 2.492 |
+| A1 | `G0 x S1_conf_aligned` | 1.515236 | -0.000192 | 0.24 | 3.669 | 2.354 |
+| A2 | `G0 x S1_weekly` | 1.514895 | -0.000533 | 0.66 | 2.510 | 1.730 |
+
+Reading. Neither cell clears the floor on the primary, so by the pre-registered rule neither is a winner and Decision 9's conference-alignment arm is NULL for the `first` tree (A1's segment moves, ~0.15 pp, are far inside the 0.8 pp retrain spread). A2 is different in kind: its primary gain is inside the floor, but the weeks 0-3 gap falls 1.32 pp and the non-conference gap 0.76 pp, the first larger than the retrain spread. One seed; not a selection. It says refit CADENCE may be where the early-season reliability lives, without the spread compression that sank G2 in section 12. Next: A2 under seed 1 and the reference under the weekly cadence's own floor, `cont` cells, then (only if it holds) the paired closed loop on a weeks-0-7 game sample. Nothing adopted; no default changed.

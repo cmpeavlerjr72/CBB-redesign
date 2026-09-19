@@ -49,7 +49,7 @@ Nothing shipped to production. Engine v1 served stack (all provisional): event r
 2. Season-drift anchor: one pre-registered cross-model round (rebound, shot_block, FT technicals; possession_outcome as control).
 3. Rebound stage 2 (`S1_weekly`, ~3 h/cell, box job after the image's lightgbm-threads/joblib fix) and the drawn-block closed loop once shot_block has a level-passing arm.
 4. Late-game round 2: DEFAULT-OFF window-gated clock floor removal (`C2_clk` / `D_clk`), paired closed loop, primary P(0)/P(1); state-enriched events (B_L3) as the second arm.
-5. Possession-outcome: a reliability arm that preserves the spread of team estimates; build a weeks-0-7 closed-loop game sample so early-season cells are powered; Decision 9 ruling after the A1/A2 alignment cells.
+5. Possession-outcome: a reliability arm that preserves the spread of team estimates; build a weeks-0-7 closed-loop game sample so early-season cells are powered; the A2 weekly-cadence cell (run 2026-09-18: primary inside floor, weeks 0-3 gap 3.83 -> 2.51 pp) under seed 1 plus its `cont` cell is the cheapest next step; Decision 9 ruling (recommended: close against opponent adjustment / conference flag / alignment, keep cadence open).
 6. Event layer v3: re-grade FT technical arms, verify FT make / PO / clock immaterial, measure usage and late_game deltas, then switch consumers in one commit with a new parity reference.
 7. FT technicals 1c (team rate relative to the as-of league level; blended shooter rule): low priority.
 8. Rotation: PARKED. When resumed: a team-indexed Decision-8 round with the close-late (cell x n_st) interaction. Box: 25-seed K1/Z1 freezes.
