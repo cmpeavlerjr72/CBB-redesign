@@ -108,3 +108,8 @@ data/processed/models/clock/v4_*
 data/processed/models/free_throw/s1_confirm/
 data/processed/models/rebound/s1_confirm/
 logs/
+
+# L7 late-game round 1 (2026-09-18): the event-half design (85 MB) and the
+# per-cell prediction / PMF dumps are model artifacts well over the 20 MB bar,
+# so they are gitignored and go to the HF dataset, per CLAUDE.md data rules.
+data/processed/models/late_game/

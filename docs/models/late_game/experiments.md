@@ -421,3 +421,96 @@ are all unchanged. Section 1 is not edited; this section supersedes only the
 four numbered items it names (the 0%/9% role-split headline, the `CELL_DIMS`
 mechanism, the 70.3/26.9 attribution with the band that follows from it, and
 R1's sign), and it fixes the nine items section 1 left open.
+
+---
+
+## 3. RESULTS -- round 1, RUN 2026-09-18 (status PROPOSED -> RUN; NO ARM ADOPTED, no served default changed)
+
+Full evidence, every table and every caveat:
+`docs/tests/late_game_round1_2026-09-18.md`. Raw output:
+`results/late_game/round1/{event,clock}_results.csv` and `*_detail.json`.
+The grid was fitted by `scripts/train_late_game_v1.py` and
+`scripts/train_late_game_clock_v1.py`, which compute no metric, and scored by
+`scripts/grade_late_game_v1.py`, the single blind grader, which has no branch on
+which arm produced a cell.
+
+### 3.1 Event half, fold 2 (selection), first chances, n = 17,596
+
+Primary = multiclass log loss on the selection gate. Binding floor =
+`max(seed floor, game-level block-bootstrap SE)`.
+
+| arm | bundle | log loss | Δ vs A | binding floor | floors beaten | R1 | R2 | R3 | R3b | R7 |
+|---|---|---:|---:|---:|---:|:--:|:--:|:--:|:--:|:--:|
+| A | L0_reference (served) | 1.32443 | 0 | 0.00645 | -- | PASS | PASS | PASS | PASS | PASS |
+| B | L1_role | 1.32466 | +0.00023 | 0.00655 | -0.04 | PASS | PASS | PASS | PASS | PASS |
+| B | L2_role_poss | 1.31378 | -0.01065 | 0.00654 | 1.63 | PASS | PASS | PASS | PASS | PASS |
+| **B** | **L3_gates** | **1.31263** | **-0.01180** | 0.00659 | **1.79** | PASS | PASS | PASS | PASS | PASS |
+| B | L4_team | 1.31356 | -0.01087 | 0.00657 | 1.66 | PASS | PASS | PASS | PASS | PASS |
+| C | L0_reference | 1.32718 | +0.00275 | 0.00671 | -0.41 | PASS | PASS | PASS | FAIL | PASS |
+| C | L1_role | 1.32605 | +0.00162 | 0.00677 | -0.24 | PASS | PASS | PASS | FAIL | PASS |
+| C | L2_role_poss | 1.31611 | -0.00832 | 0.00683 | 1.22 | PASS | PASS | PASS | FAIL | PASS |
+| C | L3_gates | 1.31635 | -0.00808 | 0.00697 | 1.16 | PASS | PASS | PASS | FAIL | PASS |
+| C | L4_team | 1.31666 | -0.00777 | 0.00698 | 1.11 | PASS | PASS | PASS | FAIL | PASS |
+| D | L3_gates | 1.33599 | +0.01156 | 0.00746 | -1.55 | PASS | PASS | PASS | FAIL | PASS |
+| D | L4_team | 1.33429 | +0.00986 | 0.00741 | -1.33 | PASS | PASS | PASS | FAIL | PASS |
+
+`B | L3_gates` is the only family that clears its floor with every gate passing.
+Arm C clears by 1.1-1.2 floors and FAILS the as-of-prior responsiveness cut
+(R3b, slope ratio 0.884-0.941 against arm A's 0.974). Arm D is WORSE than the
+reference by 1.3-1.6 floors: splitting 44k window rows three ways by role costs
+more than the sign flip is worth. **On the pre-registered tie-break
+A > B > C > D, B wins, which is decision rule 1.7.3's named outcome: the
+regime-LAYER hypothesis is REJECTED on the event half in favour of columns in
+the sub-model that already exists.**
+
+The size of the win has to be stated with it. Arm A's own role splits on these
+rows are +0.197 / +0.397 against actuals of +0.198 / +0.393, its per-role
+bonus-FT rates are 0.1411/0.1496 (trailing) and 0.5381/0.5430 (leading), and the
+best arm buys 0.0118 nats on 2.4% of possessions. Per-team bonus-FT MAE over 361
+teams: A 4.50 pp / corr 0.791, B_L3 4.24 pp / 0.812. R6: no full-scope arm moves
+the reference window by more than 0.017 pp relative to A.
+
+### 3.2 Duration half, fold 2 (selection), n = 17,710 (1,249 censored)
+
+Primary = CRPS of the truncated law on uncensored window rows. The cell law is
+deterministic, so the floor is the block-bootstrap SE.
+
+| arm | scope | cells | sr floor | CRPS | Δ vs A | floors beaten | cens. loglik | R4 max bucket gap (s) |
+|---|---|---|---:|---:|---:|---:|---:|---:|
+| A_clk | all rows | P3 | 5 | 4.14955 | 0 | -- | -3.1851 | 2.577 |
+| B1_clk | all rows | P3 | 0 | 4.01063 | -0.13892 | 4.62 | -3.1252 | 0.802 |
+| B2_clk | all rows | P3R | 0 | 4.01012 | -0.13943 | 4.23 | -3.1036 | 1.004 |
+| C_clk | window | P3 | 0 | 3.98171 | -0.16785 | 5.51 | -3.1864 | **0.139** |
+| **C2_clk** | window | P3R | 0 | **3.96353** | **-0.18602** | **5.69** | -3.1554 | 0.943 |
+| D_clk | window | role3 x bucket x bonus x prev_end | 0 | 4.02353 | -0.12603 | 3.88 | **-3.0945** | 0.478 |
+
+**Every arm beats the served reference beyond the floor, by 3.9 to 5.7 floors.
+This is the round's finding.** `C2_clk` wins the pre-registered primary;
+`D_clk` wins the named secondary and is the only arm that reproduces the
+leading team being fouled off the ball inside 10 seconds (1.40 s predicted
+against 1.39 actual, where the served arm says 1.90). The two metrics disagree
+on C2 versus D and that is reported rather than resolved by choosing one.
+
+### 3.3 Status and what is NOT concluded
+
+**Status: RUN. NO ARM ADOPTED.** Decision rule 1.7.4 is unmet for both halves:
+no closed loop was run, the round having hit a hard machine deadline. Three
+things are PARTIAL and each is listed with its resume command in
+`docs/tests/late_game_round1_2026-09-18.md` section 7: no closed loop; five
+fold-2 seed-1 floor cells and four fold-1 ones not reached (every measured seed
+floor is 2.6-11x smaller than the block SE, so the binding floor is unaffected
+unless a missing one is 3.8x the largest observed); and the event half graded on
+FIRST chances only (86.6% of window rows -- the first-chance predictions are
+bit-identical with or without the continuation fit, so the graded POPULATION is
+restricted and no arm is perturbed).
+
+The prior evidence that names round 2's arm: clock round 4 already closed-loop
+rejected a GLOBAL floor removal (`v4_nofloor_P3_s1`: best offline CRPS, worst
+G1 at +1.561 possessions/game against the served +1.156, floor 0.180) because it
+manufactures possessions at the FIRST half's horn (`clock/experiments.md`
+15.3-15.5). `C_clk`, `C2_clk` and `D_clk` are fitted and served on window rows
+only, so a gate at `period == 2 and seconds_remaining <= 120 and
+|score_diff| <= 6` removes the floor exactly where round 4 shows it is wrong and
+nowhere near where round 4 shows it is load-bearing. **That is the recommended
+round-2 candidate, and it needs a DEFAULT-OFF composite clock adapter that this
+round did not write.**
