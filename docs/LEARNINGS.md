@@ -259,3 +259,27 @@ rule was carried over unchanged, so the conditional entry rule conditions
 correctly on a class that arrives 13 pp too rarely. **Condition on an input your
 own model gets wrong and you inherit its error with a smaller variance.** Fix the
 marginal that feeds the conditional before enriching the conditional.
+
+## L38. Shrinking team estimates toward a prior can pass offline and fail the engine: reliability is not spread (2026-09-18)
+
+Possession-outcome round 4b's offline winner G2 (shrink early-season team rates toward the prior-season rate) was refused at the ship gate: in the paired closed loop it moved total SD ratio 22 floors away from 1.0 (0.836 -> 0.816), flipped margin SD ratio PASS -> FAIL and cut the responsiveness slope 5-16 floors. Mechanical, not a bug: shrinkage makes teams more alike, and between-game spread was already the engine's worst defect. The same idea RAISED responsiveness in the rebound model (slope 0.685 -> 1.12) because there the as-of features started at 0.0. **Every carry or shrinkage arm reports SD of team-level predictions against SD of realised team rates, offline, before any closed loop.** A post-hoc spread rescale is banned; the spread has to come from the model. Evidence: PO experiments.md section 12; rebound experiments.md section 11.
+
+## L39. When two vendors disagree with your table, check your parser before adjudicating the vendors (2026-09-18)
+
+The CBBD technical-trip table sat at 64-73% of hoopR's pbp every season. Raw CBBD and raw hoopR agree to 0-0.6%; the gap was `possessions.py::_handle_technical` looking exactly one row ahead while the feed inserts an administrative row at the same frozen clock. ~1,200 technical FT attempts a season were mis-tagged as ordinary trips, contaminating the bonus-trip truth by ~0.15 pp of FTA/FGA. The "third estimate" (box minus event layer) carried the same bug in reverse. **Compare raw feed to raw feed first; a derived table is not a source.** The inserted `Lost Ball Turnover` was REAL (box test: +0.007 vs +1.00 for an artefact), so the fix is lookahead only. Evidence: `docs/tests/free_throw_technicals_round1b_2026-09-18.md`, `event_layer_technical_lookahead_2026-09-18.md`.
+
+## L40. Season drift is a cross-model defect; a per-model trend term is an extrapolation, not a fix (2026-09-18)
+
+League OREB rate rose 0.2824 -> 0.2992 over four seasons; the pooled rebound fit averages it away (73% of the G4 OREB miss). The same drift fails the shot-block rim level gate and the technical-foul level. A `season_idx` trend arm wins fold 2 only because 2025 continued the trend and fails fold-1 calibration. **Drift gets one designed, cross-model answer (an as-of in-season league-level anchor; rates relative to their own snapshot's league mean) and fold 1 is always shown next to fold 2 for any arm that extrapolates.**
+
+## L41. A binary feature the tree splits at 0.0 cannot be fed a probability (2026-09-18)
+
+The rebound model splits `blocked_f` at exactly 0.0 on all 180 splits. Feeding an expected value (an as-of rate or a model p-hat) routes every row down the "blocked" branch: +7 to +8 pp OREB%. Only a DRAWN 0/1 reproduces the true-flag behaviour. **Any 0/1 training feature the engine cannot observe must be served as a draw from its own sub-model, never as an expectation.**
+
+## L42. Re-read a diagnostic against the served stack before building on it (2026-09-18)
+
+The 2026-09-11 late-game headline (engine lacks role conditioning entirely: 3PA split +0.007 vs -0.158) was a measurement defect: the tap had no offence-side flag, so every role cell was a 50/50 mixture. Signed per possession the engine reproduces 96.7% / 85.1% of the splits; the real limit is the clock's `sr_floor_bucket = 5` (every possession under 45 s gets the 45-59 s law), and a dedicated regime model was WORSE than state enrichment. The pre-registered regime-layer hypothesis was rejected by its own round.
+
+## L43. Workers misjudge wall clock and park on monitors; both must be in every brief (2026-09-18)
+
+Three workers reported end times 20-70 minutes later than the system clock and stopped work early believing a deadline had arrived; three workers ended their turn with a job still running. **Briefs say: read the time from `date`, never estimate; run long jobs in one foreground call; never end a turn with a job running.** Also: `lightgbm==4.7.0` in the AWS container image does not multi-thread (n_jobs 1 vs 150 identical); parallelise across refit dates with joblib. (L37 is cited in the 2026-09-11 handoff but was never written here; the number is left unused.)
