@@ -45,6 +45,7 @@ call in this file is one batched predict for the whole batch.
 
 from __future__ import annotations
 
+import os
 import time
 from dataclasses import dataclass
 
@@ -94,6 +95,47 @@ MAX_CHANCES = 8
 #: Hard step cap. A 40-minute game at the data's mean duration is ~140
 #: possessions; the cap exists so a pathological draw cannot hang a run.
 MAX_STEPS = 700
+
+
+#: Round-6 foul-accrual lookup tables, keyed by `ENGINE_FOUL_ACCRUAL`.
+#: `docs/models/possession_outcome/experiments.md` section 13/15/17.
+#: DEFAULT OFF: unset or "reference" keeps the served scalar
+#: `silent_foul_per_possession`, RNG draw and all, bit-identical.
+FOUL_ACCRUAL_ARMS = {
+    "round6_F5": "data/processed/models/possession_outcome/round6/foul_accrual_lut_F5_F2.npz",
+    # `F5e` is `F5` refitted on the attribution the engine actually has: BOTH
+    # non-trip foul channels (defence-side 0.0769 + offence-side 0.0222 per
+    # possession) charged to the defence, because `loop.py` has no offensive-foul
+    # mechanism and this round invents none.
+    "round6_F5e": "data/processed/models/possession_outcome/round6/foul_accrual_lut_F5e_F2.npz",
+}
+_FOUL_LUT_CACHE: dict = {}
+
+
+def _load_foul_lut(name: str):
+    """The (3, 5, 8, 11, 11, 3) accrual table, or None for the served scalar."""
+    if not name or name == "reference":
+        return None
+    if name not in FOUL_ACCRUAL_ARMS:
+        raise KeyError(f"unknown ENGINE_FOUL_ACCRUAL={name!r}; "
+                       f"known: {sorted(FOUL_ACCRUAL_ARMS)} or 'reference'")
+    if name not in _FOUL_LUT_CACHE:
+        z = np.load(FOUL_ACCRUAL_ARMS[name])
+        _FOUL_LUT_CACHE[name] = (z["lut"], z["clock_cuts"], z["margin_cuts"],
+                                 int(z["max_fouls"]))
+    return _FOUL_LUT_CACHE[name]
+
+
+def _foul_p(tab, period, sec_rem, margin, def_fouls, off_fouls, site) -> np.ndarray:
+    """Index the accrual table. Every argument is the possession's OPEN-time
+    value, which is the definition the table was fitted on."""
+    lut, ccuts, mcuts, maxf = tab
+    pi = np.where(period <= 1, 0, np.where(period == 2, 1, 2))
+    ci = np.searchsorted(ccuts, sec_rem, side="right")
+    mi = np.searchsorted(mcuts, margin, side="right")
+    return lut[pi, ci, mi,
+               np.clip(def_fouls, 0, maxf).astype(np.int64),
+               np.clip(off_fouls, 0, maxf).astype(np.int64), site]
 
 
 @dataclass
@@ -185,6 +227,8 @@ def simulate_chunk(inp: EngineInputs, ad: Adapters, game_index: np.ndarray,
     p_three_shoot = float(rules["shooting_trip_three_attempt_share"])
     p_three_double = float(rules["double_bonus_three_attempt_share"])
     silent_foul = float(rules["silent_foul_per_possession"])
+    foul_tab = _load_foul_lut(os.environ.get("ENGINE_FOUL_ACCRUAL", "reference"))
+    neutral_g = (inp.games["neutral"].to_numpy() > 0) if foul_tab is not None else None
     ce_med = {int(k): float(v) for k, v in rules["chance_elapsed_median_by_chance"].items()}
     # lookup tables so the hot loop never runs a python comprehension
     ce_lut = np.array([ce_med.get(min(max(j, 1), 3), 3.0) for j in range(4)], dtype=np.float64)
@@ -299,6 +343,15 @@ def simulate_chunk(inp: EngineInputs, ad: Adapters, game_index: np.ndarray,
         off_sd = st.off_score_diff()
         bonus = st.in_bonus()
         dbonus = st.in_double_bonus()
+        if foul_tab is not None:
+            # OPEN-time state for the round-6 accrual table: team fouls before
+            # this possession's own trips, and the pre-possession margin.
+            tf_def0 = st.team_fouls[act, dfn]
+            tf_off0 = st.team_fouls[act, off]
+            sd0 = off_sd[act]
+            sec0 = st.seconds_remaining[act]
+            per0 = st.period[act]
+            site0 = np.where(neutral_g[gidx], 0, np.where(off == 0, 1, 2))
 
         team_off = inp.team_static[gidx, off]
 
@@ -507,7 +560,11 @@ def simulate_chunk(inp: EngineInputs, ad: Adapters, game_index: np.ndarray,
                 live[:] = False
 
         # ---- non-shooting foul that awards no attempt (measured gap) ------
-        sf = book.draw("foul_accrual", act) < silent_foul
+        u_sf = book.draw("foul_accrual", act)
+        if foul_tab is None:
+            sf = u_sf < silent_foul
+        else:
+            sf = u_sf < _foul_p(foul_tab, per0, sec0, sd0, tf_def0, tf_off0, site0)
         if sf.any():
             rs = np.flatnonzero(sf)
             st.team_fouls[act[rs], dfn[rs]] += 1

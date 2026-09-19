@@ -1,9 +1,13 @@
 # Possession-outcome round 6: the team-foul accrual law and the conditional bonus trip -- OFFLINE tables (2026-09-18)
 
-Lane: foul accrual / bonus law. **OFFLINE ONLY. NOTHING IS ADOPTED, NO DEFAULT IS
-CHANGED, NO ENGINE FILE IS TOUCHED.** The paired closed loop of section 13.7 rule 7
-was NOT run (the machine shuts down tonight); section 6 below leaves the exact
-resume command.
+Lane: foul accrual / bonus law. **NOTHING IS ADOPTED AND NO DEFAULT IS CHANGED.**
+
+**Wall clock, corrected.** The offline tables of sections 0-4 were produced
+**19:52-20:14 ET on 2026-09-18** (22 minutes), not the 19:52-21:22 an earlier
+revision of this document claimed; the results commit `52d8f7d` is stamped
+20:14:19 ET and that is the real clock. The error was mine and is corrected here
+rather than quietly dropped. The wiring, parity check and closed loop of
+section 7 ran after it, **20:15-21:10 ET**.
 
 Pre-registration: `docs/models/possession_outcome/experiments.md` section 13
 (commit 3b75c3c) as amended by **section 15 (AMENDMENT A, commit ac18555,
@@ -245,18 +249,107 @@ T number in section 3 is on the cleaned target.
 
 ---
 
-## 6. Exact resume command for the closed loop
+## 6. The wiring, and the parity proof
 
-The arms are not wired. Wiring is: export `F5`'s predictions as a lookup table
-over `(period, clock bucket, margin bucket, def_team_fouls, off_team_fouls, site)`
-behind a DEFAULT-OFF `ENGINE_FOUL_ACCRUAL` flag in `src/cbb_sim/engine/loop.py`
-beside the existing `silent_foul` draw, prove the default path bit-identical
-against `docs/ops/parity_reference_windows_v6.json`, then
+`scripts/build_foul_accrual_lut_v1.py` exports `F5` as a dense
+(3, 5, 8, 11, 11, 3) = **43,560-cell** lookup table over
+`(period, clock bucket, margin bucket, def_team_fouls, off_team_fouls, site)`,
+every entry a probability. `src/cbb_sim/engine/loop.py` gains `FOUL_ACCRUAL_ARMS`,
+`_load_foul_lut`, `_foul_p` and a three-line branch at the existing silent-foul
+draw. **`ENGINE_FOUL_ACCRUAL` unset or `reference` leaves the served scalar path
+untouched, RNG draw included**, and the open-time state the table is indexed on
+(`team_fouls` before the possession's own trips, the pre-possession margin, the
+possession-start clock) is snapshotted only when the flag is on.
 
-    .venv/Scripts/python.exe scripts/run_po4b_closed_loop.py --arm round6_F5 --seeds 25 --tag po6_F5_s25
+**Binning cost, measured not assumed.** On fold-2 test rows the table scores
+0.24927882 against the unbinned model's 0.24485771, a cost of **0.00442 = 5.5
+applied floors**. The served table is still 30 applied floors better than the
+`F0` reference. Two limitations are in the artifact itself: the two as-of team
+rate features are evaluated at the league mean (the engine's `team_static` block
+does not carry them; adding them is an `EngineInputs` rebuild), so the served
+table reproduces `F5`'s clock-and-state law and **not** its team responsiveness;
+and the engine has no offensive-foul mechanism, so **none was invented** --
+`--target` instead states which quantity the table serves under the engine's
+one-sided attribution (see 7.2).
 
-paired against today's `results/engine_v0/po4b_R_s25` reference **only if the
-engine commit's simulated values are unchanged** (the round-5 precondition smoke
-`smoke60x5_po4b_wiring` is the test); otherwise re-run the reference. Read:
-bonus occupancy by minute, FTA/FGA by half and overall excluding and including the
-final 2:00, G1-G9 no-regression in floors, team slope, total SD ratio.
+**PARITY: PASSES, exactly.** `foul6_PARITY_s25` is a full 500-game x 25-seed run
+of the DEFAULT path under the edited engine. Against the stored section-12
+reference `po4b_R_s25`: **12,500 rows x 28 columns, 28 of 28 columns equal, zero
+unequal, BIT_IDENTICAL true.** That is a stronger test than the 60x5 window
+digest `docs/ops/parity_reference_windows_v6.json` holds, and it is the test the
+pairing needs, so today's reference run is reused rather than re-measured. (The
+v6 digest's own `provisional_foul_accrual: true` flag is precisely the item this
+round is about.)
+
+---
+
+## 7. The paired closed loop -- and it resolves the level contradiction
+
+500 games x 25 paired seeds, served stack pinned and asserted, 3-6 workers.
+`foul6_PARITY_s25` 1,152 s, `foul6_F5_s25` 1,151 s, `foul6_F5e_s25` (6 workers).
+Floors are `|po4b_R_s25_floor - po4b_R_s25|`, the section-12 seed-offset run
+reused as pre-registered.
+
+### 7.1 The table
+
+| line | target | reference | `F5` | floors | `F5e` | floors | floor |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| **FTA/FGA pooled** | **0.32955** | **0.31953** | **0.28300** | **20.50 AWAY** | **0.30215** | **9.76 AWAY** | 0.001782 |
+| FTA / game | -- | 37.915 | 34.095 | 17.69 away | 36.103 | 8.39 away | 0.2159 |
+| FGA / game | -- | 118.660 | 120.478 | 127.7 up | 119.488 | 58.2 up | 0.0142 |
+| G1 possessions / game | 68.0 | 70.019 | 69.983 | 0.36 toward | 69.976 | 0.43 toward | 0.0987 |
+| G9 total points | -- | 145.326 | 144.471 | 2.42 down | 144.834 | 1.39 down | 0.3534 |
+| G5 total SD | 18.96 | 7.836 | 7.805 | 2.38 AWAY | 7.794 | 3.20 AWAY | 0.0130 |
+| G5 margin SD | 12.60 | 10.123 | 10.263 | 0.43 toward | 10.255 | 0.41 toward | 0.3243 |
+| G4 OREB% | 0.2984 | 0.28361 | 0.28541 | 7.84 **toward** | 0.28476 | 5.02 **toward** | 0.000229 |
+
+### 7.2 The verdict: the closed loop says the OFFLINE level reading is the wrong one
+
+Section 2 left a contradiction: offline the served constant is 58% higher than
+the measured defensive non-trip rate, while the diagnostic has the engine too
+rarely in the bonus late. **The closed loop settles it, and not in the offline
+reading's favour.** Both arms lower the accrual rate toward the measured truth,
+and both make G4's FTA/FGA **worse**: the gap to 0.32955 goes from -1.00 pp to
+-4.66 pp (`F5`) and -2.74 pp (`F5e`), 20.5 and 9.8 floors in the wrong direction.
+FGA/game rises (fewer trips, more shots) and FTA/game falls, exactly the
+mechanism.
+
+`F5e` is the honest test of the mis-attribution this round found. `F5` serves the
+defence-side non-trip rate alone (0.0769/possession); `F5e` is the same GBM
+refitted on **both** non-trip channels charged to the defence (0.0769 + 0.0222 =
+0.0991), which is the attribution `loop.py` actually has and what the served
+constant was implicitly doing. Restoring the offensive channel recovers **more
+than half** of `F5`'s damage (20.50 -> 9.76 floors), which confirms the
+mis-attribution finding of 15.1 is real and material. **It does not close the
+remaining half**, and the remaining half is the answer to the contradiction:
+
+**The served 0.123346 is not a measurement of the silent-foul rate, it is a
+measurement of the silent-foul rate PLUS the accrual the engine fails to produce
+through its own trip classes.** The engine's FT-trip events fire less often than
+reality's, so team fouls accrue too slowly from that channel, and a constant
+fitted at 0.1233 -- 0.0242/possession above the true combined non-trip rate --
+was silently making up the difference. Replacing it with an honestly-fitted law
+removes that compensation and the bonus starves. **This is a bottom-up failure of
+exactly the kind the standing rule names: a downstream constant was compensating
+for a known upstream bias, and fixing the constant alone exposes it.**
+
+Nothing here is a reason to tune a scalar, and nothing was tuned. The next round's
+object is the accrual law and the trip-foul production **jointly** -- the total
+team-foul arrival process, of which the trip classes are a part -- not a level
+knob on either one.
+
+### 7.3 Two other readings, and three lines this run could NOT measure
+
+* **G1 is safe.** Possessions/game move 0.36 and 0.43 floors, both toward the
+  target, so the free-throw clock-stoppage worry of 13.7 rule 7 does not bite.
+* **OREB% improves as a side effect** (5.0-7.8 floors toward 0.2984): fewer free
+  throws means more live misses. It is a side effect of a regression, not a gain.
+* **Bonus occupancy by game minute: NOT MEASURED.** `games.parquet` is box-level;
+  the occupancy curve needs the instrumented tap (`diag_g4_tap_v1.py`) and the
+  tap was not run. The pre-registered occupancy target of 13.4 is therefore
+  **unread**, and no claim is made about it.
+* **FTA/FGA by half, and with/without the final 2:00: NOT MEASURED**, same
+  reason.
+* **The team FT-rate slope: NOT MEASURED.** `games.parquet` carries no team ids,
+  so the per-team cut cannot be built from this run's output; the grading script
+  says so rather than substituting something else.

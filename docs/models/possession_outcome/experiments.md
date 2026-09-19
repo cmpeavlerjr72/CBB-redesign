@@ -2934,7 +2934,12 @@ how much of the pre-registered grid this session reaches does.
 
 ---
 
-## 16. Round 6 RESULTS -- the foul-accrual law (Block F) and the conditional bonus trip (Block T), OFFLINE ONLY (run 2026-09-18 20:00-21:10 ET)
+## 17. Round 6 RESULTS -- the foul-accrual law (Block F) and the conditional bonus trip (Block T) (offline run 2026-09-18 **19:52-20:14 ET**; wiring, parity and closed loop 20:15-21:00 ET)
+
+*(Renumbered from 16 to 17: the `A1`/`A2` alignment lane's amendment, commit fbc8949, already
+holds section 16. The wall-clock line above is corrected -- an earlier revision of this section
+said 20:00-21:10 for the offline tables, which was wrong; results commit 52d8f7d is stamped
+20:14:19 ET.)*
 
 Pre-registration section 13 (commit 3b75c3c) as amended by section 15 (commit
 **ac18555**, pushed BEFORE any fitting). Full multi-level evidence:
@@ -3027,5 +3032,61 @@ chance populations with an `is_cont` flag, a declared cost deviation (15.3). The
 sealed 2025-26 season was not touched and no market line was read. The best
 prior-quintile slope anywhere in the round is 0.252 (Block F) and 0.376
 (Block T): **no arm here is matchup-responsive**, and that is the standing defect
-the next round inherits. The resume command for the closed loop is in
-`docs/tests/foul_accrual_round_2026-09-18.md` section 6.
+the next round inherits. The wiring, the parity proof and the paired closed loop
+are 17.6-17.7 below; the evidence document is
+`docs/tests/foul_accrual_round_2026-09-18.md` sections 6-7.
+
+### 17.6 The wiring, the parity proof, and the paired closed loop (20:15-21:00 ET, added in the same session)
+
+`F5` exported as a dense 43,560-cell lookup table over
+`(period, clock bucket, margin bucket, def_team_fouls, off_team_fouls, site)`;
+`src/cbb_sim/engine/loop.py` gains `FOUL_ACCRUAL_ARMS`, `_load_foul_lut`,
+`_foul_p` and a three-line branch at the existing silent-foul draw, all behind
+**DEFAULT-OFF** `ENGINE_FOUL_ACCRUAL`. Binning cost measured: 0.00442 = 5.5
+applied floors, leaving the table 30 floors better than `F0`. The two as-of team
+rate features are served at the league mean (the engine's `team_static` block
+does not carry them), so the served table is `F5`'s clock-and-state law **without**
+its team responsiveness.
+
+**PARITY PASSES EXACTLY.** `foul6_PARITY_s25`, a full 500 x 25 run of the DEFAULT
+path under the edited engine, equals the stored section-12 reference
+`po4b_R_s25` on **12,500 rows x 28 of 28 columns, zero unequal**. Today's
+reference and its seed-offset floor run are therefore reused, as 13.7 allows.
+
+| line | target | reference | `F5` | floors | `F5e` | floors |
+|---|---:|---:|---:|---:|---:|---:|
+| **FTA/FGA pooled** | **0.32955** | **0.31953** | **0.28300** | **20.50 AWAY** | **0.30215** | **9.76 AWAY** |
+| FTA / game | -- | 37.915 | 34.095 | 17.69 away | 36.103 | 8.39 away |
+| FGA / game | -- | 118.660 | 120.478 | 127.7 up | 119.488 | 58.2 up |
+| G1 possessions | 68.0 | 70.019 | 69.983 | 0.36 toward | 69.976 | 0.43 toward |
+| G5 total SD | 18.96 | 7.836 | 7.805 | 2.38 away | 7.794 | 3.20 away |
+| G4 OREB% | 0.2984 | 0.28361 | 0.28541 | 7.84 toward | 0.28476 | 5.02 toward |
+
+`F5e` is `F5` refitted on the attribution the engine actually has -- BOTH non-trip
+channels (0.0769 + 0.0222 = 0.0991/possession) charged to the defence, because
+`loop.py` has no offensive-foul mechanism and **none was invented**.
+
+### 17.7 The closed loop resolves 17.2's contradiction, against the offline reading
+
+Both arms lower accrual toward the measured truth and both make G4 **worse**:
+the FTA/FGA gap goes from -1.00 pp to -4.66 pp (`F5`) and -2.74 pp (`F5e`).
+Restoring the offensive channel recovers more than half of the damage
+(20.50 -> 9.76 floors), which **confirms the mis-attribution finding of 15.1 is
+real and material**, and leaves the rest unexplained by it.
+
+**The served 0.123346 is not a measurement of the silent-foul rate; it is that
+rate plus the accrual the engine fails to produce through its own trip classes.**
+It sits 0.0242/possession above the true combined non-trip rate and was silently
+covering the engine's trip-foul shortfall. An honestly-fitted law removes the
+compensation and the bonus starves. **This is the bottom-up rule's failure mode
+made visible: a downstream constant was compensating for a known upstream bias.**
+Nothing was tuned and nothing is adopted. The next round's object is the total
+team-foul arrival process -- the accrual law and the trip-foul production
+**jointly** -- not a level knob on either.
+
+**Not measured, and not claimed:** bonus occupancy by game minute, FTA/FGA by half
+and with/without the final 2:00 (all need the instrumented tap, which was not
+run), and the team FT-rate slope (`games.parquet` carries no team ids). The
+pre-registered occupancy target of 13.4 is UNREAD. `ENGINE_FOUL_ACCRUAL` stays
+default-off with `round6_F5` and `round6_F5e` selectable for reproduction; the
+served default is unchanged.
