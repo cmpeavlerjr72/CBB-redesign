@@ -2854,6 +2854,7 @@ The machine this lane runs on shuts down tonight. The round runs the OFFLINE
 tables for Block F and Block T. **The paired closed loop of 13.7 rule 7 is NOT
 run tonight**; no engine file is edited, no flag is added, and no default is
 changed. Nothing is adopted on offline evidence, and the round says so in its
+results section rather than leaving it implied.
 
 ---
 
@@ -2930,4 +2931,3 @@ in 16's decision rule, floor, or arm definitions changes because of tonight's cl
 how much of the pre-registered grid this session reaches does.
 
 ---
-results section rather than leaving it implied.
