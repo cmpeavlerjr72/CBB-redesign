@@ -2931,3 +2931,101 @@ in 16's decision rule, floor, or arm definitions changes because of tonight's cl
 how much of the pre-registered grid this session reaches does.
 
 ---
+
+---
+
+## 16. Round 6 RESULTS -- the foul-accrual law (Block F) and the conditional bonus trip (Block T), OFFLINE ONLY (run 2026-09-18 20:00-21:10 ET)
+
+Pre-registration section 13 (commit 3b75c3c) as amended by section 15 (commit
+**ac18555**, pushed BEFORE any fitting). Full multi-level evidence:
+`docs/tests/foul_accrual_round_2026-09-18.md`. Sections 1-15 are STATIC.
+
+**VERDICT, STATED FIRST. NOTHING IS ADOPTED AND NO DEFAULT IS CHANGED.** Two
+arms are ELIGIBLE offline -- `F5` (a GBM accrual law) and `T2` (the served bundle
+plus the raw team-foul counts) -- and **neither may ship on offline evidence**
+(13.7 rule 7). The paired closed loop was NOT run: the machine shut down tonight.
+No engine file was edited, no flag was added.
+
+### 16.1 The target had to be rebuilt, and that is a finding in itself
+
+Section 15.1, confirmed in data: the served `silent_foul_per_possession` is a
+pooled constant that (a) re-attributes every OFFENSIVE foul -- **0.0222 per
+possession, a channel the engine has no mechanism for at all** -- to the
+defending team, and (b) is applied identically in the four bonus states in which
+the truth differs by an order of magnitude. `def_team_fouls` cannot be
+differenced to recover the target (a bonus-trip possession shows a defence-side
+increment of 0.158, not 1.0, because `_ensure` opens it AT the foul), so the
+target is built by an instrumented replay of the segmenter in this lane's own
+process, `src/cbb_sim/` unchanged. 3,029,695 possessions, 26 s, 126 fouls
+(<0.02%) unattributable and dropped, counted not imputed.
+
+### 16.2 Block F, fold 2 SELECTS (681,101 fit-window possessions; applied floor 0.000804 from round 4b, measured seed floor 0.0000043 on the one stochastic arm, exactly 0.0 on every deterministic arm)
+
+| arm | log loss | calib gap pp | minute-curve max gap pp | team SD ratio | quintile slope |
+|---|---:|---:|---:|---:|---:|
+| `F0` reference | 0.2739820 | -0.081 | 4.876 | 0.000 | 0.000 |
+| `F0_served` (0.123346) | 0.2847055 | **+4.530** | **9.487** | 0.000 | 0.000 |
+| `F1` / `F2` / `F2m` | 0.2738989 / 0.2696477 / 0.2695107 | -0.08 | 5.26 / 0.35 / 0.39 | 0.005 / 0.033 / 0.142 | ~0.00-0.05 |
+| `F3` / `F3b` / `F3c` / `F3d` | 0.2717722 / 0.2604190 / 0.2604066 / 0.2604121 | -0.08 to -0.14 | 3.23 / 1.38 / 1.38 / 1.41 | 0.20 / 0.37 / 0.43 / 0.47 | 0.09 / 0.14 / 0.21 / 0.27 |
+| `D9a` / `D9b` / `D9c` / `H1` | 0.2604072 / 0.2604068 / 0.2603935 / 0.2603751 | -0.11 | 1.37-1.39 | 0.43-0.45 | 0.21-0.22 |
+| **`F5` GBM** | **0.2448577** | -0.117 | **0.293** | **0.589** | **0.252** |
+
+`F5` beats the reference by **36 applied floors**; fold 1 confirms with the same
+ordering (`F5` 0.2428148 vs `F0` 0.2713440). Every Decision-9 cell
+(opponent adjustment, conference flag, conference-aligned fit) and the Block H
+site-interaction arm move the primary by under a tenth of a floor and are **not
+eligible**; Decision 9 stays unresolved for this sub-model. Held-out final 2:00 +
+OT (87,733 possessions, never fitted): `F5` calibration gap +0.027 pp against the
+served constant's +9.626.
+
+**Mechanism.** The silent-foul rate by the defence's own foul count is
+**7.92 / 11.78 / 1.01 / 0.17 pp** at 0-3 / 4-6 / 7-9 / 10+ fouls (all cells
+powered): it rises toward the bonus and collapses inside it, because in the bonus
+a foul awards free throws and stops being silent. The served law fires one 12.3%
+Bernoulli in all four states, and `F3b` -- the first arm that sees the bonus
+state -- buys 0.0114 of the 0.0136 total gain.
+
+**An unresolved contradiction, on the record.** Offline the served constant is
+**58% HIGHER** than the measured defensive non-trip rate (0.1233 vs 0.0780);
+closed-loop, the engine is in the bonus **too rarely** at minutes 30-37
+(-15.27 pp). The offline evidence confirms the SHAPE the G4 diagnostic found and
+does not reconcile the LEVEL. **No share of the -1.384 pp channel may be claimed
+as closed by Block F until the paired run is made.**
+
+### 16.3 Block T, fold 2 (183,130 in-bonus chances, technical-cleaned)
+
+| arm | log loss | calib gap pp | team SD ratio | quintile slope |
+|---|---:|---:|---:|---:|
+| `T0` reference (served `C_plus_state`) | 0.4108482 | +0.139 | 0.364 | 0.269 |
+| `T1` + as-of foul / drawn rates | 0.4107385 | +0.145 | 0.400 | 0.368 |
+| **`T2` + raw team-foul counts** | **0.3923356** | +0.077 | **0.767** | 0.330 |
+| `T3` = `T1` + `T2` | 0.3923117 | +0.073 | 0.771 | 0.376 |
+
+**`T2` is the eligible winner**: 23 applied floors over the reference, fold 1
+confirming. `T3` beats it by 0.03 of a floor -- a tie, and 13.7 rule 2 gives a tie
+to the simpler arm. `T1` buys an eighth of a floor and is **not eligible on either
+fold**: the as-of league-centred rate features do nothing here. `T0`'s
+calibration by foul count is +11.41 / -3.77 / -10.02 pp at 4-6 / 7-9 / 10+; `T2`
+moves it to +6.52 / -4.52 / +3.79 and nearly doubles the spread of team estimates.
+
+### 16.4 The technical free-throw anti-join (15.4)
+
+4,059 of 337,790 FT-trip chances (1.20%) matched a verified technical and were
+dropped; `FT_trip_bonus` chances 153,619 -> 151,843; bonus-trip rate per chance
+0.050555 -> 0.050038. **About 10.6% of the -1.384 pp bonus-trip channel (~0.15 pp
+of FTA/FGA) is mislabelled technical attempts and is not the engine's to close.**
+The occupancy curve moves by at most 0.03 pp per bucket while P(trip | bonus)
+moves 0.09-0.35 pp, so the defect sits entirely in the CONDITIONAL half of the
+59/41 split. `src/cbb_sim/pbp/possessions.py` was not edited.
+
+### 16.5 What the round did not do
+
+No closed loop, no engine edit, no flag, no adopted arm, no changed default. `F4`
+(a seventh possession-outcome class) not run. `D9c` is a two-segment proxy for a
+conference-aligned refit calendar, not an `S1` calendar. Block T pools the two
+chance populations with an `is_cont` flag, a declared cost deviation (15.3). The
+sealed 2025-26 season was not touched and no market line was read. The best
+prior-quintile slope anywhere in the round is 0.252 (Block F) and 0.376
+(Block T): **no arm here is matchup-responsive**, and that is the standing defect
+the next round inherits. The resume command for the closed loop is in
+`docs/tests/foul_accrual_round_2026-09-18.md` section 6.
