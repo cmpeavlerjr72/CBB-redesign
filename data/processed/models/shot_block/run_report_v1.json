@@ -1,0 +1,3450 @@
+{
+ "created_at": "2026-09-18T22:54:20.730878+00:00",
+ "join": {
+  "match_rate": 0.88077,
+  "ambiguous_key_share_design": 0.00511,
+  "blocked_agreement_on_matched": 1.0,
+  "n_rows": 1404428,
+  "source": "C:\\Users\\devuser\\CBB-clean-sheet\\data\\processed\\models\\fg_make\\events_v2_shotshooter.parquet",
+  "k_block_carry": {
+   "off": 716.1215360711177,
+   "def": 180.29774337788328
+  }
+ },
+ "shooter_k_grid_train_ll": {
+  "0": 0.3171314,
+  "50": 0.3158661,
+  "100": 0.3159549,
+  "200": 0.3160749,
+  "400": 0.3161867
+ },
+ "shooter_k_fitted": 50,
+ "noise_floor_log_loss": 4.1e-05,
+ "noise_floor_level_pp": 0.0195,
+ "floor_source_arm": "K3_prior",
+ "cells": {
+  "F1|K0": {
+   "n": 358631,
+   "log_loss": 0.271238,
+   "brier": 0.080359,
+   "actual_rate": 0.100451,
+   "pred_rate": 0.096701,
+   "level_pp": -0.3751,
+   "calib_worst_decile_gap_pp": 1.3375,
+   "calib_pass": true,
+   "by_shot_type": {
+    "jump2": {
+     "n": 101961,
+     "level_pp": -0.1621,
+     "log_loss": 0.287752
+    },
+    "rim": {
+     "n": 98035,
+     "level_pp": -1.1064,
+     "log_loss": 0.570114
+    },
+    "three": {
+     "n": 158635,
+     "level_pp": -0.06,
+     "log_loss": 0.075922
+    }
+   },
+   "level_pass": false,
+   "slope_def_prior": {
+    "underpowered": false,
+    "n": 358631,
+    "slope_ratio": 0.107,
+    "monotone_steps": 3,
+    "steps": 4,
+    "actual_by_q": [
+     0.08608,
+     0.09135,
+     0.09988,
+     0.10735,
+     0.1176
+    ],
+    "pred_by_q": [
+     0.09568,
+     0.09556,
+     0.0958,
+     0.09741,
+     0.09905
+    ],
+    "n_by_q": [
+     71727,
+     71726,
+     71726,
+     71726,
+     71726
+    ]
+   },
+   "slope_off_prior": {
+    "underpowered": false,
+    "n": 358631,
+    "slope_ratio": 0.2613,
+    "monotone_steps": 4,
+    "steps": 4,
+    "actual_by_q": [
+     0.09031,
+     0.09674,
+     0.10111,
+     0.10466,
+     0.10943
+    ],
+    "pred_by_q": [
+     0.09421,
+     0.09496,
+     0.09743,
+     0.09771,
+     0.0992
+    ],
+    "n_by_q": [
+     71727,
+     71726,
+     71726,
+     71726,
+     71726
+    ]
+   },
+   "resp_pass": true,
+   "by_month": {
+    "1": {
+     "n": 85821,
+     "level_pp": -0.2227,
+     "log_loss": 0.268132
+    },
+    "2": {
+     "n": 86046,
+     "level_pp": -0.3312,
+     "log_loss": 0.27098
+    },
+    "3": {
+     "n": 51051,
+     "level_pp": -0.5917,
+     "log_loss": 0.273306
+    },
+    "4": {
+     "n": 395,
+     "level_pp": -3.0877,
+     "log_loss": 0.300518
+    },
+    "11": {
+     "n": 71089,
+     "level_pp": -0.3864,
+     "log_loss": 0.271537
+    },
+    "12": {
+     "n": 64229,
+     "level_pp": -0.4361,
+     "log_loss": 0.273581
+    }
+   },
+   "by_site": {
+    "away": {
+     "n": 160458,
+     "level_pp": -1.0904,
+     "log_loss": 0.285402
+    },
+    "home": {
+     "n": 152615,
+     "level_pp": 0.4156,
+     "log_loss": 0.256956
+    },
+    "neutral": {
+     "n": 45558,
+     "level_pp": -0.5043,
+     "log_loss": 0.269197
+    }
+   },
+   "by_conf": {
+    "conf": {
+     "n": 221750,
+     "level_pp": -0.3313,
+     "log_loss": 0.270386
+    },
+    "nonconf": {
+     "n": 136881,
+     "level_pp": -0.4459,
+     "log_loss": 0.27262
+    }
+   },
+   "by_period": {
+    "1": {
+     "n": 184074,
+     "level_pp": -0.2939,
+     "log_loss": 0.265594
+    },
+    "2": {
+     "n": 171574,
+     "level_pp": -0.4712,
+     "log_loss": 0.277096
+    },
+    "3": {
+     "n": 2543,
+     "level_pp": -0.14,
+     "log_loss": 0.289738
+    },
+    "4": {
+     "n": 363,
+     "level_pp": 2.3017,
+     "log_loss": 0.22765
+    },
+    "5": {
+     "n": 77,
+     "UNDERPOWERED": true
+    }
+   },
+   "by_game_minute_bucket": {
+    "0": {
+     "n": 45709,
+     "level_pp": -0.2216,
+     "log_loss": 0.263322
+    },
+    "1": {
+     "n": 46404,
+     "level_pp": -0.1587,
+     "log_loss": 0.261345
+    },
+    "2": {
+     "n": 46022,
+     "level_pp": -0.3039,
+     "log_loss": 0.265125
+    },
+    "3": {
+     "n": 44832,
+     "level_pp": -0.4929,
+     "log_loss": 0.272446
+    },
+    "4": {
+     "n": 44400,
+     "level_pp": -0.5539,
+     "log_loss": 0.284922
+    },
+    "5": {
+     "n": 43194,
+     "level_pp": -0.4107,
+     "log_loss": 0.275218
+    },
+    "6": {
+     "n": 41910,
+     "level_pp": -0.2943,
+     "log_loss": 0.273166
+    },
+    "7": {
+     "n": 46160,
+     "level_pp": -0.5691,
+     "log_loss": 0.275309
+    }
+   },
+   "by_season_half": {
+    "Jan-Apr": {
+     "n": 223313,
+     "level_pp": -0.3539,
+     "log_loss": 0.27047
+    },
+    "Nov-Dec": {
+     "n": 135318,
+     "level_pp": -0.41,
+     "log_loss": 0.272507
+    }
+   },
+   "fit_s": 1.3,
+   "n_features": 1
+  },
+  "F1|K1": {
+   "n": 358631,
+   "log_loss": 0.274082,
+   "brier": 0.080624,
+   "actual_rate": 0.100451,
+   "pred_rate": 0.097361,
+   "level_pp": -0.309,
+   "calib_worst_decile_gap_pp": 3.7176,
+   "calib_pass": false,
+   "by_shot_type": {
+    "jump2": {
+     "n": 101961,
+     "level_pp": -0.1736,
+     "log_loss": 0.28947
+    },
+    "rim": {
+     "n": 98035,
+     "level_pp": -0.836,
+     "log_loss": 0.578619
+    },
+    "three": {
+     "n": 158635,
+     "level_pp": -0.0704,
+     "log_loss": 0.075991
+    }
+   },
+   "level_pass": false,
+   "slope_def_prior": {
+    "underpowered": false,
+    "n": 358631,
+    "slope_ratio": 1.2556,
+    "monotone_steps": 4,
+    "steps": 4,
+    "actual_by_q": [
+     0.08608,
+     0.09135,
+     0.09988,
+     0.10735,
+     0.1176
+    ],
+    "pred_by_q": [
+     0.08024,
+     0.08699,
+     0.09672,
+     0.10304,
+     0.11982
+    ],
+    "n_by_q": [
+     71727,
+     71726,
+     71726,
+     71726,
+     71726
+    ]
+   },
+   "slope_off_prior": {
+    "underpowered": false,
+    "n": 358631,
+    "slope_ratio": 0.334,
+    "monotone_steps": 4,
+    "steps": 4,
+    "actual_by_q": [
+     0.09031,
+     0.09674,
+     0.10111,
+     0.10466,
+     0.10943
+    ],
+    "pred_by_q": [
+     0.0944,
+     0.09581,
+     0.09669,
+     0.09913,
+     0.10078
+    ],
+    "n_by_q": [
+     71727,
+     71726,
+     71726,
+     71726,
+     71726
+    ]
+   },
+   "resp_pass": true,
+   "by_month": {
+    "1": {
+     "n": 85821,
+     "level_pp": -0.1686,
+     "log_loss": 0.267418
+    },
+    "2": {
+     "n": 86046,
+     "level_pp": -0.3063,
+     "log_loss": 0.269901
+    },
+    "3": {
+     "n": 51051,
+     "level_pp": -0.353,
+     "log_loss": 0.272196
+    },
+    "4": {
+     "n": 395,
+     "level_pp": -2.6042,
+     "log_loss": 0.293593
+    },
+    "11": {
+     "n": 71089,
+     "level_pp": -0.381,
+     "log_loss": 0.287276
+    },
+    "12": {
+     "n": 64229,
+     "level_pp": -0.3716,
+     "log_loss": 0.275364
+    }
+   },
+   "by_site": {
+    "away": {
+     "n": 160458,
+     "level_pp": -0.9188,
+     "log_loss": 0.287982
+    },
+    "home": {
+     "n": 152615,
+     "level_pp": 0.2713,
+     "log_loss": 0.260106
+    },
+    "neutral": {
+     "n": 45558,
+     "level_pp": -0.1055,
+     "log_loss": 0.271943
+    }
+   },
+   "by_conf": {
+    "conf": {
+     "n": 221750,
+     "level_pp": -0.2587,
+     "log_loss": 0.26965
+    },
+    "nonconf": {
+     "n": 136881,
+     "level_pp": -0.3905,
+     "log_loss": 0.281262
+    }
+   },
+   "by_period": {
+    "1": {
+     "n": 184074,
+     "level_pp": -0.2167,
+     "log_loss": 0.26853
+    },
+    "2": {
+     "n": 171574,
+     "level_pp": -0.4154,
+     "log_loss": 0.279838
+    },
+    "3": {
+     "n": 2543,
+     "level_pp": -0.2958,
+     "log_loss": 0.292828
+    },
+    "4": {
+     "n": 363,
+     "level_pp": 2.857,
+     "log_loss": 0.232193
+    },
+    "5": {
+     "n": 77,
+     "UNDERPOWERED": true
+    }
+   },
+   "by_game_minute_bucket": {
+    "0": {
+     "n": 45709,
+     "level_pp": -0.1258,
+     "log_loss": 0.266202
+    },
+    "1": {
+     "n": 46404,
+     "level_pp": -0.0684,
+     "log_loss": 0.264636
+    },
+    "2": {
+     "n": 46022,
+     "level_pp": -0.2225,
+     "log_loss": 0.267568
+    },
+    "3": {
+     "n": 44832,
+     "level_pp": -0.4515,
+     "log_loss": 0.275502
+    },
+    "4": {
+     "n": 44400,
+     "level_pp": -0.4603,
+     "log_loss": 0.288884
+    },
+    "5": {
+     "n": 43194,
+     "level_pp": -0.3766,
+     "log_loss": 0.277432
+    },
+    "6": {
+     "n": 41910,
+     "level_pp": -0.2294,
+     "log_loss": 0.275592
+    },
+    "7": {
+     "n": 46160,
+     "level_pp": -0.5439,
+     "log_loss": 0.277754
+    }
+   },
+   "by_season_half": {
+    "Jan-Apr": {
+     "n": 223313,
+     "level_pp": -0.2681,
+     "log_loss": 0.269513
+    },
+    "Nov-Dec": {
+     "n": 135318,
+     "level_pp": -0.3766,
+     "log_loss": 0.281622
+    }
+   },
+   "fit_s": 1.6,
+   "n_features": 1
+  },
+  "F1|K1_oa": {
+   "n": 358631,
+   "log_loss": 0.277861,
+   "brier": 0.080903,
+   "actual_rate": 0.100451,
+   "pred_rate": 0.09757,
+   "level_pp": -0.2882,
+   "calib_worst_decile_gap_pp": 4.3148,
+   "calib_pass": false,
+   "by_shot_type": {
+    "jump2": {
+     "n": 101961,
+     "level_pp": -0.1579,
+     "log_loss": 0.290664
+    },
+    "rim": {
+     "n": 98035,
+     "level_pp": -0.7817,
+     "log_loss": 0.590402
+    },
+    "three": {
+     "n": 158635,
+     "level_pp": -0.0669,
+     "log_loss": 0.076485
+    }
+   },
+   "level_pass": false,
+   "slope_def_prior": {
+    "underpowered": false,
+    "n": 358631,
+    "slope_ratio": 1.2508,
+    "monotone_steps": 4,
+    "steps": 4,
+    "actual_by_q": [
+     0.08608,
+     0.09135,
+     0.09988,
+     0.10735,
+     0.1176
+    ],
+    "pred_by_q": [
+     0.08026,
+     0.08754,
+     0.09661,
+     0.10374,
+     0.11969
+    ],
+    "n_by_q": [
+     71727,
+     71726,
+     71726,
+     71726,
+     71726
+    ]
+   },
+   "slope_off_prior": {
+    "underpowered": false,
+    "n": 358631,
+    "slope_ratio": 0.2874,
+    "monotone_steps": 4,
+    "steps": 4,
+    "actual_by_q": [
+     0.09031,
+     0.09674,
+     0.10111,
+     0.10466,
+     0.10943
+    ],
+    "pred_by_q": [
+     0.09493,
+     0.09606,
+     0.09678,
+     0.09965,
+     0.10043
+    ],
+    "n_by_q": [
+     71727,
+     71726,
+     71726,
+     71726,
+     71726
+    ]
+   },
+   "resp_pass": true,
+   "by_month": {
+    "1": {
+     "n": 85821,
+     "level_pp": -0.1731,
+     "log_loss": 0.267585
+    },
+    "2": {
+     "n": 86046,
+     "level_pp": -0.3126,
+     "log_loss": 0.269912
+    },
+    "3": {
+     "n": 51051,
+     "level_pp": -0.39,
+     "log_loss": 0.272211
+    },
+    "4": {
+     "n": 395,
+     "level_pp": -2.7259,
+     "log_loss": 0.293746
+    },
+    "11": {
+     "n": 71089,
+     "level_pp": -0.2501,
+     "log_loss": 0.305129
+    },
+    "12": {
+     "n": 64229,
+     "level_pp": -0.3555,
+     "log_loss": 0.276454
+    }
+   },
+   "by_site": {
+    "away": {
+     "n": 160458,
+     "level_pp": -0.8577,
+     "log_loss": 0.291654
+    },
+    "home": {
+     "n": 152615,
+     "level_pp": 0.2524,
+     "log_loss": 0.264018
+    },
+    "neutral": {
+     "n": 45558,
+     "level_pp": -0.0931,
+     "log_loss": 0.275653
+    }
+   },
+   "by_conf": {
+    "conf": {
+     "n": 221750,
+     "level_pp": -0.2686,
+     "log_loss": 0.269761
+    },
+    "nonconf": {
+     "n": 136881,
+     "level_pp": -0.3198,
+     "log_loss": 0.290983
+    }
+   },
+   "by_period": {
+    "1": {
+     "n": 184074,
+     "level_pp": -0.2022,
+     "log_loss": 0.27272
+    },
+    "2": {
+     "n": 171574,
+     "level_pp": -0.3883,
+     "log_loss": 0.283222
+    },
+    "3": {
+     "n": 2543,
+     "level_pp": -0.2695,
+     "log_loss": 0.293863
+    },
+    "4": {
+     "n": 363,
+     "level_pp": 3.0391,
+     "log_loss": 0.231788
+    },
+    "5": {
+     "n": 77,
+     "UNDERPOWERED": true
+    }
+   },
+   "by_game_minute_bucket": {
+    "0": {
+     "n": 45709,
+     "level_pp": -0.1152,
+     "log_loss": 0.269525
+    },
+    "1": {
+     "n": 46404,
+     "level_pp": -0.0554,
+     "log_loss": 0.269497
+    },
+    "2": {
+     "n": 46022,
+     "level_pp": -0.2161,
+     "log_loss": 0.271255
+    },
+    "3": {
+     "n": 44832,
+     "level_pp": -0.424,
+     "log_loss": 0.280472
+    },
+    "4": {
+     "n": 44400,
+     "level_pp": -0.4356,
+     "log_loss": 0.29232
+    },
+    "5": {
+     "n": 43194,
+     "level_pp": -0.3527,
+     "log_loss": 0.281686
+    },
+    "6": {
+     "n": 41910,
+     "level_pp": -0.19,
+     "log_loss": 0.278732
+    },
+    "7": {
+     "n": 46160,
+     "level_pp": -0.5204,
+     "log_loss": 0.280296
+    }
+   },
+   "by_season_half": {
+    "Jan-Apr": {
+     "n": 223313,
+     "level_pp": -0.2809,
+     "log_loss": 0.269585
+    },
+    "Nov-Dec": {
+     "n": 135318,
+     "level_pp": -0.3001,
+     "log_loss": 0.291518
+    }
+   },
+   "fit_s": 1.6,
+   "n_features": 1
+  },
+  "F1|K2": {
+   "n": 358631,
+   "log_loss": 0.269347,
+   "brier": 0.079866,
+   "actual_rate": 0.100451,
+   "pred_rate": 0.09869,
+   "level_pp": -0.1762,
+   "calib_worst_decile_gap_pp": 1.1012,
+   "calib_pass": true,
+   "by_shot_type": {
+    "jump2": {
+     "n": 101961,
+     "level_pp": 0.01,
+     "log_loss": 0.285228
+    },
+    "rim": {
+     "n": 98035,
+     "level_pp": -0.5599,
+     "log_loss": 0.566485
+    },
+    "three": {
+     "n": 158635,
+     "level_pp": -0.0588,
+     "log_loss": 0.075512
+    }
+   },
+   "level_pass": false,
+   "slope_def_prior": {
+    "underpowered": false,
+    "n": 358631,
+    "slope_ratio": 0.7753,
+    "monotone_steps": 4,
+    "steps": 4,
+    "actual_by_q": [
+     0.08608,
+     0.09135,
+     0.09988,
+     0.10735,
+     0.1176
+    ],
+    "pred_by_q": [
+     0.08844,
+     0.09153,
+     0.09754,
+     0.10305,
+     0.11288
+    ],
+    "n_by_q": [
+     71727,
+     71726,
+     71726,
+     71726,
+     71726
+    ]
+   },
+   "slope_off_prior": {
+    "underpowered": false,
+    "n": 358631,
+    "slope_ratio": 0.5176,
+    "monotone_steps": 4,
+    "steps": 4,
+    "actual_by_q": [
+     0.09031,
+     0.09674,
+     0.10111,
+     0.10466,
+     0.10943
+    ],
+    "pred_by_q": [
+     0.0936,
+     0.09558,
+     0.09939,
+     0.10139,
+     0.10349
+    ],
+    "n_by_q": [
+     71727,
+     71726,
+     71726,
+     71726,
+     71726
+    ]
+   },
+   "resp_pass": true,
+   "by_month": {
+    "1": {
+     "n": 85821,
+     "level_pp": -0.0592,
+     "log_loss": 0.265971
+    },
+    "2": {
+     "n": 86046,
+     "level_pp": -0.1261,
+     "log_loss": 0.268728
+    },
+    "3": {
+     "n": 51051,
+     "level_pp": -0.2684,
+     "log_loss": 0.270937
+    },
+    "4": {
+     "n": 395,
+     "level_pp": -2.2103,
+     "log_loss": 0.289963
+    },
+    "11": {
+     "n": 71089,
+     "level_pp": -0.2229,
+     "log_loss": 0.270904
+    },
+    "12": {
+     "n": 64229,
+     "level_pp": -0.2621,
+     "log_loss": 0.271576
+    }
+   },
+   "by_site": {
+    "away": {
+     "n": 160458,
+     "level_pp": -0.0039,
+     "log_loss": 0.283098
+    },
+    "home": {
+     "n": 152615,
+     "level_pp": -0.3168,
+     "log_loss": 0.255356
+    },
+    "neutral": {
+     "n": 45558,
+     "level_pp": -0.3119,
+     "log_loss": 0.267785
+    }
+   },
+   "by_conf": {
+    "conf": {
+     "n": 221750,
+     "level_pp": -0.1274,
+     "log_loss": 0.268221
+    },
+    "nonconf": {
+     "n": 136881,
+     "level_pp": -0.2552,
+     "log_loss": 0.271172
+    }
+   },
+   "by_period": {
+    "1": {
+     "n": 184074,
+     "level_pp": -0.3051,
+     "log_loss": 0.263604
+    },
+    "2": {
+     "n": 171574,
+     "level_pp": -0.0637,
+     "log_loss": 0.275256
+    },
+    "3": {
+     "n": 2543,
+     "level_pp": 0.8697,
+     "log_loss": 0.290931
+    },
+    "4": {
+     "n": 363,
+     "level_pp": 4.0534,
+     "log_loss": 0.231036
+    },
+    "5": {
+     "n": 77,
+     "UNDERPOWERED": true
+    }
+   },
+   "by_game_minute_bucket": {
+    "0": {
+     "n": 45709,
+     "level_pp": -0.4801,
+     "log_loss": 0.261221
+    },
+    "1": {
+     "n": 46404,
+     "level_pp": -0.2628,
+     "log_loss": 0.259287
+    },
+    "2": {
+     "n": 46022,
+     "level_pp": -0.2184,
+     "log_loss": 0.263031
+    },
+    "3": {
+     "n": 44832,
+     "level_pp": -0.2612,
+     "log_loss": 0.270664
+    },
+    "4": {
+     "n": 44400,
+     "level_pp": -0.3733,
+     "log_loss": 0.2832
+    },
+    "5": {
+     "n": 43194,
+     "level_pp": -0.1051,
+     "log_loss": 0.273282
+    },
+    "6": {
+     "n": 41910,
+     "level_pp": 0.2195,
+     "log_loss": 0.271643
+    },
+    "7": {
+     "n": 46160,
+     "level_pp": 0.1001,
+     "log_loss": 0.273437
+    }
+   },
+   "by_season_half": {
+    "Jan-Apr": {
+     "n": 223313,
+     "level_pp": -0.1366,
+     "log_loss": 0.268211
+    },
+    "Nov-Dec": {
+     "n": 135318,
+     "level_pp": -0.2415,
+     "log_loss": 0.271223
+    }
+   },
+   "fit_s": 2.1,
+   "n_features": 17
+  },
+  "F1|K3": {
+   "n": 358631,
+   "log_loss": 0.269884,
+   "brier": 0.080035,
+   "actual_rate": 0.100451,
+   "pred_rate": 0.098636,
+   "level_pp": -0.1815,
+   "calib_worst_decile_gap_pp": 1.8373,
+   "calib_pass": true,
+   "by_shot_type": {
+    "jump2": {
+     "n": 101961,
+     "level_pp": -0.0367,
+     "log_loss": 0.285678
+    },
+    "rim": {
+     "n": 98035,
+     "level_pp": -0.5271,
+     "log_loss": 0.56804
+    },
+    "three": {
+     "n": 158635,
+     "level_pp": -0.061,
+     "log_loss": 0.075474
+    }
+   },
+   "level_pass": false,
+   "slope_def_prior": {
+    "underpowered": false,
+    "n": 358631,
+    "slope_ratio": 0.8388,
+    "monotone_steps": 4,
+    "steps": 4,
+    "actual_by_q": [
+     0.08608,
+     0.09135,
+     0.09988,
+     0.10735,
+     0.1176
+    ],
+    "pred_by_q": [
+     0.0873,
+     0.0911,
+     0.09731,
+     0.10372,
+     0.11375
+    ],
+    "n_by_q": [
+     71727,
+     71726,
+     71726,
+     71726,
+     71726
+    ]
+   },
+   "slope_off_prior": {
+    "underpowered": false,
+    "n": 358631,
+    "slope_ratio": 0.5004,
+    "monotone_steps": 4,
+    "steps": 4,
+    "actual_by_q": [
+     0.09031,
+     0.09674,
+     0.10111,
+     0.10466,
+     0.10943
+    ],
+    "pred_by_q": [
+     0.09384,
+     0.09498,
+     0.09941,
+     0.10155,
+     0.10341
+    ],
+    "n_by_q": [
+     71727,
+     71726,
+     71726,
+     71726,
+     71726
+    ]
+   },
+   "resp_pass": true,
+   "by_month": {
+    "1": {
+     "n": 85821,
+     "level_pp": -0.0846,
+     "log_loss": 0.266537
+    },
+    "2": {
+     "n": 86046,
+     "level_pp": -0.23,
+     "log_loss": 0.269357
+    },
+    "3": {
+     "n": 51051,
+     "level_pp": -0.2757,
+     "log_loss": 0.271034
+    },
+    "4": {
+     "n": 395,
+     "level_pp": -2.3785,
+     "log_loss": 0.293641
+    },
+    "11": {
+     "n": 71089,
+     "level_pp": -0.0932,
+     "log_loss": 0.271396
+    },
+    "12": {
+     "n": 64229,
+     "level_pp": -0.2554,
+     "log_loss": 0.272328
+    }
+   },
+   "by_site": {
+    "away": {
+     "n": 160458,
+     "level_pp": -0.041,
+     "log_loss": 0.283378
+    },
+    "home": {
+     "n": 152615,
+     "level_pp": -0.3145,
+     "log_loss": 0.256193
+    },
+    "neutral": {
+     "n": 45558,
+     "level_pp": -0.2306,
+     "log_loss": 0.26822
+    }
+   },
+   "by_conf": {
+    "conf": {
+     "n": 221750,
+     "level_pp": -0.1791,
+     "log_loss": 0.268732
+    },
+    "nonconf": {
+     "n": 136881,
+     "level_pp": -0.1855,
+     "log_loss": 0.271749
+    }
+   },
+   "by_period": {
+    "1": {
+     "n": 184074,
+     "level_pp": -0.2959,
+     "log_loss": 0.263976
+    },
+    "2": {
+     "n": 171574,
+     "level_pp": -0.0735,
+     "log_loss": 0.276043
+    },
+    "3": {
+     "n": 2543,
+     "level_pp": 0.3814,
+     "log_loss": 0.286876
+    },
+    "4": {
+     "n": 363,
+     "level_pp": 2.7538,
+     "log_loss": 0.227264
+    },
+    "5": {
+     "n": 77,
+     "UNDERPOWERED": true
+    }
+   },
+   "by_game_minute_bucket": {
+    "0": {
+     "n": 45709,
+     "level_pp": -0.401,
+     "log_loss": 0.261463
+    },
+    "1": {
+     "n": 46404,
+     "level_pp": -0.2215,
+     "log_loss": 0.259712
+    },
+    "2": {
+     "n": 46022,
+     "level_pp": -0.4267,
+     "log_loss": 0.263564
+    },
+    "3": {
+     "n": 44832,
+     "level_pp": -0.155,
+     "log_loss": 0.271257
+    },
+    "4": {
+     "n": 44400,
+     "level_pp": -0.3088,
+     "log_loss": 0.284248
+    },
+    "5": {
+     "n": 43194,
+     "level_pp": -0.0335,
+     "log_loss": 0.274214
+    },
+    "6": {
+     "n": 41910,
+     "level_pp": 0.023,
+     "log_loss": 0.271988
+    },
+    "7": {
+     "n": 46160,
+     "level_pp": 0.093,
+     "log_loss": 0.273636
+    }
+   },
+   "by_season_half": {
+    "Jan-Apr": {
+     "n": 223313,
+     "level_pp": -0.1883,
+     "log_loss": 0.268699
+    },
+    "Nov-Dec": {
+     "n": 135318,
+     "level_pp": -0.1702,
+     "log_loss": 0.271838
+    }
+   },
+   "fit_s": 79.6,
+   "n_features": 17
+  },
+  "F1|K3_conf": {
+   "n": 358631,
+   "log_loss": 0.269783,
+   "brier": 0.080002,
+   "actual_rate": 0.100451,
+   "pred_rate": 0.098632,
+   "level_pp": -0.1819,
+   "calib_worst_decile_gap_pp": 1.6002,
+   "calib_pass": true,
+   "by_shot_type": {
+    "jump2": {
+     "n": 101961,
+     "level_pp": -0.0359,
+     "log_loss": 0.285701
+    },
+    "rim": {
+     "n": 98035,
+     "level_pp": -0.5185,
+     "log_loss": 0.567656
+    },
+    "three": {
+     "n": 158635,
+     "level_pp": -0.0678,
+     "log_loss": 0.075468
+    }
+   },
+   "level_pass": false,
+   "slope_def_prior": {
+    "underpowered": false,
+    "n": 358631,
+    "slope_ratio": 0.8344,
+    "monotone_steps": 4,
+    "steps": 4,
+    "actual_by_q": [
+     0.08608,
+     0.09135,
+     0.09988,
+     0.10735,
+     0.1176
+    ],
+    "pred_by_q": [
+     0.08731,
+     0.09115,
+     0.09735,
+     0.10374,
+     0.11361
+    ],
+    "n_by_q": [
+     71727,
+     71726,
+     71726,
+     71726,
+     71726
+    ]
+   },
+   "slope_off_prior": {
+    "underpowered": false,
+    "n": 358631,
+    "slope_ratio": 0.4994,
+    "monotone_steps": 4,
+    "steps": 4,
+    "actual_by_q": [
+     0.09031,
+     0.09674,
+     0.10111,
+     0.10466,
+     0.10943
+    ],
+    "pred_by_q": [
+     0.09392,
+     0.0946,
+     0.09955,
+     0.10162,
+     0.10347
+    ],
+    "n_by_q": [
+     71727,
+     71726,
+     71726,
+     71726,
+     71726
+    ]
+   },
+   "resp_pass": true,
+   "by_month": {
+    "1": {
+     "n": 85821,
+     "level_pp": -0.0894,
+     "log_loss": 0.26644
+    },
+    "2": {
+     "n": 86046,
+     "level_pp": -0.2634,
+     "log_loss": 0.269339
+    },
+    "3": {
+     "n": 51051,
+     "level_pp": -0.3364,
+     "log_loss": 0.270825
+    },
+    "4": {
+     "n": 395,
+     "level_pp": -2.387,
+     "log_loss": 0.293484
+    },
+    "11": {
+     "n": 71089,
+     "level_pp": -0.0351,
+     "log_loss": 0.271464
+    },
+    "12": {
+     "n": 64229,
+     "level_pp": -0.2226,
+     "log_loss": 0.272008
+    }
+   },
+   "by_site": {
+    "away": {
+     "n": 160458,
+     "level_pp": -0.0428,
+     "log_loss": 0.283491
+    },
+    "home": {
+     "n": 152615,
+     "level_pp": -0.2946,
+     "log_loss": 0.255878
+    },
+    "neutral": {
+     "n": 45558,
+     "level_pp": -0.2945,
+     "log_loss": 0.268078
+    }
+   },
+   "by_conf": {
+    "conf": {
+     "n": 221750,
+     "level_pp": -0.2015,
+     "log_loss": 0.268615
+    },
+    "nonconf": {
+     "n": 136881,
+     "level_pp": -0.1503,
+     "log_loss": 0.271674
+    }
+   },
+   "by_period": {
+    "1": {
+     "n": 184074,
+     "level_pp": -0.3034,
+     "log_loss": 0.263868
+    },
+    "2": {
+     "n": 171574,
+     "level_pp": -0.0654,
+     "log_loss": 0.275944
+    },
+    "3": {
+     "n": 2543,
+     "level_pp": 0.3188,
+     "log_loss": 0.287219
+    },
+    "4": {
+     "n": 363,
+     "level_pp": 2.7345,
+     "log_loss": 0.227465
+    },
+    "5": {
+     "n": 77,
+     "UNDERPOWERED": true
+    }
+   },
+   "by_game_minute_bucket": {
+    "0": {
+     "n": 45709,
+     "level_pp": -0.4148,
+     "log_loss": 0.260969
+    },
+    "1": {
+     "n": 46404,
+     "level_pp": -0.2349,
+     "log_loss": 0.259924
+    },
+    "2": {
+     "n": 46022,
+     "level_pp": -0.4021,
+     "log_loss": 0.263401
+    },
+    "3": {
+     "n": 44832,
+     "level_pp": -0.1793,
+     "log_loss": 0.271311
+    },
+    "4": {
+     "n": 44400,
+     "level_pp": -0.2643,
+     "log_loss": 0.283981
+    },
+    "5": {
+     "n": 43194,
+     "level_pp": -0.0249,
+     "log_loss": 0.274062
+    },
+    "6": {
+     "n": 41910,
+     "level_pp": 0.0145,
+     "log_loss": 0.272049
+    },
+    "7": {
+     "n": 46160,
+     "level_pp": 0.073,
+     "log_loss": 0.273579
+    }
+   },
+   "by_season_half": {
+    "Jan-Apr": {
+     "n": 223313,
+     "level_pp": -0.217,
+     "log_loss": 0.268607
+    },
+    "Nov-Dec": {
+     "n": 135318,
+     "level_pp": -0.1241,
+     "log_loss": 0.271722
+    }
+   },
+   "fit_s": 70.2,
+   "n_features": 18
+  },
+  "F1|K3_prior": {
+   "n": 358631,
+   "log_loss": 0.269786,
+   "brier": 0.080009,
+   "actual_rate": 0.100451,
+   "pred_rate": 0.098693,
+   "level_pp": -0.1759,
+   "calib_worst_decile_gap_pp": 1.8027,
+   "calib_pass": true,
+   "by_shot_type": {
+    "jump2": {
+     "n": 101961,
+     "level_pp": -0.0875,
+     "log_loss": 0.285694
+    },
+    "rim": {
+     "n": 98035,
+     "level_pp": -0.4768,
+     "log_loss": 0.567738
+    },
+    "three": {
+     "n": 158635,
+     "level_pp": -0.0467,
+     "log_loss": 0.075429
+    }
+   },
+   "level_pass": true,
+   "slope_def_prior": {
+    "underpowered": false,
+    "n": 358631,
+    "slope_ratio": 1.2564,
+    "monotone_steps": 4,
+    "steps": 4,
+    "actual_by_q": [
+     0.08608,
+     0.09135,
+     0.09988,
+     0.10735,
+     0.1176
+    ],
+    "pred_by_q": [
+     0.0808,
+     0.08858,
+     0.0972,
+     0.10649,
+     0.12041
+    ],
+    "n_by_q": [
+     71727,
+     71726,
+     71726,
+     71726,
+     71726
+    ]
+   },
+   "slope_off_prior": {
+    "underpowered": false,
+    "n": 358631,
+    "slope_ratio": 0.8572,
+    "monotone_steps": 4,
+    "steps": 4,
+    "actual_by_q": [
+     0.09031,
+     0.09674,
+     0.10111,
+     0.10466,
+     0.10943
+    ],
+    "pred_by_q": [
+     0.09145,
+     0.09281,
+     0.09877,
+     0.10261,
+     0.10783
+    ],
+    "n_by_q": [
+     71727,
+     71726,
+     71726,
+     71726,
+     71726
+    ]
+   },
+   "resp_pass": true,
+   "by_month": {
+    "1": {
+     "n": 85821,
+     "level_pp": -0.0456,
+     "log_loss": 0.266522
+    },
+    "2": {
+     "n": 86046,
+     "level_pp": -0.2031,
+     "log_loss": 0.269497
+    },
+    "3": {
+     "n": 51051,
+     "level_pp": -0.2995,
+     "log_loss": 0.271188
+    },
+    "4": {
+     "n": 395,
+     "level_pp": -2.2554,
+     "log_loss": 0.29516
+    },
+    "11": {
+     "n": 71089,
+     "level_pp": -0.155,
+     "log_loss": 0.270531
+    },
+    "12": {
+     "n": 64229,
+     "level_pp": -0.2255,
+     "log_loss": 0.272438
+    }
+   },
+   "by_site": {
+    "away": {
+     "n": 160458,
+     "level_pp": -0.0739,
+     "log_loss": 0.283393
+    },
+    "home": {
+     "n": 152615,
+     "level_pp": -0.2541,
+     "log_loss": 0.256039
+    },
+    "neutral": {
+     "n": 45558,
+     "level_pp": -0.273,
+     "log_loss": 0.26791
+    }
+   },
+   "by_conf": {
+    "conf": {
+     "n": 221750,
+     "level_pp": -0.1555,
+     "log_loss": 0.268789
+    },
+    "nonconf": {
+     "n": 136881,
+     "level_pp": -0.2089,
+     "log_loss": 0.271401
+    }
+   },
+   "by_period": {
+    "1": {
+     "n": 184074,
+     "level_pp": -0.3059,
+     "log_loss": 0.263823
+    },
+    "2": {
+     "n": 171574,
+     "level_pp": -0.0505,
+     "log_loss": 0.276008
+    },
+    "3": {
+     "n": 2543,
+     "level_pp": 0.3092,
+     "log_loss": 0.287581
+    },
+    "4": {
+     "n": 363,
+     "level_pp": 3.0613,
+     "log_loss": 0.223503
+    },
+    "5": {
+     "n": 77,
+     "UNDERPOWERED": true
+    }
+   },
+   "by_game_minute_bucket": {
+    "0": {
+     "n": 45709,
+     "level_pp": -0.411,
+     "log_loss": 0.261458
+    },
+    "1": {
+     "n": 46404,
+     "level_pp": -0.226,
+     "log_loss": 0.259645
+    },
+    "2": {
+     "n": 46022,
+     "level_pp": -0.4269,
+     "log_loss": 0.263257
+    },
+    "3": {
+     "n": 44832,
+     "level_pp": -0.1829,
+     "log_loss": 0.271092
+    },
+    "4": {
+     "n": 44400,
+     "level_pp": -0.2659,
+     "log_loss": 0.283634
+    },
+    "5": {
+     "n": 43194,
+     "level_pp": 0.0044,
+     "log_loss": 0.274097
+    },
+    "6": {
+     "n": 41910,
+     "level_pp": 0.0283,
+     "log_loss": 0.272587
+    },
+    "7": {
+     "n": 46160,
+     "level_pp": 0.097,
+     "log_loss": 0.27357
+    }
+   },
+   "by_season_half": {
+    "Jan-Apr": {
+     "n": 223313,
+     "level_pp": -0.1682,
+     "log_loss": 0.268786
+    },
+    "Nov-Dec": {
+     "n": 135318,
+     "level_pp": -0.1885,
+     "log_loss": 0.271436
+    }
+   },
+   "fit_s": 72.4,
+   "n_features": 17
+  },
+  "F2|K0": {
+   "n": 358200,
+   "log_loss": 0.26525,
+   "brier": 0.078585,
+   "actual_rate": 0.098872,
+   "pred_rate": 0.097962,
+   "level_pp": -0.091,
+   "calib_worst_decile_gap_pp": 0.8457,
+   "calib_pass": true,
+   "by_shot_type": {
+    "jump2": {
+     "n": 95844,
+     "level_pp": 0.2024,
+     "log_loss": 0.282892
+    },
+    "rim": {
+     "n": 95949,
+     "level_pp": -0.5272,
+     "log_loss": 0.575387
+    },
+    "three": {
+     "n": 166407,
+     "level_pp": -0.0085,
+     "log_loss": 0.076266
+    }
+   },
+   "level_pass": false,
+   "slope_def_prior": {
+    "underpowered": false,
+    "n": 358200,
+    "slope_ratio": 0.1109,
+    "monotone_steps": 4,
+    "steps": 4,
+    "actual_by_q": [
+     0.07959,
+     0.09366,
+     0.09636,
+     0.10564,
+     0.11911
+    ],
+    "pred_by_q": [
+     0.09591,
+     0.09756,
+     0.09787,
+     0.09819,
+     0.10029
+    ],
+    "n_by_q": [
+     71640,
+     71640,
+     71640,
+     71640,
+     71640
+    ]
+   },
+   "slope_off_prior": {
+    "underpowered": false,
+    "n": 358200,
+    "slope_ratio": 0.3365,
+    "monotone_steps": 3,
+    "steps": 4,
+    "actual_by_q": [
+     0.09306,
+     0.09558,
+     0.09661,
+     0.1011,
+     0.10801
+    ],
+    "pred_by_q": [
+     0.09444,
+     0.09693,
+     0.09886,
+     0.1001,
+     0.09947
+    ],
+    "n_by_q": [
+     71640,
+     71640,
+     71640,
+     71640,
+     71640
+    ]
+   },
+   "resp_pass": true,
+   "by_month": {
+    "1": {
+     "n": 89185,
+     "level_pp": -0.1337,
+     "log_loss": 0.265456
+    },
+    "2": {
+     "n": 85264,
+     "level_pp": 0.1071,
+     "log_loss": 0.266076
+    },
+    "3": {
+     "n": 49381,
+     "level_pp": -0.1556,
+     "log_loss": 0.269671
+    },
+    "4": {
+     "n": 1125,
+     "level_pp": 0.9455,
+     "log_loss": 0.237352
+    },
+    "11": {
+     "n": 75638,
+     "level_pp": -0.2597,
+     "log_loss": 0.263036
+    },
+    "12": {
+     "n": 57607,
+     "level_pp": -0.0615,
+     "log_loss": 0.26337
+    }
+   },
+   "by_site": {
+    "away": {
+     "n": 159500,
+     "level_pp": -0.8372,
+     "log_loss": 0.279958
+    },
+    "home": {
+     "n": 152683,
+     "level_pp": 0.6656,
+     "log_loss": 0.251451
+    },
+    "neutral": {
+     "n": 46017,
+     "level_pp": -0.0151,
+     "log_loss": 0.260055
+    }
+   },
+   "by_conf": {
+    "conf": {
+     "n": 227168,
+     "level_pp": -0.0681,
+     "log_loss": 0.266815
+    },
+    "nonconf": {
+     "n": 131032,
+     "level_pp": -0.1307,
+     "log_loss": 0.262536
+    }
+   },
+   "by_period": {
+    "1": {
+     "n": 184147,
+     "level_pp": 0.0987,
+     "log_loss": 0.25658
+    },
+    "2": {
+     "n": 171188,
+     "level_pp": -0.2817,
+     "log_loss": 0.274195
+    },
+    "3": {
+     "n": 2338,
+     "level_pp": -1.0842,
+     "log_loss": 0.294591
+    },
+    "4": {
+     "n": 431,
+     "level_pp": -0.2343,
+     "log_loss": 0.255243
+    },
+    "5": {
+     "n": 96,
+     "UNDERPOWERED": true
+    }
+   },
+   "by_game_minute_bucket": {
+    "0": {
+     "n": 45575,
+     "level_pp": 0.1892,
+     "log_loss": 0.253274
+    },
+    "1": {
+     "n": 46494,
+     "level_pp": 0.0703,
+     "log_loss": 0.25371
+    },
+    "2": {
+     "n": 46024,
+     "level_pp": 0.1893,
+     "log_loss": 0.257945
+    },
+    "3": {
+     "n": 44811,
+     "level_pp": -0.0317,
+     "log_loss": 0.261431
+    },
+    "4": {
+     "n": 44290,
+     "level_pp": -0.3661,
+     "log_loss": 0.278946
+    },
+    "5": {
+     "n": 43192,
+     "level_pp": -0.1787,
+     "log_loss": 0.273996
+    },
+    "6": {
+     "n": 41619,
+     "level_pp": -0.3791,
+     "log_loss": 0.277296
+    },
+    "7": {
+     "n": 46195,
+     "level_pp": -0.2613,
+     "log_loss": 0.267499
+    }
+   },
+   "by_season_half": {
+    "Jan-Apr": {
+     "n": 224955,
+     "level_pp": -0.0418,
+     "log_loss": 0.266476
+    },
+    "Nov-Dec": {
+     "n": 133245,
+     "level_pp": -0.174,
+     "log_loss": 0.26318
+    }
+   },
+   "fit_s": 1.3,
+   "n_features": 1
+  },
+  "F2|K1": {
+   "n": 358200,
+   "log_loss": 0.267324,
+   "brier": 0.078781,
+   "actual_rate": 0.098872,
+   "pred_rate": 0.098882,
+   "level_pp": 0.001,
+   "calib_worst_decile_gap_pp": 3.972,
+   "calib_pass": false,
+   "by_shot_type": {
+    "jump2": {
+     "n": 95844,
+     "level_pp": 0.2376,
+     "log_loss": 0.283681
+    },
+    "rim": {
+     "n": 95949,
+     "level_pp": -0.2024,
+     "log_loss": 0.582407
+    },
+    "three": {
+     "n": 166407,
+     "level_pp": -0.0179,
+     "log_loss": 0.076229
+    }
+   },
+   "level_pass": true,
+   "slope_def_prior": {
+    "underpowered": false,
+    "n": 358200,
+    "slope_ratio": 1.1376,
+    "monotone_steps": 4,
+    "steps": 4,
+    "actual_by_q": [
+     0.07959,
+     0.09366,
+     0.09636,
+     0.10564,
+     0.11911
+    ],
+    "pred_by_q": [
+     0.07872,
+     0.09392,
+     0.09527,
+     0.10283,
+     0.12368
+    ],
+    "n_by_q": [
+     71640,
+     71640,
+     71640,
+     71640,
+     71640
+    ]
+   },
+   "slope_off_prior": {
+    "underpowered": false,
+    "n": 358200,
+    "slope_ratio": 0.4979,
+    "monotone_steps": 4,
+    "steps": 4,
+    "actual_by_q": [
+     0.09306,
+     0.09558,
+     0.09661,
+     0.1011,
+     0.10801
+    ],
+    "pred_by_q": [
+     0.09471,
+     0.09735,
+     0.0985,
+     0.10169,
+     0.10216
+    ],
+    "n_by_q": [
+     71640,
+     71640,
+     71640,
+     71640,
+     71640
+    ]
+   },
+   "resp_pass": true,
+   "by_month": {
+    "1": {
+     "n": 89185,
+     "level_pp": -0.1277,
+     "log_loss": 0.26451
+    },
+    "2": {
+     "n": 85264,
+     "level_pp": 0.1455,
+     "log_loss": 0.265041
+    },
+    "3": {
+     "n": 49381,
+     "level_pp": 0.1793,
+     "log_loss": 0.269214
+    },
+    "4": {
+     "n": 1125,
+     "level_pp": 1.0547,
+     "log_loss": 0.235874
+    },
+    "11": {
+     "n": 75638,
+     "level_pp": -0.1625,
+     "log_loss": 0.275392
+    },
+    "12": {
+     "n": 57607,
+     "level_pp": 0.0278,
+     "log_loss": 0.263463
+    }
+   },
+   "by_site": {
+    "away": {
+     "n": 159500,
+     "level_pp": -0.6902,
+     "log_loss": 0.280787
+    },
+    "home": {
+     "n": 152683,
+     "level_pp": 0.5579,
+     "log_loss": 0.254929
+    },
+    "neutral": {
+     "n": 46017,
+     "level_pp": 0.5493,
+     "log_loss": 0.261787
+    }
+   },
+   "by_conf": {
+    "conf": {
+     "n": 227168,
+     "level_pp": 0.0082,
+     "log_loss": 0.265986
+    },
+    "nonconf": {
+     "n": 131032,
+     "level_pp": -0.0114,
+     "log_loss": 0.269644
+    }
+   },
+   "by_period": {
+    "1": {
+     "n": 184147,
+     "level_pp": 0.2057,
+     "log_loss": 0.257785
+    },
+    "2": {
+     "n": 171188,
+     "level_pp": -0.2033,
+     "log_loss": 0.277185
+    },
+    "3": {
+     "n": 2338,
+     "level_pp": -1.1677,
+     "log_loss": 0.294337
+    },
+    "4": {
+     "n": 431,
+     "level_pp": -0.0212,
+     "log_loss": 0.276205
+    },
+    "5": {
+     "n": 96,
+     "UNDERPOWERED": true
+    }
+   },
+   "by_game_minute_bucket": {
+    "0": {
+     "n": 45575,
+     "level_pp": 0.325,
+     "log_loss": 0.253054
+    },
+    "1": {
+     "n": 46494,
+     "level_pp": 0.1603,
+     "log_loss": 0.254544
+    },
+    "2": {
+     "n": 46024,
+     "level_pp": 0.3068,
+     "log_loss": 0.260607
+    },
+    "3": {
+     "n": 44811,
+     "level_pp": 0.0527,
+     "log_loss": 0.263056
+    },
+    "4": {
+     "n": 44290,
+     "level_pp": -0.3155,
+     "log_loss": 0.2809
+    },
+    "5": {
+     "n": 43192,
+     "level_pp": -0.0558,
+     "log_loss": 0.277943
+    },
+    "6": {
+     "n": 41619,
+     "level_pp": -0.2989,
+     "log_loss": 0.279928
+    },
+    "7": {
+     "n": 46195,
+     "level_pp": -0.2068,
+     "log_loss": 0.2708
+    }
+   },
+   "by_season_half": {
+    "Jan-Apr": {
+     "n": 224955,
+     "level_pp": 0.0492,
+     "log_loss": 0.265601
+    },
+    "Nov-Dec": {
+     "n": 133245,
+     "level_pp": -0.0802,
+     "log_loss": 0.270234
+    }
+   },
+   "fit_s": 1.5,
+   "n_features": 1
+  },
+  "F2|K1_oa": {
+   "n": 358200,
+   "log_loss": 0.269724,
+   "brier": 0.078998,
+   "actual_rate": 0.098872,
+   "pred_rate": 0.098969,
+   "level_pp": 0.0097,
+   "calib_worst_decile_gap_pp": 4.384,
+   "calib_pass": false,
+   "by_shot_type": {
+    "jump2": {
+     "n": 95844,
+     "level_pp": 0.2403,
+     "log_loss": 0.285449
+    },
+    "rim": {
+     "n": 95949,
+     "level_pp": -0.1786,
+     "log_loss": 0.589045
+    },
+    "three": {
+     "n": 166407,
+     "level_pp": -0.0145,
+     "log_loss": 0.076549
+    }
+   },
+   "level_pass": true,
+   "slope_def_prior": {
+    "underpowered": false,
+    "n": 358200,
+    "slope_ratio": 1.1117,
+    "monotone_steps": 4,
+    "steps": 4,
+    "actual_by_q": [
+     0.07959,
+     0.09366,
+     0.09636,
+     0.10564,
+     0.11911
+    ],
+    "pred_by_q": [
+     0.07973,
+     0.09385,
+     0.09499,
+     0.10261,
+     0.12366
+    ],
+    "n_by_q": [
+     71640,
+     71640,
+     71640,
+     71640,
+     71640
+    ]
+   },
+   "slope_off_prior": {
+    "underpowered": false,
+    "n": 358200,
+    "slope_ratio": 0.5074,
+    "monotone_steps": 4,
+    "steps": 4,
+    "actual_by_q": [
+     0.09306,
+     0.09558,
+     0.09661,
+     0.1011,
+     0.10801
+    ],
+    "pred_by_q": [
+     0.09533,
+     0.09777,
+     0.09828,
+     0.10055,
+     0.10292
+    ],
+    "n_by_q": [
+     71640,
+     71640,
+     71640,
+     71640,
+     71640
+    ]
+   },
+   "resp_pass": true,
+   "by_month": {
+    "1": {
+     "n": 89185,
+     "level_pp": -0.1397,
+     "log_loss": 0.264693
+    },
+    "2": {
+     "n": 85264,
+     "level_pp": 0.1326,
+     "log_loss": 0.264989
+    },
+    "3": {
+     "n": 49381,
+     "level_pp": 0.134,
+     "log_loss": 0.269133
+    },
+    "4": {
+     "n": 1125,
+     "level_pp": 1.0021,
+     "log_loss": 0.235763
+    },
+    "11": {
+     "n": 75638,
+     "level_pp": -0.0538,
+     "log_loss": 0.286316
+    },
+    "12": {
+     "n": 57607,
+     "level_pp": 0.0167,
+     "log_loss": 0.263905
+    }
+   },
+   "by_site": {
+    "away": {
+     "n": 159500,
+     "level_pp": -0.6234,
+     "log_loss": 0.282596
+    },
+    "home": {
+     "n": 152683,
+     "level_pp": 0.5362,
+     "log_loss": 0.257887
+    },
+    "neutral": {
+     "n": 46017,
+     "level_pp": 0.4574,
+     "log_loss": 0.264382
+    }
+   },
+   "by_conf": {
+    "conf": {
+     "n": 227168,
+     "level_pp": -0.0114,
+     "log_loss": 0.26605
+    },
+    "nonconf": {
+     "n": 131032,
+     "level_pp": 0.0464,
+     "log_loss": 0.276093
+    }
+   },
+   "by_period": {
+    "1": {
+     "n": 184147,
+     "level_pp": 0.211,
+     "log_loss": 0.260617
+    },
+    "2": {
+     "n": 171188,
+     "level_pp": -0.191,
+     "log_loss": 0.279209
+    },
+    "3": {
+     "n": 2338,
+     "level_pp": -1.1676,
+     "log_loss": 0.295226
+    },
+    "4": {
+     "n": 431,
+     "level_pp": 0.0001,
+     "log_loss": 0.252304
+    },
+    "5": {
+     "n": 96,
+     "UNDERPOWERED": true
+    }
+   },
+   "by_game_minute_bucket": {
+    "0": {
+     "n": 45575,
+     "level_pp": 0.3231,
+     "log_loss": 0.255467
+    },
+    "1": {
+     "n": 46494,
+     "level_pp": 0.1846,
+     "log_loss": 0.258017
+    },
+    "2": {
+     "n": 46024,
+     "level_pp": 0.3122,
+     "log_loss": 0.263322
+    },
+    "3": {
+     "n": 44811,
+     "level_pp": 0.0443,
+     "log_loss": 0.265786
+    },
+    "4": {
+     "n": 44290,
+     "level_pp": -0.3052,
+     "log_loss": 0.28166
+    },
+    "5": {
+     "n": 43192,
+     "level_pp": -0.0428,
+     "log_loss": 0.280126
+    },
+    "6": {
+     "n": 41619,
+     "level_pp": -0.2923,
+     "log_loss": 0.28294
+    },
+    "7": {
+     "n": 46195,
+     "level_pp": -0.187,
+     "log_loss": 0.272693
+    }
+   },
+   "by_season_half": {
+    "Jan-Apr": {
+     "n": 224955,
+     "level_pp": 0.0293,
+     "log_loss": 0.265635
+    },
+    "Nov-Dec": {
+     "n": 133245,
+     "level_pp": -0.0233,
+     "log_loss": 0.276627
+    }
+   },
+   "fit_s": 1.5,
+   "n_features": 1
+  },
+  "F2|K2": {
+   "n": 358200,
+   "log_loss": 0.26324,
+   "brier": 0.078039,
+   "actual_rate": 0.098872,
+   "pred_rate": 0.097218,
+   "level_pp": -0.1654,
+   "calib_worst_decile_gap_pp": 1.0336,
+   "calib_pass": true,
+   "by_shot_type": {
+    "jump2": {
+     "n": 95844,
+     "level_pp": 0.2956,
+     "log_loss": 0.280475
+    },
+    "rim": {
+     "n": 95949,
+     "level_pp": -0.8347,
+     "log_loss": 0.571176
+    },
+    "three": {
+     "n": 166407,
+     "level_pp": -0.0451,
+     "log_loss": 0.07576
+    }
+   },
+   "level_pass": false,
+   "slope_def_prior": {
+    "underpowered": false,
+    "n": 358200,
+    "slope_ratio": 0.7076,
+    "monotone_steps": 4,
+    "steps": 4,
+    "actual_by_q": [
+     0.07959,
+     0.09366,
+     0.09636,
+     0.10564,
+     0.11911
+    ],
+    "pred_by_q": [
+     0.08466,
+     0.09414,
+     0.09545,
+     0.09922,
+     0.11262
+    ],
+    "n_by_q": [
+     71640,
+     71640,
+     71640,
+     71640,
+     71640
+    ]
+   },
+   "slope_off_prior": {
+    "underpowered": false,
+    "n": 358200,
+    "slope_ratio": 0.6296,
+    "monotone_steps": 4,
+    "steps": 4,
+    "actual_by_q": [
+     0.09306,
+     0.09558,
+     0.09661,
+     0.1011,
+     0.10801
+    ],
+    "pred_by_q": [
+     0.09211,
+     0.09542,
+     0.09713,
+     0.0999,
+     0.10153
+    ],
+    "n_by_q": [
+     71640,
+     71640,
+     71640,
+     71640,
+     71640
+    ]
+   },
+   "resp_pass": true,
+   "by_month": {
+    "1": {
+     "n": 89185,
+     "level_pp": -0.2645,
+     "log_loss": 0.262952
+    },
+    "2": {
+     "n": 85264,
+     "level_pp": -0.0278,
+     "log_loss": 0.26372
+    },
+    "3": {
+     "n": 49381,
+     "level_pp": -0.0674,
+     "log_loss": 0.26812
+    },
+    "4": {
+     "n": 1125,
+     "level_pp": 0.8836,
+     "log_loss": 0.236114
+    },
+    "11": {
+     "n": 75638,
+     "level_pp": -0.326,
+     "log_loss": 0.261987
+    },
+    "12": {
+     "n": 57607,
+     "level_pp": -0.1095,
+     "log_loss": 0.260969
+    }
+   },
+   "by_site": {
+    "away": {
+     "n": 159500,
+     "level_pp": -0.1095,
+     "log_loss": 0.277491
+    },
+    "home": {
+     "n": 152683,
+     "level_pp": -0.2817,
+     "log_loss": 0.249729
+    },
+    "neutral": {
+     "n": 46017,
+     "level_pp": 0.0264,
+     "log_loss": 0.258676
+    }
+   },
+   "by_conf": {
+    "conf": {
+     "n": 227168,
+     "level_pp": -0.1649,
+     "log_loss": 0.264597
+    },
+    "nonconf": {
+     "n": 131032,
+     "level_pp": -0.1664,
+     "log_loss": 0.260889
+    }
+   },
+   "by_period": {
+    "1": {
+     "n": 184147,
+     "level_pp": -0.1197,
+     "log_loss": 0.254276
+    },
+    "2": {
+     "n": 171188,
+     "level_pp": -0.2118,
+     "log_loss": 0.272509
+    },
+    "3": {
+     "n": 2338,
+     "level_pp": -0.6076,
+     "log_loss": 0.29232
+    },
+    "4": {
+     "n": 431,
+     "level_pp": 0.6275,
+     "log_loss": 0.251809
+    },
+    "5": {
+     "n": 96,
+     "UNDERPOWERED": true
+    }
+   },
+   "by_game_minute_bucket": {
+    "0": {
+     "n": 45575,
+     "level_pp": -0.1918,
+     "log_loss": 0.250547
+    },
+    "1": {
+     "n": 46494,
+     "level_pp": -0.2336,
+     "log_loss": 0.251373
+    },
+    "2": {
+     "n": 46024,
+     "level_pp": 0.0365,
+     "log_loss": 0.255751
+    },
+    "3": {
+     "n": 44811,
+     "level_pp": -0.0692,
+     "log_loss": 0.259475
+    },
+    "4": {
+     "n": 44290,
+     "level_pp": -0.5009,
+     "log_loss": 0.276547
+    },
+    "5": {
+     "n": 43192,
+     "level_pp": -0.1639,
+     "log_loss": 0.272231
+    },
+    "6": {
+     "n": 41619,
+     "level_pp": -0.2414,
+     "log_loss": 0.275592
+    },
+    "7": {
+     "n": 46195,
+     "level_pp": 0.0233,
+     "log_loss": 0.26653
+    }
+   },
+   "by_season_half": {
+    "Jan-Apr": {
+     "n": 224955,
+     "level_pp": -0.1258,
+     "log_loss": 0.264243
+    },
+    "Nov-Dec": {
+     "n": 133245,
+     "level_pp": -0.2324,
+     "log_loss": 0.261547
+    }
+   },
+   "fit_s": 2.4,
+   "n_features": 17
+  },
+  "F2|K3": {
+   "n": 358200,
+   "log_loss": 0.263508,
+   "brier": 0.078166,
+   "actual_rate": 0.098872,
+   "pred_rate": 0.097253,
+   "level_pp": -0.1619,
+   "calib_worst_decile_gap_pp": 1.2772,
+   "calib_pass": true,
+   "by_shot_type": {
+    "jump2": {
+     "n": 95844,
+     "level_pp": 0.272,
+     "log_loss": 0.28087
+    },
+    "rim": {
+     "n": 95949,
+     "level_pp": -0.8006,
+     "log_loss": 0.572369
+    },
+    "three": {
+     "n": 166407,
+     "level_pp": -0.0437,
+     "log_loss": 0.075422
+    }
+   },
+   "level_pass": false,
+   "slope_def_prior": {
+    "underpowered": false,
+    "n": 358200,
+    "slope_ratio": 0.7456,
+    "monotone_steps": 4,
+    "steps": 4,
+    "actual_by_q": [
+     0.07959,
+     0.09366,
+     0.09636,
+     0.10564,
+     0.11911
+    ],
+    "pred_by_q": [
+     0.08373,
+     0.09363,
+     0.09578,
+     0.09994,
+     0.11319
+    ],
+    "n_by_q": [
+     71640,
+     71640,
+     71640,
+     71640,
+     71640
+    ]
+   },
+   "slope_off_prior": {
+    "underpowered": false,
+    "n": 358200,
+    "slope_ratio": 0.6375,
+    "monotone_steps": 4,
+    "steps": 4,
+    "actual_by_q": [
+     0.09306,
+     0.09558,
+     0.09661,
+     0.1011,
+     0.10801
+    ],
+    "pred_by_q": [
+     0.09213,
+     0.09517,
+     0.09759,
+     0.09971,
+     0.10166
+    ],
+    "n_by_q": [
+     71640,
+     71640,
+     71640,
+     71640,
+     71640
+    ]
+   },
+   "resp_pass": true,
+   "by_month": {
+    "1": {
+     "n": 89185,
+     "level_pp": -0.3108,
+     "log_loss": 0.263521
+    },
+    "2": {
+     "n": 85264,
+     "level_pp": -0.1095,
+     "log_loss": 0.264041
+    },
+    "3": {
+     "n": 49381,
+     "level_pp": -0.0333,
+     "log_loss": 0.268372
+    },
+    "4": {
+     "n": 1125,
+     "level_pp": 1.1512,
+     "log_loss": 0.235829
+    },
+    "11": {
+     "n": 75638,
+     "level_pp": -0.2048,
+     "log_loss": 0.26197
+    },
+    "12": {
+     "n": 57607,
+     "level_pp": -0.0887,
+     "log_loss": 0.261092
+    }
+   },
+   "by_site": {
+    "away": {
+     "n": 159500,
+     "level_pp": -0.1623,
+     "log_loss": 0.277739
+    },
+    "home": {
+     "n": 152683,
+     "level_pp": -0.25,
+     "log_loss": 0.249987
+    },
+    "neutral": {
+     "n": 46017,
+     "level_pp": 0.1315,
+     "log_loss": 0.259048
+    }
+   },
+   "by_conf": {
+    "conf": {
+     "n": 227168,
+     "level_pp": -0.2129,
+     "log_loss": 0.264958
+    },
+    "nonconf": {
+     "n": 131032,
+     "level_pp": -0.0737,
+     "log_loss": 0.260994
+    }
+   },
+   "by_period": {
+    "1": {
+     "n": 184147,
+     "level_pp": -0.1102,
+     "log_loss": 0.254415
+    },
+    "2": {
+     "n": 171188,
+     "level_pp": -0.2027,
+     "log_loss": 0.272885
+    },
+    "3": {
+     "n": 2338,
+     "level_pp": -1.1266,
+     "log_loss": 0.294264
+    },
+    "4": {
+     "n": 431,
+     "level_pp": -0.8529,
+     "log_loss": 0.256589
+    },
+    "5": {
+     "n": 96,
+     "UNDERPOWERED": true
+    }
+   },
+   "by_game_minute_bucket": {
+    "0": {
+     "n": 45575,
+     "level_pp": -0.1696,
+     "log_loss": 0.251011
+    },
+    "1": {
+     "n": 46494,
+     "level_pp": -0.2005,
+     "log_loss": 0.251483
+    },
+    "2": {
+     "n": 46024,
+     "level_pp": -0.098,
+     "log_loss": 0.256182
+    },
+    "3": {
+     "n": 44811,
+     "level_pp": 0.0227,
+     "log_loss": 0.259194
+    },
+    "4": {
+     "n": 44290,
+     "level_pp": -0.3545,
+     "log_loss": 0.277204
+    },
+    "5": {
+     "n": 43192,
+     "level_pp": -0.1395,
+     "log_loss": 0.272839
+    },
+    "6": {
+     "n": 41619,
+     "level_pp": -0.4338,
+     "log_loss": 0.275909
+    },
+    "7": {
+     "n": 46195,
+     "level_pp": 0.0501,
+     "log_loss": 0.266397
+    }
+   },
+   "by_season_half": {
+    "Jan-Apr": {
+     "n": 224955,
+     "level_pp": -0.1663,
+     "log_loss": 0.264644
+    },
+    "Nov-Dec": {
+     "n": 133245,
+     "level_pp": -0.1546,
+     "log_loss": 0.26159
+    }
+   },
+   "fit_s": 71.0,
+   "n_features": 17
+  },
+  "F2|K3_conf": {
+   "n": 358200,
+   "log_loss": 0.26348,
+   "brier": 0.078184,
+   "actual_rate": 0.098872,
+   "pred_rate": 0.097246,
+   "level_pp": -0.1626,
+   "calib_worst_decile_gap_pp": 1.2845,
+   "calib_pass": true,
+   "by_shot_type": {
+    "jump2": {
+     "n": 95844,
+     "level_pp": 0.258,
+     "log_loss": 0.280775
+    },
+    "rim": {
+     "n": 95949,
+     "level_pp": -0.7814,
+     "log_loss": 0.572548
+    },
+    "three": {
+     "n": 166407,
+     "level_pp": -0.0481,
+     "log_loss": 0.075313
+    }
+   },
+   "level_pass": false,
+   "slope_def_prior": {
+    "underpowered": false,
+    "n": 358200,
+    "slope_ratio": 0.7506,
+    "monotone_steps": 4,
+    "steps": 4,
+    "actual_by_q": [
+     0.07959,
+     0.09366,
+     0.09636,
+     0.10564,
+     0.11911
+    ],
+    "pred_by_q": [
+     0.0836,
+     0.09348,
+     0.09588,
+     0.10001,
+     0.11326
+    ],
+    "n_by_q": [
+     71640,
+     71640,
+     71640,
+     71640,
+     71640
+    ]
+   },
+   "slope_off_prior": {
+    "underpowered": false,
+    "n": 358200,
+    "slope_ratio": 0.6331,
+    "monotone_steps": 4,
+    "steps": 4,
+    "actual_by_q": [
+     0.09306,
+     0.09558,
+     0.09661,
+     0.1011,
+     0.10801
+    ],
+    "pred_by_q": [
+     0.09202,
+     0.0953,
+     0.09761,
+     0.09982,
+     0.10148
+    ],
+    "n_by_q": [
+     71640,
+     71640,
+     71640,
+     71640,
+     71640
+    ]
+   },
+   "resp_pass": true,
+   "by_month": {
+    "1": {
+     "n": 89185,
+     "level_pp": -0.3312,
+     "log_loss": 0.263423
+    },
+    "2": {
+     "n": 85264,
+     "level_pp": -0.1288,
+     "log_loss": 0.264044
+    },
+    "3": {
+     "n": 49381,
+     "level_pp": -0.0403,
+     "log_loss": 0.268085
+    },
+    "4": {
+     "n": 1125,
+     "level_pp": 1.033,
+     "log_loss": 0.237409
+    },
+    "11": {
+     "n": 75638,
+     "level_pp": -0.197,
+     "log_loss": 0.261999
+    },
+    "12": {
+     "n": 57607,
+     "level_pp": -0.0348,
+     "log_loss": 0.261239
+    }
+   },
+   "by_site": {
+    "away": {
+     "n": 159500,
+     "level_pp": -0.1641,
+     "log_loss": 0.277667
+    },
+    "home": {
+     "n": 152683,
+     "level_pp": -0.2488,
+     "log_loss": 0.250093
+    },
+    "neutral": {
+     "n": 46017,
+     "level_pp": 0.1283,
+     "log_loss": 0.258726
+    }
+   },
+   "by_conf": {
+    "conf": {
+     "n": 227168,
+     "level_pp": -0.2271,
+     "log_loss": 0.264903
+    },
+    "nonconf": {
+     "n": 131032,
+     "level_pp": -0.0509,
+     "log_loss": 0.261013
+    }
+   },
+   "by_period": {
+    "1": {
+     "n": 184147,
+     "level_pp": -0.1163,
+     "log_loss": 0.254411
+    },
+    "2": {
+     "n": 171188,
+     "level_pp": -0.1994,
+     "log_loss": 0.272839
+    },
+    "3": {
+     "n": 2338,
+     "level_pp": -1.0419,
+     "log_loss": 0.293429
+    },
+    "4": {
+     "n": 431,
+     "level_pp": -0.6508,
+     "log_loss": 0.258818
+    },
+    "5": {
+     "n": 96,
+     "UNDERPOWERED": true
+    }
+   },
+   "by_game_minute_bucket": {
+    "0": {
+     "n": 45575,
+     "level_pp": -0.1637,
+     "log_loss": 0.251021
+    },
+    "1": {
+     "n": 46494,
+     "level_pp": -0.1913,
+     "log_loss": 0.251557
+    },
+    "2": {
+     "n": 46024,
+     "level_pp": -0.1076,
+     "log_loss": 0.256078
+    },
+    "3": {
+     "n": 44811,
+     "level_pp": -0.0079,
+     "log_loss": 0.259212
+    },
+    "4": {
+     "n": 44290,
+     "level_pp": -0.3718,
+     "log_loss": 0.27692
+    },
+    "5": {
+     "n": 43192,
+     "level_pp": -0.1253,
+     "log_loss": 0.272826
+    },
+    "6": {
+     "n": 41619,
+     "level_pp": -0.4188,
+     "log_loss": 0.276089
+    },
+    "7": {
+     "n": 46195,
+     "level_pp": 0.0588,
+     "log_loss": 0.266303
+    }
+   },
+   "by_season_half": {
+    "Jan-Apr": {
+     "n": 224955,
+     "level_pp": -0.1838,
+     "log_loss": 0.264552
+    },
+    "Nov-Dec": {
+     "n": 133245,
+     "level_pp": -0.1269,
+     "log_loss": 0.261671
+    }
+   },
+   "fit_s": 67.5,
+   "n_features": 18
+  },
+  "F2|K3_prior": {
+   "n": 358200,
+   "log_loss": 0.263305,
+   "brier": 0.078135,
+   "actual_rate": 0.098872,
+   "pred_rate": 0.097158,
+   "level_pp": -0.1714,
+   "calib_worst_decile_gap_pp": 1.2925,
+   "calib_pass": true,
+   "by_shot_type": {
+    "jump2": {
+     "n": 95844,
+     "level_pp": 0.2331,
+     "log_loss": 0.280593
+    },
+    "rim": {
+     "n": 95949,
+     "level_pp": -0.7966,
+     "log_loss": 0.572173
+    },
+    "three": {
+     "n": 166407,
+     "level_pp": -0.0438,
+     "log_loss": 0.075256
+    }
+   },
+   "level_pass": false,
+   "slope_def_prior": {
+    "underpowered": false,
+    "n": 358200,
+    "slope_ratio": 1.0629,
+    "monotone_steps": 4,
+    "steps": 4,
+    "actual_by_q": [
+     0.07959,
+     0.09366,
+     0.09636,
+     0.10564,
+     0.11911
+    ],
+    "pred_by_q": [
+     0.07727,
+     0.09088,
+     0.09552,
+     0.10284,
+     0.11927
+    ],
+    "n_by_q": [
+     71640,
+     71640,
+     71640,
+     71640,
+     71640
+    ]
+   },
+   "slope_off_prior": {
+    "underpowered": false,
+    "n": 358200,
+    "slope_ratio": 1.0883,
+    "monotone_steps": 4,
+    "steps": 4,
+    "actual_by_q": [
+     0.09306,
+     0.09558,
+     0.09661,
+     0.1011,
+     0.10801
+    ],
+    "pred_by_q": [
+     0.08903,
+     0.09345,
+     0.0968,
+     0.10121,
+     0.1053
+    ],
+    "n_by_q": [
+     71640,
+     71640,
+     71640,
+     71640,
+     71640
+    ]
+   },
+   "resp_pass": true,
+   "by_month": {
+    "1": {
+     "n": 89185,
+     "level_pp": -0.2855,
+     "log_loss": 0.263088
+    },
+    "2": {
+     "n": 85264,
+     "level_pp": -0.0662,
+     "log_loss": 0.264119
+    },
+    "3": {
+     "n": 49381,
+     "level_pp": -0.0431,
+     "log_loss": 0.268333
+    },
+    "4": {
+     "n": 1125,
+     "level_pp": 1.0403,
+     "log_loss": 0.235721
+    },
+    "11": {
+     "n": 75638,
+     "level_pp": -0.3209,
+     "log_loss": 0.261631
+    },
+    "12": {
+     "n": 57607,
+     "level_pp": -0.0876,
+     "log_loss": 0.260859
+    }
+   },
+   "by_site": {
+    "away": {
+     "n": 159500,
+     "level_pp": -0.1581,
+     "log_loss": 0.277442
+    },
+    "home": {
+     "n": 152683,
+     "level_pp": -0.2453,
+     "log_loss": 0.249908
+    },
+    "neutral": {
+     "n": 46017,
+     "level_pp": 0.0277,
+     "log_loss": 0.258751
+    }
+   },
+   "by_conf": {
+    "conf": {
+     "n": 227168,
+     "level_pp": -0.1832,
+     "log_loss": 0.26484
+    },
+    "nonconf": {
+     "n": 131032,
+     "level_pp": -0.1508,
+     "log_loss": 0.260642
+    }
+   },
+   "by_period": {
+    "1": {
+     "n": 184147,
+     "level_pp": -0.1298,
+     "log_loss": 0.254134
+    },
+    "2": {
+     "n": 171188,
+     "level_pp": -0.2028,
+     "log_loss": 0.272755
+    },
+    "3": {
+     "n": 2338,
+     "level_pp": -1.0561,
+     "log_loss": 0.29426
+    },
+    "4": {
+     "n": 431,
+     "level_pp": -0.6702,
+     "log_loss": 0.258754
+    },
+    "5": {
+     "n": 96,
+     "UNDERPOWERED": true
+    }
+   },
+   "by_game_minute_bucket": {
+    "0": {
+     "n": 45575,
+     "level_pp": -0.1813,
+     "log_loss": 0.250802
+    },
+    "1": {
+     "n": 46494,
+     "level_pp": -0.1927,
+     "log_loss": 0.251606
+    },
+    "2": {
+     "n": 46024,
+     "level_pp": -0.1405,
+     "log_loss": 0.255593
+    },
+    "3": {
+     "n": 44811,
+     "level_pp": -0.0096,
+     "log_loss": 0.258767
+    },
+    "4": {
+     "n": 44290,
+     "level_pp": -0.3651,
+     "log_loss": 0.276854
+    },
+    "5": {
+     "n": 43192,
+     "level_pp": -0.122,
+     "log_loss": 0.27295
+    },
+    "6": {
+     "n": 41619,
+     "level_pp": -0.429,
+     "log_loss": 0.2757
+    },
+    "7": {
+     "n": 46195,
+     "level_pp": 0.0436,
+     "log_loss": 0.26632
+    }
+   },
+   "by_season_half": {
+    "Jan-Apr": {
+     "n": 224955,
+     "level_pp": -0.1426,
+     "log_loss": 0.264494
+    },
+    "Nov-Dec": {
+     "n": 133245,
+     "level_pp": -0.22,
+     "log_loss": 0.261297
+    }
+   },
+   "fit_s": 70.1,
+   "n_features": 17
+  },
+  "F2|K0_oracle": {
+   "n": 358200,
+   "log_loss": 0.265223,
+   "brier": 0.078576,
+   "actual_rate": 0.098872,
+   "pred_rate": 0.098872,
+   "level_pp": 0.0,
+   "calib_worst_decile_gap_pp": 0.3886,
+   "calib_pass": true,
+   "by_shot_type": {
+    "jump2": {
+     "n": 95844,
+     "level_pp": 0.0,
+     "log_loss": 0.282865
+    },
+    "rim": {
+     "n": 95949,
+     "level_pp": 0.0,
+     "log_loss": 0.575315
+    },
+    "three": {
+     "n": 166407,
+     "level_pp": 0.0,
+     "log_loss": 0.076265
+    }
+   },
+   "level_pass": true,
+   "slope_def_prior": {
+    "underpowered": false,
+    "n": 358200,
+    "slope_ratio": 0.1126,
+    "monotone_steps": 4,
+    "steps": 4,
+    "actual_by_q": [
+     0.07959,
+     0.09366,
+     0.09636,
+     0.10564,
+     0.11911
+    ],
+    "pred_by_q": [
+     0.09679,
+     0.09848,
+     0.09875,
+     0.0991,
+     0.10124
+    ],
+    "n_by_q": [
+     71640,
+     71640,
+     71640,
+     71640,
+     71640
+    ]
+   },
+   "slope_off_prior": {
+    "underpowered": false,
+    "n": 358200,
+    "slope_ratio": 0.3493,
+    "monotone_steps": 3,
+    "steps": 4,
+    "actual_by_q": [
+     0.09306,
+     0.09558,
+     0.09661,
+     0.1011,
+     0.10801
+    ],
+    "pred_by_q": [
+     0.09526,
+     0.09781,
+     0.09973,
+     0.10109,
+     0.10048
+    ],
+    "n_by_q": [
+     71640,
+     71640,
+     71640,
+     71640,
+     71640
+    ]
+   },
+   "resp_pass": true,
+   "by_month": {
+    "1": {
+     "n": 89185,
+     "level_pp": -0.0431,
+     "log_loss": 0.265394
+    },
+    "2": {
+     "n": 85264,
+     "level_pp": 0.2042,
+     "log_loss": 0.266048
+    },
+    "3": {
+     "n": 49381,
+     "level_pp": -0.064,
+     "log_loss": 0.269651
+    },
+    "4": {
+     "n": 1125,
+     "level_pp": 1.009,
+     "log_loss": 0.237442
+    },
+    "11": {
+     "n": 75638,
+     "level_pp": -0.1747,
+     "log_loss": 0.263025
+    },
+    "12": {
+     "n": 57607,
+     "level_pp": 0.0291,
+     "log_loss": 0.26337
+    }
+   },
+   "by_site": {
+    "away": {
+     "n": 159500,
+     "level_pp": -0.7451,
+     "log_loss": 0.279835
+    },
+    "home": {
+     "n": 152683,
+     "level_pp": 0.7577,
+     "log_loss": 0.251521
+    },
+    "neutral": {
+     "n": 46017,
+     "level_pp": 0.0686,
+     "log_loss": 0.260041
+    }
+   },
+   "by_conf": {
+    "conf": {
+     "n": 227168,
+     "level_pp": 0.0253,
+     "log_loss": 0.266765
+    },
+    "nonconf": {
+     "n": 131032,
+     "level_pp": -0.0439,
+     "log_loss": 0.26255
+    }
+   },
+   "by_period": {
+    "1": {
+     "n": 184147,
+     "level_pp": 0.1832,
+     "log_loss": 0.256532
+    },
+    "2": {
+     "n": 171188,
+     "level_pp": -0.1836,
+     "log_loss": 0.27419
+    },
+    "3": {
+     "n": 2338,
+     "level_pp": -0.9971,
+     "log_loss": 0.294705
+    },
+    "4": {
+     "n": 431,
+     "level_pp": -0.1442,
+     "log_loss": 0.254974
+    },
+    "5": {
+     "n": 96,
+     "UNDERPOWERED": true
+    }
+   },
+   "by_game_minute_bucket": {
+    "0": {
+     "n": 45575,
+     "level_pp": 0.2673,
+     "log_loss": 0.253224
+    },
+    "1": {
+     "n": 46494,
+     "level_pp": 0.1549,
+     "log_loss": 0.253641
+    },
+    "2": {
+     "n": 46024,
+     "level_pp": 0.277,
+     "log_loss": 0.257929
+    },
+    "3": {
+     "n": 44811,
+     "level_pp": 0.0575,
+     "log_loss": 0.261377
+    },
+    "4": {
+     "n": 44290,
+     "level_pp": -0.2697,
+     "log_loss": 0.278843
+    },
+    "5": {
+     "n": 43192,
+     "level_pp": -0.0787,
+     "log_loss": 0.274021
+    },
+    "6": {
+     "n": 41619,
+     "level_pp": -0.2819,
+     "log_loss": 0.277351
+    },
+    "7": {
+     "n": 46195,
+     "level_pp": -0.1653,
+     "log_loss": 0.267505
+    }
+   },
+   "by_season_half": {
+    "Jan-Apr": {
+     "n": 224955,
+     "level_pp": 0.0513,
+     "log_loss": 0.266437
+    },
+    "Nov-Dec": {
+     "n": 133245,
+     "level_pp": -0.0866,
+     "log_loss": 0.263174
+    }
+   },
+   "fit_s": 1.2,
+   "n_features": 1
+  }
+ },
+ "eligible": [],
+ "winner": null,
+ "runtime_min": 8.9
+}

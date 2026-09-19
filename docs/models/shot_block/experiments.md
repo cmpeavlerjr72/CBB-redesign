@@ -180,3 +180,101 @@ report, not a change to make inside this round.
 ---
 
 <!-- RESULTS APPENDED BELOW BY scripts/train_shot_block_v1.py -->
+
+## 2. Results (run 2026-09-18T22:54:20.730878+00:00, `scripts/train_shot_block_v1.py`)
+
+Row set: missed FGA of the rebound round-3 design. Shooter join match rate **0.88077**, `blocked` agreement on matched rows 1.0 (the key is verified, not assumed); unmatched rows carry `shooter_known = 0` and a shooter feature of exactly 0.0.
+
+Shooter EB pseudo-count FITTED on the F2 train slice over [0, 50, 100, 200, 400]: **50** (train log loss {0: 0.3171314, 50: 0.3158661, 100: 0.3159549, 200: 0.3160749, 400: 0.3161867}).
+
+**F1** -- train [2022, 2023] test [2024]
+
+| arm | n | log_loss | brier | pred_rate | actual_rate | level_pp | calib_gap_pp | calib | level_gate | slope_def_q | mono | resp | fit_s |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| K2 | 358631 | 0.269347 | 0.079866 | 0.09869 | 0.100451 | -0.1762 | 1.1012 | PASS | FAIL | 0.7753 | 4 | PASS | 2.1 |
+| K3_conf | 358631 | 0.269783 | 0.080002 | 0.098632 | 0.100451 | -0.1819 | 1.6002 | PASS | FAIL | 0.8344 | 4 | PASS | 70.2 |
+| K3_prior | 358631 | 0.269786 | 0.080009 | 0.098693 | 0.100451 | -0.1759 | 1.8027 | PASS | PASS | 1.2564 | 4 | PASS | 72.4 |
+| K3 | 358631 | 0.269884 | 0.080035 | 0.098636 | 0.100451 | -0.1815 | 1.8373 | PASS | FAIL | 0.8388 | 4 | PASS | 79.6 |
+| K0 | 358631 | 0.271238 | 0.080359 | 0.096701 | 0.100451 | -0.3751 | 1.3375 | PASS | FAIL | 0.107 | 3 | PASS | 1.3 |
+| K1 | 358631 | 0.274082 | 0.080624 | 0.097361 | 0.100451 | -0.309 | 3.7176 | FAIL | FAIL | 1.2556 | 4 | PASS | 1.6 |
+| K1_oa | 358631 | 0.277861 | 0.080903 | 0.09757 | 0.100451 | -0.2882 | 4.3148 | FAIL | FAIL | 1.2508 | 4 | PASS | 1.6 |
+
+**F2** -- train [2022, 2023, 2024] test [2025] (SELECTION)
+
+| arm | n | log_loss | brier | pred_rate | actual_rate | level_pp | calib_gap_pp | calib | level_gate | slope_def_q | mono | resp | fit_s |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| K2 | 358200 | 0.26324 | 0.078039 | 0.097218 | 0.098872 | -0.1654 | 1.0336 | PASS | FAIL | 0.7076 | 4 | PASS | 2.4 |
+| K3_prior | 358200 | 0.263305 | 0.078135 | 0.097158 | 0.098872 | -0.1714 | 1.2925 | PASS | FAIL | 1.0629 | 4 | PASS | 70.1 |
+| K3_conf | 358200 | 0.26348 | 0.078184 | 0.097246 | 0.098872 | -0.1626 | 1.2845 | PASS | FAIL | 0.7506 | 4 | PASS | 67.5 |
+| K3 | 358200 | 0.263508 | 0.078166 | 0.097253 | 0.098872 | -0.1619 | 1.2772 | PASS | FAIL | 0.7456 | 4 | PASS | 71.0 |
+| K0_oracle | 358200 | 0.265223 | 0.078576 | 0.098872 | 0.098872 | 0.0 | 0.3886 | PASS | PASS | 0.1126 | 4 | PASS | 1.2 |
+| K0 | 358200 | 0.26525 | 0.078585 | 0.097962 | 0.098872 | -0.091 | 0.8457 | PASS | FAIL | 0.1109 | 4 | PASS | 1.3 |
+| K1 | 358200 | 0.267324 | 0.078781 | 0.098882 | 0.098872 | 0.001 | 3.972 | FAIL | PASS | 1.1376 | 4 | PASS | 1.5 |
+| K1_oa | 358200 | 0.269724 | 0.078998 | 0.098969 | 0.098872 | 0.0097 | 4.384 | FAIL | PASS | 1.1117 | 4 | PASS | 1.5 |
+
+Noise floor: spec-identical second-seed retrain of `K3_prior` on F2 -- log-loss spread **4.1e-05**, level spread 0.0195 pp.
+
+Eligible by rule 1.9.1 (beats `K0` beyond the floor AND passes all three gates): NONE.
+
+**WINNER: NONE -- no arm clears the rule; the engine keeps feeding blocked_f = 0.0 and G4 channel 3 stays open**
+
+### 2.1 Segments (every arm, both folds)
+
+Full per-arm segment tables (shot type, month, site, conference, period, game-minute bucket, season half, and both prior-quintile slopes with their per-quintile actual/predicted vectors) are in `data/processed/models/shot_block/run_report_v1.json`; cells below n = 300 are marked `UNDERPOWERED` there and are excluded from every pass/fail above.
+
+`F2|K0` by shot type:
+
+| shot type | n | level_pp | log_loss |
+|---|---|---|---|
+| jump2 | 95844 | 0.2024 | 0.282892 |
+| rim | 95949 | -0.5272 | 0.575387 |
+| three | 166407 | -0.0085 | 0.076266 |
+
+`F2|K1` by shot type:
+
+| shot type | n | level_pp | log_loss |
+|---|---|---|---|
+| jump2 | 95844 | 0.2376 | 0.283681 |
+| rim | 95949 | -0.2024 | 0.582407 |
+| three | 166407 | -0.0179 | 0.076229 |
+
+`F2|K3` by shot type:
+
+| shot type | n | level_pp | log_loss |
+|---|---|---|---|
+| jump2 | 95844 | 0.272 | 0.28087 |
+| rim | 95949 | -0.8006 | 0.572369 |
+| three | 166407 | -0.0437 | 0.075422 |
+
+### 2.2 Verdict, and how it interacts with the rebound round
+
+**No arm is adopted.** By rule 1.9.1 an arm must beat `K0` beyond the floor AND
+pass all three gates; every fitted arm clears the primary by 30-50x the floor and
+passes calibration and responsiveness, and every one **fails the level gate on
+rim** (-0.78 to -0.83 pp against the pre-registered 0.50 pp). `K0` itself misses
+rim by -0.53 pp, so the cause is not the fitted arms: the 2025 rim block rate sits
+above every training season, i.e. this sub-model has the **same season-drift
+defect** the rebound round found in the rebound model. A round 2 of this model
+should carry the drift arms (the rebound round-3 `A5` trend offset is the arm
+that worked there) and the refit cadence this round deliberately did not test.
+
+Two secondary readings worth recording:
+
+- On the primary, the **linear arm wins**: `K2` 0.263240 against `K3` 0.263508.
+  The pre-registered "a tree must beat the best linear arm by more than the floor"
+  clause therefore resolves to `K2` and no tree is justified here.
+- **Decision 9 gets no support from this model.** `K1_oa` (opponent adjustment)
+  is the WORST of the eight arms, 0.002400 behind `K1`; `K3_conf` (conference
+  flag) gains 2.8e-05, inside the floor. Decision 9 stays PENDING EVIDENCE.
+
+**What the round is nevertheless worth.** `docs/tests/rebound_round_drift_block_carry_2026-09-18.md`
+section 2 measured that a 0/1 indicator **drawn** from `K2` and fed to the served
+rebound model reproduces the true-`blocked_f` rebound level **exactly** (-1.1370 pp
+against -1.1370 pp), closing the whole -0.740 pp engine-feed channel of gate G4 --
+while feeding `K2`'s probability CONTINUOUSLY is structurally invalid (+8.33 pp),
+because LightGBM splits a 0/1 column at a threshold of exactly 0.0. So the model
+that fails its own level gate is still good enough to serve the draw. That is a
+statement about what the feed needs, not a licence to adopt: wiring it requires an
+engine change (a new `book.draw("shot_block", ...)` family placed after the
+make/miss draw), a DEFAULT-OFF flag, a parity check and a paired closed loop, none
+of which this round ran.

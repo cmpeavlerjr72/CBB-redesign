@@ -719,3 +719,281 @@ unchanged. Added or made explicit:
 Artifact directories over 20 MB are gitignored and HF-synced per CLAUDE.md. The
 status change `PROPOSED -> RUN` goes to `docs/models/change_ledger.md` in the same
 commit as the results.
+
+---
+
+## 11. Round 3 RESULTS, stage 1 (run 2026-09-18 19:06-20:15 ET, `scripts/train_rebound_v3_round3.py` + `scripts/grade_rebound_round3_v1.py`)
+
+Status: sections 9 and 10 EXECUTED at **stage 1 only**. Stage 2 (the served
+`S1_weekly` calendar, 23 refits per cell) and the paired closed loop are
+**NOT RUN** -- measured cost 472-631 s per single fit on a machine four other
+workers were using, so one stage-2 cell is ~3 h and the session had a hard stop.
+Per section 10.5 the round's DECISION is therefore NOT TAKEN: what follows is the
+screen. **Nothing is adopted, no served default changed.** Narrative, the Block-B
+refutation, the shot-block interaction and the recommendation:
+`docs/tests/rebound_round_drift_block_carry_2026-09-18.md`.
+
+Reproduction check: `A0B0C0` on F2 reproduces round 1's adopted S0 log loss
+**0.645565** exactly, and reproduces the G4 diagnostic's served level readings
+`L1 = -1.137 pp` and `L2 = -1.877 pp` to 4 dp. The design builder's rebuild of
+`off_oreb_c` and `opp_def_dreb_c` matches the served columns at max abs diff
+**0.0**.
+
+`C4` (roster-continuity weighting): **NOT RUN**, for the measured reason 10.3
+required be checked first -- `roster_continuity_2027.parquet` covers season 2027
+only, coverage 0/3 of the test seasons this round needs.
+
+`D4` (refit cadence): cited from section 8 as declared in 10.4, not refit.
+
+
+**Stage 1 / F2 / `S0` (SELECTION)**
+
+| arm | n_feat | n_fits | log_loss | brier | L1_pp | L2_B0_pp | L2_B3_pp | calib | gap_pp | resp | slope_q | mono | fit_s | why |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| A5+C1 | 16 | 1 | 0.644658 | 0.418606 | -0.4444 | -1.1966 | -0.4422 | PASS | 1.674 | PASS | 1.1219 | 4 | 472.2 | combined: A5 + C1 |
+| A5+C3 | 16 | 1 | 0.644767 | 0.41868 | -0.3394 | -1.088 | -0.3381 | PASS | 1.67 | PASS | 0.717 | 4 | 471.3 | combined: A5 + C3 |
+| A5 | 16 | 1 | 0.645024 | 0.418919 | -0.337 | -1.0887 | -0.3356 | PASS | 1.921 | PASS | 0.6895 | 4 | 295.6 | TREND EXTRAPOLATION: an OLS season-level offset fitted on the fo |
+| C1 | 16 | 1 | 0.645182 | 0.41887 | -1.2439 | -1.9847 | -1.2431 | FAIL | 2.281 | PASS | 1.1072 | 4 | 531.5 | prior-season carry, PO round 4's G2 |
+| C3 | 16 | 1 | 0.645196 | 0.418884 | -1.1633 | -1.904 | -1.1622 | PASS | 1.966 | PASS | 0.7138 | 4 | 315.4 | shrink toward the league mean only, G1 (the control) |
+| C2 | 16 | 1 | 0.645218 | 0.418878 | -1.2592 | -2.0015 | -1.2584 | FAIL | 2.228 | PASS | 1.0814 | 4 | 504.9 | prior-season carry with the prior shrunk by its own reliability, |
+| D3 | 17 | 1 | 0.645315 | 0.419058 | -1.1421 | -1.8841 | -1.1413 | FAIL | 2.147 | PASS | 0.6947 | 4 | 308.7 | Decision 9b: conference-game flag |
+| D2 | 16 | 1 | 0.64551 | 0.419295 | -1.1309 | -1.8691 | -1.1289 | PASS | 1.974 | PASS | 0.6298 | 4 | 557.4 | Decision 9a: opponent adjustment, iterative |
+| A0B0C0 | 16 | 1 | 0.645565 | 0.419188 | -1.137 | -1.8769 | -1.137 | PASS | 1.958 | PASS | 0.6851 | 4 | 631.4 | reference: the served lgbm / C_plus_state, unchanged |
+| D1 | 16 | 1 | 0.645647 | 0.419245 | -1.1272 | -1.8671 | -1.1257 | PASS | 1.944 | PASS | 0.6294 | 4 | 590.8 | Decision 9a: opponent adjustment, one_pass |
+| A1 | 17 | 1 | 0.645816 | 0.419003 | -0.8288 | -1.5806 | -0.8279 | PASS | 1.676 | PASS | 0.6728 | 4 | 529.2 | season index as a feature |
+| A3_2s | 16 | 1 | 0.64618 | 0.419357 | -1.0167 | -1.7721 | -1.0167 | PASS | 1.984 | PASS | 0.6875 | 4 | 505.4 | rolling window: most recent 2 seasons of training rows |
+| A2_h240 | 16 | 1 | 0.646239 | 0.419318 | -0.9962 | -1.7522 | -0.995 | FAIL | 2.181 | PASS | 0.6948 | 4 | 308.1 | exponential recency weights, 240-day half-life |
+| B1 | 15 | 1 | 0.647099 | 0.420419 | -1.1573 | -1.1573 | -1.1573 | FAIL | 2.03 | PASS | 0.6867 | 4 | 503.4 | drop blocked_f and refit; marginalise over blocks |
+| A2_h120 | 16 | 1 | 0.64768 | 0.419753 | -0.8878 | -1.6525 | -0.8857 | FAIL | 2.34 | PASS | 0.6984 | 4 | 519.4 | exponential recency weights, 120-day half-life |
+| A2_h60 | 16 | 1 | 0.649226 | 0.420301 | -0.9445 | -1.7018 | -0.9412 | FAIL | 2.674 | PASS | 0.7179 | 4 | 507.4 | exponential recency weights, 60-day half-life |
+| A4 | 17 | 1 | 0.649412 | 0.420191 | 0.3059 | -0.4405 | 0.3072 | FAIL | 2.585 | PASS | 0.397 | 4 | 531.5 | within-season as-of league OREB% anchor (PM condition a-ii) |
+| A3_1s | 16 | 1 | 0.649568 | 0.420358 | -0.8344 | -1.591 | -0.8307 | FAIL | 2.851 | PASS | 0.6812 | 4 | 541.7 | rolling window: most recent 1 season of training rows |
+
+**Stage 1 / F1 / `S0`**
+
+| arm | n_feat | n_fits | log_loss | brier | L1_pp | L2_B0_pp | L2_B3_pp | calib | gap_pp | resp | slope_q | mono | fit_s | why |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| A5+C1 | 16 | 1 | 0.619846 | 0.407335 | -0.138 | -0.9017 | -0.143 | FAIL | 2.212 | PASS | 1.0652 | 4 | 456.4 | combined: A5 + C1 |
+| A5+C3 | 16 | 1 | 0.619971 | 0.407472 | -0.0143 | -0.7739 | -0.0197 | FAIL | 2.196 | PASS | 0.664 | 4 | 252.9 | combined: A5 + C3 |
+| C2 | 16 | 1 | 0.620077 | 0.40741 | -0.706 | -1.4626 | -0.7106 | PASS | 1.68 | PASS | 1.0114 | 4 | 273.8 | prior-season carry with the prior shrunk by its own reliability, |
+| A5 | 16 | 1 | 0.620096 | 0.407541 | -0.0752 | -0.8407 | -0.0804 | PASS | 1.9 | PASS | 0.6124 | 4 | 301.7 | TREND EXTRAPOLATION: an OLS season-level offset fitted on the fo |
+| C1 | 16 | 1 | 0.620181 | 0.407457 | -0.7204 | -1.4791 | -0.7246 | PASS | 1.761 | PASS | 1.0588 | 4 | 256.0 | prior-season carry, PO round 4's G2 |
+| C3 | 16 | 1 | 0.62021 | 0.407515 | -0.6388 | -1.3934 | -0.6434 | PASS | 1.817 | PASS | 0.6456 | 4 | 289.5 | shrink toward the league mean only, G1 (the control) |
+| A1 | 17 | 1 | 0.620267 | 0.407562 | -0.5179 | -1.2707 | -0.5226 | PASS | 1.568 | PASS | 0.6069 | 4 | 210.4 | season index as a feature |
+| D3 | 17 | 1 | 0.620313 | 0.4076 | -0.6428 | -1.3975 | -0.6475 | PASS | 1.527 | PASS | 0.6195 | 4 | 287.3 | Decision 9b: conference-game flag |
+| A0B0C0 | 16 | 1 | 0.620446 | 0.407653 | -0.6494 | -1.4088 | -0.6544 | PASS | 1.629 | PASS | 0.6093 | 4 | 335.9 | reference: the served lgbm / C_plus_state, unchanged |
+| A3_2s | 16 | 1 | 0.620446 | 0.407653 | -0.6494 | -1.4088 | -0.6544 | PASS | 1.629 | PASS | 0.6093 | 4 | 255.0 | rolling window: most recent 2 seasons of training rows |
+| D2 | 16 | 1 | 0.620645 | 0.407862 | -0.6355 | -1.391 | -0.6398 | PASS | 1.666 | PASS | 0.5835 | 4 | 286.0 | Decision 9a: opponent adjustment, iterative |
+| D1 | 16 | 1 | 0.620661 | 0.407891 | -0.6479 | -1.4024 | -0.6511 | FAIL | 2.008 | PASS | 0.5757 | 4 | 346.3 | Decision 9a: opponent adjustment, one_pass |
+| A2_h240 | 16 | 1 | 0.62087 | 0.407876 | -0.6332 | -1.4031 | -0.6395 | PASS | 1.764 | PASS | 0.6103 | 4 | 294.8 | exponential recency weights, 240-day half-life |
+| A2_h120 | 16 | 1 | 0.621306 | 0.408194 | -0.6653 | -1.4456 | -0.6721 | PASS | 1.999 | PASS | 0.6131 | 4 | 276.5 | exponential recency weights, 120-day half-life |
+| A2_h60 | 16 | 1 | 0.62195 | 0.408576 | -0.6634 | -1.4611 | -0.6706 | FAIL | 2.501 | PASS | 0.6079 | 4 | 260.7 | exponential recency weights, 60-day half-life |
+| A4 | 17 | 1 | 0.62198 | 0.408835 | -0.7927 | -1.5705 | -0.7982 | PASS | 1.939 | PASS | 0.3134 | 4 | 274.8 | within-season as-of league OREB% anchor (PM condition a-ii) |
+| A3_1s | 16 | 1 | 0.622116 | 0.408602 | -0.6175 | -1.4067 | -0.6258 | FAIL | 2.39 | PASS | 0.6067 | 4 | 232.4 | rolling window: most recent 1 season of training rows |
+| B1 | 15 | 1 | 0.622119 | 0.409127 | -0.667 | -0.667 | -0.667 | PASS | 1.901 | PASS | 0.6131 | 4 | 206.8 | drop blocked_f and refit; marginalise over blocks |
+
+### Noise floor
+
+- stage 1, `A0B0C0` second-seed retrain on F2: log-loss spread **0.000004**, L1 spread 0.0393 pp. Operative floor = max(spread, published 5-seed SD 6.7e-05) = **0.000067**.
+- game-clustered block-bootstrap SE for this cell (published, section 3): 0.001412.
+
+### Decision rule applied mechanically, stage 1 (floor 0.000067)
+
+| arm | F2 gain | x floor | F1 gain | rule1 (beats ref) | rule3 (gates) | rule4 (L1 not worse) | L1_pp | rule5 (slope not reduced) | slope_q |
+|---|---|---|---|---|---|---|---|---|---|
+| A5+C1 | 0.000907 | 13.5 | 0.0006 | True | True | True | -0.4444 | True | 1.1219 |
+| A5+C3 | 0.000798 | 11.9 | 0.000475 | True | True | True | -0.3394 | False | 0.717 |
+| A5 | 0.000541 | 8.1 | 0.00035 | True | True | True | -0.337 | False | 0.6895 |
+| C1 | 0.000383 | 5.7 | 0.000265 | True | False | False | -1.2439 | True | 1.1072 |
+| C3 | 0.000369 | 5.5 | 0.000236 | True | True | False | -1.1633 | False | 0.7138 |
+| C2 | 0.000347 | 5.2 | 0.000369 | True | False | False | -1.2592 | True | 1.0814 |
+| D3 | 0.00025 | 3.7 | 0.000133 | True | False | False | -1.1421 | False | 0.6947 |
+| D2 | 5.5e-05 | 0.8 | -0.000199 | False | True | True | -1.1309 | False | 0.6298 |
+| D1 | -8.2e-05 | -1.2 | -0.000215 | False | True | True | -1.1272 | False | 0.6294 |
+| A1 | -0.000251 | -3.7 | 0.000179 | False | True | True | -0.8288 | False | 0.6728 |
+| A3_2s | -0.000615 | -9.2 | 0.0 | False | True | True | -1.0167 | False | 0.6875 |
+| A2_h240 | -0.000674 | -10.1 | -0.000424 | False | False | True | -0.9962 | True | 0.6948 |
+| B1 | -0.001534 | -22.9 | -0.001673 | False | False | False | -1.1573 | False | 0.6867 |
+| A2_h120 | -0.002115 | -31.6 | -0.00086 | False | False | True | -0.8878 | True | 0.6984 |
+| A2_h60 | -0.003661 | -54.6 | -0.001504 | False | False | True | -0.9445 | True | 0.7179 |
+| A4 | -0.003847 | -57.4 | -0.001534 | False | False | True | 0.3059 | False | 0.397 |
+| A3_1s | -0.004003 | -59.7 | -0.00167 | False | False | True | -0.8344 | False | 0.6812 |
+
+Eligible: ['A5+C1']. **Stage-1 leader by the rule: `A5+C1`** (ties inside one floor broken by simplicity).
+
+### Multi-level evidence (stage-2 cells if present, else stage 1)
+
+
+by miss type (level pp)
+
+| arm | rim | jump2 | three | ft |
+|---|---|---|---|---|
+| A5+C1 | 0.3268 | -0.6047 | -0.7892 | -0.4932 |
+| A5+C3 | 0.4305 | -0.5026 | -0.6783 | -0.4057 |
+| A5 | 0.4192 | -0.4986 | -0.6667 | -0.4133 |
+| C1 | -0.6159 | -1.4019 | -1.58 | -0.9398 |
+| C3 | -0.5574 | -1.3279 | -1.4818 | -0.8641 |
+| C2 | -0.6271 | -1.4164 | -1.6071 | -0.9115 |
+| D3 | -0.5386 | -1.3113 | -1.4555 | -0.8477 |
+| D2 | -0.5229 | -1.3212 | -1.4336 | -0.8419 |
+| A0B0C0 | -0.5114 | -1.3169 | -1.4487 | -0.8835 |
+| D1 | -0.5153 | -1.3095 | -1.428 | -0.8805 |
+| A1 | -0.2426 | -0.9855 | -1.1249 | -0.6046 |
+| A3_2s | -0.4434 | -1.1727 | -1.3061 | -0.7904 |
+| A2_h240 | -0.4456 | -1.1589 | -1.2853 | -0.6896 |
+| B1 | -0.6001 | -1.2907 | -1.4594 | -0.8877 |
+| A2_h120 | -0.3568 | -1.0617 | -1.1752 | -0.5024 |
+| A2_h60 | -0.3873 | -1.1268 | -1.2268 | -0.6342 |
+| A4 | 0.1082 | -0.0737 | 0.5383 | 0.7972 |
+| A3_1s | -0.3577 | -1.0393 | -1.1002 | -0.3143 |
+
+by month (level pp)
+
+| arm | 11 | 12 | 1 | 2 | 3 | 4 |
+|---|---|---|---|---|---|---|
+| A5+C1 | -0.8577 | -0.6042 | -0.9641 | 0.1966 | 0.1959 | 1.242 |
+| A5+C3 | -0.6152 | -0.532 | -0.8671 | 0.2319 | 0.2626 | 1.2284 |
+| A5 | -0.6117 | -0.5381 | -0.8702 | 0.2637 | 0.2227 | 1.6678 |
+| C1 | -1.6623 | -1.4162 | -1.7763 | -0.6001 | -0.5639 | 0.5141 |
+| C3 | -1.422 | -1.3981 | -1.6903 | -0.5805 | -0.5656 | 0.6847 |
+| C2 | -1.6874 | -1.3957 | -1.7802 | -0.6201 | -0.6119 | 0.1781 |
+| D3 | -1.1614 | -1.0127 | -1.869 | -0.7456 | -0.6677 | 1.0753 |
+| D2 | -1.3912 | -1.3331 | -1.6853 | -0.5344 | -0.5468 | 0.8974 |
+| A0B0C0 | -1.427 | -1.3096 | -1.6932 | -0.5451 | -0.5285 | 0.8139 |
+| D1 | -1.3836 | -1.3782 | -1.6666 | -0.5129 | -0.5391 | 0.4346 |
+| A1 | -1.0448 | -1.0296 | -1.3725 | -0.2623 | -0.2782 | 0.975 |
+| A3_2s | -1.3293 | -1.2558 | -1.5168 | -0.413 | -0.421 | 1.094 |
+| A2_h240 | -1.2978 | -1.2255 | -1.5274 | -0.3755 | -0.4006 | 1.0478 |
+| B1 | -1.4364 | -1.3231 | -1.7071 | -0.581 | -0.5602 | 0.8668 |
+| A2_h120 | -1.2024 | -1.1216 | -1.4107 | -0.2694 | -0.2714 | 0.9037 |
+| A2_h60 | -1.2115 | -1.2067 | -1.4809 | -0.3327 | -0.3344 | 0.9069 |
+| A4 | -0.098 | 0.3876 | 0.2646 | 1.0153 | -0.3359 | 1.1713 |
+| A3_1s | -1.1694 | -1.1202 | -1.3006 | -0.216 | -0.2367 | 1.2982 |
+
+by site (level pp)
+
+| arm | home | away | neutral |
+|---|---|---|---|
+| A5+C1 | -0.5505 | -0.2838 | -0.6434 |
+| A5+C3 | -0.4288 | -0.1999 | -0.5216 |
+| A5 | -0.4282 | -0.1996 | -0.5059 |
+| C1 | -1.37 | -1.0683 | -1.428 |
+| C3 | -1.2502 | -1.0274 | -1.3416 |
+| C2 | -1.3683 | -1.0971 | -1.4532 |
+| D3 | -1.2399 | -1.0176 | -1.2444 |
+| D2 | -1.2176 | -1.0051 | -1.2749 |
+| A0B0C0 | -1.2422 | -0.9905 | -1.2905 |
+| D1 | -1.2269 | -0.9796 | -1.3023 |
+| A1 | -1.029 | -0.5993 | -0.9515 |
+| A3_2s | -1.1833 | -0.8177 | -1.1462 |
+| A2_h240 | -1.1867 | -0.7725 | -1.1314 |
+| B1 | -1.2687 | -1.0151 | -1.2755 |
+| A2_h120 | -1.1521 | -0.6016 | -0.9914 |
+| A2_h60 | -1.2501 | -0.6026 | -1.1024 |
+| A4 | 0.4788 | 0.4209 | -0.6674 |
+| A3_1s | -1.0785 | -0.547 | -1.0096 |
+
+by conference game (level pp)
+
+| arm | conf | nonconf |
+|---|---|---|
+| A5+C1 | -0.2938 | -0.7032 |
+| A5+C3 | -0.2343 | -0.52 |
+| A5 | -0.2241 | -0.5309 |
+| C1 | -1.0942 | -1.501 |
+| C3 | -1.0548 | -1.3498 |
+| C2 | -1.1087 | -1.5177 |
+| D3 | -1.2234 | -1.0022 |
+| D2 | -1.0295 | -1.3051 |
+| A0B0C0 | -1.0287 | -1.3233 |
+| D1 | -1.0105 | -1.3277 |
+| A1 | -0.7345 | -0.9909 |
+| A3_2s | -0.8843 | -1.2442 |
+| A2_h240 | -0.8725 | -1.2089 |
+| B1 | -1.058 | -1.3279 |
+| A2_h120 | -0.7633 | -1.1016 |
+| A2_h60 | -0.8222 | -1.1548 |
+| A4 | 0.4429 | 0.0705 |
+| A3_1s | -0.6915 | -1.08 |
+
+by period (level pp)
+
+| arm | 1 | 2 | 3 | 4 | 5 |
+|---|---|---|---|---|---|
+| A5+C1 | -0.3149 | -0.579 | -0.1256 | -1.474 | UNDERPOWERED |
+| A5+C3 | -0.2072 | -0.4765 | 0.0244 | -1.6542 | UNDERPOWERED |
+| A5 | -0.218 | -0.4631 | 0.1832 | -1.5625 | UNDERPOWERED |
+| C1 | -1.0868 | -1.4061 | -0.9505 | -2.3768 | UNDERPOWERED |
+| C3 | -1.0069 | -1.3256 | -0.7792 | -2.3987 | UNDERPOWERED |
+| C2 | -1.124 | -1.3988 | -0.9525 | -2.4985 | UNDERPOWERED |
+| D3 | -1.0076 | -1.2843 | -0.6481 | -2.2109 | UNDERPOWERED |
+| D2 | -0.961 | -1.3066 | -0.8178 | -2.1348 | UNDERPOWERED |
+| A0B0C0 | -0.9825 | -1.2996 | -0.6119 | -2.3653 | UNDERPOWERED |
+| D1 | -0.9783 | -1.2819 | -0.769 | -2.2117 | UNDERPOWERED |
+| A1 | -0.7116 | -0.9553 | -0.2125 | -1.8515 | UNDERPOWERED |
+| A3_2s | -0.8747 | -1.1647 | -0.6748 | -1.9737 | UNDERPOWERED |
+| A2_h240 | -0.8478 | -1.1446 | -1.0908 | -1.981 | UNDERPOWERED |
+| B1 | -1.0105 | -1.3115 | -0.7147 | -2.1638 | UNDERPOWERED |
+| A2_h120 | -0.7723 | -0.999 | -1.212 | -1.9355 | UNDERPOWERED |
+| A2_h60 | -0.8344 | -1.0462 | -1.3894 | -2.7861 | UNDERPOWERED |
+| A4 | 0.6578 | -0.0643 | 1.1554 | -0.4948 | UNDERPOWERED |
+| A3_1s | -0.7328 | -0.9318 | -1.1227 | -1.902 | UNDERPOWERED |
+
+per-team prior-quintile slope ratio, by season segment (the G4 responsiveness defect; served engine 0.561 / 0.799 / 0.738)
+
+| arm | all | Nov-Dec | Jan | Feb-Apr | gap_pp_by_q |
+|---|---|---|---|---|---|
+| A5+C1 | 1.1219 | 1.1973 | 1.1821 | 1.0078 | [-0.744, -0.807, -0.25, -0.336, 0.055] |
+| A5+C3 | 0.717 | 0.5186 | 0.8506 | 0.8529 | [0.725, -0.031, -0.253, -0.799, -1.131] |
+| A5 | 0.6895 | 0.5905 | 0.797 | 0.7295 | [0.902, -0.028, -0.286, -0.898, -1.134] |
+| C1 | 1.1072 | 1.1712 | 1.1736 | 1.0015 | [-1.472, -1.6, -1.089, -1.139, -0.769] |
+| C3 | 0.7138 | 0.5176 | 0.8356 | 0.8517 | [-0.105, -0.861, -1.067, -1.599, -1.981] |
+| C2 | 1.0814 | 1.1251 | 1.1566 | 0.9949 | [-1.412, -1.522, -1.094, -1.237, -0.879] |
+| D3 | 0.6947 | 0.5473 | 0.842 | 0.7648 | [0.044, -0.854, -1.08, -1.654, -1.957] |
+| D2 | 0.6298 | 0.5024 | 0.7475 | 0.6942 | [0.295, -0.869, -1.021, -1.671, -2.132] |
+| A0B0C0 | 0.6851 | 0.5946 | 0.7792 | 0.7231 | [0.114, -0.823, -1.073, -1.717, -1.951] |
+| D1 | 0.6294 | 0.5165 | 0.7635 | 0.669 | [0.278, -0.826, -0.979, -1.691, -2.151] |
+| A1 | 0.6728 | 0.5741 | 0.7841 | 0.71 | [0.47, -0.501, -0.787, -1.412, -1.675] |
+| A3_2s | 0.6875 | 0.5846 | 0.7962 | 0.7273 | [0.212, -0.694, -0.972, -1.559, -1.837] |
+| A2_h240 | 0.6948 | 0.5969 | 0.8015 | 0.7343 | [0.214, -0.622, -1.017, -1.544, -1.787] |
+| B1 | 0.6867 | 0.5865 | 0.7806 | 0.7353 | [0.095, -0.858, -1.126, -1.725, -1.959] |
+| A2_h120 | 0.6984 | 0.6025 | 0.7958 | 0.7431 | [0.308, -0.533, -0.883, -1.441, -1.669] |
+| A2_h60 | 0.7179 | 0.6199 | 0.829 | 0.7543 | [0.202, -0.617, -0.923, -1.51, -1.648] |
+| A4 | 0.397 | 0.3966 | 0.4622 | 0.3731 | [2.576, 0.832, 0.506, -0.465, -1.377] |
+| A3_1s | 0.6812 | 0.59 | 0.7706 | 0.7223 | [0.42, -0.423, -0.89, -1.377, -1.67] |
+
+per-game level error (pp) and the first four weeks of conference play
+
+| arm | n_games | mean | median | sd | mae | P(pred<act) | conf4_n | conf4_level_pp |
+|---|---|---|---|---|---|---|---|---|
+| A5+C1 | 5593 | -0.3197 | -0.1063 | 6.0405 | 4.8614 | 0.5074 | 82748 | -1.0447 |
+| A5+C3 | 5593 | -0.2092 | -0.0432 | 6.0618 | 4.8755 | 0.5038 | 82748 | -0.9666 |
+| A5 | 5593 | -0.2066 | 0.0534 | 6.1228 | 4.9151 | 0.4969 | 82748 | -0.9745 |
+| C1 | 5593 | -1.1177 | -0.9722 | 6.0329 | 4.9152 | 0.5594 | 82748 | -1.8496 |
+| C3 | 5593 | -1.0324 | -0.8863 | 6.0687 | 4.9365 | 0.5561 | 82748 | -1.7896 |
+| C2 | 5593 | -1.1318 | -0.9731 | 6.0299 | 4.9103 | 0.5632 | 82748 | -1.8477 |
+| D3 | 5593 | -1.0152 | -0.8798 | 6.1047 | 4.9533 | 0.5518 | 82748 | -1.8908 |
+| D2 | 5593 | -0.9934 | -0.7964 | 6.1367 | 4.9824 | 0.5507 | 82748 | -1.8194 |
+| A0B0C0 | 5593 | -1.0057 | -0.7879 | 6.127 | 4.9645 | 0.5476 | 82748 | -1.7769 |
+| D1 | 5593 | -0.9865 | -0.7954 | 6.1368 | 4.9694 | 0.5541 | 82748 | -1.8075 |
+| A1 | 5593 | -0.6969 | -0.4589 | 6.104 | 4.9217 | 0.5308 | 82748 | -1.4568 |
+| A3_2s | 5593 | -0.8858 | -0.6599 | 6.1362 | 4.956 | 0.5448 | 82748 | -1.6306 |
+| A2_h240 | 5593 | -0.8648 | -0.6535 | 6.125 | 4.9487 | 0.5434 | 82748 | -1.6225 |
+| B1 | 5593 | -1.0242 | -0.8247 | 6.1665 | 5.0012 | 0.5502 | 82748 | -1.7829 |
+| A2_h120 | 5593 | -0.7574 | -0.4925 | 6.1444 | 4.9551 | 0.5314 | 82748 | -1.5355 |
+| A2_h60 | 5593 | -0.8144 | -0.6343 | 6.177 | 4.9826 | 0.5357 | 82748 | -1.6008 |
+| A4 | 5593 | 0.4554 | 0.6558 | 6.4259 | 5.1861 | 0.4645 | 82748 | 0.1494 |
+| A3_1s | 5593 | -0.7032 | -0.4923 | 6.2195 | 5.0111 | 0.5287 | 82748 | -1.4352 |
+
+### Block B: the `blocked_f` engine feed (all feeds, same trained model)
+
+
+stage 1, `A0B0C0` on F2 (actual live OREB 0.299232)
+
+| feed | level_pp | log_loss |
+|---|---|---|
+| B0_zero | -1.8769 | 0.647713 |
+| B2_asof_cell | 7.0912 | 0.664252 |
+| B3e_model | 8.3292 | 0.667026 |
+| B3_draw | -1.137 | 0.648339 |
+| B_true | -1.137 | 0.645565 |
