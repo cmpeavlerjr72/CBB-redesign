@@ -171,6 +171,76 @@ TRIP CLASSIFICATION (deterministic, applied in this order):
   6. `pf >= 9` (double bonus): 2 free throws -> `FT_trip_bonus`; otherwise
      `FT_trip_shooting`.
 
+--------------------------------------------------------------------------
+TECHNICAL FREE THROWS: the same-clock lookahead (added 2026-09-18, OFF by
+default)
+--------------------------------------------------------------------------
+THE DEFECT. `_handle_technical` originally looked at exactly ONE row ahead for
+the free throw a technical produces. CBBD's feed routinely inserts an
+administrative row first, at the IDENTICAL frozen clock, credited to the
+OFFENDING team:
+
+  Technical Foul on Nick Pringle.      team 333, p2, 563s
+  Nick Pringle Turnover.               team 333, p2, 563s   <-- inserted row
+  Riley Minix made Free Throw.         team 2413, p2, 563s
+  Riley Minix made Free Throw.         team 2413, p2, 563s
+
+Census of the row immediately following every single-team technical moment,
+2022-2025: 83-91% `Lost Ball Turnover`, 2-13% `PersonalFoul`, the rest a
+handful of rebounds and shots. The gap is exactly one row on 99.0% of affected
+moments and never more than six. The inserted row names the SAME player as the
+technical on 99.5-100.0% of the rows where both carry a participant id, and
+belongs to the offending team on 98.9-99.7%.
+
+CONSEQUENCE OF THE DEFECT. The one-row lookahead misses the trip, so the free
+throws fall through to the GENERIC free-throw handler: they are charged to a
+possession as ordinary `FT_trip_shooting` / `FT_trip_bonus` attempts, with
+`fta`/`ftm`/`points` on a real possession instead of `tech_points_*`, and they
+close that possession with a free-throw terminal event. ~1,200-1,900 technical
+attempts a season are mis-tagged this way.
+
+THE INSERTED TURNOVER IS REAL, NOT A PHANTOM -- so the fix does NOT delete it.
+Measured against hoopR's team box (`turnovers`), which disagrees with the event
+stream on 2.69% of team-games and is therefore not a re-add of these same rows:
+team-games carrying one inserted technical turnover run only **+0.007** event
+turnovers above box turnovers relative to team-games carrying none (SE 0.005;
++1.00 is what a pure feed artefact would give). The box counts them. Deleting
+them would create a fresh -1 box disagreement per technical, so the fix is a
+LOOKAHEAD ONLY: every intervening row is still processed exactly as before,
+and only the free throws' CLASS changes.
+
+SEPARATELY MEASURED, NOT PATCHED: on the next live-ball event, the ball
+belongs to the technical'd team on 65.8% of the moments that carry the inserted
+turnover, against 22.4% of the technical moments that do not -- i.e. the
+turnover row usually does NOT coincide with the ball changing hands, even
+though the box counts it. That is a separate possible defect in the possession
+segmentation, it is reported rather than patched, and it is unchanged by this
+version.
+
+THE FIX (`tech_lookahead=True`, version `v3` only). `_handle_technical` runs a
+BOUNDED SAME-CLOCK scan (`technical_ft_index`) for the first free throw by the
+beneficiary while `(period, secondsRemaining)` are unchanged, stepping over at
+most `TECH_LOOKAHEAD_MAX_ROWS` non-free-throw rows and stopping at any field
+goal attempt or period boundary. If that free throw is the very next row the
+behaviour is the pre-fix behaviour. If it is further ahead, the machine ARMS a
+pending marker holding that exact row index and returns, so the intervening
+rows (the turnover, the duplicate personal foul) are processed normally by the
+main loop; the free-throw branch then consumes that one row index as a
+TECHNICAL trip. `_handle_foul` checks the same marker so that the duplicate
+`PersonalFoul` row logged for a technical still increments the team foul count
+but no longer claims the technical's free throws as an ordinary trip.
+
+The marker is an EXACT ROW INDEX, not a clock predicate, so it can never claim
+a different trip at the same frozen clock. Offsetting technicals (one on each
+team at one clock) shoot no free throws by rule: the scan finds none, nothing
+is armed, and nothing changes.
+
+RESIDUAL. Two technicals on the same team at the same frozen clock still
+resolve to one armed marker each in row order, and the verified target's own
+same-clock scanner shares the same limitation; the residual against
+`data/processed/models/free_throw/technical_target_verified_trips_v1.parquet`
+is reported in `docs/tests/event_layer_technical_lookahead_2026-09-18.md`.
+
 KNOWN AMBIGUITY, MEASURED NOT PATCHED. Rules 5 and 6 cannot separate a
 genuine two-shot shooting foul from a bonus trip once the bonus is in force,
 because both produce two free throws. `ft_trip_ambiguous` is written on every
@@ -228,9 +298,28 @@ DEFAULT_UNIVERSE = Path("data/processed/games_universe.parquet")
 POSSESSION_VERSIONS: dict[str, Path] = {
     "v1": Path("data/processed/possessions"),
     "v2": Path("data/processed/possessions_v2"),
+    # v3 = v2's event layer PLUS the bounded same-clock technical-free-throw
+    # lookahead (see TECHNICAL FREE THROWS below). A NEW SIBLING DIRECTORY:
+    # v1 and v2 are untouched and remain what every current consumer reads.
+    "v3": Path("data/processed/possessions_v3"),
 }
 DEFAULT_POSSESSION_VERSION = "v1"
 DEFAULT_OUT_DIR = POSSESSION_VERSIONS[DEFAULT_POSSESSION_VERSION]
+
+#: Which versions turn the technical lookahead ON. Keyed by version label so a
+#: caller that only knows "v3" gets the right machine without a second flag.
+#: v1/v2 are False, so the default path is bit-identical to what is on disk.
+VERSION_TECH_LOOKAHEAD: dict[str, bool] = {"v1": False, "v2": False, "v3": True}
+DEFAULT_TECH_LOOKAHEAD = False
+
+#: Bound on the same-clock technical lookahead: how many non-free-throw rows
+#: the scan may step over between a `Technical Foul` row and the free throw it
+#: produced. DERIVED, not typed: the observed gap between the two rows is 1 row
+#: on 99.0% of affected moments and never exceeds 6 in seasons 2022-2025
+#: (census in `docs/tests/event_layer_technical_lookahead_2026-09-18.md`
+#: section 1). The bound exists so a feed gap cannot make the scan walk an
+#: unbounded distance; the frozen-clock condition is the primary guard.
+TECH_LOOKAHEAD_MAX_ROWS = 6
 
 
 def possessions_dir(version: str | None = None, poss_dir: Path | str | None = None) -> Path:
@@ -283,6 +372,58 @@ def period_length(period: int) -> int:
 # ---------------------------------------------------------------------------
 # Trip classification (importable and unit-testable on its own)
 # ---------------------------------------------------------------------------
+def technical_ft_index(
+    i: int,
+    cls,
+    team,
+    period,
+    sec,
+    beneficiary: int,
+    n: int,
+    game=None,
+    max_rows: int = TECH_LOOKAHEAD_MAX_ROWS,
+) -> int:
+    """Row index of the free throw produced by the `technical` row at `i`, or
+    -1 if there is none.
+
+    THE BOUNDED SAME-CLOCK LOOKAHEAD (module docstring, "TECHNICAL FREE
+    THROWS"). A technical free-throw trip is shot at a dead ball, so every one
+    of its rows carries the IDENTICAL `(period, secondsRemaining)` as the
+    technical itself -- the same invariant the verified target's own scanner
+    (`scripts/build_ft_technical_target_v1.py::scan_technical_attempts`) is
+    built on. The scan therefore walks forward only while the clock is frozen,
+    steps over at most `max_rows` non-free-throw rows (the administrative
+    turnover and/or the duplicate personal foul), and stops at:
+
+      * the first free throw -- returned if it belongs to `beneficiary`, and
+        -1 otherwise (a free throw by the OTHER team at this clock is a
+        different trip and the technical's own trip, if any, is not reachable
+        without guessing);
+      * a field-goal attempt or a period boundary -- a live-ball event, so the
+        clock was not really frozen and this is not one dead-ball sequence;
+      * a game boundary, when `game` is supplied (it is not needed by the
+        per-game state machine, which is already sliced to one game).
+
+    Pure, index-only and importable so both event-layer builders -- this
+    module's state machine and `cbb_sim.models.event_stream._attach_trips` --
+    apply exactly one rule rather than two that drift apart."""
+    stepped = 0
+    k = i + 1
+    while k < n and stepped <= max_rows:
+        if game is not None and game[k] != game[i]:
+            return -1
+        if period[k] != period[i] or sec[k] != sec[i]:
+            return -1
+        c = cls[k]
+        if c == "FT_made" or c == "FT_missed":
+            return k if int(team[k]) == int(beneficiary) else -1
+        if c in ("FGA_rim", "FGA_jump2", "FGA_3", "end_period", "end_game"):
+            return -1
+        k += 1
+        stepped += 1
+    return -1
+
+
 def classify_ft_trip(n_ft: int, first_made: bool, prior_fouls: int) -> tuple[str, bool]:
     """Return `(terminal_event, ambiguous)` for a real (non-technical,
     non-and-one) free-throw trip. Rules 3-6 of the module docstring."""
@@ -350,9 +491,16 @@ class _Possession:
 class _GameMachine:
     """One forward pass over one game's non-inert events."""
 
-    def __init__(self, game_meta: dict, ev: dict[str, np.ndarray]) -> None:
+    def __init__(self, game_meta: dict, ev: dict[str, np.ndarray],
+                 tech_lookahead: bool = DEFAULT_TECH_LOOKAHEAD) -> None:
         self.m = game_meta
         self.ev = ev
+        self.tech_lookahead = bool(tech_lookahead)
+        #: exact row index of a free throw already identified as a technical's
+        #: own (module docstring, "TECHNICAL FREE THROWS"). -1 = nothing armed,
+        #: which is always the case when `tech_lookahead` is False.
+        self.pending_tech_ft_idx = -1
+        self.n_tech_lookahead_hits = 0
         self.n = len(ev["cls"])
         # The machine works on SIDE, not on team ids: CBBD's `teamId` is
         # CBBD's own team key, not the ESPN/hoopR `team_id` the rest of the
@@ -492,7 +640,13 @@ class _GameMachine:
                 i = self._handle_fga(i, c, t)
                 continue
             if c in ("FT_made", "FT_missed"):
-                i = self._handle_ft_trip(i, t, prior_fouls=None, technical=False)
+                # `pending_tech_ft_idx` is an exact row index and stays -1 in
+                # the default build, so this is a no-op there.
+                is_tech = self.pending_tech_ft_idx == i
+                if is_tech:
+                    self.pending_tech_ft_idx = -1
+                    self.n_tech_lookahead_hits += 1
+                i = self._handle_ft_trip(i, t, prior_fouls=None, technical=is_tech)
                 continue
             if c == "OREB":
                 i = self._handle_oreb(i, t)
@@ -624,12 +778,37 @@ class _GameMachine:
         j = i + 1
         if j < self.n and ev["cls"][j] in ("FT_made", "FT_missed"):
             self.team_fouls[t] = prior + 1
+            if self.pending_tech_ft_idx == j:
+                # A duplicate `PersonalFoul` row logged for a technical foul
+                # (10% of the affected moments: the same player's name appears
+                # on both rows at the same frozen clock). The foul still counts
+                # toward the team total -- that is what the row says, and the
+                # bonus thresholds were validated on counting every
+                # `PersonalFoul` row -- but the free throws belong to the
+                # technical, so the main loop routes them, not this handler.
+                return i + 1
             return self._handle_ft_trip(j, int(ev["team"][j]), prior_fouls=prior, technical=False)
         self.team_fouls[t] = prior + 1
         return i + 1
 
     def _handle_technical(self, i: int, t: int) -> int:
         ev = self.ev
+        if self.tech_lookahead:
+            ben = self._other(t)
+            j = technical_ft_index(i, ev["cls"], ev["team"], ev["period"], ev["sec"],
+                                   ben, self.n)
+            if j == i + 1:
+                # the free throw is the very next row: the pre-fix path, taken
+                # unchanged so the common case stays byte for byte identical
+                return self._handle_ft_trip(j, int(ev["team"][j]), prior_fouls=None,
+                                            technical=True)
+            if j > i + 1:
+                # administrative rows in between. Arm the exact row index and
+                # let the main loop process those rows normally -- the inserted
+                # `Lost Ball Turnover` is a real, box-counted turnover (module
+                # docstring) and must NOT be swallowed here.
+                self.pending_tech_ft_idx = j
+            return i + 1
         j = i + 1
         if j < self.n and ev["cls"][j] in ("FT_made", "FT_missed"):
             return self._handle_ft_trip(j, int(ev["team"][j]), prior_fouls=None, technical=True)
@@ -792,10 +971,16 @@ def segment_season(
     universe: pd.DataFrame,
     pbp_dir: Path | str = "data/raw/cbbd/pbp",
     progress_every: int = 1500,
+    tech_lookahead: bool = DEFAULT_TECH_LOOKAHEAD,
 ) -> tuple[pd.DataFrame, pd.DataFrame, dict]:
     """Segment one season into possessions and chances.
 
-    `universe` must already be filtered to `is_d1_game & ~pbp_truncated`."""
+    `universe` must already be filtered to `is_d1_game & ~pbp_truncated`.
+
+    `tech_lookahead` turns on the bounded same-clock technical free-throw
+    lookahead (module docstring, "TECHNICAL FREE THROWS"). It defaults to
+    False, so every existing caller gets the build that is already on disk;
+    `VERSION_TECH_LOOKAHEAD` maps a version label to the right value."""
     u = universe[universe["season"] == int(season)]
     meta = {
         int(r.cbbd_game_id): {
@@ -816,7 +1001,8 @@ def segment_season(
     poss_rows: list[dict] = []
     chance_rows: list[dict] = []
     diag = {"n_games": 0, "n_mismatch_closes": 0, "n_tech_trips": 0, "n_admin_orebs": 0,
-            "n_unknown_team": 0, "n_games_no_plays": 0}
+            "n_unknown_team": 0, "n_games_no_plays": 0, "n_tech_lookahead_hits": 0,
+            "tech_lookahead": bool(tech_lookahead)}
 
     for b in range(len(bounds) - 1):
         lo, hi = int(bounds[b]), int(bounds[b + 1])
@@ -830,11 +1016,12 @@ def segment_season(
             "made": ev["made"][lo:hi], "stolen": ev["stolen"][lo:hi],
             "on_floor": ev["on_floor"][lo:hi] if ev["on_floor"] is not None else None,
         }
-        machine = _GameMachine(gm, sub)
+        machine = _GameMachine(gm, sub, tech_lookahead=tech_lookahead)
         machine.run()
         diag["n_games"] += 1
         diag["n_mismatch_closes"] += machine.n_mismatch_closes
         diag["n_tech_trips"] += machine.n_tech_trips
+        diag["n_tech_lookahead_hits"] += machine.n_tech_lookahead_hits
         diag["n_admin_orebs"] += machine.n_admin_orebs
         diag["n_unknown_team"] += machine.n_unknown_team
         _emit(machine, poss_rows, chance_rows)

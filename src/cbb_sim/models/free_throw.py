@@ -309,6 +309,7 @@ def build_trips_and_attempts(
     pbp_dir: Path | str = ES.DEFAULT_PBP_DIR,
     universe_path: Path | str = DEFAULT_UNIVERSE,
     require_pbp_complete: bool = False,
+    tech_lookahead: bool = ES.DEFAULT_TECH_LOOKAHEAD,
 ) -> tuple[pd.DataFrame, pd.DataFrame]:
     """(trips, attempts) for `seasons`.
 
@@ -324,7 +325,8 @@ def build_trips_and_attempts(
     max_ft = ES.rim_override_for_version(version, poss_dir)
     trips, attempts = [], []
     for s in seasons:
-        t, a = _season_trips(int(s), universe, max_ft, pbp_dir)
+        t, a = _season_trips(int(s), universe, max_ft, pbp_dir,
+                             tech_lookahead=tech_lookahead)
         trips.append(t)
         attempts.append(a)
     return (pd.concat(trips, ignore_index=True),
@@ -332,8 +334,11 @@ def build_trips_and_attempts(
 
 
 def _season_trips(season: int, universe: pd.DataFrame, max_ft: float,
-                  pbp_dir: Path | str) -> tuple[pd.DataFrame, pd.DataFrame]:
-    st = ES.build_stream(season, universe, rim_override_max_ft=max_ft, pbp_dir=pbp_dir)
+                  pbp_dir: Path | str,
+                  tech_lookahead: bool = ES.DEFAULT_TECH_LOOKAHEAD
+                  ) -> tuple[pd.DataFrame, pd.DataFrame]:
+    st = ES.build_stream(season, universe, rim_override_max_ft=max_ft, pbp_dir=pbp_dir,
+                         tech_lookahead=tech_lookahead)
     ft = st[st["cls"].isin(ES.FT_CLASSES)].copy()
     off_home = (ft["side"] == 0).to_numpy()
     hs, as_ = ft["home_score"].to_numpy(), ft["away_score"].to_numpy()

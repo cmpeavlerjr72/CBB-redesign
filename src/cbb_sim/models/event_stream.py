@@ -110,12 +110,35 @@ Each trip carries:
   trip_last         this is the last attempt of the trip
   trip_first_made   the first attempt of the trip was made
   trip_cause        `foul` | `technical` | `none` -- the class of the row
-                    immediately before the trip's first attempt
+                    immediately before the trip's first attempt, UNLESS
+                    `tech_lookahead` is on; see below
   trip_prior_fouls  the FOULING team's prior foul count in the period, taken
                     off that `foul` row (-1 when `trip_cause` is not `foul`)
   trip_andone_ctx   the row before the causing foul is a MADE field goal by the
                     shooting team at the same `secondsRemaining` -- the
                     and-one signature `possessions._handle_fga` uses
+
+THE TECHNICAL LOOKAHEAD (`tech_lookahead`, added 2026-09-18, OFF by default)
+===========================================================================
+`trip_cause` reads the ONE row immediately before a trip's first attempt, and
+carries exactly the defect `cbb_sim.pbp.possessions` carries in the forward
+direction: CBBD inserts an administrative row (83-91% `Lost Ball Turnover`,
+2-13% `PersonalFoul`, always at the identical frozen clock and credited to the
+OFFENDING team) between a `Technical Foul` and its free throws, so the cause
+resolves to `none` or `foul` and `classify_foul` tags a technical trip
+`shooting` / `bonus_one_and_one` / `unknown`. That is the mechanism that makes
+`trips_v1_era.parquet` undercount technical trips by 19-29% a season, and it
+dilutes FT-2's training population with coach-selected-shooter attempts
+(make rate ~0.80) labelled as ordinary attempts (~0.68-0.72).
+
+With `tech_lookahead=True`, each `technical` row instead runs
+`cbb_sim.pbp.possessions.technical_ft_index` -- THE SAME bounded same-clock
+scan the possession machine uses, imported rather than re-implemented -- and
+the trip that starts at the row it returns is forced to `trip_cause ==
+"technical"` (with `trip_prior_fouls` reset to -1, which is what a technical
+trip carries when the one-row rule does catch it). Nothing else in the stream
+moves: no row is added, dropped or re-teamed, and `fouls_own_prior` /
+`fouls_opp_prior` still count every `PersonalFoul` row exactly as before.
 
 THE VERSION ARGUMENT
 ====================
@@ -142,9 +165,11 @@ from cbb_sim.pbp.events import PLAY_COLUMNS, classify_frame, load_plays
 from cbb_sim.pbp.possessions import (
     BONUS_PRIOR_FOULS,
     DEFAULT_POSSESSION_VERSION,
+    DEFAULT_TECH_LOOKAHEAD,
     DOUBLE_BONUS_PRIOR_FOULS,
     _fix_flipped_sides,
     possessions_dir,
+    technical_ft_index,
 )
 
 DEFAULT_UNIVERSE = Path("data/processed/games_universe.parquet")
@@ -230,12 +255,18 @@ def build_stream(
     rim_override_max_ft: float = 0.0,
     pbp_dir: Path | str = DEFAULT_PBP_DIR,
     shooter_key: str = DEFAULT_SHOOTER_KEY,
+    tech_lookahead: bool = DEFAULT_TECH_LOOKAHEAD,
 ) -> pd.DataFrame:
     """The cleaned event stream for one season (module docstring).
 
     `shooter_key` selects which column supplies `player_id` on FIELD-GOAL rows
     and nothing else; see the module docstring for the measured reason the
-    default is not the correct one for a shooter."""
+    default is not the correct one for a shooter.
+
+    `tech_lookahead` turns on the bounded same-clock technical lookahead
+    (module docstring). It changes `trip_cause` / `trip_prior_fouls` /
+    `trip_is_technical` on technical trips and nothing else; it defaults to
+    False so every current caller gets the table that is already on disk."""
     season = int(season)
     if shooter_key not in SHOOTER_KEYS:
         raise ValueError(f"shooter_key must be one of {SHOOTER_KEYS}, got {shooter_key!r}")
@@ -320,7 +351,7 @@ def build_stream(
     df = df[~admin].reset_index(drop=True)
 
     df = _attach_team_fouls(df)
-    df = _attach_trips(df)
+    df = _attach_trips(df, tech_lookahead=tech_lookahead)
 
     # --- universe keys ------------------------------------------------------
     ucols = ["game_id", "cbbd_game_id", "game_date", "neutral_site", "home_team_id", "away_team_id"]
@@ -333,6 +364,7 @@ def build_stream(
     df.attrs["n_admin_rebounds_dropped"] = n_admin
     df.attrs["rim_override_max_ft"] = float(rim_override_max_ft)
     df.attrs["shooter_key"] = shooter_key
+    df.attrs["tech_lookahead"] = bool(tech_lookahead)
     df.attrs["n_fga_relabelled"] = n_fga_relabelled
     df.attrs["n_fga_no_shooter"] = n_fga_no_shooter
     return df
@@ -363,7 +395,7 @@ def _attach_team_fouls(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
-def _attach_trips(df: pd.DataFrame) -> pd.DataFrame:
+def _attach_trips(df: pd.DataFrame, tech_lookahead: bool = DEFAULT_TECH_LOOKAHEAD) -> pd.DataFrame:
     """Free-throw trip structure (module docstring)."""
     g = df["cbbd_game_id"].to_numpy()
     c = df["cls"].to_numpy(dtype=object)
@@ -392,6 +424,28 @@ def _attach_trips(df: pd.DataFrame) -> pd.DataFrame:
                  np.where(prev_cls == "technical", "technical", "none")))
     prev_own_prior = np.concatenate([[-1], df["fouls_own_prior"].to_numpy()[:-1]])
     prior_all = np.where(cause_all == "foul", prev_own_prior, -1).astype("int16")
+
+    # --- THE TECHNICAL LOOKAHEAD (module docstring) -------------------------
+    # The one-row rule above resolves `cause` to `none` (an inserted
+    # `Lost Ball Turnover`) or `foul` (a duplicate `PersonalFoul`) whenever
+    # CBBD puts an administrative row between the technical and its free
+    # throws. Re-run the SAME bounded same-clock scan the possession machine
+    # uses and force the cause on the trip it points at. Only `trip_cause` and
+    # `trip_prior_fouls` move: no row is added, dropped or re-teamed, and the
+    # `fouls_*_prior` columns above are already final.
+    if tech_lookahead:
+        per_arr = df["period"].to_numpy()
+        forced = np.zeros(n, dtype=bool)
+        for i in np.flatnonzero(c == "technical"):
+            side_i = int(sd[i])
+            if side_i not in (0, 1):
+                continue
+            j = technical_ft_index(int(i), c, sd, per_arr, sec, 1 - side_i, n, game=g)
+            if j >= 0 and trip_start[j]:
+                forced[j] = True
+        if forced.any():
+            cause_all = np.where(forced, "technical", cause_all)
+            prior_all = np.where(forced, -1, prior_all).astype("int16")
 
     # and-one context: two rows back is a MADE field goal by the shooting team
     # at the same clock (the signature `possessions._handle_fga` looks for).

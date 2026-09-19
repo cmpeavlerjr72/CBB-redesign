@@ -47,6 +47,9 @@ Thumbs.db
 
 # rebuildable large intermediates (never in git; rebuild from data/raw)
 data/processed/possessions/
+# v3 = v2 + the technical free-throw lookahead (68 MB, four seasons); rebuilt
+# by scripts/build_possessions_techfix_v3.py
+data/processed/possessions_v3/
 data/processed/models/**/design.parquet
 data/processed/models/**/*_design.parquet
 
