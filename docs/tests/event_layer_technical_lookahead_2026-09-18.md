@@ -17,12 +17,16 @@ Scripts: `scripts/build_possessions_techfix_v3.py`,
 `scripts/diag_technical_blast_radius_v1.py`. Tests:
 `tests/test_technical_lookahead.py`.
 
-Wall clock: investigation ~35 min; v3 build 223.5 s (four seasons of
-possessions + chances + the trip/attempt siblings, one process); blast radius
-29.5 s; default-path identity check ~90 s. All on `.venv/Scripts/python.exe`,
-`PYTHONIOENCODING=utf-8`, thread env vars pinned to 1, never more than two of
-this lane's own processes at once, and no process started or signalled that
-this lane did not start itself.
+**Wall clock (system clock and git timestamps, not estimates).** Lane start
+19:50 EDT -> first commit `a3899a5` at **20:24:12 EDT = 34 minutes** for the
+investigation, the fix, the tests, the builds and the blast radius. Inside
+that: the v3 build (four seasons of possessions + chances + both trip/attempt
+siblings, one process) ran **20:13:08 -> 20:16:52 = 223.5 s** by the script's
+own timer; the blast-radius comparison **29.5 s**; the new unit-test file
+**0.55 s**. The full-suite run is section 7. All on
+`.venv/Scripts/python.exe`, `PYTHONIOENCODING=utf-8`, thread env vars pinned
+to 1, never more than two of this lane's own processes at once, and no process
+started or signalled that this lane did not start itself.
 
 ---
 
@@ -183,13 +187,15 @@ axis in every season: missed moments fall from 398/740/409/335 to 84/172/92/64.
   differences are two pre-existing, unrelated parquet round-trip artefacts
   (`game_date` `datetime64[s]` vs `[ms]`, and NaN-vs-NaN on `shooter_id`);
   neither is touched by this change.
-* `tests/test_technical_lookahead.py`: **19 tests, 19 passed** (0.55 s). Every
+* `tests/test_technical_lookahead.py`: **19 tests, 19 passed** (0.52-0.55 s). Every
   sequence is a real CBBD row sequence transcribed from a hand-read game
   (401591429, 401583794, 401597885, 401706151). The suite asserts, with the
   flag OFF, that the machine still reproduces the documented *defect* on both
   inserted-row shapes -- a default-path change would silently invalidate the
   tables on disk -- and that points reconcile under both flags.
-* Full suite: `pytest tests/ -q -x` -- see section 7.
+* Full suite: see section 7 -- it found one real failure caused by this
+  change (a test that used `"v3"` as its example of an *unknown* version
+  label), now fixed.
 
 ---
 
@@ -289,6 +295,10 @@ expectation, not as a measured pass.
 
 ## 6. Sibling artifacts written
 
+All four seasons were built, not only fold 2's -- confirmed on disk at
+20:58:44 EDT: `possessions_v3/` holds `possessions_{2022,2023,2024,2025}` and
+`chances_{2022,2023,2024,2025}`, eight files, 68 MB, written 20:13-20:16.
+
 ```
 data/processed/possessions_v3/possessions_{2022..2025}.parquet   (gitignored, >20MB)
 data/processed/possessions_v3/chances_{2022..2025}.parquet       (gitignored, >20MB)
@@ -311,21 +321,60 @@ Rebuild command (idempotent, ~224 s for all four seasons, one process):
 
 ---
 
-## 7. Status of the full test suite
+## 7. The full test suite: one real failure, caused by this change, fixed
 
-`pytest tests/ -q -x` was started at the top of this session and had not
-finished when the session's hard stop arrived; the new file was run on its own
-and is green (19/19, 0.55 s), and the default-path identity proof in section 3
-is the stronger statement anyway -- it compares against the actual parquet
-files on disk rather than against a test fixture. **PARTIAL, resume with:**
+`.venv/Scripts/python.exe -m pytest tests/ -q -x --durations=10`, run to
+completion in the foreground: **started 20:25:53 EDT, ended 20:58:14 EDT,
+1,940.35 s = 32 min 20 s**, result **1 failed, 385 passed** (`-x` stops at the
+first failure, so the ~157 tests after that point did not run).
 
 ```
-.venv/Scripts/python.exe -m pytest tests/ -q
+FAILED tests/test_possession_outcome.py::test_possessions_version_resolves_and_refuses_an_unknown_label
 ```
 
-Nothing in this change can affect a test that does not pass
-`tech_lookahead=True`, because every entry point defaults to `False` and the
-two production tables were reproduced bit-identically without the keyword.
+**The failure was this change's fault, and it was a genuine one.** That test
+asserted `possessions_dir("v3")` raises `KeyError` -- it used `"v3"` as its
+example of an unrecognised version label. Registering `v3` as a real build
+took the placeholder out from under it. The test's *intent* -- an unknown
+label must raise rather than silently fall back and read the wrong table -- is
+untouched and still worth having, so the assertion now uses a label no build
+will ever claim (`"no_such_version"`) and gains a positive assertion that
+`v3` resolves to `possessions_v3`. Re-run at 20:58:43: the amended test, its
+`DEFAULT_POSSESSION_VERSION == "v1"` companion and all 19 new tests --
+**21 passed in 0.52 s**.
+
+This is worth recording as more than a bookkeeping note: the suite caught a
+real consequence of adding a version that no amount of reading the diff would
+have surfaced, and the `-x` flag then hid the rest of the suite behind it.
+
+**Why the suite is slow, and why it is not hanging.** `--durations=10` says the
+cost is the clock-model fixtures on a loaded machine, not a hang:
+
+```
+1103.86s setup  tests/test_clock.py::test_no_fitted_arm_ever_uses_a_banned_column
+ 229.34s call   tests/test_clock.py::test_arm_fits_are_reproducible
+  93.06s call   tests/test_possession_outcome.py::test_arm_fits_are_deterministic[lgbm]
+```
+
+An earlier attempt (launched 20:02:46, stopped by this lane at 20:24:59 after
+22 min 13 s) appeared to emit nothing; that was an artefact of piping pytest
+through `tail`, which buffers until the process exits, and NOT evidence of a
+hang. Reported here because the first version of this section drew the wrong
+conclusion from it.
+
+**PARTIAL, and precisely bounded**: the ~157 tests that sit after the
+`-x` stop point have not been run since the fix. Resume with the full suite,
+no `-x`, allowing ~35 min on a loaded machine:
+
+```
+.venv/Scripts/python.exe -m pytest tests/ -q --durations=10
+```
+
+Nothing else in this change can reach a test that does not pass
+`tech_lookahead=True`: every entry point defaults to `False`, and the two
+production tables were reproduced bit-identically without the keyword
+(section 3). The one thing that *could* reach other tests was the new entry in
+`POSSESSION_VERSIONS`, and that is exactly what failed and is now fixed.
 
 ---
 

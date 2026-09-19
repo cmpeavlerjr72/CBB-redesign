@@ -732,10 +732,16 @@ def test_style_source_must_be_named():
 def test_possessions_version_resolves_and_refuses_an_unknown_label():
     assert PS.possessions_dir("v1").name == "possessions"
     assert PS.possessions_dir("v2").name == "possessions_v2"
+    # v3 = v2 plus the technical free-throw lookahead (2026-09-18). It was this
+    # test's example of an UNKNOWN label until it became a real build; the
+    # assertion that matters is the one below -- an unrecognised label raises
+    # rather than silently falling back to a default and reading the wrong
+    # table -- so it now uses a label no build will ever claim.
+    assert PS.possessions_dir("v3").name == "possessions_v3"
     assert PS.possessions_dir(None) == PS.POSSESSION_VERSIONS[PS.DEFAULT_POSSESSION_VERSION]
     assert PS.possessions_dir("v1", "some/other/dir").as_posix() == "some/other/dir"
     with pytest.raises(KeyError):
-        PS.possessions_dir("v3")
+        PS.possessions_dir("no_such_version")
 
 
 def test_the_default_version_is_still_v1():
