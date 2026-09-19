@@ -3090,3 +3090,171 @@ run), and the team FT-rate slope (`games.parquet` carries no team ids). The
 pre-registered occupancy target of 13.4 is UNREAD. `ENGINE_FOUL_ACCRUAL` stays
 default-off with `round6_F5` and `round6_F5e` selectable for reproduction; the
 served default is unchanged.
+
+---
+
+## 18. `A1` alignment cell attempted under the joblib-parallel execution scheme (2026-09-18): PARTIAL, 24/29 refit dates -- `A2` NOT ATTEMPTED
+
+Pre-registration: section 16 (this file, execution-scheme-only amendment, committed
+`fbc8949`/`02a29bf` before this run). Trainer: `scripts/train_possession_outcome_v4_par.py`
+(versioned sibling of `train_possession_outcome_v4.py`, which is untouched). This is the
+fourth attempt at these two cells: local wall-clock twice (rounds 4/4b), AWS once (section
+14), and this session. Session context: the machine shuts down 22:00 ET tonight; the PM set
+a hard stop of 21:10 ET for this lane's own processes, tightened mid-session from an
+earlier "run to completion" framing once the first 15-20 minutes of the real run showed the
+per-refit cost on this loaded box.
+
+### 18.1 Local LightGBM threading benchmark
+
+`.venv/Scripts/python.exe`, `lightgbm==4.7.0`, 300,000x50 random rows, 6-class random
+labels, `n_estimators=100, num_leaves=63`: `n_jobs=1` **39.85 s**; `n_jobs=20` **217.75 s**
+-- 5.5x SLOWER, not faster. Unlike the AWS container (section 14, where `n_jobs` had zero
+measured effect on a broken wheel), this wheel does spin up real OS threads under
+`n_jobs=20`, but thread-management overhead exceeds any histogram-building gain at this
+problem size on this box. This independently confirms the joblib-across-refit-dates design
+on local hardware too, not only as an AWS-wheel workaround.
+
+### 18.2 Serial-vs-parallel identity check -- PASS, with a disclosed deviation
+
+The pre-registered check (two real refit dates, serial vs parallel, identical predictions)
+was planned at the full pre-registered `n_estimators=400` on real fold-F1 `first` data. A
+real attempt at that scale (a 40,000-row downsample of fold F1's training slice, chosen for
+speed) did not finish inside 5.5 minutes on this heavily loaded shared machine and was
+killed without a result -- concrete, early evidence that per-fit cost tonight, under real
+contention, sat far above the 150-530 s/fit (4-thread) historical figure in section 8.7. A
+second attempt through the actual joblib/loky multi-process path (distinct OS PIDs
+confirmed spawning, so the process-level distribution mechanism itself works) also did not
+finish both of 2 real cuts inside several more minutes under the same contention.
+
+To land a result before committing to the full run, `n_estimators` was monkeypatched to 20
+for THIS CHECK ONLY (the same runtime-patch mechanism the trainer uses for `n_jobs`; `A1`
+itself ran with the full pre-registered `n_estimators=400` and every other pre-registered
+param unchanged), and the check was completed by calling `_fit_cut_worker` -- the exact
+function joblib dispatches to a subprocess -- DIRECTLY, in-process, for two real refit dates
+(fold F1, `first`, `G0`, `S1_monthly`, cuts 2023-11-01 and 2023-12-01, tr downsampled
+1,197,609 -> 4,000 rows), and comparing against
+`train_possession_outcome_v3.fit_predict_walkforward`'s serial output on the same reduced
+data and seed.
+
+| | serial (`R3.fit_predict_walkforward`) | direct call to `_fit_cut_worker` x2 |
+|---|---|---|
+| wall time | 14.5 s | 12.5 s |
+| n_fits | 2 | 2 |
+
+**Result: EXACT MATCH.** `np.array_equal` `True`; max abs diff `0.0`; identical `n_fits`;
+identical segment metadata (`refit_date`, `n_train`, `n_train_from_test_season`, `n_scored`,
+`max_train_date`) for both cuts. This confirms the refactor's computational logic -- the
+segment/`before` masks, the strictly-before rule, the `prior_test` concatenation order, the
+calls into `PO.fit_arm`/`PO.predict_arm` -- is bit-identical to the serial trainer given the
+same inputs. It is a logic-equivalence proof completed by direct invocation, not a timed
+multi-process proof under load; LightGBM with a fixed seed and `n_jobs=1` is deterministic
+regardless of which OS process calls it, so the untested increment (does distributing the
+same call across a real subprocess change the bits) is expected, not measured, to add
+nothing. Disclosed as a deviation forced by the session clock.
+
+### 18.3 `A1` (`first`/lgbm/F2/`G0`/`S1_conf_aligned`, 29 refits): PARTIAL, 24/29 checkpointed, NOT GRADED
+
+Launched 2026-09-18 **20:19:30 ET** (`--mode run --stage 7 --n-jobs 6 --stop-at 20:58`),
+6-way joblib process parallelism, every fit `n_jobs=1` (`LgbmArm.PARAMS` patched at runtime,
+`src/cbb_sim/` untouched on disk), full pre-registered params (`n_estimators=400`,
+`num_leaves=63`, `min_child_samples=400`, etc.), seed 0. Checkpointed per refit date to
+`data/processed/models/possession_outcome/round4_a1a2/cuts/first_F2_lgbm_G0_S1_conf_aligned_s0/`.
+
+The pre-registered stop-at (20:58:00 ET) fired with **24 of 29 refit dates checkpointed**;
+the 5 still in-flight were cancelled by joblib on exit (`UserWarning: 5 tasks which were
+still being processed by the workers have been cancelled`) -- their partial work is not
+saved, but nothing already checkpointed was touched, lost, or recomputed. The trainer
+printed `NOT COMPLETE` and correctly declined to grade (`R4.grade` requires every test row
+scored; a 24/29-date prediction array is not a valid cell). **No log loss, gate, or segment
+number is reported for `A1` from this session** -- there is nothing to grade against the
+reference (1.515428) or the floor (0.000804) with 5 of 742,025 fold-2 `first` chances'
+refit windows unscored.
+
+Measured throughput (real, not projected): `n_train` per refit ranged 1,908,534 -
+2,220,026 rows (the full F2 training slice plus a growing in-season `prior_test` slice);
+per-date wall cost fell from **~691 s for the wave-1 completions down to ~95-100 s/date**
+by refit 24 as the 6-worker pool settled and as later cuts happen to score smaller segments
+(the printed "avg" is cumulative-since-launch, not marginal, so it drops as the fixed
+6-worker warm-up cost amortises). Wall clock for 24 dates: 20:19:30-20:58:00, **38.5 min**,
+6-way parallel, on a 20-core machine shared with several other lanes' processes throughout
+(confirmed by CPU-accounting checks during the run). Two orphaned worker processes
+(PIDs observed post-exit, started 21:01:06) were found still resident after the main
+process reported done and were stopped (they were this lane's own children; nothing
+belonging to another lane was touched). No further `A1` process was running as of 21:04:47
+ET.
+
+**Resume command (checkpoints are kept; already-fit dates are never recomputed):**
+```
+PYTHONIOENCODING=utf-8 OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 MKL_NUM_THREADS=1 \
+  .venv/Scripts/python.exe scripts/train_possession_outcome_v4_par.py \
+  --mode run --stage 7 --n-jobs 6 --stop-at <HH:MM>
+```
+At the ~95-105 s/date marginal rate observed late in this run, the remaining 5 dates at
+6-way parallelism should need well under 10 minutes on an equally-loaded machine (likely
+less on a quieter one); this is the measured rate, not a re-projection from the pre-run
+estimate.
+
+### 18.4 `A2` (`first`/lgbm/F2/`G0`/`S1_weekly`, ~23 refits): NOT ATTEMPTED
+
+Per the PM's mid-session instruction ("if both cannot finish by ~21:00 ET, `A1` runs to
+completion first"), all remaining session time went to `A1`; `A2` was not launched. Its
+checkpoint directory does not exist. Resume is the same trainer with `--stage 8` once `A1`
+is complete, or independently at any time (the two cells do not share checkpoints).
+
+### 18.5 Decision 9c reading
+
+**Still unresolved for possession-outcome.** This is the fourth session across four
+different fixes (local serial, local serial again, AWS with broken threading, local
+joblib-across-dates) that has not produced a scored `A1` or `A2` log loss. The blocker has
+moved: it is no longer "LightGBM does not multi-thread" (sections 14 and 18.1 both show
+that diagnosis is either irrelevant here or actively backwards on this box) -- it is that a
+single refit on the full ~2-2.2M-row `first`/F2 training slice, at the pre-registered
+`n_estimators=400`, genuinely costs on the order of 1.5-11 minutes each under real
+contention on a shared 20-core box, and 29 (or 23) such refits at a 6-worker cap is a
+30-90 minute job REGARDLESS of orchestration. Section 8.7's "minutes on the 196-core box"
+estimate was never validated (section 14: LightGBM did not multi-thread in that container
+at all, so the 192 vCPUs were never engaged by this trainer); nothing here validates or
+refutes that a FIXED-threading cloud box would actually be fast, only that the local-box
+alternative is not.
+
+**What this session recommends, as evidence, not as a ruling:** (1) `A1`'s 24/29 checkpoint
+is close enough to complete that a single uninterrupted window (quiet local machine, or a
+cloud box with a WORKING multi-threaded/multi-core wheel this time, run with `n_jobs=1` per
+fit and process-level parallelism as here rather than relying on LightGBM's internal
+threading) should finish it outright; (2) the fix named in section 14 (a working
+multi-threaded wheel) and this session's fix (parallelise across dates) are complementary,
+not substitutes -- this session shows the second fix works mechanically (24 real dates fit
+and checkpointed) but is still throughput-bound by per-fit cost on a contended box; pairing
+it with a dedicated, uncontended box removes the remaining bottleneck. The PM rules on
+Decision 9 from this table, as before; nothing here amends it or the change ledger.
+
+### 18.6 Wall clock, commits, deviations
+
+Session wall clock: identity-check attempts and diagnosis ~20:02-20:19 ET (including the
+killed 40,000-row/`n_estimators=400` attempt); `A1` 20:19:30-20:58:00 ET (38.5 min);
+wrap-up and cleanup 20:58-21:07 ET.
+
+Deviations from the pre-registration, all disclosed above: (1) the identity check ran on a
+downsampled `tr` slice and, after a full-scale attempt failed to finish in time, at a
+reduced `n_estimators=20`, and was completed by a direct function call rather than through
+the joblib/loky path under timed load (18.2); (2) `A2` was not attempted (18.4); (3) `A1`
+is reported PARTIAL with no graded cell, per the PM's mid-session tightening of the original
+"run to completion" instruction into "stop by 21:10, grade what's complete, label the rest
+PARTIAL." No arm, fold, feature, seed, or param was changed from the pre-registration; no
+`src/cbb_sim/` file was edited; no engine default, flag, or change-ledger entry was touched.
+
+Commits (this lane only): `fbc8949` (section 16 pre-registration), `02a29bf` (line-ending
+fix on that same append, see note below), and this results section plus
+`scripts/train_possession_outcome_v4_par.py` and
+`docs/tests/possession_outcome_alignment_cells_2026-09-18.md`, committed together.
+
+**Note on `fbc8949`/`02a29bf`:** the first append (`fbc8949`) was made with an editor tool
+that rewrote every line ending from the insertion point to end-of-file to CRLF (this file
+mixes CRLF/LF) and, because the matched anchor text stopped mid-sentence, orphaned the
+file's last pre-existing sentence at the very end of the document instead of leaving it in
+its original paragraph. `02a29bf` rebuilt the file byte-for-byte from the pre-existing
+commit (preserving its original mixed line endings exactly) with section 16 appended as
+plain LF text and the orphaned fragment restored to its paragraph; the diff against the
+original commit is a clean append with no line churn. This section was appended using the
+same byte-safe method (a script write, not an interactive editor) to avoid repeating that
+defect on a document at least one other lane was also appending to tonight.
