@@ -3410,3 +3410,43 @@ defence count, foul-count SD by minute, OREB% (a known side channel).
 
 Hard constraint: no arm re-tunes a constant toward the aggregate. Every LUT is a fold-2
 TRAIN fit; nothing is fitted to 2025 or to sim output.
+
+## 21. Round 7 RESULTS -- joint foul accrual + FT-trip production (lane A, run 2026-09-30 11:24-12:40 EDT; pre-registration section 20, commit aa0ee91)
+
+**Nothing adopted, no default changed. No arm is ELIGIBLE: every closed-loop arm fails veto V3
+(G5 total SD ratio).** Full report: `docs/tests/foul_joint_round_2026-09-30.md`.
+
+Offline (`scripts/train_foul_joint_v1.py`, one blind grader `scripts/grade_foul_joint_v1.py`,
+`round7/grade_round7.json`; applied floor 0.000804, measured reseed floors <= 1.3e-4):
+
+| block | F2 winner | F2 floors vs block reference | F1 | notes |
+|---|---|---:|---|---|
+| A (non-trip accrual, engine attribution) | `A2` (GBM, true state) | +18.12 (A1 +16.50; beats A1 by 1.63) | confirms (+17.54) | `A2lab` (labelled fit, true query) **-10.56**; D9a +0.48 floors over A2 = tie -> A2; D9b tie |
+| D/O (split attribution) | `DO2` | +50.79 | confirms (+55.50) | |
+| T (FT-trip offsets) | `T2c` (half x true count x differential) | +8.91 (T1c +4.92) | confirms (+7.92) | `T2lab` (round-6 T2 definition) **-27.97**: bonus gap -12.0 pp at true count 6 |
+
+Closed loop (500 x 25, `po4b_R_s25` games and seeds; default path BIT-IDENTICAL to `po4b_R_s25`,
+games 28/28 and players 16/16 columns; v6 window digest PASS; grader
+`scripts/grade_foul_joint_closed_loop_v1.py`):
+
+| arm | FTA/FGA (target 0.32955) | floors toward | V1 occ. max gap pp (ref 13.07) | V2 team slope (ref 0.958) | V3 G5 total SD ratio (ref 0.8835) | V4 team SD ratio (ref 0.8209) | eligible |
+|---|---:|---:|---:|---:|---:|---:|---|
+| `CL1` A1 | 0.31855 | -0.55 | 8.66 pass | 0.983 pass | 0.8769, -6.3 fl FAIL | 0.8106 FAIL | no |
+| `CL2a` A2 | 0.31983 | +0.17 | 7.73 pass | 0.994 pass | 0.8787, -4.6 fl FAIL | 0.8213 pass | no |
+| `CL2` A2 + T2c | 0.33488 | +2.63 | 6.21 pass | 0.846 FAIL | 0.8689, -13.9 fl FAIL | 0.7863 FAIL | no |
+| `CL3` DO2 + T2c | 0.33764 | +1.09 | 6.81 pass | 1.030 pass | 0.8716, -11.4 fl FAIL | 0.8084 FAIL | no |
+| `CL4` DO2 + T2lab | 0.32376 | +2.37 | 7.69 pass | 0.963 pass | 0.8740, -9.1 fl FAIL | 0.9367 pass | no |
+| `F5e` (09-18, comparison) | 0.30215 | -9.76 | 26.82 FAIL | 1.045 | 0.8812, -2.2 fl FAIL | 0.8323 | no |
+
+Floors: FTA/FGA 0.001782; G5 total ratio 0.00105; G5 margin ratio 0.0132; G1 mean 0.0987. G1 mean/SD
+and G5 margin ratio and G9 total bias stay inside 2 floors or move toward for every arm.
+Reading: the state-dependent accrual law on the engine-definition state fixes the bonus TIMING
+(occupancy) but not the level (`CL2a`); the trip-class repair closes the second-half shortfall
+(`CL2` H2 FTA/FGA 0.4175 vs actual 0.4126) and overshoots the aggregate through the first half
+(0.2506 vs 0.2367). Every arm narrows G5's total SD ratio: the served over-dispersed team-foul
+count was carrying within-game total variance -- a second hidden compensation, reported to the
+G5 owner. A finding made after section 20 was written (not an arm, not run): 2.26% of 2025
+possessions hold an FT trip with no foul row of their own (only 15% matched by an extra
+non-trip row in the previous possession); at ~68.7 possessions per team-game that is ~1.55
+fouls, against the box-minus-pbp foul gap of 1.60 per team-game. Every pbp state label lags the
+true count by them (proposed next object: state v3; not pre-registered here).
