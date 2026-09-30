@@ -76,8 +76,14 @@ def test_attach_guards(tmp_path):
     ev.anchor_marks = (True,)
     src = SAS.attach(_inp(gids), ev, rb, str(p))
     assert src["families"] == ["po_first"] and ev.anchor_first.shape == (3, 6)
-    with pytest.raises(ValueError, match="game order"):
-        SAS.attach(_inp([11, 13, 12]), ev, rb, str(p))
+    with pytest.raises(ValueError, match="no offset row"):
+        SAS.attach(_inp([11, 14]), ev, rb, str(p))
+    # a sliced / reordered input set gets its own games' rows
+    p2 = tmp_path / "off2.npz"
+    po = np.arange(18, dtype=float).reshape(3, 6) + 1
+    np.savez(p2, game_ids=np.array(gids), po_first=po)
+    src = SAS.attach(_inp([13, 11]), ev, rb, str(p2))
+    assert np.array_equal(ev.anchor_first, po[[2, 0]]) and src["rows_realigned"]
     # zero offsets are allowed on unmarked (served) artifacts: the parity proof
     pz = tmp_path / "zero.npz"
     np.savez(pz, game_ids=np.array(gids), po_first=np.zeros((3, 6)))

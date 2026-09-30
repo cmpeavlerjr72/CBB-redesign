@@ -16,7 +16,7 @@ The .npz is written by `scripts/build_engine_anchor_offsets_v1.py` next to a
 tagged input directory, precomputed per GAME (the as-of level on the game's
 date), never computed in the sim loop:
 
-    game_ids   (G,)     asserted equal to inp.games.game_id
+    game_ids   (G,)     rows are selected by inp.games.game_id (a missing game is an error)
     po_first   (G, 6)   possession_outcome `first` offset, one per class (log shares), optional
     rb_oreb    (G,)     rebound OREB offset (logit of the live OREB share), optional
 
@@ -127,33 +127,41 @@ def attach(inp, event, reb, value: str) -> dict:
 
     a = load(value)
     gids = inp.games["game_id"].to_numpy().astype(np.int64)
-    if len(a.game_ids) != len(gids) or not np.array_equal(a.game_ids, gids):
-        raise ValueError(f"{ENV}={value}: offsets game order does not match the engine inputs")
-    src = {"path": a.path, "families": [], "meta": {k: a.meta.get(k) for k in
-                                                     ("builder", "created_at", "fold", "season", "families")}}
+    # Rows are selected BY GAME ID, so a sliced input set (run_engine_live --max-games, a
+    # sample) gets exactly its own games' offsets; a game the file lacks is an error.
+    pos = {int(g): i for i, g in enumerate(a.game_ids)}
+    miss = [int(g) for g in gids if int(g) not in pos]
+    if miss:
+        raise ValueError(f"{ENV}={value}: {len(miss)} engine game(s) have no offset row (e.g. {miss[:3]})")
+    rows = np.array([pos[int(g)] for g in gids], dtype=np.int64)
+    src = {"path": a.path, "families": [], "n_games": int(len(gids)),
+           "rows_realigned": bool(len(rows) != len(a.game_ids) or not np.array_equal(rows, np.arange(len(rows)))),
+           "meta": {k: a.meta.get(k) for k in ("builder", "created_at", "fold", "season", "families")}}
     if a.po_first is not None:
-        if a.po_first.shape != (len(gids), len(PO.CLASSES)) or not np.isfinite(a.po_first).all():
+        if a.po_first.shape != (len(a.game_ids), len(PO.CLASSES)) or not np.isfinite(a.po_first).all():
             raise ValueError(f"{ENV}: po_first must be finite (G, {len(PO.CLASSES)})")
         if event.mode != "round2_s1":
             raise ValueError(f"{ENV}: po_first needs ENGINE_EVENT=round2_s1, got {event.mode}")
-        if np.any(a.po_first != 0.0):
+        po = a.po_first[rows]
+        if np.any(po != 0.0):
             if not all(event.anchor_marks):
                 raise ValueError(f"{ENV}: non-zero po_first offsets on possession_outcome `first` "
                                  "artifacts that are not marked anchored")
             _check_classes(event.models_first, len(PO.CLASSES), "possession_outcome first")
-        event.anchor_first = a.po_first
+        event.anchor_first = po
         src["families"].append("po_first")
     if a.rb_oreb is not None:
-        if a.rb_oreb.shape != (len(gids),) or not np.isfinite(a.rb_oreb).all():
+        if a.rb_oreb.shape != (len(a.game_ids),) or not np.isfinite(a.rb_oreb).all():
             raise ValueError(f"{ENV}: rb_oreb must be finite (G,)")
         if reb.manifest is None:
             raise ValueError(f"{ENV}: rb_oreb needs a dated rebound schedule (ENGINE_REBOUND=s1_weekly)")
-        if np.any(a.rb_oreb != 0.0):
+        rb = a.rb_oreb[rows]
+        if np.any(rb != 0.0):
             if not all(reb.anchor_marks):
                 raise ValueError(f"{ENV}: non-zero rb_oreb offsets on rebound artifacts that are "
                                  "not marked anchored")
             _check_classes(reb.models_by_seg, len(RB.CLASSES), "rebound")
-        reb.anchor_oreb = a.rb_oreb
+        reb.anchor_oreb = rb
         src["families"].append("rb_oreb")
     if not src["families"]:
         raise ValueError(f"{ENV}={value}: the offsets file carries neither po_first nor rb_oreb")
