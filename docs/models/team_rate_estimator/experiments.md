@@ -873,3 +873,89 @@ Everything else in the design (ratings, site, state, player/slot blocks, derived
   - A minimal hook in `src/cbb_sim/engine/loop.py`, and `EventAdapter.predict` in `src/cbb_sim/engine/adapters.py`. Where the loop gathers `inp.team_static[gidx, off]` and the event adapter gathers `team_block[gidx, off]`, the hook gathers `[k_g, gidx, off]` when `ENGINE_TEAM_RATE_DRAW` is not `off`.
   - One new family name in `src/cbb_sim/engine/rng.py`.
   - Default `off`, so the served path is untouched (parity reference v6/v3 must pass unchanged).
+
+---
+
+## 7a. Addendum to section 7 (PM items 2026-09-30 about 12:20; written about 12:30 EDT; COMMITTED BEFORE ANY STAGE B RUN)
+
+Section 7 was already committed (`d5a7abb`), so these items are added here rather than edited in.
+
+### 7a.1 Key coverage: root cause, fix, and FINAL table names
+
+**Root cause (one cause only).** Six D-I, non-truncated games that have pbp have NO hoopR team-box rows at all. The design frames include them because designs are built from pbp; the estimator's table did not, because it is built from the box.
+
+- **The games:** 401492245 (2022-11-26), 401587235, 401603093, 401706980, 401714520 and 401711714. That is 12 team-games.
+- **Missing keys per design:** 773 possession_outcome design rows, 572 fg_make and 388 rebound, on the offence and defence keys alike.
+- **Candidates ruled out** (no missing key traces to any of them):
+  - teams with no history;
+  - non-D-I opponents;
+  - the 2022-11-25 double-header;
+  - crosswalk gaps.
+- The list is in `results/team_rate_estimator/missing_keys_v2.csv`.
+
+**Fix** (`scripts/exp_team_rate_estimator_v5.py`). Those team-games enter the panel as SCHEDULE-ONLY rows with zero counts, so they give no observation and no Kalman update.
+
+- The game still takes one index step, so process variance q accrues once, as for any game played.
+- Each such row gets exactly what the estimator says entering that game: the filtered state from strictly earlier games.
+- A team with no history at all would get the estimator's own prior (rho c_prev, P0). No other rule was added.
+- Parameters are unchanged: the six games carry no outcome, so no fit sees them.
+- Changes vs v2:
+  - E3: 18 new rows; 442 later rows of the affected teams change, through the extra q step;
+  - E3opp: 4,329 rows change, because opponent adjustment propagates.
+
+**Coverage is asserted in code: 0 missing keys** for every one of these six design-fold combinations:
+
+| sub-model | F1 rows (seasons <= 2024) | F2 rows (seasons <= 2025) |
+|---|---:|---:|
+| possession_outcome (round-2 design) | 2,184,697 | 3,038,628 |
+| fg_make (`design_v2_shotshooter`) | 1,608,774 | 2,239,678 |
+| rebound (`design_round3`) | 1,144,032 | 1,536,570 |
+
+These are the same design files lane J's `train_*_par_v1.py` trainers default to. So `--team-rate-missing raise` is the correct setting, and the box should hit no missing keys.
+
+**FINAL Stage B / C table names**
+
+| file | contents | used by |
+|---|---|---|
+| `data/processed/team_rate_features_E3_v3.parquet` | 78,022 rows x 59 columns | arms T and TO |
+| `data/processed/team_rate_features_E3opp_v3.parquet` | same shape | arm Topp, possession_outcome only |
+| `data/processed/team_rate_variance_O1a_v2.parquet` | 78,022 x 41 | S3's draw variance |
+
+- v1 and v2 of each file stay on disk and are superseded for Stage B/C.
+- None of them is committed (about 29 MB each).
+- Regenerate with `exp_team_rate_estimator_v5.py --part features | opp | o1a`. These need the v4 pa3 fit outputs in `results/`.
+
+### 7a.2 Stage B: additional arm TO (rebound and possession_outcome only)
+
+**Why.** The season-drift lane reported (`docs/tests/season_drift_anchor_round_2026-09-30.md`, `docs/models/season_drift/experiments.md`) that anchor O was the only anchor passing the drift-stops check.
+
+- Anchor O models the target relative to the as-of in-season league level, as a logit offset, with the prior season's end level on day 0.
+- It fixed rebound's held-out level (-1.14 -> -0.08 pp) and improved possession_outcome calibration.
+- It was NOT selected standalone: rebound's 2.0 pp decile calibration gate fails in the top OREB decile, a team-responsiveness defect already present in the reference. That gate is not waived.
+
+**The arm.** TO = arm T (E3 v3 features through the adapter) plus anchor O, applied through `src/cbb_sim/season_anchor.py` (the season-drift lane's module).
+
+- Registered for rebound and possession_outcome (`first` and `cont`).
+- fg_make gets no TO arm, because the anchor was not tested there.
+
+**Gates: all unchanged**, and explicitly including:
+
+- rebound's 2.0 pp worst-decile calibration gate;
+- the held-out level line;
+- each sub-model's quintile responsiveness gate.
+
+**Decision.** T vs TO is decided by the sub-model's own primary (quoted in 7.1) and its gates, beyond the floor from R2. Ties go to T, the simpler arm. TO is compared with T, not with R. Whether any team-rate arm advances at all is still decided by T vs R under 7.1.
+
+### 7a.3 Definition of the table's `L` columns (for comparison with the season-drift anchor)
+
+`<rate>_<side>_L` is the league level that `<rate>_<side>_c` is centred on. The row's prediction is L + c.
+
+- **In season:** the league's cumulative rate in the row's season, i.e. the sum of the numerator divided by the sum of the denominator. It is taken over all D-I team-box team-games (both teams of every game) with game_date strictly before the row's game_date. Schedule-only rows contribute zero counts.
+- **Day 0** (no earlier game that season): the PRIOR season's final league level, i.e. the full-season sum of the numerator divided by the sum of the denominator. For 2022, which has no prior season in the panel and is never scored, the day-0 value is 2022's own first-week pooled level.
+- **Off vs def:** L is identical for the off and def columns of a rate. The league's rate against itself is one number.
+- **Counting:** it is a pooled rate, not a mean of team rates, and it is not smoothed. Its numerators and denominators are the box counts of section 1.2. For example, tov / P uses P = FGA - OREB + TOV + 0.44 FTA from the box, not pbp possessions.
+- **Built by:** `exp_team_rate_estimator_v2.league_asof`.
+
+**Relation to anchor O.** The day-0 rule is the same as anchor O's (prior season's end level). In season, both are as-of cumulative levels, but over different counting bases: the box here, the sub-model's own target events there. So the two can differ by that base's definitional gap (e.g. live rebound opportunities vs box OREB + opponent DREB).
+
+**No double counting.** Under TO, L centres the FEATURES (a team relative to the league), while anchor O offsets the TARGET's intercept. These are different objects.
