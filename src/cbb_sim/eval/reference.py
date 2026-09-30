@@ -74,15 +74,29 @@ def unverified_final_game_ids(season: int, hoopr_dir: Path | str = DEFAULT_HOOPR
     return bad
 
 
+TRUTH_ENV = "CBB_TRUTH"  # set to "verified_v1" to make every default-arg call use the verified truth
+VERIFIED_TRUTH = "verified_v1"
+VERIFIED_REFERENCE_DIR = Path("data/reference/verified_v1")
+
+
+def truth_is_verified() -> bool:
+    import os
+    return os.environ.get(TRUTH_ENV, "").strip() == VERIFIED_TRUTH
+
+
 def load_actual_games(season: int, universe_path: Path | str = DEFAULT_UNIVERSE,
-                      verified_finals: bool = False) -> pd.DataFrame:
+                      verified_finals: bool | None = None) -> pd.DataFrame:
     """One row per D-I, non-truncated, completed game in `season`.
 
     Columns: game_id, cbbd_game_id, season, game_date, month, tipoff_utc,
     home_team_id, away_team_id, neutral (0.0/1.0), home_score, away_score,
     margin, total, n_periods, went_ot.
 
-    `verified_finals=False` (DEFAULT, unchanged behaviour): `home_score` /
+    `verified_finals=None` (DEFAULT) means False unless the environment sets
+    `CBB_TRUTH=verified_v1`, which selects the verified truth for every caller that
+    uses the default (graders, sweeps) with no script edits; unset = unchanged.
+
+    `verified_finals=False`: `home_score` /
     `away_score` not-null is the only "completed" test, so unplayed games the
     schedule scores 0-0 and forfeits scored 2-0 are included (docs/tests/
     truth_unplayed_finals_2026-09-30.md).
@@ -94,6 +108,8 @@ def load_actual_games(season: int, universe_path: Path | str = DEFAULT_UNIVERSE,
     universe (game 401722537: hoopR has the sides flipped).
     """
     assert_not_sealed(int(season), context="eval_gates/grade_market_games truth season")
+    if verified_finals is None:
+        verified_finals = truth_is_verified()
     uni = pd.read_parquet(universe_path)
     if verified_finals:
         uni = uni[~uni["game_id"].isin(unverified_final_game_ids(int(season)))].copy()
@@ -175,7 +191,9 @@ def load_actual_team_box(season: int, universe: pd.DataFrame | None = None,
 # ---------------------------------------------------------------------------
 # gate_targets_{season}.parquet
 # ---------------------------------------------------------------------------
-def load_gate_targets(season: int, reference_dir: Path | str = DEFAULT_REFERENCE_DIR) -> pd.DataFrame:
+def load_gate_targets(season: int, reference_dir: Path | str | None = None) -> pd.DataFrame:
+    if reference_dir is None:
+        reference_dir = VERIFIED_REFERENCE_DIR if truth_is_verified() else DEFAULT_REFERENCE_DIR
     return pd.read_parquet(Path(reference_dir) / f"gate_targets_{int(season)}.parquet")
 
 

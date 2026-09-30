@@ -138,3 +138,59 @@ The engine-side G1, G2 (levels), G3, G4, G6-neutral, G7, G8 conclusions are unch
 - Established: 54 graded-rule games (10 / 34 / 5 / 5 in 2022-2025) have no verified played final in both sources; fold 2 has 5 zero-score ones plus 1 wrong-sided final. Features and training tables are clean (0 hits in 424 tables). The contamination is confined to grading truth, `gate_targets` game-level rows, `lines_close_v1` line rows on unplayed games, and the closed-loop game samples (1 unplayed game in 84 of the 101 500-game stride samples).
 - Not done: no default flipped, no reference or engine-input rebuild, no new third-source fetch for the 54 (non-play rests on two agreeing statuses, no box, no pbp). Fold-1 test (2024) and any regrade of fold-1 runs are affected by 5 zero games and were not regraded. The 2025-26 season was only counted.
 - Recommended after the paired-loop lanes report: flip the default to `verified_finals=True`, rebuild `gate_targets_2022..2026` game-level rows through the same filter (2026 by the PM under the seal rules), drop unplayed ids from `lines_close_v1` consumers by joining the verified truth, and rerun the 500-game references so the reference and arm stay paired.
+
+---
+
+# Follow-up (PM request, 2026-09-30 afternoon): verified-truth artifacts as versioned siblings
+
+Nothing existing was overwritten; the loader default is still the current truth. Build script: `scripts/build_truth_verified_artifacts_v1.py` (steps `universe`, `lines`, `stride`) plus `build_gate_reference.py` pointed at the verified universe. Everything below is 2022-2025; 2025-26 was not touched.
+
+## 6. Gate reference tables (old vs new), `data/reference/verified_v1/`
+
+Files: `gate_targets_2022..2025.parquet`, `gate_targets_fold2_train.parquet` (built from `data/processed/truth/games_universe_verified_v1.parquet`: the graded rule minus unverified finals, resolved score for 401722537). Every row compared (`scripts/diag_truth_gate_targets_diff_v1.py`, `truth_gate_targets_old_vs_new_v1.csv`). Rows that change: 2022 18/280, 2023 41/299, 2024 20/300, 2025 34/299, all in game-level metrics (season, month, and in 2025 four tier rows). Every team-level, possessions (`poss_per_game_*`), neutral-margin, period-share and player row is identical. Season/all values:
+
+| season (n old -> new) | home/away score corr | total SD | margin SD | total mean | home margin (non-neutral) mean / SD | OT rate |
+|---|---|---|---|---|---|---|
+| 2022 (5,406 -> 5,396) | 0.3017 -> 0.2560 | 19.294 -> 18.376 | 14.133 -> 14.144 | 139.80 -> 140.06 | 4.978 -> 4.989 / 14.210 -> 14.222 | unchanged |
+| 2023 (5,658 -> 5,624) | **0.4113 -> 0.2806** | **21.468 -> 18.551** | 13.870 -> 13.906 | 140.53 -> 141.38 | 5.376 -> 5.414 / 13.945 -> 13.986 | 0.0622 -> 0.0624 |
+| 2024 (5,640 -> 5,635) | 0.2767 -> 0.2522 | 19.046 -> 18.557 | 14.339 -> 14.345 | 145.13 -> 145.26 | 5.364 -> 5.370 / 14.450 -> 14.456 | 0.0600 -> 0.0600 |
+| 2025 (5,710 -> 5,705) | 0.2532 -> 0.2283 | 18.954 -> 18.466 | 14.633 -> 14.639 | 145.51 -> 145.64 | 5.738 -> 5.743 / 14.901 -> 14.907 | unchanged |
+
+## 7. Closing lines: `data/processed/lines/lines_close_v2_verified.parquet`
+
+27,918 -> 27,875 rows; 43 rows / 30 games removed (2023: 25, 2024: 2, 2025: 3; 35 of the 43 had a close spread). Columns identical to v1 and every remaining row is unchanged column for column (checked, `_lines_close_v2_verified_report.json`).
+
+## 8. Stride samples (rule: sort by `game_id` ascending, every 11th, first 500)
+
+I reproduced the existing sample from the rule and confirmed its game set equals `results/engine_v0/po4b_R_s25` exactly. Applying the same rule to the verified universe is NOT a small change: the five removed games sit at sorted positions 106, 805, 1463, 2260, 4056, and each removal shifts every later every-11th pick by one. Result: **only 10 of 500 games are common** (490 swap; e.g. 401700287 -> 401700288, 401700299 -> 401700300; full lists in `stride500_verified_v1_report.json`). Two versioned files, both 500 verified-final games:
+
+| file (under `data/processed/truth/`) | construction | common with `po4b_R_s25` |
+|---|---|---:|
+| `stride500_verified_v1_F2_2025.parquet` | same rule, verified universe | 10 |
+| `stride500_verified_minswap_v1_F2_2025.parquet` | existing sample with the one unplayed game (401714278) replaced by the next verified game id (401714279) | 499 |
+
+The minimal-swap file keeps a paired comparison with `po4b_R_s25` meaningful (same 499 games, one swap). `stride500_current_rule_reproduced_F2_2025.parquet` is the current sample as game ids. The sample runners (`run_po4b_closed_loop.py`, `run_late_game_r2_closed_loop.py`) have no game-id input today, so these files are not wired; I did not edit them. The alternative needing no new sample: grade the existing runs with the 499 played games (drop 401714278 at grading), which is what `CBB_TRUTH=verified_v1` does.
+
+## 9. Fold 1 (2023-24)
+
+No engine fold-1 results are local. The only fold-1 runs are the Control prototype (`results/control/F1_{A_own,B_kp,C_both}` and two `seedoff1000`), 5,632 games each. Regrading A_own, B_kp, C_both (`grade_truth_regrade_v1.py --season 2024`): **identical under both truths** (5,632 games both ways), because the Control's own game list already excluded every unverified final. The current fold-1 Control read (for example A_own G5 total SD ratio 1.30, total bias -4.08) is unaffected. A future engine fold-1 run would be affected by those 5 games and by `gate_targets_2024`.
+
+## 10. Third-source status check (ESPN public core API)
+
+`scripts/pull_espn_status_unplayed_v1.py`, output `truth_third_source_espn_v1.csv`. `site.api.espn.com` returns 403 from this machine (as on 2026-09-10); `sports.core.api.espn.com/v2/.../events/<id>/competitions/<id>/status` works and is the same ESPN feed family hoopR wraps. One request per game for all 54 graded-rule unverified games, 0 errors:
+
+| ESPN status | games | detail |
+|---|---:|---|
+| STATUS_POSTPONED | 20 (11 in 2023, 4 in 2024, 5 in 2025) | period 0, not completed |
+| STATUS_CANCELED | 18 (17 in 2023, 1 in 2024) | period 0, not completed |
+| STATUS_FORFEIT | 16 (10 in 2022, 6 in 2023) | period 0; nominal 2-0 / 0-2 result |
+
+**All 54 confirmed not played; none was played according to ESPN.** The 16 forfeits are recorded results with no game played, so excluding them from score grading is correct; if a market grader wants forfeit winners, that is a separate rule.
+
+## 11. Grading on the corrected truth: runbook note
+
+- The sweep needs nothing: `run_aws_sweep.sh --inputs-version ...` only chooses which engine inputs to simulate; the v2/v3 inputs still contain the five unplayed fold-2 games and the sim simply runs them. Truth is applied at grading, where unmatched games drop out through the inner join in `gates.build_grading_frame`.
+- New switch, default off: environment variable **`CBB_TRUTH=verified_v1`**. With it set, `eval.reference.load_actual_games()` (default arguments) uses the verified truth and `load_gate_targets()` reads `data/reference/verified_v1`. No script edit is needed, so `eval_gates.py`, the market graders, closed-loop graders and `build_engine_inputs.py` all follow (an explicit `verified_finals=` argument still wins). Unset = today's truth.
+- The grading machine needs: the commit with this change, the tracked `data/reference/verified_v1/`, `data/processed/truth/game_finals_v2.parquet`, and raw `data/raw/hoopr/schedules/mbb_schedule_<season>.parquet` and `data/raw/cbbd/games_<season>.parquet` (the loader reads them to decide verified status). For market grading point the lines argument at `lines_close_v2_verified.parquet` (or rely on the verified-truth inner join).
+- Example: `CBB_TRUTH=verified_v1 .venv/Scripts/python.exe scripts/eval_gates.py --results results/<tag> --season 2025`. Verified end to end on the 200-seed A stream: 5,705 games, total SD ratio 0.9233, corr 0.1169 vs 0.2283, total bias -0.9836, matching section 4. `scripts/grade_truth_regrade_v1.py` still gives both truths side by side. Label reports so produced "verified truth" and do not compare their absolute G5/G9 lines with pre-flip reports.
+- Caveat: `po4b_R_s25` and other paired references stay on the current truth until the PM flips; grade a pair under one truth only.

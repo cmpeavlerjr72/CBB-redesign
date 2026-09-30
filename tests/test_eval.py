@@ -350,3 +350,20 @@ def test_unverified_final_game_ids_2025():
     bad = R.unverified_final_game_ids(2025)
     assert {401714278, 401722532, 401706691, 401700283, 401716154} <= bad
     assert 401722537 not in bad  # played; disputed sides are fixed by finals_v2, not dropped
+
+
+@pytest.mark.skipif(not _has_truth_data(), reason="needs on-disk truth data")
+def test_cbb_truth_env_selects_verified_truth(monkeypatch):
+    from pathlib import Path
+    from cbb_sim.eval import reference as R
+    monkeypatch.delenv("CBB_TRUTH", raising=False)
+    assert len(R.load_actual_games(2025)) == 5710
+    monkeypatch.setenv("CBB_TRUTH", "verified_v1")
+    assert len(R.load_actual_games(2025)) == 5705
+    assert len(R.load_actual_games(2025, verified_finals=False)) == 5710  # explicit wins
+    if Path("data/reference/verified_v1/gate_targets_2025.parquet").exists():
+        t = R.load_gate_targets(2025)
+        assert abs(R.gate_target_value(t, "season", "all", "home_away_score_corr", "overall") - 0.2283) < 1e-3
+    monkeypatch.delenv("CBB_TRUTH")
+    t = R.load_gate_targets(2025)
+    assert abs(R.gate_target_value(t, "season", "all", "home_away_score_corr", "overall") - 0.2532) < 1e-3

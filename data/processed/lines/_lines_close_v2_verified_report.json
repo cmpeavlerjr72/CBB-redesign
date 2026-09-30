@@ -1,0 +1,14 @@
+{
+ "rows_old": 27918,
+ "rows_new": 27875,
+ "rows_dropped": 43,
+ "games_dropped": 30,
+ "dropped_by_season": {
+  "2023": 25,
+  "2024": 2,
+  "2025": 3
+ },
+ "columns_identical": true,
+ "all_remaining_rows_identical_column_for_column": true,
+ "dropped_with_nonnull_close_spread": 35
+}
