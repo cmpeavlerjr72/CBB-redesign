@@ -180,3 +180,48 @@ Lowest F2 MAE among qualifiers: C (-0.147). Its interval [-0.183, -0.113] contai
 - The prior chain is the current rule for every arm (1.1). If C is adopted, the chain changes slightly; a chained-C rebuild and parity check are needed before serving.
 - The gain is at the rating level only; there is no sim-level or gate evidence. Adoption goes through the usual paired closed-loop check.
 - The conference mean excludes teams with no previous rating (they would otherwise pull it toward 0). Conference = the modal conference id on the season-S hoopR schedule.
+
+---
+
+## 3. Chained-C rebuild and paired closed loop (PM ruling 2026-09-30: C is VALIDATED-PENDING-SHIP-ACTION; registered about 14:05 EDT, COMMITTED BEFORE THE CLOSED LOOP RUNS)
+
+### 3.1 Conference-mean definition (confirmed; no rerun needed)
+
+`cm_i` = mean of the previous-season FINAL off / def effects over the members of team i's NEW (season-S) conference that have a previous-season rating. Membership = the team's conference id on the hoopR season-S schedule: a per-season team attribute (0 teams carry more than one id in 2024 or 2025), known preseason; only previous-season finals enter. This is exactly what the section-2 run used (`conference_map(season)` with season = the test season). Realignment check, 2024 -> 2025: 21 teams changed conference (for example UCLA 26: 21 -> 7, Stanford 24: 21 -> 2); each is pooled with its 2025 conference.
+
+### 3.2 Chained-C ratings (built before this registration; mechanics, not a selection)
+
+- `scripts/build_own_ratings_C_v1.py` -> `data/processed/ratings_C_v1/own_ratings_{2022..2025}.parquet` + manifest (versioned sibling; the stored `data/processed/ratings` is untouched). Strictly walk-forward: each season's day-0 prior is built from the CHAINED-C final of the previous season. w_c = 0.6419 (fold-2 fit, section 2.1) for every season. 2022 has no prior and equals R (max 3e-14). 2026 SEALED, not built.
+- `scripts/build_own_ratings_asof_C_v1.py` (sibling daily entry point): parity vs the sibling on 3 dates per season (day 1, about 1/3 and 2/3 of the season), 12 dates: team sets equal, max abs difference 0.0 on all 10 numeric columns (`docs/ops/own_ratings_C_asof_parity_2026-09-30.json`).
+- Caveat: w_c was fitted on transitions whose later seasons (2023, 2024) are rebuilt with it, so chained-C 2023-24 ratings are in-sample for w_c; the fold-2 test season 2025 is not.
+
+**Chained-C vs R across the season** (net = off_c - def_c; SD across teams averaged over dates; |C-R| = mean absolute net difference):
+
+| season | band | SD R | SD C | mean abs C-R | share of the week-0 gap left |
+|---|---|---:|---:|---:|---:|
+| 2025 | 0-1 | 10.32 | 11.59 | 2.07 | 0.93 |
+| 2025 | 2-3 | 11.44 | 12.46 | 1.55 | 0.70 |
+| 2025 | 4-7 | 12.04 | 12.88 | 1.17 | 0.53 |
+| 2025 | 8-15 | 12.73 | 13.42 | 0.89 | 0.40 |
+| 2025 | 16+ | 12.95 | 13.62 | 0.81 | 0.36 |
+| 2024 | 0-1 / 4-7 / 16+ | 9.60 / 10.95 / 12.01 | 10.46 / 11.53 / 12.49 | 1.73 / 0.94 / 0.64 | 0.92 / 0.50 / 0.34 |
+| 2023 | 0-1 / 4-7 / 16+ | 8.63 / 10.17 / 10.96 | 8.95 / 10.46 / 11.25 | 1.26 / 0.66 / 0.44 | 0.91 / 0.47 / 0.32 |
+
+- C is MORE spread than R at every week, and the gap grows along the chain (2023 +0.3, 2025 +0.7 to +1.3 SD points): R's 0.8 toward the league mean compresses every season's prior; C shrinks less overall (only the within-conference part).
+- The prior does NOT wash out in either arm: lambda 5 is identical, so the gap decays on the same schedule (half gone by week 4-5), and about a third of the week-0 difference is still there at season end (the ridge keeps pulling toward the prior all season; the final fit therefore also carries it into the next season's prior). This is the same structure as R, not new to C.
+- Offline re-grade with the CHAINED ratings (same games, same grader functions as section 2): fold-2 weeks 0-7 MAE R 9.629, chained-C 9.445, difference -0.184 [-0.230, -0.137] (bands -0.333 / -0.157 / -0.098); game slope 0.996. Fold 1 -0.176 [-0.218, -0.131] (in-sample for w_c; confirmation only). `results/own_ratings_day1/chainC_offline_regrade_v1.txt`.
+
+### 3.3 Closed-loop design
+
+- **Arms.** R = the served ratings; C = chained-C. Everything else is identical: base inputs `data/processed/models/engine_v3` (honest fold-2 replay), served artifacts, `--arm round2_s1`, pinned served stack. Only the four own-rating team columns (`off_rating_off_c, off_rating_def_c, def_rating_off_c, def_rating_def_c`) change, in `team_static` and in the round-2 event block (columns 8-11). Tempo columns are unchanged (C's tempo equals R's, asserted).
+- **Inputs.** `engine_v3_N_R` = `build_engine_inputs_v3_tag_v1.py --tag N_R` (defaults: bit-identical to engine_v3 plus its overlay). `engine_v3_N_C` = `build_engine_inputs_v3_ratings_tag_v1.py --tag N_C --ratings-dir data/processed/ratings_C_v1` (new sibling builder, since the tag builder has no ratings parameter; its recipe applied to the served ratings reproduces engine_v3's eight rating channels exactly, parity 0.0, checked before substituting). Sub-models are NOT retrained: they were trained on R-distributed ratings, so this loop prices C as a served-input swap only.
+- **Runner.** `scripts/run_po4b_closed_loop_sample_overlay_v1.py` (new wrapper around the unedited sample runner): serves the tag's overlay in-process (no Docker locally) by rebinding `adapters.ENGINE_DIR` in the parent and every worker; asserts the overlay's event block equals the input dir's. Smoke: 1 seed, workers confirmed bound to the overlay dir.
+- **Sample.** `data/processed/truth/stride500_verified_v1_F2_2025.parquet` (500 games, 2024-11-04..2025-03-15). 25 seeds (0-24), 4 workers.
+- **Floors (Decision 12).** R re-run at seed offsets 1000, 2000 (required) and 3000, 4000 (if time allows; if they do not finish, the report says two draws, not four). Floor (a) = max over floor runs of |floor - R| per line; floor (b) = paired game bootstrap (1,000 draws, games resampled with their 25 paired seeds kept together) of C - R on the lines computed from game rows. A line's floor is the larger of the two where both exist.
+- **Grading.** `eval_gates.py --season 2025` on every run under `CBB_TRUTH=verified_v1`; `diag_pair_gate_reports.py` C vs R with each floor; `scripts/grade_own_ratings_closed_loop_v1.py` for the primaries and the weeks 0-7 cell (verified finals `game_finals_v2`).
+
+### 3.4 Primary, vetoes, decision
+
+- **Primary (fold 2, weeks 0-7 cell of the sample, i.e. games before 2024-12-30):** G9 calibration slope (`polyfit(sim_margin_mean, margin)`, the gates.py definition) and margin MAE of the seed-mean margin. The cell has about 40% of the sample (its n is reported; it is underpowered for slope if n < 150). The full-sample G9 slope and MAE are co-reported.
+- **Vetoes:** every line of the full gate list (G1-G9 headline tables) must not move AWAY from its target by more than its floor. Per Decision 12, a 25-seed loop does not decide G5 ratio / correlation lines; they are reported, marked PROVISIONAL.
+- **Pass:** the weeks 0-7 margin MAE difference C - R is negative with its game-bootstrap interval excluding 0 OR within the floor, AND the weeks 0-7 slope does not move away from 1.0 beyond its floor, AND no veto fires. The PM decides serving; nothing is adopted here.

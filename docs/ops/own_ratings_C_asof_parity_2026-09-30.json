@@ -1,0 +1,98 @@
+[
+  {
+    "season": 2022,
+    "as_of": "2021-11-09",
+    "n_teams": 358,
+    "season_games_before": 0,
+    "team_set_equal": true,
+    "max_abs_diff": 0.0
+  },
+  {
+    "season": 2022,
+    "as_of": "2021-12-27",
+    "n_teams": 358,
+    "season_games_before": 1866,
+    "team_set_equal": true,
+    "max_abs_diff": 0.0
+  },
+  {
+    "season": 2022,
+    "as_of": "2022-02-13",
+    "n_teams": 358,
+    "season_games_before": 3995,
+    "team_set_equal": true,
+    "max_abs_diff": 0.0
+  },
+  {
+    "season": 2023,
+    "as_of": "2022-11-07",
+    "n_teams": 363,
+    "season_games_before": 0,
+    "team_set_equal": true,
+    "max_abs_diff": 0.0
+  },
+  {
+    "season": 2023,
+    "as_of": "2022-12-25",
+    "n_teams": 363,
+    "season_games_before": 2011,
+    "team_set_equal": true,
+    "max_abs_diff": 0.0
+  },
+  {
+    "season": 2023,
+    "as_of": "2023-02-11",
+    "n_teams": 363,
+    "season_games_before": 4182,
+    "team_set_equal": true,
+    "max_abs_diff": 0.0
+  },
+  {
+    "season": 2024,
+    "as_of": "2023-11-06",
+    "n_teams": 362,
+    "season_games_before": 0,
+    "team_set_equal": true,
+    "max_abs_diff": 0.0
+  },
+  {
+    "season": 2024,
+    "as_of": "2023-12-27",
+    "n_teams": 362,
+    "season_games_before": 1944,
+    "team_set_equal": true,
+    "max_abs_diff": 0.0
+  },
+  {
+    "season": 2024,
+    "as_of": "2024-02-14",
+    "n_teams": 362,
+    "season_games_before": 4073,
+    "team_set_equal": true,
+    "max_abs_diff": 0.0
+  },
+  {
+    "season": 2025,
+    "as_of": "2024-11-04",
+    "n_teams": 364,
+    "season_games_before": 0,
+    "team_set_equal": true,
+    "max_abs_diff": 0.0
+  },
+  {
+    "season": 2025,
+    "as_of": "2024-12-24",
+    "n_teams": 364,
+    "season_games_before": 1998,
+    "team_set_equal": true,
+    "max_abs_diff": 0.0
+  },
+  {
+    "season": 2025,
+    "as_of": "2025-02-14",
+    "n_teams": 364,
+    "season_games_before": 4208,
+    "team_set_equal": true,
+    "max_abs_diff": 0.0
+  }
+]

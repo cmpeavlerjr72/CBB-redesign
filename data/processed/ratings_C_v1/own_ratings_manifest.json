@@ -1,0 +1,25 @@
+{
+  "created_at": "2026-09-30T17:59:56.375452+00:00",
+  "seasons": [
+    2022,
+    2023,
+    2024,
+    2025
+  ],
+  "arm": "C (chained)",
+  "hyperparameters": {
+    "lambda_eff": 5.0,
+    "lambda_tempo": 5.0,
+    "prior_weight_eff": "arm C: cm + w_c (c_prev - cm)",
+    "w_c": 0.6419186589419831,
+    "prior_weight_tempo": 0.8
+  },
+  "conference": "modal home/away_conference_id of the team on the hoopR season-S schedule (new conference after realignment)",
+  "conference_mean": "mean of the chained season S-1 final off/def over season-S conference members with an S-1 rating",
+  "new_d1_prior": "conference mean; no conference -> 0 (league mean)",
+  "source": "scripts/build_own_ratings_C_v1.py",
+  "sealed_not_built": [
+    2026
+  ],
+  "selection": "docs/models/own_ratings/experiments.md sections 1-2 (offline), section 3 closed loop"
+}
