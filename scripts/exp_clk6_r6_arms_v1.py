@@ -66,12 +66,22 @@ def main() -> int:
         print(f"design {len(design):,} rows", flush=True)
     elif a.step == "s1":
         m = load("train_clock_v3c_s1_r6", "train_clock_v3c_s1.py")
-        m.OUT, m.S1_DIR, m.DESIGN_V2 = root, root / "v3c_s1", root / "design_v2.parquet"
+        # OUT stays the clock dir so every manifest's `model_file` is relative
+        # to CK_DIR, which is what the engine's ArtifactManifest resolves against
+        m.OUT, m.S1_DIR, m.DESIGN_V2 = CK, root / "v3c_s1", root / "design_v2.parquet"
         sys.argv = [sys.argv[0], "--only", "srfloor_P3"]
         return m.main()
     else:
         m = load("exp_clk5b_r6", "exp_clk5b_mean_consistent.py")
-        m.r5.CK_DIR, m.r5.DESIGN = root, root / "design_v2.parquet"
+        m.r5.DESIGN = root / "design_v2.parquet"
+        served_load = m.r5.load_schedule
+        mode = f"v3c_r6{a.arm}_srfloor_P3_s1"
+
+        def load_schedule(_mode: str):
+            # the v5b fit reads the served S1 schedule by name; point it at this arm's
+            return served_load(mode)
+
+        m.r5.load_schedule = load_schedule
         sys.argv = [sys.argv[0], "--out", str((root / "v5b_bakeoff").relative_to(ROOT)), "--fit-only"]
         m.main()
     return 0

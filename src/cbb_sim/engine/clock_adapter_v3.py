@@ -654,6 +654,23 @@ V5_MODES: dict[str, dict] = {
 #: RNG stream, so it cannot change a single simulated number.
 ADOPTED_MODES: frozenset[str] = frozenset({"v5b_glat_pmean"})
 
+# ---------------------------------------------------------------------------
+# Clock round 6 (experiments.md section 28; lane B 2026-09-30): the SERVED v5b
+# specification refitted on the event-layer v4 training table (arm L2) and on
+# its phantom-only variant (arm L2a). DEFAULT-OFF: new keys only; no existing
+# mode, default, fitted object or RNG stream changes. Artifacts are written by
+# scripts/exp_clk6_r6_arms_v1.py under data/processed/models/clock/r6_<arm>/.
+# ---------------------------------------------------------------------------
+for _arm in ("L2", "L2a"):
+    V3C_MODES[f"v3c_r6{_arm}_srfloor_P3_s1"] = {
+        "manifest": f"r6_{_arm}/v3c_s1/manifest_srfloor_P3.json",
+        "base_arm": "empirical_km3_srfloor", "parametrisation": "P3"}
+    V5_MODES[f"v5b_r6{_arm}_glat_pmean"] = {
+        "base_mode": f"v3c_r6{_arm}_srfloor_P3_s1", "unit": "game",
+        "param": "B1_sigma", "loc": "plus_half",
+        "params_file": f"r6_{_arm}/v5b_bakeoff/v5b_bakeoff_report.json"}
+del _arm
+
 #: The pregame tempo feature the round-5d dispersion function is a function of.
 #: It is a TEAM_COLS member the served round-3c frame already carries, and it is
 #: game-level in the engine inputs (both team rows of a game carry the same
