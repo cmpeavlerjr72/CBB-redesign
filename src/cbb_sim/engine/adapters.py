@@ -203,6 +203,11 @@ class EventAdapter:
     #: Stage C team-rate draw (team_rate_draw.py), set by loop.py only when ENGINE_TEAM_RATE_DRAW is on:
     #: (K, G, 2, 16) perturbed copies of `team_block`, indexed by the per-simulation draw `kidx`.
     team_block_k: np.ndarray | None = None
+    #: Season-drift anchor O (engine/season_anchor_serving.py), DEFAULT OFF: per `first`
+    #: artifact, is it marked anchored; and the (G, 6) raw-score offset set only when
+    #: ENGINE_SEASON_ANCHOR names an offsets file. None = the served path, unchanged.
+    anchor_marks: tuple = ()
+    anchor_first: np.ndarray | None = None
 
     @classmethod
     def load(cls, inp: EngineInputs, mode: str = "reference",
@@ -262,6 +267,7 @@ class EventAdapter:
         # against the block's OWN name map, not `inp.team_names`.
         r2_names = {c: i for i, c in enumerate(idx["team_cols"])}
         loaded, plans, arms, src, mans = {}, {}, {}, {}, {}
+        marks = []
         for pop in ("first", "cont"):
             info = idx["populations"][pop]
             # The per-game artifact choice goes through the shared manifest
@@ -278,7 +284,10 @@ class EventAdapter:
                 d, inp.games)
             ms = []
             for e in man.entries:
-                m = joblib.load(e.path)["model"]
+                w = joblib.load(e.path)
+                m = w["model"]
+                if pop == "first":
+                    marks.append(bool(w.get("anchor")))
                 for b in (getattr(m, "clf_", None),):
                     try:
                         b.set_params(n_jobs=1)
@@ -304,7 +313,8 @@ class EventAdapter:
         return cls(plans["first"], plans["cont"], arms["first"], arms["cont"],
                    loaded["first"][-1], loaded["cont"][-1], bool(is_r4b), src,
                    mode=mode, models_first=loaded["first"],
-                   models_cont=loaded["cont"], team_block=team_block, manifests=mans)
+                   models_cont=loaded["cont"], team_block=team_block, manifests=mans,
+                   anchor_marks=tuple(marks))
 
     def predict(self, team: np.ndarray, state: np.ndarray, is_first: np.ndarray,
                 gidx: np.ndarray | None = None,
@@ -344,6 +354,11 @@ class EventAdapter:
             for k in np.unique(s):
                 r = rows[s == k]
                 m = _assemble(plan, team_r2[r], None, state[r])
+                if pop == "first" and self.anchor_first is not None:
+                    from cbb_sim.engine.season_anchor_serving import predict_with_offset
+                    out[r] = predict_with_offset(models[k], np.ascontiguousarray(m, dtype=np.float32),
+                                                 self.anchor_first[gidx[r]], list(range(len(PO.CLASSES))))
+                    continue
                 out[r] = models[k].predict_proba(np.ascontiguousarray(m, dtype=np.float32))
         return out
 
@@ -733,6 +748,10 @@ class ReboundAdapter:
     mode: str = "static"
     manifest: ArtifactManifest | None = None
     models_by_seg: tuple = ()
+    #: Season-drift anchor O, DEFAULT OFF (see EventAdapter): per-segment anchored marks
+    #: and the (G,) OREB raw-score offset, set only when ENGINE_SEASON_ANCHOR is on.
+    anchor_marks: tuple = ()
+    anchor_oreb: np.ndarray | None = None
 
     @classmethod
     def load(cls, inp: EngineInputs, fold: str = "F2",
@@ -785,7 +804,8 @@ class ReboundAdapter:
                            "dated S1 schedule its own scheme confirmation adopted",
                     "note": loaded[-1].get("note", ""), **man.provenance()},
                    False, mode=mode, manifest=man,
-                   models_by_seg=tuple(w["model"] for w in loaded))
+                   models_by_seg=tuple(w["model"] for w in loaded),
+                   anchor_marks=tuple(bool(w.get("anchor")) for w in loaded))
 
     def predict(self, team: np.ndarray, state: np.ndarray,
                 gidx: np.ndarray | None = None) -> np.ndarray:
@@ -804,6 +824,12 @@ class ReboundAdapter:
             for k in np.unique(segs):
                 r = np.flatnonzero(segs == k)
                 m = _assemble(self.plan, team[r], None, state[r])
+                if self.anchor_oreb is not None:
+                    from cbb_sim.engine.season_anchor_serving import predict_with_offset
+                    out[r] = predict_with_offset(self.models_by_seg[k],
+                                                 np.ascontiguousarray(m, dtype=np.float32),
+                                                 self.anchor_oreb[gidx[r]], [RB.CLASS_INDEX["OREB"]])
+                    continue
                 out[r] = self.models_by_seg[k].predict_proba(
                     np.ascontiguousarray(m, dtype=np.float32))
             return out
@@ -1061,6 +1087,17 @@ class Adapters:
         # (`docs/tests/usage_decision10_gate_2026-09-11.md`).
         usage_mode = os.environ.get("ENGINE_USAGE", "reference")
         usage = _load_usage(inp, usage_mode)
+        # SEASON-DRIFT ANCHOR O (engine/season_anchor_serving.py): DEFAULT OFF.
+        # Unset/`off` adds no flag and imports nothing unless an artifact is
+        # marked anchored, which is then refused (served without its offset).
+        sa_mode = os.environ.get("ENGINE_SEASON_ANCHOR", "off") or "off"
+        sa_src = None
+        if sa_mode != "off":
+            from cbb_sim.engine.season_anchor_serving import attach as _sa_attach
+            sa_src = _sa_attach(inp, event, reb, sa_mode)
+        elif any(event.anchor_marks) or any(reb.anchor_marks):
+            from cbb_sim.engine.season_anchor_serving import refuse_unserved_anchor
+            refuse_unserved_anchor(event, reb)
         # LATE-GAME ROUND 2 (late_game/experiments.md section 4): DEFAULT-OFF
         # window arms. Unset/`off` never imports the module and adds no flag, so
         # the served path and its run_meta are unchanged.
@@ -1138,6 +1175,9 @@ class Adapters:
         if lg_src is not None:
             flags["ENGINE_LATE_GAME"] = lg_mode
             flags["sources"]["late_game"] = lg_src
+        if sa_src is not None:
+            flags["ENGINE_SEASON_ANCHOR"] = sa_mode
+            flags["sources"]["season_anchor"] = sa_src
         return cls(event, clock, fg, ft, reb, usage, rot_fit, rot_mode, flags,
                    rot_s1=rot_s1)
 
