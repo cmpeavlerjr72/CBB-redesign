@@ -1,0 +1,48 @@
+[
+ {
+  "date": "2023-11-06",
+  "teams_new": 362,
+  "teams_stored": 362,
+  "same_team_set": true,
+  "n_source_games": 0,
+  "latest_source_game": null,
+  "max_abs_diff": {
+   "off_c": 1.1463052729254741e-14,
+   "def_c": 1.199040866595169e-14,
+   "tempo_rel": 2.220446049250313e-16,
+   "n_games": 0.0,
+   "league_off_mean": 0.0,
+   "league_tempo_mean": 0.0,
+   "home_off_eff": 0.0,
+   "away_off_eff": 0.0,
+   "neutral_tempo_eff": 5.551115123125783e-17,
+   "n_games_window": 0.0
+  },
+  "max_over_all_columns": 1.199040866595169e-14,
+  "bitwise_equal_columns": 6,
+  "n_columns": 10
+ },
+ {
+  "date": "2024-02-10",
+  "teams_new": 362,
+  "teams_stored": 362,
+  "same_team_set": true,
+  "n_source_games": 3875,
+  "latest_source_game": "2024-02-09",
+  "max_abs_diff": {
+   "off_c": 1.865174681370263e-14,
+   "def_c": 1.7763568394002505e-14,
+   "tempo_rel": 2.220446049250313e-16,
+   "n_games": 0.0,
+   "league_off_mean": 0.0,
+   "league_tempo_mean": 0.0,
+   "home_off_eff": 8.881784197001252e-16,
+   "away_off_eff": 6.661338147750939e-16,
+   "neutral_tempo_eff": 1.1102230246251565e-16,
+   "n_games_window": 0.0
+  },
+  "max_over_all_columns": 1.865174681370263e-14,
+  "bitwise_equal_columns": 4,
+  "n_columns": 10
+ }
+]

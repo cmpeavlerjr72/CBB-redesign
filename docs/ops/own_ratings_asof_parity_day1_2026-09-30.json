@@ -1,0 +1,25 @@
+[
+ {
+  "date": "2024-11-04",
+  "teams_new": 364,
+  "teams_stored": 364,
+  "same_team_set": true,
+  "n_source_games": 0,
+  "latest_source_game": null,
+  "max_abs_diff": {
+   "off_c": 1.1546319456101628e-14,
+   "def_c": 1.2434497875801753e-14,
+   "tempo_rel": 2.220446049250313e-16,
+   "n_games": 0.0,
+   "league_off_mean": 2.842170943040401e-14,
+   "league_tempo_mean": 0.0,
+   "home_off_eff": 0.0,
+   "away_off_eff": 1.4432899320127035e-15,
+   "neutral_tempo_eff": 1.5959455978986625e-16,
+   "n_games_window": 0.0
+  },
+  "max_over_all_columns": 2.842170943040401e-14,
+  "bitwise_equal_columns": 4,
+  "n_columns": 10
+ }
+]
