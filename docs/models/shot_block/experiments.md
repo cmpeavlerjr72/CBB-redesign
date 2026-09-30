@@ -400,3 +400,79 @@ exactly 0.0, so any probability fed continuously reads as "blocked" (+7 to +8 pp
   block closes the -0.740 pp feed channel) and the block count per game against
   the box. Block credit to a defender (player props) is a separate attribution
   change and is not in this spec.
+
+---
+
+## 5. Pre-registration: the DRAWN block flag in the engine, paired closed loop (written 2026-09-30 ~12:55 EDT by lane C, COMMITTED BEFORE ANY WIRING OR RUN)
+
+### 5.1 Question
+
+Gate G4's OREB% miss (engine 0.2836 vs 0.2984 in `po4b_R_s25`) has a 47% channel
+(`docs/tests/g4_oreb_fta_diagnostic_2026-09-18.md` 1.2): `loop.py` feeds the
+rebound model `blocked_f = 0` on every miss, while 26.2% of rim, 8.2% of jump2
+and 1.4% of three misses are blocked and are rebounded by the offence at
+0.42 / 0.41 / 0.43 vs 0.37 / 0.28 / 0.29 unblocked. Rebound round 3 showed the
+feed must be a DRAWN 0/1 and that a drawn flag recovers the -0.740 pp offline.
+Does it in the closed loop, and what does the per-type anchor add?
+
+### 5.2 Arms (all on the served stack; the only varying switch is `ENGINE_SHOT_BLOCK`)
+
+| arm | flag | block probability |
+|---|---|---|
+| `SB0` served | unset (`blocked_f = 0`) | none; this is `po4b_R_s25` provided the default path reproduces it (5.5) |
+| `SB_K2O` | `ENGINE_SHOT_BLOCK=K2_Ocell` | round-2 selection: K2 + per-shot-type as-of anchor O |
+| `SB_K2` | `ENGINE_SHOT_BLOCK=K2` | plain K2 (round-1 leader), so the loop shows what the anchor buys |
+
+Both drawn arms use the F2 fit (train 2022-2024) of `train_shot_block_v2_round2`'s
+spec, exported as coefficients; the 17 `Kc` inputs come from sibling engine
+lookups built strictly as-of for the F2 2025 slate (team block rates per game x
+side, shooter block rate per game x side x roster slot, the anchor per game x
+shot type). Nothing served is overwritten. The flag is drawn once per missed
+field goal, on a NEW RNG family `"shot_block"` consumed only when the flag is
+on; free-throw misses stay 0.
+
+### 5.3 Runs, floors
+
+Same 500-game subset and seeds 0-24 as `po4b_R_s25` (`run_po4b_closed_loop.py`'s
+subset rule), same served pins. Floor per line = |`po4b_R_s25_floor` -
+`po4b_R_s25`| (seed-offset draw, the convention of PO sections 12/17).
+
+### 5.4 Primary, mechanism, vetoes, decision
+
+- **Primary:** G4 pooled OREB% moves toward the actual (0.2984) by more than one
+  floor. Reported with it, per team on the same games against the box:
+  offence OREB% and defence OREB%-allowed, mean gap and MAE across teams.
+- **Mechanism lines (reported, not scored):** sim blocked share of rim misses
+  (and jump2 / three / all FGA misses) vs the actual on the same 500 games;
+  sim OREB% on blocked vs unblocked misses vs actual.
+- **Vetoes (any one blocks):** a line moving AWAY from its target by more than
+  one floor among G1 possessions mean and SD; G5 margin SD ratio, total SD ratio,
+  home/away score correlation; G9 margin bias and calibration slope; G4 eFG%,
+  TOV%, FT rate. The per-team offence OREB% prior-quintile slope must not fall by
+  more than one floor.
+- **G9 total bias is NOT a veto on its own** (PM, from another lane): the total
+  currently sits near target by compensation (+2.0 possessions against a
+  points-per-possession deficit), and more offensive rebounds raise points per
+  possession. Expected size, stated before the run: +0.74 pp OREB on ~70 live
+  misses per game is ~+0.5 extra second chances per game at ~1.0 point each, so
+  the mean total rises by roughly +0.4 to +0.6 points. It is reported in points
+  and floors either way.
+- **Decision:** an arm is PUT FORWARD (not adopted; the PM decides) iff the
+  primary passes and no veto fires. `SB_K2O` vs `SB_K2` is reported as the
+  anchor's closed-loop value in floors on every line. The loop is the unseen
+  test of round 2's post-hoc selection.
+
+### 5.5 Proofs before any arm is run
+
+(i) flag unset: `run_engine.py --seeds 5 --max-games 60` digest equals
+`docs/ops/parity_reference_windows_v6.json`; (ii) flag unset: the default path
+reproduces `po4b_R_s25` bit-for-bit on a handful of its games and seeds. If (ii)
+fails, `SB0` is re-run fresh and used instead, and the failure is reported.
+
+### 5.6 Caveats stated in advance (not fixed here)
+
+The 500-game sample contains one unplayed game. The served engine inputs carry
+same-game leaks that are being rebuilt tonight, so paired deltas are valid and
+absolute levels are provisional. The block lookups built for this round are
+strictly as-of, so they do not share that leak. Block credit to a defender
+(player props) is not wired.
