@@ -190,6 +190,10 @@ def _state_block(st: S.GameState, act: np.ndarray, n_state: int,
     pe = st.prev_end[act]
     for k, name in enumerate(PREV_DUMMY, start=1):
         x[:, I[name]] = (pe == k).astype(np.float64)
+    # late-game round 2 (late_game/experiments.md 4.2.5): read only by the
+    # DEFAULT-OFF ENGINE_LATE_GAME=ev_BL3 arm; no served plan indexes it.
+    x[:, I["in_double_bonus"]] = (st.def_team_fouls()[act]
+                                  >= st.double_bonus_prior_fouls[act])
     return x
 
 

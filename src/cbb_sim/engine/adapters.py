@@ -126,6 +126,9 @@ STATE_COLS: tuple[str, ...] = (
     # two are different quantities (the training `score_diff` is post-outcome,
     # `docs/tests/fg_make_state_confound_2026-09-10.md`).
     "score_diff_pre", "gt_flag", "eg_trail", "eg_lead",
+    # --- late-game round 2 (late_game/experiments.md section 4.2.5). APPENDED;
+    # read only by the DEFAULT-OFF `ENGINE_LATE_GAME=ev_BL3` arm.
+    "in_double_bonus",
 )
 STATE_INDEX = {c: i for i, c in enumerate(STATE_COLS)}
 
@@ -1054,6 +1057,14 @@ class Adapters:
         # (`docs/tests/usage_decision10_gate_2026-09-11.md`).
         usage_mode = os.environ.get("ENGINE_USAGE", "reference")
         usage = _load_usage(inp, usage_mode)
+        # LATE-GAME ROUND 2 (late_game/experiments.md section 4): DEFAULT-OFF
+        # window arms. Unset/`off` never imports the module and adds no flag, so
+        # the served path and its run_meta are unchanged.
+        lg_mode = os.environ.get("ENGINE_LATE_GAME", "off")
+        lg_src = None
+        if lg_mode != "off":
+            from cbb_sim.engine.late_game_adapter import wrap as _lg_wrap
+            event, clock, lg_src = _lg_wrap(inp, event, clock, lg_mode)
         # ROTATION, 2026-09-11: round 3b adopted S1 as the SCHEME (not an arm --
         # no rotation arm has ever passed the state-dependence gate, so
         # `provisional_rotation` stays True). The six dated R2 fits are selected
@@ -1120,6 +1131,9 @@ class Adapters:
                                      "state-dependence gate in either round"}),
             },
         }
+        if lg_src is not None:
+            flags["ENGINE_LATE_GAME"] = lg_mode
+            flags["sources"]["late_game"] = lg_src
         return cls(event, clock, fg, ft, reb, usage, rot_fit, rot_mode, flags,
                    rot_s1=rot_s1)
 
