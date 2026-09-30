@@ -268,3 +268,105 @@ NO design is adopted and NO gate is waived.
    `data/processed/team_rate_features_E3_v2.parquet`; and an `--anchor O`
    patch/wrapper for lane J's parallel S1 trainers (rebound `S1_weekly`,
    possession_outcome).
+
+---
+
+## 4. Follow-up results under the section-3 ruling (2026-09-30 12:17-12:40 EDT, lane C)
+
+Correction to 1.4: shot_block `K2`'s `Kc` bundle has 17 inputs, not 22.
+
+### 4.1 FT technicals: POST-HOC re-score (`scripts/grade_season_drift_ft_posthoc_v1.py`)
+
+E5 replaced by the level-normalised spread (CV ratio, team predictions over
+noise-corrected realised team rates) + the team slope; E1-E4, E6, E7 read
+unchanged. F2 values:
+
+| arm | other lines | CV ratio (R 0.677) | slope raw / level-norm (R 1.544 / 1.166) | Nov-Dec slope raw / level-norm (R 0.993 / 0.759) | eligible: raw one-sided | level-norm one-sided | level-norm symmetric |
+|---|---|---:|---|---|---|---|---|
+| O | all pass | 0.654 | 0.998 / 1.110 | 0.613 / 0.712 | no | **no (by 0.006)** | yes |
+| P | all pass | 0.653 | 1.015 / 1.109 | 0.636 / 0.713 | no | no | yes |
+| F | all pass | 0.661 | 1.138 / 1.125 | 0.708 / 0.724 | no | yes | yes |
+| C0, W, T | E4, E7 fail | - | - | - | no | no | no |
+
+The CV line passes for `O` (0.654 >= 0.627). Whether `O` is eligible then
+depends on how "the team slope" is read: on the registered raw one-sided line
+it fails (the raw slope is the +32% level error again), level-normalised
+one-sided it fails overall by 0.006 (1.110 vs 1.116 needed; Nov-Dec passes),
+level-normalised symmetric (|x - 1| not worse than R's + 0.05) it passes.
+`R`'s level-normalised slope 1.17 is above 1, so the one-sided reading
+penalises moving toward 1. Nothing adopted; FT technicals stays low priority.
+
+### 4.2 shot_block round 2
+
+Pre-registered in `docs/models/shot_block/experiments.md` section 3 (9411040),
+results and the drawn-flag serving spec in section 4 there: `K2_Ocell`
+(per-shot-type anchor `O`) selected POST-HOC on the level gate (rim -0.83 ->
++0.43 pp F2, -0.56 -> -0.09 pp F1); `K2` fails the rim gate; likelihood vs `K2`
++0.5 / -0.3 floor. Nothing adopted or wired.
+
+### 4.3 Anchor module `src/cbb_sim/season_anchor.py`
+
+`anchor_O(season, date, num, den, train_seasons, kind)` (binary / multi /
+Poisson), `AnchorO.offset()`, `asof_level_live(...)` (serving form),
+`lgbm_init_score`, `predict_proba_with_offset`, `rebound_inputs`, `po_inputs`.
+`tests/test_season_anchor.py`: day-0 / strictly-before semantics (synthetic);
+levels and Lbar bit-equal to round 1's fitter on the rebound design; and (with
+`CBB_SLOW=1`) a refit of the rebound F1 `O` cell through the module that
+reproduces the stored round-1 prediction to < 1e-9. 3 passed (190 s).
+
+### 4.4 League level vs E3's `oreb_*_L` (`team_rate_features_E3_v2.parquet`)
+
+Same DEFINITION: cumulative league rate over games strictly before the date,
+day 0 = previous season's final level (`oreb_off_L == oreb_def_L`, one value per
+date). Different UNIVERSE: E3's `L` is the team-box OREB / (OREB + opp DREB);
+`O` is the OREB share of the rebound model's own live-miss rows. Gap on the test
+seasons (`O` minus E3), per date: F2 mean +0.133 pp, max |0.508| pp (largest
+early season; day 0 0.29155 vs 0.28994, i.e. the prior-season end levels
+differ by 0.16 pp); F1 mean +0.137 pp, max |0.178| pp. Restricting `O`'s rows
+does not reproduce E3's number (first-chance FGA only +1.03 pp; chance_index 0
+-0.40 pp), so the two are different populations, not a timing difference.
+**`O` needs its own level (the model's target rows)**: the offset must be the
+level of the quantity the model predicts, or it injects a ~0.13 pp level bias
+(up to 0.5 pp in November) into the very thing it is meant to fix. E3's `L`
+stays the centring of E3's team features. For possession_outcome E3 carries
+no class-share level at all (its rates are tov / ftr / share3 / share_rim per
+team), so `O` for po uses the class shares of the po design. The E3 table and
+its code were not edited.
+
+### 4.5 Stage B trainer wrappers (lane J's trainers were on main, b5eb297)
+
+New versioned siblings; J's files are not edited:
+
+- `scripts/train_rebound_v3_par_anchor_v1.py`: adds `--anchor O` to
+  `train_rebound_v3_par_v1.py`, registers arm `O` = round-3's A5 offset
+  mechanism with the `_a5_off` values replaced by `anchor_O` after
+  `R3.add_fold_columns`; refuses A5 arms. With `--team-rate-table` this is `TO`.
+  SMOKE (F2, `--max-cuts 2` = one non-empty refit, 2024-11-04, n_jobs 1, E3_v2,
+  `--team-rate-missing keep_served`): PASS, 193 s fit, 18,876 scored rows, week-1
+  log loss 0.638369, level -0.58 pp, day-0 anchor 0.29155 (= 2024 end level).
+- `scripts/train_possession_outcome_s1_par_anchor_v1.py`: `--anchor O` on the
+  `first` population (lgbm, init_score per class); `cont` (cascade, no offset
+  support) fitted unchanged through J's worker; engine artifacts are NOT written
+  with an anchor (the engine has no offset feed). SMOKE (F2, `--max-cuts 1`,
+  `--only-pop first`, n_jobs 1, E3_v2, keep_served): PASS, 720 s fit, 742,025
+  scored rows, rows sum to 1, mean shares 0.1549 / 0.2548 / 0.1798 / 0.2965 /
+  0.0625 / 0.0515 (2025 actual 0.1554 / 0.2570 / 0.1789 / 0.2957 / 0.0616 /
+  0.0514).
+
+Found while smoking, for lane J / the PM (not changed here): (i) the
+team-rate adapter's default `missing="raise"` stops the rebound design on 388
+rows with no E3 key (e.g. 2023 game 401492245); the box run needs the PM's
+policy (`keep_served` was used for the smoke only); (ii) J's rebound
+`--max-cuts 1` yields zero tasks and then crashes in the grader, because the
+first `S1_weekly` cut (Nov 1) precedes the first game (Nov 4); use
+`--max-cuts 2` for a one-refit smoke.
+
+Box commands (Stage B `TO` arm; one process per cell):
+
+    python scripts/train_rebound_v3_par_anchor_v1.py --anchor O --stage 2 --folds F2 --arms O \
+        --team-rate-table data/processed/team_rate_features_E3_v2.parquet --n-jobs 24 \
+        --out-dir data/processed/models/rebound/round3_par_TO_v1
+    python scripts/train_possession_outcome_s1_par_anchor_v1.py --anchor O --fold F2 --season 2025 \
+        --team-rate-table data/processed/team_rate_features_E3_v2.parquet --n-jobs 24 \
+        --out-root data/processed/models/engine_s1_TO_v1
+    # add --team-rate-missing <PM policy>; repeat with --folds F1 / --fold F1 --season 2024
