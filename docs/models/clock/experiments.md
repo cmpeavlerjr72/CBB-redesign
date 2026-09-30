@@ -4158,3 +4158,103 @@ computed closed-loop -- the floors above are seed-offset floors, which is what
 section 26.3 pre-registered; a game-block bootstrap of the closed-loop quintile
 ratios is round 6's if round 6 wants one. No offline quantity was recomputed and
 no artifact was refitted or rewritten.
+
+## 28. Round 6 pre-registration -- possession START-TYPE labels and the like-for-like possession count (2026-09-30, lane B)
+
+Appended BEFORE any round-6 engine mode, training table, fitted object or
+results directory existed, and before any closed-loop number was read.
+Sections 1-27 are STATIC and are NOT edited; `experiments.md` is append-only.
+Status changes (if any) go to `docs/models/change_ledger.md` by the PM, not here.
+**Every arm is default-off. No served default changes under any outcome; the PM
+switches the served arm or does not.**
+
+**PREMISE** (evidence: `docs/tests/g1_g5_possessions_corr_diagnostic_2026-09-30.md`
+sections 1 and 5; scripts `diag_g1_possessions_v1.py`, `diag_g1_possessions_v2.py`,
+`diag_g1_unknown_poss_v1.py`, `diag_g1_unknown_sample_v1.py`, `diag_g1_unknown_box_v1.py`).
+
+1. The G1 truth is the box estimator; the engine emits a true count. Under ONE
+   definition -- engine count vs the pbp possession count with the event layer's
+   spurious possessions removed (classes A, B1, B2, C1, E of the diagnostic;
+   0.56 per team-game in 2025) -- the served stack is **+1.617** possessions per
+   team-game high (pbp-complete games; +1.576 if class B2 is kept).
+2. That +1.617 closes (residual 1e-6) as OT -0.301, seed/subset/tiling +0.011,
+   start-type composition +0.538, duration law +1.444, interaction -0.074
+   (engine labels); in the clock's TRAINING labels composition +0.330, law
+   +1.631. The law term is dominated by ONE cell: `made_FG`, +0.996 (engine
+   draws 21.40 s where the corrected table's cell is 22.10 s and clean made-FG
+   starts are 22.16 s).
+3. The training table and the engine disagree about the possession after an
+   and-one. The pbp layer labels it `made_FG` in both branches and, in the
+   missed-FT branch, inserts a ~1.1 s phantom possession for the shooter (class
+   A) or a same-team restart (class E); the engine labels it `made_FT` (FT made)
+   or `DREB` (FT missed). On the floor the engine's labels are the right classes
+   (made branch: successor 20.85 s mid-game vs `made_FT` cell 20.27, `made_FG`
+   cell 22.60; missed branch: rebounding team's possession 19.8 s vs
+   DREB-after-missed-trip 17.6 s, both live FT-miss rebounds). The phantoms and
+   made-branch successors pull the `made_FG` training cell down by 0.37 s.
+
+### 28.1 Arms (all default-off, all paired on the same RNG streams)
+
+- **R** -- served `ENGINE_CLOCK=v5b_glat_pmean`, engine bookkeeping unchanged.
+- **L1 (engine -> training convention)** -- no refit; the engine feeds
+  `prev_end = made_FG` to the clock (and to every sub-model that reads
+  `prev_end`) after an and-one in BOTH branches (a missed-FT live rebound
+  continues to be resolved by the rebound model; only the NEXT possession's
+  start label changes). Flag: a new default-off switch; the served path must be
+  bit-identical (28.3).
+- **L2 (training -> engine convention)** -- rebuild the clock's training table
+  from `possessions_v2` with (i) classes A, B1, B2, C1 dropped and their seconds
+  given to the next possession of the period, (ii) class E merged into the
+  preceding and-one possession, (iii) and-one successors labelled as the engine
+  labels them (`made_FT` if the FT was made, `DREB` if the defence rebounded the
+  miss), then refit the served v5b specification UNCHANGED (same cells, same S1
+  schedule, same latent sigma re-estimated by the section-21 procedure).
+  Engine unchanged.
+- **L2a (phantom correction only)** -- L2's (i)+(ii) without (iii), so the phantom
+  effect and the label effect are separated.
+- **D1 (duration-law arm on the mis-fit cell)** -- L2 with the S1 refit pooled by
+  SEASON PART across seasons (L34: "any in-season refit scheme for a quantity
+  with a within-season trend must pool by season part across seasons"), which
+  is the documented mechanism of the residual `made_FG` level gap. If lane C's
+  season-drift anchor round (pre-registered 2026-09-30, commit `5003ce7`)
+  produces a clock-applicable anchor first, D1 uses it instead and says so
+  before running.
+
+### 28.2 Metrics, folds, floor, decision
+
+- **Offline (L2, L2a, D1 only):** the section-14/21 offline scoring on fold 2
+  (2024-25) against the CORRECTED table; fold 1 reported. The offline number
+  is a precondition, not the selection.
+- **Primary (closed loop):** possessions per team-game, engine count minus the
+  like-for-like truth (phantom-corrected pbp count), on the pbp-complete games
+  of the 500-game section-14.4 subset, reported WITH its closed split (OT,
+  composition, law, interaction by start type) so no arm can win by moving the
+  mix. Target 0; R reads about +1.6.
+- **Floor:** the seed-offset floor at the same seed count (two disjoint seed
+  windows of R), plus, for refit arms, a spec-identical refit under a second fit
+  seed. An arm beats R only if it moves the primary toward 0 by more than the
+  floor. Ties go to R, then to the simpler arm (L1 < L2a < L2 < D1).
+- **Vetoes (an arm that fails any is rejected, whatever its primary):** G1
+  possession SD not worse beyond its floor; G5 margin and total SD ratios not
+  worse beyond their floors; G7 first-half vs second-half scoring share not
+  worse; G7 OT rate not worse.
+- **Scale:** 500 games x 25 seeds, paired; <= 3 engine workers per arm if run
+  alongside other lanes; thread env vars pinned to 1.
+
+### 28.3 Wiring checks (before any number is read)
+
+The served path must be BIT-IDENTICAL: a 60-game x 5-seed default smoke digested
+against `docs/ops/parity_reference_windows_v6.json` (sha256 `0d4ddccc...`). A
+mismatch fails the round as a wiring defect. `pytest tests/test_engine.py
+tests/test_clock_adapter_v3.py` must pass unchanged.
+
+### 28.4 What round 6 can and cannot ship
+
+**Fixing the count moves G9's total by about -2.2 points on its own** (lane B
+section 1.5: +2.24 of today's total comes from the excess possessions and is
+cancelled by a -3.11 PPP deficit, 1.89 of which is the OREB and FT shortfalls
+G4 owns). A round-6 winner therefore **can only SHIP together with the G4
+fixes** (rebound round 3, possession-outcome foul round). Round 6's question is
+only whether the count closes against a like-for-like truth. The G1 grading
+definition itself (box estimator vs corrected count) is a PM/eval decision and
+is not decided here.
