@@ -370,3 +370,13 @@ Box commands (Stage B `TO` arm; one process per cell):
         --team-rate-table data/processed/team_rate_features_E3_v2.parquet --n-jobs 24 \
         --out-root data/processed/models/engine_s1_TO_v1
     # add --team-rate-missing <PM policy>; repeat with --folds F1 / --fold F1 --season 2024
+
+### 4.6 Note (PM ruling, recorded ~12:45 EDT): box commands in 4.5 use the v3 tables
+
+The missing-key rows are fixed at the cause: the box runs 4.5's commands with
+`data/processed/team_rate_features_E3_v3.parquet` (and `_E3opp_v3` where the
+E3opp arm applies) in place of `_E3_v2`, and with `--team-rate-missing raise`
+(zero missing keys on all three designs). Anchor `O` uses its own league level
+from `cbb_sim.season_anchor` (ruling recorded). FT technicals parked;
+shot_block `K2_Ocell` is the round-2 selection on the level gate, POST-HOC, not
+served.
