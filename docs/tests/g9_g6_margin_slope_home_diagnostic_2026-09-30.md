@@ -318,3 +318,195 @@ Evidence: `possession_outcome.py:436-439`, `build_engine_inputs.py:173,534-537`,
   - The neutral coefficient. It is **underpowered** on one season (SE 0.41), so read it pooled with fold 1.
   - The G6 raw lines.
   - The one-power-conference bias vs the close. That one belongs to the drift-anchor round, not to P2.
+
+## 6. P1 step 1 (PM follow-up, same day): which inputs make the excess within-season movement
+
+This section is DIAGNOSTIC, offline and uses no simulation. Nothing is fixed, adopted or re-defaulted. Script: `scripts/diag_g9_within_season_v1.py`. Outputs: `results/g9ws_diag/{preds,analyse}_v1.*`. It ran on 1 core, about 12 minutes of predictions plus seconds of analysis.
+
+### 6.1 Method
+
+**Harness.** The SERVED artifacts are loaded read-only through the engine's own adapter classes. These are:
+
+- the event `round2_s1` first-chance model (6 monthly refits);
+- fg_make `round4_B1` for rim, jump2 and three (6 monthly refits);
+- rebound `s1_weekly` (23 weekly refits);
+- free_throw `s1_conf_aligned` (29 refits).
+
+Every (game, offence side) of fold 2 is re-predicted at fixed reference game states, which yields team-level rates:
+
+- from possession_outcome: P(TOV), P(FT trip) and the shot shares;
+- from fg_make: P(make) for each shot class;
+- from free_throw: P(make).
+
+The slot-level rates for fg_make and free_throw are weighted over slots by rotation share times usage rate. Rebound gives P(OREB | miss) over a fixed mix of miss types.
+
+- The harness reproduces the sim's per-game channel margins at correlation 0.82-0.97 and scale 0.76-1.00 (clock channels are not harnessed).
+- The part of the sim that the harness does not reproduce is carried as its own component, `not_harnessed`, so nothing is dropped. It covers game state, the possession cascade, the clock and Monte Carlo noise.
+
+**Counterfactual inputs.** Each input family is replaced in turn:
+
+- as-of team features owned by the offence (`Toff`), replaced by that team's season mean;
+- as-of team features owned by the defence (`Tdef`), likewise;
+- the date feature `days_since_start` (`D`), replaced by its season mean;
+- the artifact (`A`): every game is scored by the FIRST refit, which was trained before 2024-11-01, so there is no leak;
+- shooter slot features (`Pf`), replaced by the player's season mean;
+- rotation share and usage (`Pw`), likewise.
+
+**Cumulative split (exact).** The freezes are applied cumulatively in that order, so the pieces sum exactly to the sim's mean margin:
+
+- the offline movement increments;
+- `frozen`, the all-inputs-frozen prediction; its within-season part is the model's own matchup non-additivity;
+- `not_harnessed`, the sim minus the offline prediction.
+
+**Close-referenced attribution.** Each family's within-season component is its fixed-effect residual. The close's within-season component is regressed on all of them jointly, and each family gets k_f = (1 - beta_f) cov(M_f, X)/var(X). This closes exactly to the section 1.2 total.
+
+**Unbiased movement test (rate level).** The team's own features are replaced by the values from its 1st or 5th previous game. Then y = a + b_level x_lag + b_move (x - x_lag) is fitted on the realised per-game rate. This uses no future information, which avoids the look-ahead bias that affects any season-mean split (section 1.1). If the movement were fully justified, b_move / b_level would be 1.
+
+### 6.2 Result: the as-of team rate features own the excess movement
+
+Within-season component (sim SD 3.56 vs close SD 2.28): k_within = 0.0914, and points are at +1 SD of predicted margin (SD 9.62).
+
+| input family | within-season SD (pts) | beta (close on family) | k | pts |
+|---|---:|---:|---:|---:|
+| **as-of team features, offence-owned (Toff)** | 1.95 | 0.41 (0.02) | **0.0295** | **0.28** |
+| **as-of team features, defence-owned (Tdef)** | 1.97 | 0.33 (0.02) | **0.0358** | **0.34** |
+| team off x def interaction | 0.90 | 0.43 | -0.0010 | -0.01 |
+| date feature (days_since_start) | 0.34 | 0.23 | 0.0011 | 0.01 |
+| artifact refit schedule (A) | 1.22 | 0.22 | 0.0029 | 0.03 |
+| shooter slot features (Pf) | 0.61 | 0.16 | 0.0013 | 0.01 |
+| rotation share / usage (Pw) | 0.25 | 0.68 | 0.0002 | 0.00 |
+| all inputs frozen: matchup non-additivity | 1.53 | 0.26 | 0.0108 | 0.10 |
+| not harnessed (state, cascade, clock, MC noise; MC is about 0.008 of this) | 1.33 | 0.18 | 0.0108 | 0.10 |
+| **total** | | | **0.0914** | **0.88** |
+
+**Owner.** The as-of team rate features make 0.064 of the 0.091 (70%, 0.62 pts). The market prices only 33-41% of their within-season movement.
+
+**Not the owner.**
+
+- Player, shooter and rotation inputs carry 0.0015 between them.
+- The refit schedule carries 0.003.
+- The date feature carries 0.001.
+
+### 6.3 By sub-model and side (team-feature family only; this is the table the fix round targets)
+
+Column definitions:
+
+- **within-team predicted SD:** SD of (served prediction minus the prediction with that side's team features frozen at the season mean), in rate units.
+- **lag-1 ratio:** b_move / b_level (SE of b_move in parentheses), unbiased. A ratio below 1 means that part of the game-to-game movement is noise.
+- **lag-5 ratio:** the same over five games.
+- **pts:** that cell's close-referenced k times 9.62.
+
+| sub-model | side | within-team pred SD | lag-1 ratio | lag-5 ratio | k | pts |
+|---|---|---:|---:|---:|---:|---:|
+| fg_make rim | off | 0.0160 | 0.79 (b_move SE 0.09) | 0.89 | 0.0090 | 0.087 |
+| fg_make rim | def | 0.0154 | 0.61 (0.08) | 0.70 | 0.0074 | 0.071 |
+| fg_make jump2 | off | 0.0133 | 0.47 (0.13) | 0.62 | 0.0013 | 0.013 |
+| fg_make jump2 | def | 0.0141 | 0.83 (0.12) | 0.73 | 0.0044 | 0.042 |
+| fg_make three | off | 0.0100 | 0.53 (0.12) | 0.62 | 0.0051 | 0.049 |
+| fg_make three | def | 0.0095 | **0.38** (0.12) | 0.54 | 0.0072 | 0.069 |
+| possession_outcome TOV | off | 0.0076 | 0.72 (0.08) | 0.88 | 0.0040 | 0.038 |
+| possession_outcome TOV | def | 0.0101 | 0.65 (0.05) | 0.79 | 0.0072 | 0.069 |
+| possession_outcome FT trip | off | 0.0060 | 0.49 (0.21) | 0.66 | 0.0010 | 0.010 |
+| possession_outcome FT trip | def | 0.0070 | 0.61 (0.15) | 0.71 | 0.0012 | 0.012 |
+| possession_outcome shot mix (rim/jump/3) | off | 0.018-0.024 | 0.73-0.80 | 0.85-0.97 | 0.0018 | 0.017 |
+| possession_outcome shot mix (rim/jump/3) | def | 0.018-0.020 | 0.57-0.69 | 0.75-0.82 | 0.0021 | 0.020 |
+| rebound OREB | off | 0.0179 | 0.63 (0.06) | 0.85 | 0.0073 | 0.070 |
+| rebound OREB | def | 0.0143 | **0.46** (0.07) | 0.56 | 0.0063 | 0.061 |
+| free_throw FT% | - | no team features | - | - | 0 | 0 |
+| **sum** | | | | | **0.0653** | **0.63** |
+
+**Split by sub-model:**
+
+| sub-model | k | pts | share |
+|---|---:|---:|---:|
+| fg_make | 0.034 | 0.33 | half |
+| possession_outcome | 0.017 | 0.17 | |
+| rebound | 0.014 | 0.13 | |
+
+**What the ratios show.** Every lag ratio is below 1: 0.38-0.83 game to game, rising to 0.54-0.97 over five games. The as-of rates over-react to recent games, most of all in the noisiest rates: three-point and jump-shot make rates, defensive rebounding, and FT trips. Defence-owned features over-react more than offence-owned ones in 5 of the 7 rate families.
+
+**Mechanism, consistent with the build.** The as-of rates are expanding means that start at 0.0 with no prior-season carry and no sample-size weighting. Each new game moves a rate by (y - mean)/n. A reliability-weighted estimate would move it by (y - mean)/(n + k), with k the noise-to-signal ratio, which is large for 3P% and OREB%.
+
+### 6.4 Refit boundaries: small, not the "month drift"
+
+This compares the artifact effect (served minus first-refit prediction) between a team's consecutive games, split by whether the pair crosses a refit boundary.
+
+| model | cross n | within n | abs-change of artifact effect, cross vs within | abs-change of prediction, cross vs within |
+|---|---:|---:|---|---|
+| PO TOV | 1472 | 9584 | 0.0076 vs 0.0059 | 0.0225 vs 0.0210 |
+| PO 3PA share | 1472 | 9584 | 0.0204 vs 0.0127 | 0.0385 vs 0.0355 |
+| fg_make rim | 1472 | 9584 | 0.0139 vs 0.0104 | 0.0344 vs 0.0329 |
+| fg_make three | 1472 | 9584 | 0.0120 vs 0.0093 | 0.0193 vs 0.0187 |
+| rebound (weekly) | 6149 | 4907 | 0.0129 vs 0.0122 | 0.0308 vs 0.0286 |
+| free_throw (29 refits) | 4022 | 7034 | 0.0071 vs 0.0031 | 0.0117 vs 0.0097 |
+
+- **Refits do step.** The artifact effect changes 1.2-2.3x more across a boundary.
+- **The step is small.** It adds only 3-20% to a team's game-to-game prediction change.
+- **Its margin cost is 0.003 (0.03 pts).**
+- **The month drift of section 1.2 (0.038) is therefore team-feature drift, not refit steps.**
+
+### 6.5 By weeks into season
+
+| weeks | n | sim within SD | close within SD | k_within | team-feature k (Toff+Tdef) | team-feature SD Toff/Tdef (pts) | frozen k | not-harnessed k |
+|---|---:|---:|---:|---:|---:|---|---:|---:|
+| 0-3 | 1248 | 5.38 | 2.90 | 0.114 | 0.070 | 2.92 / 2.93 | 0.021 | 0.019 |
+| 4-7 | 830 | 3.25 | 2.14 | 0.086 | 0.065 | 1.83 / 1.84 | 0.005 | 0.009 |
+| 8-11 | 1306 | 2.57 | 1.80 | 0.070 | 0.061 | 1.42 / 1.49 | 0.011 | 0.015 |
+| 12-15 | 1019 | 2.64 | 1.93 | 0.099 | 0.069 | 1.39 / 1.46 | 0.004 | 0.000 |
+| 16+ | 972 | 2.74 | 2.39 | 0.090 | 0.087 | 1.58 / 1.49 | 0.006 | -0.001 |
+
+- **The SD of team-feature movement halves after week 3.**
+- **Its slope cost does not fall** (0.061-0.087 in every band). Late in the season the model's learned response to feature deviations still over-weights movement the market prices at about 35-40%.
+- **So the defect is not confined to the few-game early weeks,** consistent with the monthly slopes.
+- **Weeks 0-3 carry extra excess** from matchup non-additivity and the non-harnessed state. Cells have n of 830-1,306 each. The per-band k have SE of about 0.01, so band-to-band differences below about 0.02 are **underpowered**.
+
+### 6.6 Step 2 (sim-level freezes): not run
+
+**Why.** Step 1 closes, and it names one owner (as-of team rate features, 70%) with every other family at 0.003 or less. Step 2's counterfactual freezes would only re-measure that.
+
+**Unexplained or partly explained:** two pieces of 0.011 each.
+
+- **Matchup non-additivity of the served trees (`frozen`).** This is structural and is not an estimator issue.
+- **`not_harnessed`.** Of this, about 0.008 is Monte Carlo noise at 200 seeds (section 0); the rest is state/cascade and clock (pace 0.004).
+
+**Seed sizing, if step 2 is ever needed.** Paired arms share RNG streams, so MC noise largely cancels in arm differences. At 200 seeds the MC share of the slope miss is about 0.008. A 100-game-per-month subsample at 200 seeds would resolve an arm difference of about 0.01 in close-referenced k. 800 seeds on all games is not required.
+
+### 6.7 Candidate pre-registration for the fix round (written, NOT run)
+
+**Scope.** Damp unjustified within-season movement AT THE ESTIMATE, inside the as-of team-rate feature builder shared by possession_outcome, fg_make and rebound. The team level must not shrink. No sim-output damping of any kind.
+
+**Rates covered:** off and def TOV, FT rate, 3PA and rim share, make rates by class, OREB and DREB. free_throw has no team features and is out of scope.
+
+This is one cross-model round. The possession_outcome and rebound retrains overlap Lane C's drift-anchor round, so the PM should sequence the two.
+
+**Candidates** (every hyper-parameter is fitted on the fold's TRAINING seasons only, never on fold 2):
+
+- **E0 (reference):** served expanding as-of means from 0.0, with no carry.
+- **E1:** reliability-weighted as-of rate, (n r_n + k m0)/(n + k), with m0 the league mean (0 after centring). k per rate and side is fitted by maximum next-game binomial likelihood on training seasons.
+- **E2:** E1 with m0 = the team's prior-season rate regressed toward the league by its own reliability, i.e. a sample-size-dependent prior-season carry. This differs from the refused G2, which applied a fixed-weight shrink of the model features.
+- **E3:** a local-level state-space (Kalman) team rate. Observation variance comes from counts, and process variance q plus the prior-season carry are fitted on training seasons. Output is the filtered mean strictly before tipoff.
+- **E4:** an exponentially weighted rate with fitted half-life plus the E2 prior. This is the simpler twin of E3.
+- **Optional arm:** opponent adjustment on top of the winner (Decision 9 arm, still PENDING).
+
+**Primary metric**
+
+- **Stage A (estimator, offline).** Fold-2 next-game predictive deviance of each team rate, summed over rates, reported per rate, side and weeks band (0-3, 4-7, 8-15, 16+).
+- **Stage A co-primary.** The lag-1 movement ratio b_move/b_level from 6.1, target 1.
+
+**Downstream stages**
+
+- **Stage B.** Each sub-model is retrained on the winning feature build under S1 and graded on its own pre-registered primary. The quintile-responsiveness check is mandatory.
+- **Stage C (ship gate).** A paired 200-seed closed loop.
+  - Primary: G9 slope.
+  - Co-primary: slope(close on X) and the close-referenced k_within, recomputed with this script.
+
+**Guards (all stages)**
+
+- Close-referenced team-component slope stays in 0.97-1.03 (section 1.2 reads 0.99). This is the check that the level is not shrunk.
+- Team-level prediction SD ratios in section 1.3 must not fall.
+- Margin MAE, G5 margin SD ratio and G6 lines do not regress beyond the paired A/B floor.
+
+**Noise floor and decision rule**
+
+- **Noise floor.** Stage A uses a spec-identical refit with a different CV seed (estimators are deterministic, so the fold-1-to-fold-2 transfer is also reported). Stage C uses the A/B paired seed streams (0.002 slope).
+- **Decision rule.** The winner must beat E0 beyond the floor on Stage A with no guard broken. Ties go to the simpler candidate, in the order E1, E2, E4, E3.
