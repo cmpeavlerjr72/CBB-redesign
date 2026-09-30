@@ -50,6 +50,7 @@ FAMILIES: tuple[str, ...] = (
     "rotation",       # substitution targets and availability
     "rotation_foul",  # personal-foul hazard on the five on the floor
     "tipoff",         # opening possession, and each overtime's
+    "team_rate",      # Stage C draw index (team_rate_draw.py); drawn only when ENGINE_TEAM_RATE_DRAW is on and K > 1
 )
 
 

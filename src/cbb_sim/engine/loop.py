@@ -56,6 +56,7 @@ from cbb_sim.engine import andone_label as AL
 from cbb_sim.engine import foul_joint as FJ
 from cbb_sim.engine import rotation_adapter as RA
 from cbb_sim.engine import state as S
+from cbb_sim.engine import team_rate_draw as TRD
 from cbb_sim.engine.adapters import STATE_INDEX, Adapters
 from cbb_sim.engine.inputs import EngineInputs
 from cbb_sim.engine.rng import StreamBook, categorical
@@ -218,6 +219,11 @@ def simulate_chunk(inp: EngineInputs, ad: Adapters, game_index: np.ndarray,
     gids = inp.games["game_id"].to_numpy()[game_index]
     seasons = inp.games["season"].to_numpy()[game_index]
     book = StreamBook(seeds, gids)
+    # Stage C team-rate draw (team_rate_draw.py): DEFAULT OFF -> trd is None, ksim is None.
+    trd = TRD.active(inp)
+    ksim = None if trd is None else trd.k_from_book(book)
+    if trd is not None:
+        ad.event.team_block_k = trd.team_block_k
 
     # ---- opening tip -----------------------------------------------------
     u_tip = book.draw("tipoff")
@@ -239,6 +245,8 @@ def simulate_chunk(inp: EngineInputs, ad: Adapters, game_index: np.ndarray,
     # Round 7 (experiments.md s20): joint foul accrual + FT-trip offsets.
     # DEFAULT OFF -- `FJ.load` returns None unless ENGINE_FOUL_JOINT names an arm.
     fj = FJ.load(os.environ.get("ENGINE_FOUL_JOINT", "reference"))
+    if fj is not None:
+        fj.init_whistle(seeds, gids)     # round 8; a no-whistle arm draws nothing
     neutral_g = ((inp.games["neutral"].to_numpy() > 0)
                  if (foul_tab is not None or fj is not None) else None)
     ce_med = {int(k): float(v) for k, v in rules["chance_elapsed_median_by_chance"].items()}
@@ -351,6 +359,7 @@ def simulate_chunk(inp: EngineInputs, ad: Adapters, game_index: np.ndarray,
         m = len(act)
         gidx = st.game_index[act]
         off = st.off[act].astype(np.int64)
+        kk = None if ksim is None else ksim[act]
         dfn = 1 - off
         off_sd = st.off_score_diff()
         bonus = st.in_bonus()
@@ -365,7 +374,7 @@ def simulate_chunk(inp: EngineInputs, ad: Adapters, game_index: np.ndarray,
             per0 = st.period[act]
             site0 = np.where(neutral_g[gidx], 0, np.where(off == 0, 1, 2))
 
-        team_off = inp.team_static[gidx, off]
+        team_off = inp.team_static[gidx, off] if kk is None else trd.team_static_k[kk, gidx, off]
 
         # ---- (a) clock ---------------------------------------------------
         st.chance_number[act] = 1
@@ -410,12 +419,15 @@ def simulate_chunk(inp: EngineInputs, ad: Adapters, game_index: np.ndarray,
             xx[:, I["is_transition_f"]] = xx[:, I["is_transition"]]
             xx[:, I["chance_elapsed_s"]] = np.where(
                 is_first, used[rows], ce_lut[np.minimum(chance[rows], 3)])
-            t_off = inp.team_static[gidx[rows], off[rows]]
+            t_off = (inp.team_static[gidx[rows], off[rows]] if kk is None
+                     else trd.team_static_k[kk[rows], gidx[rows], off[rows]])
 
-            probs = ad.event.predict(t_off, xx, is_first, gidx[rows], off[rows])
+            probs = (ad.event.predict(t_off, xx, is_first, gidx[rows], off[rows]) if kk is None
+                     else ad.event.predict(t_off, xx, is_first, gidx[rows], off[rows], kidx=kk[rows]))
             if fj is not None:
                 probs = fj.adjust_trips(probs, st.period[a_rows], st.team_fouls[a_rows, dfn[rows]],
-                                        st.team_fouls[a_rows, off[rows]], CLS_FT_BONUS, CLS_FT_SHOOT)
+                                        st.team_fouls[a_rows, off[rows]], CLS_FT_BONUS, CLS_FT_SHOOT,
+                                        rows=a_rows, def_side=dfn[rows])
             cls = categorical(book.draw("event", a_rows), probs)
 
             # ---- (c) allocation: who of the five ------------------------
@@ -465,7 +477,8 @@ def simulate_chunk(inp: EngineInputs, ad: Adapters, game_index: np.ndarray,
                 xs = xx[sel].copy()
                 xs[:, I["blocked_f"]] = 0.0
                 slot_blk = inp.slot_static[gidx[r], off[r], sh]
-                p_make = ad.fg.predict(SHOT_CLASSES[sc], inp.team_static[gidx[r], off[r]],
+                p_make = ad.fg.predict(SHOT_CLASSES[sc], (inp.team_static[gidx[r], off[r]] if kk is None
+                                                          else trd.team_static_k[kk[r], gidx[r], off[r]]),
                                        slot_blk, xs, gidx[r])
                 made = book.draw("fg_make", ar) < p_make
                 pv = SHOT_POINTS[sc]
@@ -544,7 +557,8 @@ def simulate_chunk(inp: EngineInputs, ad: Adapters, game_index: np.ndarray,
                                  ("three", "miss_three")):
                     xr[:, I[col]] = (mk == miss_type_index[key]).astype(np.float64)
                 xr[:, I["blocked_f"]] = 0.0
-                p3 = ad.reb.predict(inp.team_static[gidx[mr], off[mr]], xr, gidx[mr])
+                p3 = ad.reb.predict((inp.team_static[gidx[mr], off[mr]] if kk is None
+                                     else trd.team_static_k[kk[mr], gidx[mr], off[mr]]), xr, gidx[mr])
                 # dead balls as the measured fixed share per miss type (L17),
                 # composed through the module's own function
                 p3 = RB.compose_binary_plus_fixed_dead(
@@ -583,7 +597,7 @@ def simulate_chunk(inp: EngineInputs, ad: Adapters, game_index: np.ndarray,
         u_sf = book.draw("foul_accrual", act)
         if fj is not None:
             sf, of_ = fj.accrual(u_sf, per0, sec0, sd0, tf_def0, tf_off0, site0,
-                                 end_code == PREV["TOV"])
+                                 end_code == PREV["TOV"], rows=act, def_side=dfn)
             if of_.any():
                 ro = np.flatnonzero(of_)
                 st.team_fouls[act[ro], off[ro]] += 1

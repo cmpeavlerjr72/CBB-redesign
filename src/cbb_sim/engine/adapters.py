@@ -200,6 +200,9 @@ class EventAdapter:
     #: made by `cbb_sim.engine.manifest`, not here, because S1 is the standing
     #: default for EVERY sub-model and the rule must live in one place.
     manifests: dict = field(default_factory=dict)
+    #: Stage C team-rate draw (team_rate_draw.py), set by loop.py only when ENGINE_TEAM_RATE_DRAW is on:
+    #: (K, G, 2, 16) perturbed copies of `team_block`, indexed by the per-simulation draw `kidx`.
+    team_block_k: np.ndarray | None = None
 
     @classmethod
     def load(cls, inp: EngineInputs, mode: str = "reference",
@@ -305,7 +308,8 @@ class EventAdapter:
 
     def predict(self, team: np.ndarray, state: np.ndarray, is_first: np.ndarray,
                 gidx: np.ndarray | None = None,
-                off: np.ndarray | None = None) -> np.ndarray:
+                off: np.ndarray | None = None,
+                kidx: np.ndarray | None = None) -> np.ndarray:
         """(n, 6) in `PO.CLASSES` order.
 
         `reference`: one batched predict per population.
@@ -329,7 +333,7 @@ class EventAdapter:
         if gidx is None or off is None:
             raise ValueError("ENGINE_EVENT=round2_s1 needs (gidx, off) to select the "
                              "monthly refit and the round-2 team row")
-        team_r2 = self.team_block[gidx, off]
+        team_r2 = self.team_block[gidx, off] if kidx is None else self.team_block_k[kidx, gidx, off]
         for pop, mask, plan, models in (
                 ("first", is_first, self.plan_first, self.models_first),
                 ("cont", ~is_first, self.plan_cont, self.models_cont)):
