@@ -107,10 +107,11 @@ class Tap:
         self.recs.append((rec, uu, None))
         self.pending = len(self.recs) - 1
 
-    def set_p(self, p):
+    def set_p(self, p, p_off=None):
         if self.pending is not None:
             rec, uu, _ = self.recs[self.pending]
-            self.recs[self.pending] = (rec, uu, np.asarray(p, np.float64))
+            po = np.zeros(len(uu)) if p_off is None else np.asarray(p_off, np.float64)
+            self.recs[self.pending] = (rec, uu, (np.asarray(p, np.float64), po))
             self.pending = None
 
 
@@ -219,8 +220,10 @@ def _run_block(job):
     for rec, uu, p in T.recs:
         if p is None:
             raise RuntimeError("silent-foul probability not captured for a possession block")
-        sil = (uu < p).astype(np.int32)
-        recs.append(np.column_stack([rec, sil, (p * 1e6).astype(np.int32)]))
+        pd_, po_ = p
+        sil = (uu < pd_).astype(np.int32)
+        offf = ((uu >= pd_) & (uu < pd_ + po_)).astype(np.int32)
+        recs.append(np.column_stack([rec, sil, (pd_ * 1e6).astype(np.int32), offf]))
     R = np.vstack(recs)
     T.st = None
     return res.games, res.players, res.diag, res.n_possessions, R
@@ -289,7 +292,7 @@ def main() -> int:
         out / "games_v2.parquet", index=False)
     if pf:
         pd.concat(pf, ignore_index=True).to_parquet(out / "players.parquet", index=False)
-    R = pd.DataFrame(np.vstack(recs), columns=REC_COLS + ["silent", "p_silent_x1e6"])
+    R = pd.DataFrame(np.vstack(recs), columns=REC_COLS + ["silent", "p_silent_x1e6", "off_foul"])
     R["game_id"] = inp.games["game_id"].to_numpy()[R["gidx"].to_numpy()]
     R.to_parquet(out / "poss_tap.parquet", index=False)
     meta = {"tag": args.tag, "created_at": datetime.now(UTC).isoformat(),

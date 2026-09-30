@@ -52,6 +52,7 @@ from dataclasses import dataclass
 import numpy as np
 import pandas as pd
 
+from cbb_sim.engine import foul_joint as FJ
 from cbb_sim.engine import rotation_adapter as RA
 from cbb_sim.engine import state as S
 from cbb_sim.engine.adapters import STATE_INDEX, Adapters
@@ -232,7 +233,11 @@ def simulate_chunk(inp: EngineInputs, ad: Adapters, game_index: np.ndarray,
     p_three_double = float(rules["double_bonus_three_attempt_share"])
     silent_foul = float(rules["silent_foul_per_possession"])
     foul_tab = _load_foul_lut(os.environ.get("ENGINE_FOUL_ACCRUAL", "reference"))
-    neutral_g = (inp.games["neutral"].to_numpy() > 0) if foul_tab is not None else None
+    # Round 7 (experiments.md s20): joint foul accrual + FT-trip offsets.
+    # DEFAULT OFF -- `FJ.load` returns None unless ENGINE_FOUL_JOINT names an arm.
+    fj = FJ.load(os.environ.get("ENGINE_FOUL_JOINT", "reference"))
+    neutral_g = ((inp.games["neutral"].to_numpy() > 0)
+                 if (foul_tab is not None or fj is not None) else None)
     ce_med = {int(k): float(v) for k, v in rules["chance_elapsed_median_by_chance"].items()}
     # lookup tables so the hot loop never runs a python comprehension
     ce_lut = np.array([ce_med.get(min(max(j, 1), 3), 3.0) for j in range(4)], dtype=np.float64)
@@ -347,7 +352,7 @@ def simulate_chunk(inp: EngineInputs, ad: Adapters, game_index: np.ndarray,
         off_sd = st.off_score_diff()
         bonus = st.in_bonus()
         dbonus = st.in_double_bonus()
-        if foul_tab is not None:
+        if foul_tab is not None or fj is not None:
             # OPEN-time state for the round-6 accrual table: team fouls before
             # this possession's own trips, and the pre-possession margin.
             tf_def0 = st.team_fouls[act, dfn]
@@ -405,6 +410,9 @@ def simulate_chunk(inp: EngineInputs, ad: Adapters, game_index: np.ndarray,
             t_off = inp.team_static[gidx[rows], off[rows]]
 
             probs = ad.event.predict(t_off, xx, is_first, gidx[rows], off[rows])
+            if fj is not None:
+                probs = fj.adjust_trips(probs, st.period[a_rows], st.team_fouls[a_rows, dfn[rows]],
+                                        st.team_fouls[a_rows, off[rows]], CLS_FT_BONUS, CLS_FT_SHOOT)
             cls = categorical(book.draw("event", a_rows), probs)
 
             # ---- (c) allocation: who of the five ------------------------
@@ -565,7 +573,13 @@ def simulate_chunk(inp: EngineInputs, ad: Adapters, game_index: np.ndarray,
 
         # ---- non-shooting foul that awards no attempt (measured gap) ------
         u_sf = book.draw("foul_accrual", act)
-        if foul_tab is None:
+        if fj is not None:
+            sf, of_ = fj.accrual(u_sf, per0, sec0, sd0, tf_def0, tf_off0, site0,
+                                 end_code == PREV["TOV"])
+            if of_.any():
+                ro = np.flatnonzero(of_)
+                st.team_fouls[act[ro], off[ro]] += 1
+        elif foul_tab is None:
             sf = u_sf < silent_foul
         else:
             sf = u_sf < _foul_p(foul_tab, per0, sec0, sd0, tf_def0, tf_off0, site0)

@@ -70,7 +70,8 @@ def sim(tag: str) -> pd.DataFrame:
     t["in_bonus"] = (t["def_fouls"] >= t["bonus_thr"]).astype(int)
     t["n_and_one"] = t["trip_fouls"] - t["n_shoot_trip"] - t["n_bonus_trip"]
     t["nontrip_fouls"] = t["silent"]
-    t["total_fouls"] = t["trip_fouls"] + t["silent"]
+    t["total_fouls"] = t["trip_fouls"] + t["silent"] + (t["off_foul"] if "off_foul" in t else 0)
+    t["nontrip_fouls"] = t["total_fouls"] - t["trip_fouls"]
     return t
 
 
