@@ -3579,3 +3579,26 @@ overshoot check of 22.2 is answered by round 7 itself: the pre-open correction w
 `CL2` and it still overshot the first half (H1 0.2506 vs 0.2367). New closed-loop runs: `R8aS`,
 `R8bS`, `R8bU`. The whistle-variance fit (22.2) uses the v2 state and the round-7 specs, refit per
 fold (fold 1 needs its own fits). Everything else in section 22 stands.
+
+## 24. Round 8 RESULTS (lane A, 2026-09-30 12:36-13:25 EDT; pre-registration s22, amendment s23)
+
+**Nothing adopted, no default changed. No arm eligible: all fail V3 on the G5 total SD ratio.**
+Report: `docs/tests/foul_round8_whistle_2026-09-30.md`.
+
+State: the v3 (rowless-trip) state is NOT VERIFIED (box MAE 0.19-0.22 vs the pbp counter's
+0.15-0.18); the counter reconciles with the box (86% exact); round 8 runs on v2. Whistle variance
+fitted on training seasons: c = cov(r_home, r_away) = 0.00422 (SE 0.00078) on F2 train, test
+0.00476 (within 2 SE; F1 0.00376 / 0.00363) -> s^2 = 0.004207.
+
+| arm | FTA/FGA | floors toward | FT-rate corr (+0.207) | H1 / H2 | V1 | V2 | V3 (G5 total, floors) | V4 |
+|---|---:|---:|---:|---|---|---|---|---|
+| CL0 | 0.31953 | 0 | +0.003 | 0.2540 / 0.3789 | -- | -- | 0.8835 | -- |
+| R8a | 0.31983 | +0.17 | +0.029 | 0.2428 / 0.3917 | pass | pass | -4.6 FAIL | pass |
+| R8aS | 0.31984 | +0.17 | +0.064 | 0.2429 / 0.3918 | pass | pass | -12.7 FAIL | pass |
+| R8b (= CL2) | 0.33488 | +2.63 | +0.105 | 0.2506 / 0.4175 | pass | pass | -13.9 FAIL | pass |
+| R8bS | 0.33489 | +2.63 | +0.146 | 0.2508 / 0.4171 | pass | pass | -8.7 FAIL | pass |
+| R8bU | 0.33445 | +2.88 | +0.114 | 0.2509 / 0.4163 | pass | pass | -7.6 FAIL | pass |
+
+Shared vs unshared: the shared latent adds +0.034 / +0.041 to the FT-rate correlation (paired SE
+0.011 / 0.009); the unshared control, same marginal variance, +0.010. Score correlation and all
+other V3 lines within their floor limits. Parity: default path and R8a vs CL2a bit-identical; v6 digest PASS.
