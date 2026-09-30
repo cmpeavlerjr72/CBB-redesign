@@ -51,6 +51,11 @@ _spec = _ilu.spec_from_file_location(
 LGD = _ilu.module_from_spec(_spec)
 _spec.loader.exec_module(LGD)
 
+#: LightGBM ignores OMP_NUM_THREADS on this box when unpinned (the first ev_L0S0
+#: attempt ran ~6 cores). The lane cap is 4, so the thread count is passed
+#: explicitly; the verification tolerance below covers summation order.
+PO.LgbmArm.PARAMS = {**PO.LgbmArm.PARAMS, "n_jobs": 3}
+
 DESIGN_V2 = ROOT / "data/processed/models/clock/design_v2.parquet"
 DESIGN_EV = ROOT / "data/processed/models/late_game/design_v1.parquet"
 R1 = ROOT / "data/processed/models/late_game"
