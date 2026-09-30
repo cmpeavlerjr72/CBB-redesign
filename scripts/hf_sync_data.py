@@ -60,7 +60,10 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 DATA_DIR = ROOT / "data"
 REPO_ID = "mvpeav/cbb-sim-data"
-BULK_DIRS = ["raw", "results", "engine_inputs", "model_artifacts"]
+# `engine_inputs_v3` (lane J 2026-09-30): the fold-2 engine inputs v3 sibling directory
+# built by scripts/build_engine_inputs_v3_replay.py (docs/ops/aws_launch_chain.md section 17).
+BULK_DIRS = ["raw", "results", "engine_inputs", "model_artifacts", "engine_inputs_v3",
+             "team_rate_tables"]
 
 # Path each bulk key resolves to, relative to whatever root it's rooted at
 # (the repo by default; see `_root_for`'s `dest_root` param). This is also
@@ -71,11 +74,17 @@ _REL_ROOT = {
     "results": Path("results"),
     "engine_inputs": Path("data") / "processed" / "models" / "engine",
     "model_artifacts": Path("data") / "processed" / "models",
+    "engine_inputs_v3": Path("data") / "processed" / "models" / "engine_v3",
+    # only `team_rate_features_*.parquet` directly under data/processed (see TEAM_RATE_GLOB):
+    # the estimator feature tables the Stage B trainers read via cbb_sim.team_rate_adapter.
+    "team_rate_tables": Path("data") / "processed",
 }
+TEAM_RATE_GLOB = "team_rate_features_*.parquet"
 
 # Single wave -- unlike CFB there is no multi-wave priority split here yet.
 PUSH_WAVES = [
-    ("wave1-all", ["raw/**", "results/**", "engine_inputs/**", "model_artifacts/**"]),
+    ("wave1-all", ["raw/**", "results/**", "engine_inputs/**", "model_artifacts/**",
+                   "engine_inputs_v3/**", "team_rate_tables/**"]),
 ]
 
 
@@ -141,6 +150,7 @@ def _root_for(d: str, dest_root: Path = ROOT) -> Path:
 # only meaningful for the real repo, never a `--dest-root` scratch pull).
 RESULTS_DIR = _root_for("results")
 ENGINE_INPUTS_DIR = _root_for("engine_inputs")
+ENGINE_INPUTS_V3_DIR = _root_for("engine_inputs_v3")
 MODEL_ARTIFACTS_DIR = _root_for("model_artifacts")
 
 
@@ -203,7 +213,8 @@ def _model_artifacts_files(root: Path) -> list[Path]:
     dedicated key. Without this exclusion, `event_round2_s1_*/` (gitignored)
     would get swept up here too and pushed a second time under a different
     HF prefix, duplicating the same ~45MB for no reason."""
-    return [p for p in _gitignored_files(root) if ENGINE_INPUTS_DIR not in p.parents]
+    return [p for p in _gitignored_files(root)
+            if ENGINE_INPUTS_DIR not in p.parents and ENGINE_INPUTS_V3_DIR not in p.parents]
 
 
 def push(dirs: list[str], token: str, max_attempts: int) -> None:
@@ -238,7 +249,14 @@ def push(dirs: list[str], token: str, max_attempts: int) -> None:
             repo_id=REPO_ID, folder_path=str(root), repo_type="dataset",
             path_in_repo=d, commit_message=f"sync {d}",
         )
-        if d == "model_artifacts":
+        if d == "team_rate_tables":
+            patterns = sorted(p.name for p in root.glob(TEAM_RATE_GLOB))
+            if not patterns:
+                log(f"--- {d}: no {TEAM_RATE_GLOB} under {root}, skipping upload")
+                continue
+            upload_kwargs["allow_patterns"] = patterns
+            log(f"--- {d}: uploading {len(patterns)} table(s) from {root}")
+        elif d == "model_artifacts":
             # Only the gitignored subset of data/processed/models/ -- the
             # rest is git-tracked already and must not be duplicated onto HF.
             patterns = [p.relative_to(root).as_posix() for p in _model_artifacts_files(root)]
@@ -263,7 +281,8 @@ def push(dirs: list[str], token: str, max_attempts: int) -> None:
     status(token)
 
 
-def pull(dirs: list[str], token: str, max_attempts: int, dest_root: Path = ROOT) -> None:
+def pull(dirs: list[str], token: str, max_attempts: int, dest_root: Path = ROOT,
+         only: list[str] | None = None) -> None:
     """Download each bulk dir from HF into `_root_for(d, dest_root)`.
 
     `snapshot_download(local_dir=...)` mirrors each file's full repo path
@@ -282,7 +301,12 @@ def pull(dirs: list[str], token: str, max_attempts: int, dest_root: Path = ROOT)
     """
     from huggingface_hub import snapshot_download
 
-    log(f"pull <- {REPO_ID}; dirs={dirs}; dest_root={dest_root}")
+    log(f"pull <- {REPO_ID}; dirs={dirs}; dest_root={dest_root}"
+        + (f"; only={only}" if only else ""))
+    # `only` (lane J 2026-09-30): glob patterns RELATIVE to each bulk dir, e.g.
+    # `--dirs raw --only 'hoopr/schedules/**'` pulls just the 7 MB schedules dir instead of
+    # all of data/raw. Default (None) is the unchanged whole-dir pull.
+    patterns_for = (lambda d: [f"{d}/{p.lstrip('/')}" for p in only]) if only         else (lambda d: [f"{d}/**"])
     for d in dirs:
         root = _root_for(d, dest_root)
         root.mkdir(parents=True, exist_ok=True)
@@ -293,7 +317,7 @@ def pull(dirs: list[str], token: str, max_attempts: int, dest_root: Path = ROOT)
                 f"pull-{d}",
                 lambda d=d, staging=staging: snapshot_download(
                     repo_id=REPO_ID, repo_type="dataset", local_dir=str(staging),
-                    allow_patterns=[f"{d}/**"], token=token, max_workers=8,
+                    allow_patterns=patterns_for(d), token=token, max_workers=8,
                 ),
                 max_attempts=max_attempts,
             )
@@ -332,6 +356,8 @@ def local_files(dirs: list[str]) -> set:
             # the rest of data/processed/models/ is tracked and arrives via
             # git clone, not this sync path.
             files = _model_artifacts_files(root)
+        elif d == "team_rate_tables":
+            files = list(root.glob(TEAM_RATE_GLOB))
         else:
             files = [p for p in root.rglob("*") if p.is_file()]
         out |= {_local_to_remote(d, p.relative_to(root).as_posix()) for p in files}
@@ -366,6 +392,9 @@ def main() -> None:
                     help="subset of the bulk dirs (default: all three)")
     ap.add_argument("--max-attempts", type=int, default=0,
                     help="retries per wave; 0 = forever (default, for overnight runs)")
+    ap.add_argument("--only", nargs="+", default=None,
+                    help="pull only: glob patterns relative to each --dirs key "
+                         "(e.g. --dirs raw --only 'hoopr/schedules/**'). Default: whole dir.")
     ap.add_argument("--dest-root", type=Path, default=None,
                     help="pull only: local root the bulk dirs resolve under "
                          "(default: the repo). Lets a verification pull land in a "
@@ -379,7 +408,7 @@ def main() -> None:
         push(args.dirs, token, args.max_attempts)
     else:
         dest_root = args.dest_root.resolve() if args.dest_root else ROOT
-        pull(args.dirs, token, args.max_attempts, dest_root=dest_root)
+        pull(args.dirs, token, args.max_attempts, dest_root=dest_root, only=args.only)
 
 
 if __name__ == "__main__":

@@ -29,6 +29,11 @@ logs/
 # here -- they must be present on disk when `docker build` runs.
 data/raw/
 data/hoopr/
+# Lane J 2026-09-30: the one raw dir the trainers / conference features read at fit
+# time (cbb_sim.features.conference.SCHEDULE_DIR). Its absence broke the 09-18 A1/A2
+# attempt. 7 MB; the sim never reads it. Order matters: this follows the exclusion.
+!data/raw/hoopr/schedules/
+!data/raw/hoopr/schedules/**
 
 # --- Prior results: never bake sweep OUTPUT into the image. Outputs live on
 # the mounted /out volume; a baked-in results/ would risk being mistaken for

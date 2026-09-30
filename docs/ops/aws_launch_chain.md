@@ -945,3 +945,141 @@ failed attempt -- no process was started, no artifact exists.
 `docs/models/possession_outcome/experiments.md` section 14, this section. `results/engine_v0/
 F2_2025_s200_v5b_{A,B}_full/` and the eight new `_off{75,100,125,150,175,1075,1100,1125,1150,1175}_n25`
 chunk dirs kept locally (gitignored) and pushed to `mvpeav/cbb-sim-data`.
+
+---
+
+## 17. LAUNCH RUNBOOK, 2026-09-30 evening (lane J; PREPARED, NOT LAUNCHED, no money spent)
+
+Written 2026-09-30 by the lane-J worker. Nothing here was run on AWS. Read sections 12-16 first. This
+section closes the 09-18 defects, inventories tonight's jobs, and gives the PM an ordered runbook.
+
+### 17.1 What the 09-18 defects turned out to be, and the fixes
+
+| 09-18 defect | Finding | Fix (files) |
+|---|---|---|
+| "lightgbm 4.7.0 does not multi-thread in the container" | Most likely NOT the wheel: `Dockerfile.cbb` bakes `OMP_THREAD_LIMIT=1`, a hard ceiling on every OpenMP team that beats `OMP_NUM_THREADS` and `n_jobs`; the 09-18 attempt only overrode `OMP_NUM_THREADS`. **Unproven** until the 1-minute probe runs on the box. Locally LightGBM threads are harmful anyway (n_jobs=1 40 s vs n_jobs=20 218 s; the PO identity test below fell from 447 s to 6.7 s once fits were forced single-threaded). | The design does not depend on the answer: three NEW trainers run `n_jobs=1` per fit and parallelise across refit dates (`train_par_common_v1.pin_threads` HARD-sets every thread var to 1; the 09-18 `setdefault` no-op is gone). Probe: `scripts/ops_lgbm_thread_probe_v1.py`. The image keeps its pins at 1 (CLAUDE.md); comment added in `Dockerfile.cbb`. |
+| Image lacks `data/raw/hoopr/schedules/` | `.dockerignore` excluded `data/raw/`. | `.dockerignore` re-includes `data/raw/hoopr/schedules/` (7 MB); the `Dockerfile.cbb` build check fails loudly if it is absent; selective pull `hf_sync_data.py pull --dirs raw --only 'hoopr/schedules/**'`. Trainers do not depend on the image's data: `scripts/box_run.sh` bind-mounts the host clone over `/app`. |
+| `ENGINE_CLOCK` default `reference` in `run_aws_sweep.sh` silently overrode the adopted clock | The always-set env prefix beat the adapter default. | Default is now `v5b_glat_pmean`. New `--input-dir` / `--inputs-version` (sweep chunks only; the parity gate always uses default inputs). |
+| HF pull needs Python >= 3.10 on the host (AL2023 has 3.9) | 09-11 finding. | No host Python: pulls run in a throwaway `python:3.12-slim` container, pushes through `scripts/box_run.sh` (image has git and the pinned `huggingface_hub`). |
+| Two `.pem` files, one not the keypair | 09-18 finding. | Preflight item: use `cfb-sweep-ohio.pem` (LF); test authentication before anything else. |
+| New data not on HF | `team_rate_features_*.parquet` and `engine_v3/` had no sync key. | `hf_sync_data.py` gains bulk keys `team_rate_tables` (`data/processed/team_rate_features_*.parquet`) and `engine_inputs_v3` (`data/processed/models/engine_v3`), and `pull --only` (glob subset). `tests/test_hf_sync_paths.py` updated, 64 pass. |
+| Nothing checked what the jobs read | | `scripts/ops_box_inputs_check_v1.py [--remote]` lists every input per job with size and source (git / HF). |
+
+**Root-cause label:** the `OMP_THREAD_LIMIT` explanation is a hypothesis from reading the Dockerfile, not a measurement.
+
+### 17.2 Job inventory (new versioned scripts; existing trainers untouched)
+
+All three trainers take the table as `--team-rate-table PATH` (applied through `cbb_sim.team_rate_adapter.apply(frame, path, submodel, fold=...)`
+right after the frame loads, before any fit; artifacts go to `<out>/<table stem>/`, never over served artifacts), a `--seed`, an
+`--out-dir` / `--out-root` that must be new (`assert_fresh_out_dir`), `--n-jobs`, per-task checkpoints (resume = rerun the same command)
+and `--team-rate-missing raise|keep_served` (PM decision, 17.7). Without `--team-rate-table` they reproduce the wrapped trainer.
+
+| Job | Script | Old trainer | New script parallelises | Inputs (HF key) | Tasks | Est. wall at 192 vCPU |
+|---|---|---|---|---|---|---|
+| PO S1 retrain: R2 (served features, seed 1), T (E3), Topp (E3opp); F2 | `train_possession_outcome_s1_par_v1.py` (sibling of `build_engine_event_round2.py` and `PO.fit_predict_scheme`) | single process, 12 serial fits; paths hard-coded | across (population, monthly refit) | round2 `design.parquet` 69 MB, `verdict.json` (git), `games_F2_2025.parquet` (git), table: `model_artifacts`, `team_rate_tables` | 12 per arm x 3 = 36 | 15-25 min (one single-thread fit ~10 min, measured under load 09-18) |
+| fg_make round-4 B1: R2, T; F2 | `train_fg_make_v4_par_v1.py` (sibling of `train_fg_make_v4_shooter_block.py`, which writes into the SERVED `round4/` dir) | single process, serial; hard-coded outputs | across (class, refit), incl. the seed+1 floor | `fg_make/design_v2_shotshooter.parquet` 90 MB, `events_v2_shotshooter.parquet`, `design_v4_extra_v2.parquet` (R2), `lgbm_ladder_v2.json` (git): `model_artifacts` | about 18 per arm x 2 = 36 (+ extra-cache rebuild for T) | 10-25 min (unmeasured) |
+| rebound S1_weekly: T (E3) and stage-2 cells A0B0C0 s0, A0B0C0 s1, A5, A5+C1 | `train_rebound_v3_par_v1.py` (wraps `train_rebound_v3_round3.py`) | single process, 23 serial fits per cell, ~3 h per cell | across the weekly refits of a cell | `rebound/round3/design_round3.parquet` 55 MB, `games_universe.parquet` (git), `raw/hoopr/schedules`, `events_v2_shotshooter.parquet` (`--feeds` fits shot_block K2): `model_artifacts`, `raw` | 23 x 5 = 115 | 20-40 min (single fit was 472-631 s at 3 threads under load; unmeasured single-thread) |
+| Engine inputs v3 rebuild (live replay) | `build_engine_inputs_v3_replay.py shard --shard k --n-shards N`, then `assemble` (other lane; `docs/ops/live_slate_path_2026-09-30.md`, `docs/tests/engine_inputs_v3_replay_2026-09-30.md` due 15:30) | shard-parallel already, resumable per date (~40 s per slate) | n/a | `raw` 1.6 GB, `engine_inputs`, tables | ~150 dates | ~5 min at 64 shards |
+| Paired 200-seed closed loops, fold 2, 5,710 games | `run_aws_sweep.sh` (image entrypoint), 2 arms | process pool | yes | image, `engine_inputs`, `engine_inputs_v3` | 200 seeds x 2 arms | ~35-40 min for both at 64 workers each (09-18: 125 seeds x 2 streams at 70 workers took 21 min) |
+| Full 200-seed gate read on engine inputs v3 | `run_aws_sweep.sh --input-dir data/processed/models/engine_v3 --parity skip` | process pool | yes | as above | 200 seeds | ~40 min, third concurrent stream at 64 workers |
+
+**Identity proofs (local, tiny, real 2-process loky, reduced `n_estimators` for the TEST only):**
+- PO: serial `build_engine_event_round2.build` vs the wrapper; all 10 model files, `team_block.npz` and `index.json` bit-identical (boosters compared as model strings; the cascade arm by predictions); 6.7 s vs 5.9 s.
+- Rebound: `p_true`, all three feeds and the segment metadata bit-identical on 2 real weekly cuts.
+- fg_make: FGA_3, first 2 cuts, B1: log loss equal to all 16 digits (0.6382748043989142) and segments equal. The serial reference ran at 2 LightGBM threads, the wrapper at 1, and the compare is on log loss, not arrays (weaker; flagged). Overlay identity (own columns back in) leaves each design unchanged.
+- PO with `--team-rate-table E3_v2` ran end to end on a tiny sample (with `keep_served`).
+- Parity of engine HEAD `0147782a6a` (Windows, 2 workers, 60 games x 5 seeds) against `parity_reference_windows_v6.json`: PASS, bit-identical digest `0d4ddccc...029f`. Engine code last changed in `2185b27`.
+
+**Memory:** about 187 single-thread worker processes; per-fit RSS unmeasured (estimate 1-3 GB each), so 369 GiB is tight if all start at once. Hence two waves.
+
+### 17.3 Cost frame
+
+- Spot `c7a.48xlarge`, 2026-09-30 spot history (us-east-2): 2a $2.59, 2b $2.64, 2c $3.50 per hour; 09-18 measured $3.39/h. Expected session about 2h15m, **about $8** (range $7-10).
+- **On-demand fallback ONLY under the user's cap of 2 hours / about $20.** c7a.48xlarge on-demand is roughly $9.9/h (2 h is about $19.7; check the live price, and if rate x 2 h exceeds $20, shorten the cap). Under on-demand run the core set only (17.5) and hard-stop.
+- Cost clock: `scripts/ops_cost_clock_v1.sh <launch ISO UTC> <rate>` at every checkpoint.
+
+### 17.4 Ordered runbook (T0 = launch call). Timings are estimates; the last column is the resume point.
+
+| T+ | Step | Resume point |
+|---|---|---|
+| -0:30 | Preflight (17.6) ticked; commit SHA `S` chosen and pushed | |
+| 0:00 | Launch spot, AZ order **2c, then 2b, then 2a** (09-18: 2b and 2a returned `InsufficientInstanceCapacity`, 2c succeeded at once; 09-11 also 2c). Re-resolve the AL2023 AMI with `describe-images` (`ssm:GetParameters` is denied). 100 GB gp3 root set explicitly. Commands in 17.4a | record instance id, AZ, rate, launch UTC |
+| 0:05 | `dnf install -y docker git`, `systemctl start docker`, clone, `git checkout S`; `read -s HF_TOKEN; export HF_TOKEN` (never on a command line, never printed) | |
+| 0:12 | HF pull in a throwaway container (17.4b): `engine_inputs model_artifacts team_rate_tables raw engine_inputs_v3`, about 5 GB | rerun resumes |
+| 0:20 | `docker build -f Dockerfile.cbb -t cbb-sweep .` (build checks fail loudly on a missing input) | image cached |
+| 0:27 | `scripts/ops_box_inputs_check_v1.py` (no `--remote`) must print ALL PRESENT. Thread probe: `scripts/box_run.sh scripts/ops_lgbm_thread_probe_v1.py` (informational) | |
+| 0:30 | **Parity gate, hard stop on failure:** `docker run --rm -e HF_TOKEN -v $PWD/out:/out cbb-sweep --tag box0930_parity --parity only --parity-ref docs/ops/parity_reference_windows_v6.json --workers 96 --push off`. PASS = bit-identical digest; FAIL = stop, take the diff to the PM | |
+| 0:35 | Start the sync loop (17.4c). **Wave 1:** `scripts/box_stageb_launch_v1.sh wave1` (PO R2/T/Topp, fg R2/T, rebound T; 95 processes) | rerun the same command; finished fits load from `<out>/cuts/` |
+| 0:40 | If `free -g` shows under 40% used: **Wave 2:** `scripts/box_stageb_launch_v1.sh wave2` (four rebound stage-2 cells; 92 processes). Otherwise wait 10 min and re-check; never above about 85% used | same |
+| ~1:15 | Retrains done (`scripts/box_stageb_launch_v1.sh status`; each job writes a report / cell JSON). Push results (17.4c) | HF holds every finished job |
+| 1:15 | **v3 engine inputs:** background loop of 64 shards `scripts/box_run.sh scripts/build_engine_inputs_v3_replay.py shard --shard k --n-shards 64`, then `assemble`; details in the other lane's doc | per-date result JSONs; push `engine_inputs_v3` |
+| 1:25 | **Sims**, 3 concurrent containers x 64 workers, `--chunk-seeds 25`: (a) reference arm, (b) retrained arm (paired seeds 0-199), (c) the v3 gate read: `docker run ... cbb-sweep --tag <t> --seeds 200 --chunk-seeds 25 --workers 64 --parity skip --engine-clock v5b_glat_pmean --input-dir data/processed/models/engine_v3 --push on`. The `ENGINE_*` env for the retrained arm comes from the wiring lane (not written here) | each finished 25-seed chunk is pushed by the script; resume with `--seed-offset-start <next>` |
+| 2:05 | Final push (17.4c); `status` must show 0 outstanding for the pushed dirs | |
+| 2:10 | **Terminate** (17.4d), CLI-verified | |
+
+**17.4a Launch commands** (PM runs; for the record, not run):
+```
+aws ec2 run-instances --region us-east-2 --image-id <AMI> --instance-type c7a.48xlarge \
+  --key-name cfb-sweep --security-group-ids sg-05aacf67a5a55fbf7 \
+  --subnet-id <2c: subnet-02b40dd48e9ed2bd9 | 2b: subnet-07dfcc25641a55194 | 2a: subnet-0f8629b0edec07b47> \
+  --instance-market-options 'MarketType=spot,SpotOptions={SpotInstanceType=one-time,InstanceInterruptionBehavior=terminate}' \
+  --block-device-mappings 'DeviceName=/dev/xvda,Ebs={VolumeSize=100,VolumeType=gp3,DeleteOnTermination=true}' \
+  --tag-specifications 'ResourceType=instance,Tags=[{Key=Name,Value=cbb-box-0930}]'
+```
+On-demand fallback: the same without `--instance-market-options`, only under the cap of 17.3.
+
+**17.4b HF pull without host Python:**
+```
+docker run --rm -e HF_TOKEN -v "$PWD:/w" -w /w python:3.12-slim sh -c \
+  "pip install -q huggingface_hub==1.31.0 && python scripts/hf_sync_data.py pull --dirs engine_inputs model_artifacts team_rate_tables raw engine_inputs_v3 --max-attempts 6"
+```
+
+**17.4c Sync loop and final push** (spot can be reclaimed; HF is the durable side):
+```
+nohup bash -c 'while true; do sleep 1200; scripts/box_run.sh scripts/hf_sync_data.py push --dirs model_artifacts results engine_inputs_v3 --max-attempts 3; done' > logs/syncloop.log 2>&1 &
+scripts/box_run.sh scripts/hf_sync_data.py push --dirs model_artifacts results engine_inputs_v3 --max-attempts 6
+scripts/box_run.sh scripts/hf_sync_data.py status     # outstanding for the pushed dirs must be 0
+```
+Stage B outputs live under `data/processed/models/*/round_stageb/` (matches `.gitignore` `*/round*/`, so `model_artifacts` syncs them). If the instance is reclaimed: relaunch, redo 17.4b, rerun the same wave commands; only unfinished refits recompute.
+
+**17.4d Termination (CLI-verified):**
+```
+aws ec2 terminate-instances --region us-east-2 --instance-ids <id>
+aws ec2 wait instance-terminated --region us-east-2 --instance-ids <id>
+aws ec2 describe-instances --region us-east-2 --instance-ids <id> --query 'Reservations[].Instances[].State.Name' --output text   # terminated
+aws ec2 describe-instances --region us-east-2 --filters Name=instance-state-name,Values=pending,running,stopping,stopped --query 'Reservations[].Instances[].InstanceId'   # empty
+aws ec2 describe-volumes --region us-east-2 --filters Name=status,Values=available --query 'Volumes[].VolumeId'   # no orphaned volume
+```
+Record the terminate call time, the confirmed-terminated time and the cost-clock reading in the HANDOFF row (PM).
+
+### 17.5 On-demand (2 h cap) core set, in priority order
+1. parity gate; 2. wave 1; 3. v3 inputs build; 4. paired closed loops. Drop, in this order: rebound stage-2 drift cells (wave 2), the v3 gate read, Topp. Hard compute stop at T+1:40; push and terminate by T+1:55.
+
+### 17.6 One-page preflight (PM ticks before the launch call)
+- [ ] `aws sts get-caller-identity` OK (account ending 9871); a fresh `describe-spot-price-history` reading noted
+- [ ] `cfb-sweep-ohio.pem` (LF) authenticates (`ssh -o IdentitiesOnly=yes`), or its fingerprint matches `aws ec2 describe-key-pairs --key-names cfb-sweep`
+- [ ] SG `sg-05aacf67a5a55fbf7` still allows SSH from this IP
+- [ ] Commit SHA `S` pushed (`git ls-remote origin main`); contains `train_*_par_v1.py`, `team_rate_adapter.py`, this section
+- [ ] `team_rate_features_E3_v2.parquet`, `..._E3opp_v2.parquet` (and any newer "one added rate" v2 tables; set `TABLE_E3` / `TABLE_E3OPP`) pushed: `hf_sync_data.py push --dirs team_rate_tables`
+- [ ] `scripts/ops_box_inputs_check_v1.py --remote` shows HF or git for every input
+- [ ] `data/processed/models/engine_v3/` finished by the other lane and pushed (`push --dirs engine_inputs_v3`), or the v3 rows dropped from the plan
+- [ ] `docs/tests/engine_inputs_v3_replay_2026-09-30.md` exists
+- [ ] Stage B section 7 of `docs/models/team_rate_estimator/experiments.md` committed BEFORE the runs (arms R2 / T / Topp, seeds, primary metrics)
+- [ ] The wiring lane's `ENGINE_*` flags for the retrained arm are known and their engine change is committed at `S`
+- [ ] PM decision recorded on `--team-rate-missing` (17.7 item 1)
+- [ ] HF token ready to type at the prompt, not stored on the box
+- [ ] Cost cap agreed: spot target about $8-10; on-demand only within 2 h / $20
+- [ ] Terminate commands (17.4d) copied, instance-id field ready
+
+### 17.7 Open risks and PM decisions
+1. **`--team-rate-missing`:** the E3 v2 table has no keys for 773 of about 3.04 M possession_outcome design rows (a local smoke with `raise` stopped there). The wrappers default to `raise`; `keep_served` (keep the served value for those rows, the adapter's own option) is the alternative. The launcher reads `TR_MISSING`.
+2. **Unmeasured per-fit cost and memory** on the box. The waves and the 85% memory rule are precautions, not measurements.
+3. **fg_make T:** the shooter-shrinkage extra cache is rebuilt on the table's team rate (`off_make_raw` feeds `shooter_shrunk_dev_c`); a stale cache is refused. The launcher deletes its own stale cache on resume, which re-runs `build_extra`.
+4. **Rebound arms C1/C2/C3/D1/D2 are refused on a table** (derived columns not recomputed). Tonight's table arm is A0B0C0; A5 and A5+C1 run on served features.
+5. **Table folds:** the adapter needs a single fold; the wrappers pass it (PO `--fold`, fg `F2`, rebound a single `--folds`). Fold-1 retrains are not in tonight's list.
+6. **v3 inputs and the retrained models:** how retrained artifacts reach the engine (flags, event-dir naming) belongs to the wiring lane; this runbook only reserves the slot.
+7. **Parity** was verified locally only (Windows HEAD vs v6). Linux vs v6 must be re-proven on the box at the chosen SHA.
+8. **Docker was not available on the preparing machine.** Unverified until the box: the image build with the `.dockerignore` exception, `box_run.sh`, the `python:3.12-slim` pull container, `hf_sync_data.py push` inside the image, the `OMP_THREAD_LIMIT` hypothesis, real per-fit wall times and memory, and the `${SWEEP_EXTRA[@]}` expansion in `run_aws_sweep.sh` (checked with `bash -n` only).
+9. **Sweep data mount:** the image bakes data at build time; pulling `engine_inputs_v3` BEFORE `docker build` includes it, otherwise add `-v $PWD/data:/app/data:ro` to the sweep `docker run`.
+
+**Files (lane J):** `scripts/train_par_common_v1.py`, `train_possession_outcome_s1_par_v1.py`, `train_fg_make_v4_par_v1.py`, `train_rebound_v3_par_v1.py`, `box_run.sh`, `box_stageb_launch_v1.sh`, `ops_box_inputs_check_v1.py`, `ops_lgbm_thread_probe_v1.py`, `ops_trace_reads_v1.py`, `ops_cost_clock_v1.sh`; edited `Dockerfile.cbb`, `.dockerignore`, `scripts/run_aws_sweep.sh`, `scripts/hf_sync_data.py`, `tests/test_hf_sync_paths.py`; this section.

@@ -39,7 +39,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
 import hf_sync_data as HF  # noqa: E402
 
 ALL_KEYS = list(HF.BULK_DIRS)
-assert ALL_KEYS == ["raw", "results", "engine_inputs", "model_artifacts"]
+assert ALL_KEYS == ["raw", "results", "engine_inputs", "model_artifacts", "engine_inputs_v3",
+                     "team_rate_tables"]
 
 # A handful of representative relative paths: a top-level file, a nested
 # file, and a deeply nested one (mirrors real shapes, e.g.

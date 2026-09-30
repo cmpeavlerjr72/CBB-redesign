@@ -34,9 +34,12 @@ GAMES_PER_BLOCK=60
 SEEDS_PER_BLOCK=25
 MAX_GAMES=0             # 0 = all games in the fold
 ENGINE_EVENT="round2_s1"
-ENGINE_CLOCK="reference"
+ENGINE_CLOCK="v5b_glat_pmean"   # lane J 2026-09-30: was "reference", which the always-set env prefix
+                                # used to force over the adapter's adopted default (09-18 gotcha)
 ENGINE_ROTATION="reference"
 ENGINE_FG3="decision8"
+INPUT_DIR_SWEEP=""      # sweep chunks only; the parity gate ALWAYS uses the default inputs
+INPUTS_VERSION=""       # sweep chunks only (ENGINE_INPUTS_VERSION); empty = engine default
 PARITY="gate"           # gate | only | skip
 PARITY_REF="docs/ops/parity_reference_windows.json"
 PARITY_GAMES=60
@@ -64,7 +67,13 @@ Usage: run_aws_sweep.sh --tag TAG [options]
   --max-games N           0 = all games (default). Set for a smoke subset.
   --engine-event MODE     reference | round2_s1 (default round2_s1, the
                          adopted round-2 winners)
-  --engine-clock MODE     reference | reference_empirical (default reference)
+  --engine-clock MODE     v5b_glat_pmean (adopted, default) | reference | reference_empirical
+                         | any ENGINE_CLOCK arm name run_engine understands
+  --input-dir DIR         sweep chunks only: run_engine.py --input-dir DIR (e.g.
+                         data/processed/models/engine_v3). The parity gate never uses it: the
+                         v6 reference is for the default inputs, so run the gate first, then
+                         sweep with --parity skip in a second invocation.
+  --inputs-version V      sweep chunks only: ENGINE_INPUTS_VERSION for run_engine.py
   --engine-rotation MODE  reference (only wired mode; default reference)
   --engine-fg3 MODE       decision8 | artifact (default decision8)
   --parity gate|only|skip default gate. "only" runs the parity smoke +
@@ -115,6 +124,8 @@ while [ $# -gt 0 ]; do
     --max-games)         MAX_GAMES="$2"; shift 2 ;;
     --engine-event)      ENGINE_EVENT="$2"; shift 2 ;;
     --engine-clock)      ENGINE_CLOCK="$2"; shift 2 ;;
+    --input-dir)         INPUT_DIR_SWEEP="$2"; shift 2 ;;
+    --inputs-version)    INPUTS_VERSION="$2"; shift 2 ;;
     --engine-rotation)   ENGINE_ROTATION="$2"; shift 2 ;;
     --engine-fg3)        ENGINE_FG3="$2"; shift 2 ;;
     --parity)            PARITY="$2"; shift 2 ;;
@@ -266,13 +277,17 @@ while [ "$done_seeds" -lt "$SEEDS" ]; do
   offset=$(( SEED_OFFSET_START + done_seeds ))
   subtag="${TAG}_off${offset}_n${this}"
   PHASE="sweep-${subtag}"
+  SWEEP_EXTRA=()
+  if [ -n "$INPUT_DIR_SWEEP" ]; then SWEEP_EXTRA+=(--input-dir "$INPUT_DIR_SWEEP"); fi
+  if [ -n "$INPUTS_VERSION" ]; then export ENGINE_INPUTS_VERSION="$INPUTS_VERSION"; fi
   echo "[cloud] --- chunk: seeds [$offset, $((offset+this)) ) -> $subtag --- $(date -u +%H:%M:%SZ)"
   ENGINE_EVENT="$ENGINE_EVENT" ENGINE_CLOCK="$ENGINE_CLOCK" \
   ENGINE_ROTATION="$ENGINE_ROTATION" ENGINE_FG3="$ENGINE_FG3" \
   $PY -u scripts/run_engine.py --fold "$FOLD" --season "$SEASON" \
       --seeds "$this" --seed-offset "$offset" --workers "$WORKERS" \
       --games-per-block "$GAMES_PER_BLOCK" --seeds-per-block "$SEEDS_PER_BLOCK" \
-      --max-games "$MAX_GAMES" --tag "$subtag" --results-dir results/engine_v0 &
+      --max-games "$MAX_GAMES" --tag "$subtag" --results-dir results/engine_v0 \
+      ${SWEEP_EXTRA[@]+"${SWEEP_EXTRA[@]}"} &
   CHILD=$!
   rc=0
   wait "$CHILD" || rc=$?
