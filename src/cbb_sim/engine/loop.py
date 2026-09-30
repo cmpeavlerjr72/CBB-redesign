@@ -52,6 +52,7 @@ from dataclasses import dataclass
 import numpy as np
 import pandas as pd
 
+from cbb_sim.engine import andone_label as AL
 from cbb_sim.engine import foul_joint as FJ
 from cbb_sim.engine import rotation_adapter as RA
 from cbb_sim.engine import state as S
@@ -233,6 +234,8 @@ def simulate_chunk(inp: EngineInputs, ad: Adapters, game_index: np.ndarray,
     p_three_double = float(rules["double_bonus_three_attempt_share"])
     silent_foul = float(rules["silent_foul_per_possession"])
     foul_tab = _load_foul_lut(os.environ.get("ENGINE_FOUL_ACCRUAL", "reference"))
+    # clock round 6 arm L1 (experiments.md s28): default-off start-type label
+    ao_relabel = AL.active()
     # Round 7 (experiments.md s20): joint foul accrual + FT-trip offsets.
     # DEFAULT OFF -- `FJ.load` returns None unless ENGINE_FOUL_JOINT names an arm.
     fj = FJ.load(os.environ.get("ENGINE_FOUL_JOINT", "reference"))
@@ -447,6 +450,7 @@ def simulate_chunk(inp: EngineInputs, ad: Adapters, game_index: np.ndarray,
             ft_shooter: list[np.ndarray] = []
             ft_natt: list[np.ndarray] = []
             ft_oao: list[np.ndarray] = []
+            ao_list: list[np.ndarray] = []
             for sc in (CLS_RIM, CLS_JUMP, CLS_3):
                 sel = cls == sc
                 if not sel.any():
@@ -482,6 +486,8 @@ def simulate_chunk(inp: EngineInputs, ad: Adapters, game_index: np.ndarray,
                         ft_shooter.append(sh[made][ao])
                         ft_natt.append(np.ones(len(a2), dtype=np.int64))
                         ft_oao.append(np.zeros(len(a2), dtype=bool))
+                        if ao_relabel:
+                            ao_list.append(a2)
                 if (~made).any():
                     xr = r[~made]
                     miss_rows.append(xr)
@@ -563,6 +569,8 @@ def simulate_chunk(inp: EngineInputs, ad: Adapters, game_index: np.ndarray,
                     bump("dead_ball_rebounds", int(is_x.sum()))
                     end_code[mr[is_x]] = PREV["other"]
 
+            if ao_relabel and ao_list:
+                AL.relabel(end_code, np.concatenate(ao_list), cont, PREV["made_FG"])
             live[:] = False
             live[cont] = True
             chance[cont] += 1
