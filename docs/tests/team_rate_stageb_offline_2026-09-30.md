@@ -94,3 +94,25 @@ Difference = arm minus R (negative = lower log loss = better). `floors` = differ
 | R | 1.674 | DREB | True | 0.684 | 0.9668 | 1.0988 | -0.9415 | 4.9315 |
 | R2 | 1.905 | DREB | True | 0.6843 | 0.9653 | 1.0946 | -0.9491 | 4.9334 |
 | T | 1.784 | DREB | True | 1.0447 | 0.9981 | 1.0992 | -0.9029 | 4.8372 |
+
+## Arm TO (anchor O on top of T; lane M wrapper trainers, E3 v4), fold 2, offline (added after the first table; grading only)
+
+| sub-model | TO | diff vs R (floors) | diff vs T (floors) | other lines |
+|---|---:|---|---|---|
+| possession_outcome `first` log loss (floor 0.000804) | 1.514349 | -0.001079 (-1.34) | -0.000243 (-0.30) | calibration pass, worst gated gap 0.905 pp, responsiveness pass |
+| possession_outcome `cont` log loss (floor 0.001982) | 1.497960 | -0.001800 (-0.91) | 0.000000 (cont takes no offset) | calibration pass, worst gated gap 1.737 pp |
+| rebound log loss (floor 6.7e-05; R2 spread 1.2e-04) | 0.643672 | -0.000850 (-12.7) | -0.000274 (-4.1) | calib worst gap 1.817 pp (class OREB, pass); team-quintile slope ratio 1.0545 (T 1.0447, R 0.684); L1 held-out level -0.043 pp (T -0.903, R -0.942); resp pass; per-game MAE 4.819 pp (T 4.837, R 4.932) |
+
+Wall time (24 processes each, under concurrent sim load): possession_outcome TO 500 s, rebound TO 179 s of fit. The TO closed-loop sim was NOT run on the box (spot reclaimed 19:45:58Z before the sample sim finished); resume command: `scripts/box_to_sim_v1.sh` on a box with the Stage B artifacts pulled (HF key `model_artifacts`; the TO artifacts were written before the reclaim and may be on HF only if the 10-minute sync loop pushed them after 19:39Z).
+
+## Per-arm retrain wall time (box, 192 vCPU spot, n_jobs as in the launchers; waves overlapped with sims, so not clean timings)
+
+| arm | wall |
+|---|---:|
+| PO R (seed 0) / R2 / T / Topp / Tfs | 405 s / 359 s / 370 s / 370 s / 386 s |
+| fg_make R / R2 / T | 50 s / 55 s / 56 s |
+| rebound R / R2 / T (artifacts wrapper) | 138 s / 130 s / 130 s |
+| PO TO / rebound TO | 500 s / about 180 s |
+
+Note on R2 spreads: the fg_make R2-minus-R differences equal the registered floors exactly (4.386e-5 / 1.1216e-4 / 1.813e-5), i.e. the second-seed refit reproduces the registered floor; the possession_outcome `cont` cascade is seed-independent (R2 = R).
+Note on Tfs: the trainer refuses `--team-rate-table` together with `--feature-table`, so Tfs was run on a combined table built by `scripts/ops_build_tfs_table_v1.py` (adapter applied to the design, then the round-8 corrected `in_bonus` added; verified equal to adapter plus overlay on all 8 style, 4 interaction and the in_bonus columns, 0 unmatched rows).

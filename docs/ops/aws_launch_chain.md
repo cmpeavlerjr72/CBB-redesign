@@ -1083,3 +1083,33 @@ Record the terminate call time, the confirmed-terminated time and the cost-clock
 9. **Sweep data mount:** the image bakes data at build time; pulling `engine_inputs_v3` BEFORE `docker build` includes it, otherwise add `-v $PWD/data:/app/data:ro` to the sweep `docker run`.
 
 **Files (lane J):** `scripts/train_par_common_v1.py`, `train_possession_outcome_s1_par_v1.py`, `train_fg_make_v4_par_v1.py`, `train_rebound_v3_par_v1.py`, `box_run.sh`, `box_stageb_launch_v1.sh`, `ops_box_inputs_check_v1.py`, `ops_lgbm_thread_probe_v1.py`, `ops_trace_reads_v1.py`, `ops_cost_clock_v1.sh`; edited `Dockerfile.cbb`, `.dockerignore`, `scripts/run_aws_sweep.sh`, `scripts/hf_sync_data.py`, `tests/test_hf_sync_paths.py`; this section.
+
+---
+
+## 18. FIFTH LAUNCH, 2026-09-30 evening (operator session): core set DONE, three spot reclaims, optional steps partly done
+
+**Instances (all spot `c7a.48xlarge`, `us-east-2`, 100 GB gp3, key `cfb-sweep-ohio.pem`).** Bash-on-Windows path mangling broke the first `--block-device-mappings` (`MSYS_NO_PATHCONV=1` fixes it; in `scripts/ops_launch_spot_v1.sh`).
+
+| # | id | AZ | launch UTC | end UTC | reason | approx cost |
+|---|---|---|---|---|---|---:|
+| 1 | i-0bd55824f25140450 | 2c | 17:55:48 | 18:06:14 | spot reclaim (`instance-terminated-no-capacity`), only data pull had run | $0.61 |
+| 2 | i-05bdda34b7be06752 | 2a | 18:07:00 | 18:19:28 | spot reclaim, parity + Stage B wave A + S0 had started, nothing synced yet | $0.53 |
+| 3 | i-0a55dbebe7caefb2c | 2c | 18:23:03 | 19:45:58 | spot reclaim during the optional steps | $4.83 |
+
+Total about **$6.0** (rates 3.495 / 2.56 / 3.495 per hour at launch; not reconciled against the bill). On-demand was never used. All three confirmed `terminated` by `describe-instances`; `describe-volumes status=available` empty; no pending or running instance of this session at the end. Engine SHA on the box: `42fe3e5d3f731aabef35b30ba026bc2e6b8c40a8`. Between attempts 2 and 3 spot returned `InsufficientInstanceCapacity` in all three AZs for about 3 minutes.
+
+**Timeline of instance 3** (times UTC): boot/pull/build 18:23-18:34 (pull 1 min, build 2 min); parity PASS bit-identical `0d4ddccc...029f` 18:35; Stage B wave A + Tfs + wave B, all 11 retrains done by 18:45 (longest 405 s); S0 full read 18:36-18:53 (5,710 x 200); S1 18:47-18:57; S0 floors f1..f4 done by 19:25; all graded under both truths (about 4 min each); optional: 500-game sample sims for S1/S2/S3/K2O/R8b/R8bS done (about 2.5 min each), full-size S2/S3 reached 50 of 200 seeds; TO retrains done 19:31-19:39; the reclaim came at 19:45:58 during the TO sample sim and the full-size K2O/R8b/R8bS queue.
+
+**What to know next time**
+1. The LightGBM thread probe on the image with the baked pins: `n_jobs` 1, 4, 16 all 7.4 s (no scaling; the `OMP_THREAD_LIMIT=1` hypothesis was NOT tested with the limit raised). The par trainers make it irrelevant: the whole Stage B set took 6.5 minutes.
+2. `scripts/*.sh` are not executable in git (committed from Windows): `chmod +x scripts/*.sh` on the box after the clone (my launchers failed with exit 126 until then).
+3. The HF key `team_rate_tables` (`data/processed/team_rate_features_*.parquet`) does NOT match `team_rate_variance_O1a_v3.parquet`: the S3 draw build failed until the file was scp'd. Add a key or widen the glob.
+4. `train_possession_outcome_s1_par_v1.py` refuses `--team-rate-table` with `--feature-table`; arm Tfs used `scripts/ops_build_tfs_table_v1.py` (combined table). `pkill -f` with a pattern that appears in the ssh command line kills the ssh session: use pids.
+5. Sim throughput on 192 vCPU (90-96 workers per read): one full 200-seed read of 5,710 games took 11-16 min; a 500-game x 200-seed sample read takes 2.5 min. Everything in the job list fits in well under 2 hours.
+6. After the reclaim the optional sample runs already pushed to HF (`results/engine_v0/v3box_{S0,S0f1,S0f2,S1,S2,S3,K2O,R8b,R8bS}_*`, and full-size chunks for S2/S3 seeds 0-49) were pulled and graded locally (single process): `scripts/ops_local_grade_v1.sh`, `ops_local_grade2_v1.sh`, `ops_optional_docs_v1.sh`.
+
+**HF state at the reclaim.** Pushed (verified by listing the remote): `v3full_S0`, `S0f1..f4`, `S1` (all 8 chunks plus the concatenated dirs), the 12 grade md files, Stage B artifacts (`model_artifacts/*/round_stageb`, 496 files, including R, R2, T, Topp, Tfs; the TO artifacts and S0f3/S1tfs/S1opp/TO sample runs may be missing), S2/S3 full-size chunks for seeds 0-49. NOT synced: S1tfs/S1opp/S1TO sample results, full-size K2O/R8b/R8bS/S1K2O, S2/S3 seeds 50-199, sample grades on the box (recomputed locally).
+
+**Not run (resume commands).** S2/S3 full-size seeds 50-199: `scripts/box_queue_v1.sh - S2:0:96 S3:0:96` (chunks already on HF are skipped if pulled back); full-size K2O / R8b / R8bS / S1K2O: `scripts/box_queue_v1.sh - K2O:0:96 R8b:0:96 R8bS:0:96 S1K2O:0:96`; TO sample sim: `scripts/box_to_sim_v1.sh` (needs the TO artifacts on the box); S1tfs / S1opp / S0f3 sample reads: `scripts/box_lane_v1.sh - 64 S1tfs S1opp S0f3`; fold-1 confirmation retrains.
+
+**Files this session**: `scripts/box_bootstrap_v1.sh`, `box_stageb_launch_v2.sh`, `box_stageb_R_v1.sh`, `box_tfs_launch_v1.sh`, `box_builds_v1.sh`, `box_draws_v1.sh`, `box_fullread_v1.sh`, `box_queue_v1.sh`, `box_lane_v1.sh`, `box_gradewait_v1.sh`, `box_v3_sims_v2.sh`, `box_to_launch_v1.sh`, `box_to_sim_v1.sh`, `ops_launch_spot_v1.sh`, `ops_build_tfs_table_v1.py`, `ops_stageb_table_v1.py`, `ops_v3_pair_table_v1.py`, `ops_v3_gate_doc_v1.py`, `ops_local_grade_v1.sh`, `ops_local_grade2_v1.sh`, `ops_optional_docs_v1.sh`; docs `docs/tests/engine_gates_F2_2025_s200_v3_{S0,S1,S2,S3,K2O,R8b,R8bS}_2026-09-30.md`, `team_rate_stageb_offline_2026-09-30.md`, `v3box_grades_2026-09-30/`.
