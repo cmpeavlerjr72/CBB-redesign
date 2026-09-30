@@ -31,6 +31,7 @@ from cbb_sim.ratings import own_ratings as orat
 DEFAULT_UNIVERSE = Path("data/processed/games_universe.parquet")
 DEFAULT_REFERENCE_DIR = Path("data/reference")
 DEFAULT_LINES_DIR = Path("data/raw/cbbd")
+DEFAULT_CBBD_DIR = Path("data/raw/cbbd")
 DEFAULT_HOOPR_DIR = Path("data/raw/hoopr")
 DEFAULT_TRUTH_DIR = Path("data/processed/truth")
 
@@ -44,15 +45,66 @@ PROVIDER_PREFERENCE: tuple[str, ...] = ("Draft Kings", "ESPN BET", "Bovada", "co
 # ---------------------------------------------------------------------------
 # schedule / finals truth
 # ---------------------------------------------------------------------------
-def load_actual_games(season: int, universe_path: Path | str = DEFAULT_UNIVERSE) -> pd.DataFrame:
+def unverified_final_game_ids(season: int, hoopr_dir: Path | str = DEFAULT_HOOPR_DIR,
+                              cbbd_dir: Path | str = DEFAULT_CBBD_DIR) -> set[int]:
+    """game_ids in `season` WITHOUT a verified played final (Lane H, 2026-09-30).
+
+    A game is unverified when the hoopR schedule status is not STATUS_FINAL
+    (postponed / cancelled / scheduled / forfeit: forfeits carry a nominal 2-0
+    score), or its hoopR score is 0-0, or the CBBD status (second source, joined
+    on sourceId == game_id) is not "final", or the CBBD score is 0-0. A game
+    absent from the CBBD file is judged on the hoopR side alone.
+    """
+    assert_not_sealed(int(season), context="unverified_final_game_ids")
+    h = pd.read_parquet(
+        Path(hoopr_dir) / "schedules" / f"mbb_schedule_{int(season)}.parquet",
+        columns=["game_id", "status_type_name", "home_score", "away_score"],
+    )
+    bad_h = h[(h["status_type_name"] != "STATUS_FINAL")
+              | ((h["home_score"].fillna(0) == 0) & (h["away_score"].fillna(0) == 0))]
+    bad = set(bad_h["game_id"].astype("int64"))
+    cpath = Path(cbbd_dir) / f"games_{int(season)}.parquet"
+    if cpath.exists():
+        c = pd.read_parquet(cpath, columns=["sourceId", "status", "homePoints", "awayPoints"])
+        c["game_id"] = pd.to_numeric(c["sourceId"], errors="coerce")
+        c = c.dropna(subset=["game_id"])
+        bad_c = c[(c["status"] != "final")
+                  | ((c["homePoints"].fillna(0) == 0) & (c["awayPoints"].fillna(0) == 0))]
+        bad |= set(bad_c["game_id"].astype("int64"))
+    return bad
+
+
+def load_actual_games(season: int, universe_path: Path | str = DEFAULT_UNIVERSE,
+                      verified_finals: bool = False) -> pd.DataFrame:
     """One row per D-I, non-truncated, completed game in `season`.
 
     Columns: game_id, cbbd_game_id, season, game_date, month, tipoff_utc,
     home_team_id, away_team_id, neutral (0.0/1.0), home_score, away_score,
     margin, total, n_periods, went_ot.
+
+    `verified_finals=False` (DEFAULT, unchanged behaviour): `home_score` /
+    `away_score` not-null is the only "completed" test, so unplayed games the
+    schedule scores 0-0 and forfeits scored 2-0 are included (docs/tests/
+    truth_unplayed_finals_2026-09-30.md).
+
+    `verified_finals=True` (opt-in): drops every game in
+    `unverified_final_game_ids(season)` (non-final status or 0-0 in either
+    source) and takes the score / side assignment from the third-source-resolved
+    `data/processed/truth/game_finals_v2.parquet` where it differs from the
+    universe (game 401722537: hoopR has the sides flipped).
     """
     assert_not_sealed(int(season), context="eval_gates/grade_market_games truth season")
     uni = pd.read_parquet(universe_path)
+    if verified_finals:
+        uni = uni[~uni["game_id"].isin(unverified_final_game_ids(int(season)))].copy()
+        fpath = DEFAULT_TRUTH_DIR / "game_finals_v2.parquet"
+        if fpath.exists():
+            fin = pd.read_parquet(fpath, columns=["game_id", "home_score", "away_score"]).rename(
+                columns={"home_score": "fin_home", "away_score": "fin_away"})
+            uni = uni.merge(fin, on="game_id", how="left")
+            has = uni["fin_home"].notna() & uni["fin_away"].notna()
+            uni.loc[has, "home_score"] = uni.loc[has, "fin_home"].astype("int32")
+            uni.loc[has, "away_score"] = uni.loc[has, "fin_away"].astype("int32")
     keep = uni[
         uni["is_d1_game"]
         & ~uni["pbp_truncated"]

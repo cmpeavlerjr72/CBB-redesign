@@ -308,3 +308,45 @@ def test_props_lines_schema_rejects_unknown_stat():
     assert any("blocks" in p for p in problems)
     with pytest.raises(P.PropsContractError):
         P.validate_props_lines(bad, strict=True)
+
+
+# ---------------------------------------------------------------------------
+# reference.load_actual_games(verified_finals=...) -- Lane H, 2026-09-30
+# ---------------------------------------------------------------------------
+def _has_truth_data():
+    from pathlib import Path
+    return all(Path(p).exists() for p in (
+        "data/processed/games_universe.parquet", "data/raw/hoopr/schedules/mbb_schedule_2025.parquet",
+        "data/raw/cbbd/games_2025.parquet", "data/processed/truth/game_finals_v2.parquet"))
+
+
+@pytest.mark.skipif(not _has_truth_data(), reason="needs on-disk universe / schedules / CBBD games")
+def test_load_actual_games_verified_finals_is_opt_in():
+    from cbb_sim.eval import reference as R
+    zero_ids = {401714278, 401722532, 401706691, 401700283, 401716154}
+    default = R.load_actual_games(2025)
+    assert len(default) == 5710  # default behaviour preserved exactly
+    dz = default[default["game_id"].isin(zero_ids)]
+    assert len(dz) == 5 and (dz["total"] == 0).all()
+    ver = R.load_actual_games(2025, verified_finals=True)
+    assert len(ver) == 5705
+    assert not set(ver["game_id"]) & zero_ids
+    assert (ver["total"] > 0).all()
+    assert set(ver["game_id"]) <= set(default["game_id"])
+    # third-source-resolved final for the hoopR side-flip game
+    r = ver[ver["game_id"] == 401722537].iloc[0]
+    assert (r["home_score"], r["away_score"]) == (60, 62)
+    d = default[default["game_id"] == 401722537].iloc[0]
+    assert (d["home_score"], d["away_score"]) == (62, 60)
+    # every other verified row equals the default row
+    m = default.merge(ver, on="game_id", suffixes=("_d", "_v"))
+    same = m[m["game_id"] != 401722537]
+    assert (same["home_score_d"] == same["home_score_v"]).all() and (same["away_score_d"] == same["away_score_v"]).all()
+
+
+@pytest.mark.skipif(not _has_truth_data(), reason="needs on-disk schedules / CBBD games")
+def test_unverified_final_game_ids_2025():
+    from cbb_sim.eval import reference as R
+    bad = R.unverified_final_game_ids(2025)
+    assert {401714278, 401722532, 401706691, 401700283, 401716154} <= bad
+    assert 401722537 not in bad  # played; disputed sides are fixed by finals_v2, not dropped
