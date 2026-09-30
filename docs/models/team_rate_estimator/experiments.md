@@ -303,3 +303,124 @@ C-draw follows the CLAUDE.md dispersion rule: the engine restores spread from th
 - **Grader:** `scripts/grade_team_rate_estimator_v2.py`, the section 1 grader extended with G-A1a and G-A1b. Its section 1 metrics are unchanged.
 - **Outputs:** `results/team_rate_estimator/*_v2.*`. The v1 scripts and outputs are not overwritten.
 - **Results:** section 4, written once when final.
+
+---
+
+## 4. Results of the section 3 amendment (run 2026-09-30, about 11:45-11:50 EDT; 1 core)
+
+**POST-HOC LABEL.** Every guard number for E0, E1, E2, E2c, E4 and E3 below is a POST-HOC re-score: those arms' section 2 results were seen before section 3 was written. E4c, E3c and E9 are new arms, registered in section 3 before they ran.
+
+**Scripts and outputs**
+
+- Fitter: `scripts/exp_team_rate_estimator_v2.py`. It reproduces every v1 estimate exactly (maximum absolute difference 0.0) and adds v, E4c, E3c and `--e9`.
+- Grader: `scripts/grade_team_rate_estimator_v2.py`. It is the v1 grader plus `section3()`.
+- Outputs: `results/team_rate_estimator/*_v2.*`. The v1 outputs are untouched.
+
+**How the grader decides a guard.** Each check is decided on the fold-2 median over the 16 rate-sides, with the G-A1a median taken over rate-sides that are not underpowered. The count of rate-sides inside the band is reported alongside.
+
+### 4.1 All arms, fold 2 (fold 1 in brackets)
+
+Gain is the pooled next-game deviance gain vs E0 over the 16 rate-sides. Intervals are team-block bootstrap with 1,000 draws.
+
+| arm | gain (%) | 95% interval | fold-1 gain (%) | G-A1a slope, median (rate-sides in band) | G-A1b(i) var ratio, median (in band) | G-A1b(ii) z SD, median | G-A2 move ratio | game-1 slope | qualifies |
+|---|---:|---|---:|---|---|---:|---:|---:|---|
+| E0 | 0 | - | 0 | 0.41 (0/16) FAIL | 3.32 (0/16) FAIL | 1.096 | 0.694 (ref) | undefined | no |
+| E1 | 28,731 (8.37) | [27,035, 30,778] | 8.62 | 0.96 (11/13) | 0.910 (9/16) | 1.091 | 1.424 FAIL | undefined | no (G-A2) |
+| E2 | 31,281 (9.11) | [29,524, 33,487] | 9.50 | 0.98 (14/15) | 0.917 (7/16) | 1.091 | 1.465 FAIL | 0.916 | no (G-A2) |
+| E2c | 31,504 (9.18) | [29,793, 33,687] | 9.54 | 0.99 (15/15) | 0.903 (7/16) | 1.091 | 1.442 FAIL | 0.997 | no (G-A2) |
+| E4 | 32,068 (9.34) | [30,309, 34,255] | 9.79 | 0.98 (15/15) | **1.134 FAIL** (5/16) | 1.076 | 0.940 | 0.924 | no (G-A1b) |
+| E4c | 32,281 (9.40) | [30,534, 34,454] | 9.82 | 0.99 (15/15) | **1.106 FAIL** (5/16) | 1.076 | 0.926 | 1.005 | no (G-A1b) |
+| **E3** | 32,045 (9.33) | [30,219, 34,232] | 9.80 | 0.94 (13/15) | 1.061 (7/16) | 1.085 | 1.240 | 0.915 | **yes** |
+| E3c | 32,274 (9.40) | [30,448, 34,406] | 9.83 | 0.95 (15/15) | 1.045 (9/16) | 1.085 | 1.232 | 0.995 | yes |
+
+**Fold 1 agrees on every verdict** except G-A1b(i) for the E4 family, which is at 1.083 and 1.079 on fold 1, inside the band. The rule reads fold 2.
+
+**Decision under the section 3.4 rule: E3.**
+
+- E3 and E3c both qualify.
+- E3c's pooled gain is higher, but its interval [30,448, 34,406] contains E3's point gain of 32,045. So this is a registered tie, and the tie goes to the simpler E3.
+- The E4 family passes every other guard and has gains tied with E3's. Only the E3 family passes G-A1b(i), so the "calibrated variance is a requirement" clause decides between the families as well.
+
+**POST-HOC INFORMATION, not in the rule.** On the paired difference, E3c beats E3 on both folds:
+
+| fold | E3c gain over E3 | 95% interval |
+|---|---:|---|
+| 2 | +229 | [112, 344] |
+| 1 | +118 | [29, 211] |
+
+The E4c-over-E4 difference is the same size. Almost all of it is game 1, where E3c's slope is 0.995 vs E3's 0.915. The registered tie test (interval of each arm's gain vs E0) cannot see a paired difference this small. If the PM wants E3c, that needs a registered amendment to the tie test; it is not selected here.
+
+### 4.2 Emitted-variance calibration of the winner (E3), fold 2, by games band
+
+| band | slope (median over rate-sides) | underpowered rate-sides | G-A1b(i) var ratio | G-A1b(ii) z SD |
+|---|---:|---:|---:|---:|
+| game 1 | 0.915 | 16/16 | **0.739** | 1.214 |
+| games 2-3 | 1.074 | 15/16 | **0.779** | 1.148 |
+| games 4-6 | 0.995 | 12/16 | 0.825 | 1.115 |
+| games 7+ | 0.933 | 1/16 | 1.092 | 1.069 |
+| pooled | 0.942 | 1/16 | 1.061 | 1.085 |
+
+- **E3's v is calibrated pooled but under-covers early.** At game 1 it carries about 74% of the needed between-team variance, and 78% at games 2-3.
+- **The cause is the fitted P0.** It is too small relative to the true spread left unexplained by the prior-season carry.
+- **Stage C's draw arm must not use it uncorrected before games 7+.** This is a Stage B item: a registered P0-by-carry fit, not a tweak.
+- **The z SD above 1 is mostly the sampling model, not v.** Without any v, the z SD is 1.11 (median). Game-level shot-mix and FT-rate counts are over-dispersed relative to binomial or Poisson per FGA:
+  - z SD for ftr is about 1.8;
+  - share3 1.26-1.38;
+  - share_rim 1.41-1.46.
+- **E3's per-rate G-A1b(i) exceptions on fold 2:**
+  - under-covered: ftr off 0.77, ftr def 0.83;
+  - over-covered: tov def 1.28, make3 def 1.22, make_rim off 1.17, oreb def 1.15, tov off 1.14, make_rim def 1.12.
+
+### 4.3 E9 (opponent adjustment on E3, single arm)
+
+**Registered primary: FAILS.** The single-side next-game deviance change vs E3 is:
+
+| fold | change | 95% interval |
+|---|---:|---|
+| 2 | -748 (-0.24%) | [-1,038, -473] |
+| 1 | -813 (-0.26%) | [-1,047, -601] |
+
+On guards, E9 passes G-A1a and G-A1b(i) (1.014) but has a worse G-A2 than E3 (1.355).
+
+**POST-HOC SECONDARY: scored the way the sub-models consume the features.** With p = L + c(team) + c(opponent, opposite side), both from the same arm, E9 GAINS:
+
+| fold | change | 95% interval |
+|---|---:|---|
+| 2 | +1,449 (+1.01%) | [1,226, 1,672] |
+| 1 | +1,538 (+1.08%) | [1,288, 1,779] |
+
+**Why the registered primary is the wrong test for this arm.** A single-side prediction that omits the next opponent penalises an estimator for removing opponent strength from the team's own rate. E9 is NOT selected. Stage B can carry it as an arm under a two-sided primary if the PM registers one.
+
+### 4.4 Weak-signal rate-sides: prior strength, and whether "league level plus variance" is honest
+
+**3P% allowed (make3 def).** The split-half true between-team SD is 1.18 pp.
+
+- **Fitted prior strength:**
+  - E1: k = 1,780 3PA, about 78 games of about 22.7 3PA, so the data weight after 30 games is about 28%;
+  - E2: k = 2,446, rho 0.25;
+  - E3: prior SD 0.82 pp with process SD 0.23 pp per game;
+  - E4: half-life about 4.4 games, k = 940.
+- **What that means.** Every arm has learned that this side is almost all noise. Estimate spread is 0.38-0.56 of the true SD, and the slope is UNDERPOWERED in every arm (SE 0.13-0.18).
+- **Verdict.** Yes: league level plus variance is the honest estimate here. E1, which is nearly exactly that, carries the variance best (G-A1b(i) 0.90). E3's v over-states it (1.22) and E4's badly so (1.80). The winner's v on this side should be treated as conservative.
+
+**Rim FG% offence (make_rim off).** The true SD is 3.28 pp, which is real signal.
+
+- **Fitted prior strength:** E1 k = 244 rim FGA (about 11 games); E3 prior SD 2.3 pp; rho 0.56.
+- **Every arm is short of calibration here:**
+  - slopes 0.87-0.92 (not underpowered: SE about 0.04);
+  - G-A1b(i) 1.09-1.24;
+  - lag-1 move ratios 1.45-2.02.
+- **What that means.** The level is slightly over-spread, and the within-season movement is more predictive than the level. That points to genuine within-season drift of rim finishing plus an over-weighted prior-season carry (rho 0.56 on a rate whose team signal changes year to year).
+- **Verdict.** No: league level plus variance would discard 3.3 pp of real team signal. This side needs a better model of drift and carry (a rate-specific q and rho in E3 already exists; the carry input is the suspect), not a flatter estimate.
+
+### 4.5 Stage B inputs (not built today)
+
+The winner, E3, writes one versioned sibling table: `data/processed/team_rate_features_E3_v1.parquet`.
+
+- **Rows:** one per (season, game_id, team_id) for 2022-2025, about 45,000 team-games (2026 SEALED; the live season is built as-of on the day).
+- **Columns:** for each of the 16 rate-sides, the centred estimate c, its variance v and the league level L. That is 48 value columns plus keys: about 2.2M values, about 10-15 MB of parquet.
+- **Names:** mapped to the consumers' existing names:
+  - possession_outcome: `off_/opp_def_{tov,ftr,3pa,rim}_c`;
+  - fg_make: `off_make_c__{rim,jump2,three}`, `def_allow_c__*`;
+  - rebound: `off_oreb_c`, `opp_def_dreb_c`.
+- **Resume plan:** as in section 2.4. Plus the early-season P0 fix (4.2) and the PM's choice on E3c (4.1) and E9 (4.3), all to be registered before Stage B.
