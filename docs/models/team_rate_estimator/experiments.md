@@ -424,3 +424,94 @@ The winner, E3, writes one versioned sibling table: `data/processed/team_rate_fe
   - fg_make: `off_make_c__{rim,jump2,three}`, `def_allow_c__*`;
   - rebound: `off_oreb_c`, `opp_def_dreb_c`.
 - **Resume plan:** as in section 2.4. Plus the early-season P0 fix (4.2) and the PM's choice on E3c (4.1) and E9 (4.3), all to be registered before Stage B.
+
+---
+
+## 5. Round 2 pre-registration (PM ruling 2026-09-30; registered about 11:55 EDT, COMMITTED BEFORE ANY ROUND-2 FIT)
+
+The E3 (state-space) family is SELECTED by the PM (ledger entry is the PM's). Round 2 holds the family fixed and asks three separate questions, so that Stage B retrains once, on a final table.
+
+### 5.1 Rules common to Q1-Q3
+
+- Hyper-parameters are fitted on training seasons only: fold 1 on 2023, fold 2 on 2023+2024.
+- Fold 2 selects. Fold 1 must agree in sign.
+- **Test for every comparison:** a PAIRED team-block bootstrap of the difference between the two arms (teams resampled with replacement, 1,000 draws, 95% interval). This replaces the round-1 tie test.
+- A comparison between arms already seen in round 1 is labelled POST-HOC.
+- **Gaussian predictive likelihood (used by V1, V2 and O1):** log N(y; p, v + phi s^2), where s^2 is the binomial (or Poisson) next-game sampling variance at p and phi = 1 unless the arm fits it.
+- **Scripts:** `scripts/exp_team_rate_estimator_v3.py` (fitting, emission) and `scripts/grade_team_rate_estimator_v3.py` (the one grader).
+- **Estimator core:** a NEW module, `src/cbb_sim/live/team_rate_estimator.py`. It is shared by the historical emission and the live-slate function; no existing file under `src/cbb_sim/live/` is edited.
+
+### 5.2 Q1: variance
+
+In every arm below, q and rho are E3's own fitted values; only the stated parameters are fitted.
+
+| arm | definition |
+|---|---|
+| V0 | E3 as fitted in round 1 (q, P0, rho) |
+| V1 | P0 refitted as its own parameter per rate-side, by maximising the Gaussian predictive likelihood of each team's FIRST 6 games (j = 0-5) on training seasons |
+| V2 | as V1, with log P0 = a0 + a1 (cont - mean cont) + a2 coach_change (a1 is expected negative) |
+| O1 | on top of the better of V1/V2 by the Q1 primary: a per-rate-side overdispersion factor phi, applied to the filter's observation variance and to s^2. phi and that arm's P0 parameters are fitted jointly by the Gaussian predictive likelihood over all training rows |
+
+**Primary.** Per rate-side and pooled (median over the 16 rate-sides), at games bands 1, 2-3, 4-6 and 7+, and pooled over bands:
+
+- the variance ratio [var(c) + mean(v)] / (split-half true between-team variance);
+- the z SD, with z = (y - p) / sqrt(v + phi s^2).
+
+Both must be inside 0.90-1.10.
+
+**Deviance guard.** An arm may not lose deviance to V0: it fails if its paired interval vs V0 lies entirely below zero.
+
+**Decision.**
+
+- An arm PASSES the primary if both pooled medians are inside the band at all four games bands.
+- Among passing arms, the first in the order V0, V1, V2 wins. O1 is eligible only if no V arm passes because of the z SD.
+- If no arm passes, the winner is the arm with the most (rate-side x band x check) cells inside the band, ties to the simpler arm.
+
+### 5.3 Q2: prior mean at day 0
+
+Both arms use the Q1 winner's variance specification.
+
+| arm | carry |
+|---|---|
+| P0 | E3's prior-season carry, rho c_prev |
+| P1 | E3c's carry, rho = r0 + r1 (cont - mean) + r2 coach_change (POST-HOC pair) |
+
+**Primary.** The paired deviance difference P1 - P0 on the game-1 cell and on the games 2-3 cell. The game-1 team slope is reported.
+
+**Decision.** P1 is selected only if both hold:
+
+- its fold-2 paired interval on game 1 excludes zero on the favourable side;
+- fold 1 agrees, with its own interval also excluding zero.
+
+**Diagnostic: rim FG% offence carry.**
+
+- Report the fitted carry weight rho per rate-side.
+- For make_rim off, also report a per-rate carry variant with rho fitted by the first-6-games predictive likelihood, and whether it repairs the G-A1a slope (target 0.90-1.10 pooled, and at 7+).
+- This variant is diagnostic only and is not selectable in round 2.
+
+### 5.4 Q3: opponent adjustment (optional arm; POST-HOC)
+
+**Primary (two-sided, as the sub-models consume features).** The matchup-level next-game deviance on offence-side rows, with p = L + c_team(side) + c_opponent(opposite side), both estimates from the same arm. The comparison is E3-final vs E3-final+E9, paired bootstrap, on both folds.
+
+**Decision.** If both folds' intervals exclude zero in favour of E9:
+
+- E9 is carried into Stage B as ONE extra arm on possession_outcome only, where that sub-model's own unseen primary decides;
+- it is NOT adopted here.
+
+### 5.5 Emission (after Q1-Q3)
+
+The round-2 winner (the Q1 winner combined with the Q2 winner) writes `data/processed/team_rate_features_<arm>_v1.parquet`. If Q3 clears, a second table with the `+opp` suffix is also written for the possession_outcome arm.
+
+**Contents**
+
+- One row per (fold, season, game_id, team_id).
+- For each of the 16 rate-sides: the centred estimate `c`, variance `v` and league level `L`.
+- Fold F1 rows: seasons 2022-2024, parameters fitted on 2023.
+- Fold F2 rows: seasons 2022-2025, parameters fitted on 2023+2024.
+- 2026 is SEALED and not computed.
+
+**Strictly as-of.** An assertion in code checks, for every row, that every performance input has a date strictly before the row's game date. Roster continuity uses roster LISTINGS (athlete membership, not performance) from the team's first 3 box scores; that is documented as the one non-performance input and is flagged if it is used.
+
+**Live function:** `estimate_asof(...)` in the new module, for a future slate. It is not run for 2026-27 today.
+
+**Trainer consumption:** a name-for-name mapping of which existing columns the table replaces is written in section 6.
