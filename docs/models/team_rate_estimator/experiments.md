@@ -959,3 +959,27 @@ These are the same design files lane J's `train_*_par_v1.py` trainers default to
 **Relation to anchor O.** The day-0 rule is the same as anchor O's (prior season's end level). In season, both are as-of cumulative levels, but over different counting bases: the box here, the sub-model's own target events there. So the two can differ by that base's definitional gap (e.g. live rebound opportunities vs box OREB + opponent DREB).
 
 **No double counting.** Under TO, L centres the FEATURES (a team relative to the league), while anchor O offsets the TARGET's intercept. These are different objects.
+
+---
+
+## 7b. Local Stage B smoke test (run 2026-09-30, 12:14-12:37 EDT; NOT a Stage B result)
+
+Script: `scripts/diag_team_rate_stageb_smoke_v1.py`. Output: `results/team_rate_estimator/stageb_smoke_v1.json`.
+
+**Setup**
+
+- One refit date (2025-01-01), fold F2.
+- Training rows: a 25% sample of the rows before the cut. Test: the following 31 days.
+- LightGBM runs at n_jobs = 1, monkeypatched in-process only.
+- The served modules' fit functions are called UNMODIFIED. Lane J's box trainers were not yet committed when this started.
+- Table: E3 **v2** with `missing="keep_served"`, because the v3 coverage fix (7a.1) landed while the test was running. The rows kept served are exactly the box-less games that v3 now covers.
+
+**Results.** Every sub-model runs end to end on substituted features.
+
+| sub-model | replaced columns | rows kept served (v2 gap) | test log loss, served / E3 | wall time |
+|---|---|---:|---|---:|
+| possession_outcome `first` (lgbm) | the 8 PO style columns, plus the 4 recomputed interactions | 673 | 1.51942 / 1.52018 | 610 s |
+| fg_make FGA_rim (lgbm, B1 features) | `off_make_c`, `def_allow_c` | 188 | 0.67441 / 0.67435 | 642 s |
+| rebound (lgbm, S1 features) | `off_oreb_c`, `opp_def_dreb_c` | 388 | 0.63655 / 0.63727 | 125 s |
+
+These log losses come from one cut on a 25% sample. They are plumbing checks and decide nothing: Stage B's arms, floors and folds are in sections 7 and 7a.
