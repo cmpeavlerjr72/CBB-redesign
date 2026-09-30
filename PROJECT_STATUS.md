@@ -1,6 +1,6 @@
 # PROJECT_STATUS.md
 
-Last updated: 2026-09-30 11:05 EDT (session start; six lanes running). Season tips Nov 1-3, 2026.
+Last updated: 2026-09-30 15:40 EDT (hard stop 17:00; box operator finishing). Season tips Nov 1-3, 2026.
 
 ## Session 2026-09-30 (started 10:50 EDT): restart after a 12-day gap; 33 days to tip-off
 
@@ -70,7 +70,21 @@ In progress: L3 possession-outcome round 2 (event fix + S0/S1/S2 training scheme
 
 Nothing shipped to production. Engine v1 served stack (all provisional): event round2_s1; fg_make round4_B1 on inputs v2; rebound S1_weekly; free throw S1_conf_aligned; usage U1; rotation R2 under S1; clock v5b_glat_pmean (shared per-game pace latent, mean-preserving; ADOPTED 2026-09-11); attribution round 2. Last full read: `docs/tests/engine_v1_gates_F2_2025_s200_aws_2026-09-11.md` (v3c clock, 200 seeds) and `engine_v1_gates_F2_2025_s200_v5b_full_2026-09-18.md` (served v5b stack, full 200 paired seeds; supersedes the 75-seed read of 2026-09-11). Parity reference for the served stack: `docs/ops/parity_reference_windows_v6.json`.
 
-## Next in queue (2026-09-18 21:40)
+## Next in queue (2026-09-30 15:40; full list with evidence in HANDOFF.md "Open items, in order")
+
+1. Read the box results (HANDOFF operator row): Stage B primaries; the S0 full read on v3 inputs + verified truth is the NEW BASELINE gate table; S1 vs S0 on the G9 slope; the pending fixes at 200 seeds with four floor draws. Rule under Decisions 11-12.
+2. The full retrain on the clean foundation (event layer v4 + corrected foul state + E3 v4 features + ratings C + anchor O arms; sibling trainers for the v4 consumers; v3 tag inputs; verified truth), then the combined closed loop of Decision 11. Box job.
+3. Flip the truth default, regenerate the parity reference, switch to the verified sample, re-read earlier paired rounds on v3.
+4. G5 total-variance owner: shared shooting latent + pace x efficiency (the whistle is refuted).
+5. Foul round 9 (first-half trips on the corrected state), then late-game round 3, G7.
+6. Home-advantage site terms (free_throw, clock, foul channel) and fg_make's +0.68.
+7. Clock: pace responsiveness through E3-style features; remaining count gap.
+8. Ops, ~25-35 h: chain sim / publish / grade / bias-CLV stages; 2027 adapters and rule constants; day-1 decisions file; tip times; rosters; lines re-probe Oct 26 / Nov 2; KenPom-covers decision and HF token (user).
+9. Rotation PARKED; props the stretch goal.
+
+Served stack: UNCHANGED today (see "Production stack right now"). Pending under Decision 11: clock `L2`, `ENGINE_SHOT_BLOCK=K2_Ocell`, `ENGINE_FOUL_JOINT` R8b, team_rate_estimator E3 (Stage B/C on the box), own_ratings C (retrain dimension).
+
+## Superseded queue (2026-09-18 21:40)
 
 1. Foul accrual: the accrual law and the trip-foul production JOINTLY (the standalone constant fix exposes hidden compensation; see the ledger's round-6 closed-loop row), plus a pre-registered offensive-foul mechanism. Largest owned gate miss.
 2. Season-drift anchor: one pre-registered cross-model round (rebound, shot_block, FT technicals; possession_outcome as control).
