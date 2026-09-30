@@ -13,7 +13,17 @@ export ENGINE_EVENT=round2_s1 ENGINE_CLOCK=v5b_glat_pmean ENGINE_ROTATION=refere
 case "${1:-}" in
 run)
   ARM="${2:?arm}"; W="${3:?workers}"; OFF="${4:?offset}"; SEEDS="${5:-200}"; CH="${6:-25}"
-  case "$ARM" in S0|S0f*) TAG=S0 ;; S1) TAG=S1 ;; S1tfs) TAG=S1tfs ;; S1opp) TAG=S1opp ;; *) TAG="$ARM" ;; esac
+  TRD=/app/data/processed/models/engine_v3_trdraw
+  case "$ARM" in
+    S0|S0f*) TAG=S0 ;; S1) TAG=S1 ;; S1tfs) TAG=S1tfs ;; S1opp) TAG=S1opp ;;
+    S2) TAG=S1; export ENGINE_TEAM_RATE_DRAW=$TRD/S2_e3_K64.npz ;;
+    S3) TAG=S1; export ENGINE_TEAM_RATE_DRAW=$TRD/S3_o1a_K64.npz ;;
+    K2O) TAG=S0; export ENGINE_SHOT_BLOCK=K2_Ocell ;;
+    S1K2O) TAG=S1; export ENGINE_SHOT_BLOCK=K2_Ocell ;;
+    R8b) TAG=S0; export ENGINE_FOUL_JOINT=R8b ;;
+    R8bS) TAG=S0; export ENGINE_FOUL_JOINT=R8bS ;;
+    *) TAG="$ARM" ;;
+  esac
   RT="v3full_${ARM}_s${SEEDS}_o${OFF}"
   IN="$M/engine_v3_$TAG"
   export BOX_DOCKER_ARGS; BOX_DOCKER_ARGS="$(sed "s#\$PWD#$PWD#g" "$IN/docker_mounts.txt" | tr '\n' ' ')"
