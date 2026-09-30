@@ -302,6 +302,10 @@ POSSESSION_VERSIONS: dict[str, Path] = {
     # lookahead (see TECHNICAL FREE THROWS below). A NEW SIBLING DIRECTORY:
     # v1 and v2 are untouched and remain what every current consumer reads.
     "v3": Path("data/processed/possessions_v3"),
+    # v4 = v3 PLUS the three phantom-possession fixes (EVENT LAYER v4 below;
+    # docs/tests/event_layer_v4_2026-09-30.md). A NEW SIBLING DIRECTORY: no
+    # consumer reads it until the PM switches one.
+    "v4": Path("data/processed/possessions_v4"),
 }
 DEFAULT_POSSESSION_VERSION = "v1"
 DEFAULT_OUT_DIR = POSSESSION_VERSIONS[DEFAULT_POSSESSION_VERSION]
@@ -309,7 +313,29 @@ DEFAULT_OUT_DIR = POSSESSION_VERSIONS[DEFAULT_POSSESSION_VERSION]
 #: Which versions turn the technical lookahead ON. Keyed by version label so a
 #: caller that only knows "v3" gets the right machine without a second flag.
 #: v1/v2 are False, so the default path is bit-identical to what is on disk.
-VERSION_TECH_LOOKAHEAD: dict[str, bool] = {"v1": False, "v2": False, "v3": True}
+VERSION_TECH_LOOKAHEAD: dict[str, bool] = {"v1": False, "v2": False, "v3": True, "v4": True}
+
+#: EVENT LAYER v4 (2026-09-30). Three switches, all OFF by default, so every
+#: existing caller gets the machine that wrote v1/v2/v3. `VERSION_EVENT_FIXES`
+#: maps a version label to the switch set, as `VERSION_TECH_LOOKAHEAD` does.
+#:   andone_live_miss  -- a MISSED and-one free throw leaves the possession open
+#:                        for its live rebound (no 1-s phantom for the shooter,
+#:                        no new possession on the shooter's own OREB); a MADE
+#:                        one closes with next start `made_FT` (the floor).
+#:   stray_reb_guard   -- a DREB arriving with no open possession within
+#:                        STRAY_REB_MAX_S of the last close is an administrative
+#:                        row and is ignored (classes B1 and B2 <= 3 s).
+#:   stray_oreb_guard  -- an OREB arriving with no open possession, by the team
+#:                        whose possession was the last one closed in this
+#:                        period, is ignored (class C1).
+#: Evidence and per-class rules: docs/tests/event_layer_v4_2026-09-30.md.
+EVENT_FIX_SWITCHES: tuple[str, ...] = ("andone_live_miss", "stray_reb_guard", "stray_oreb_guard")
+VERSION_EVENT_FIXES: dict[str, dict[str, bool]] = {
+    v: {k: (v == "v4") for k in EVENT_FIX_SWITCHES} for v in ("v1", "v2", "v3", "v4")
+}
+#: The diagnostic's measured split between stray rebound rows and real
+#: possessions whose shot the feed lost (diagnostic section 5.1): not fitted.
+STRAY_REB_MAX_S = 3
 DEFAULT_TECH_LOOKAHEAD = False
 
 #: Bound on the same-clock technical lookahead: how many non-free-throw rows
@@ -492,10 +518,22 @@ class _GameMachine:
     """One forward pass over one game's non-inert events."""
 
     def __init__(self, game_meta: dict, ev: dict[str, np.ndarray],
-                 tech_lookahead: bool = DEFAULT_TECH_LOOKAHEAD) -> None:
+                 tech_lookahead: bool = DEFAULT_TECH_LOOKAHEAD,
+                 andone_live_miss: bool = False, stray_reb_guard: bool = False,
+                 stray_oreb_guard: bool = False) -> None:
         self.m = game_meta
         self.ev = ev
         self.tech_lookahead = bool(tech_lookahead)
+        # EVENT LAYER v4 switches (module constants above); all False = v2.
+        self.andone_live_miss = bool(andone_live_miss)
+        self.stray_reb_guard = bool(stray_reb_guard)
+        self.stray_oreb_guard = bool(stray_oreb_guard)
+        self.n_andone_live_miss = 0
+        self.n_stray_dreb = 0
+        self.n_stray_oreb = 0
+        #: offense side of the last possession closed in the current period
+        #: (read only by `stray_oreb_guard`)
+        self.last_closed_offense: int | None = None
         #: exact row index of a free throw already identified as a technical's
         #: own (module docstring, "TECHNICAL FREE THROWS"). -1 = nothing armed,
         #: which is always the case when `tech_lookahead` is False.
@@ -573,6 +611,7 @@ class _GameMachine:
         clock = int(self.ev["sec"][i]) if i < self.n else 0
         self.chance.terminal_event = terminal
         self.chance.end_clock = clock
+        self.last_closed_offense = self.cur.offense_team_id
         self.possessions.append(self.cur)
         self.prev_end_clock = clock
         self.prev_home_score = int(self.ev["hs"][i]) if i < self.n else self.prev_home_score
@@ -615,6 +654,7 @@ class _GameMachine:
                 self.team_fouls = {self.home: 0, self.away: 0}
                 self.prev_end_clock = period_length(p)
                 self.next_start_reason = "period_start"
+                self.last_closed_offense = None
 
             if c in ("end_period", "end_game"):
                 if self.cur is not None:
@@ -624,6 +664,7 @@ class _GameMachine:
                 self.period = int(per[nxt]) if nxt >= 0 else self.period
                 self.prev_end_clock = period_length(self.period)
                 self.next_start_reason = "period_start"
+                self.last_closed_offense = None
                 i += 1
                 continue
 
@@ -726,6 +767,17 @@ class _GameMachine:
                     ch.ftm += int(ft_made)
                     ch.points += int(ft_made)
                     self.team_fouls[int(ev["team"][j])] = self.team_fouls.get(int(ev["team"][j]), 0) + 1
+                    if self.andone_live_miss:
+                        if ft_made:
+                            # a dead-ball inbound after a made FT (v4)
+                            self._close(c, k, reason_next="made_FT")
+                        else:
+                            # a live rebound follows the miss: keep the
+                            # possession open, as a missed last FT of a trip does
+                            self.n_andone_live_miss += 1
+                            self.awaiting_reb = True
+                            self.pending_terminal = c
+                        return k + 1
                     self._close(c, k, reason_next="made_FG")
                     return k + 1
             self._close(c, i, reason_next="made_FG")
@@ -751,6 +803,11 @@ class _GameMachine:
         ):
             self.n_admin_orebs += 1
             return i + 1
+        if self.stray_oreb_guard and self.cur is None and self.last_closed_offense == t:
+            # v4, class C1: the rebounder's team has just ended its own
+            # possession; this row cannot open one for it
+            self.n_stray_oreb += 1
+            return i + 1
         self._ensure(t, i)
         if self.cur is not None:
             self.chance.terminal_event = self.pending_terminal
@@ -767,6 +824,11 @@ class _GameMachine:
         return i + 1
 
     def _handle_dreb(self, i: int, t: int) -> None:
+        if (self.stray_reb_guard and self.cur is None
+                and self.prev_end_clock - int(self.ev["sec"][i]) <= STRAY_REB_MAX_S):
+            # v4, classes B1 / B2 <= 3 s: an administrative rebound row
+            self.n_stray_dreb += 1
+            return
         if self.cur is None:
             # no open possession: charge the team that is not the rebounder
             self._open(self._other(t), i)
@@ -972,6 +1034,9 @@ def segment_season(
     pbp_dir: Path | str = "data/raw/cbbd/pbp",
     progress_every: int = 1500,
     tech_lookahead: bool = DEFAULT_TECH_LOOKAHEAD,
+    andone_live_miss: bool = False,
+    stray_reb_guard: bool = False,
+    stray_oreb_guard: bool = False,
 ) -> tuple[pd.DataFrame, pd.DataFrame, dict]:
     """Segment one season into possessions and chances.
 
@@ -1003,6 +1068,12 @@ def segment_season(
     diag = {"n_games": 0, "n_mismatch_closes": 0, "n_tech_trips": 0, "n_admin_orebs": 0,
             "n_unknown_team": 0, "n_games_no_plays": 0, "n_tech_lookahead_hits": 0,
             "tech_lookahead": bool(tech_lookahead)}
+    fixes = {"andone_live_miss": bool(andone_live_miss), "stray_reb_guard": bool(stray_reb_guard),
+             "stray_oreb_guard": bool(stray_oreb_guard)}
+    if any(fixes.values()):
+        # recorded only when a v4 switch is on, so the default diag is unchanged
+        diag.update(fixes)
+        diag.update({"n_andone_live_miss": 0, "n_stray_dreb": 0, "n_stray_oreb": 0})
 
     for b in range(len(bounds) - 1):
         lo, hi = int(bounds[b]), int(bounds[b + 1])
@@ -1016,8 +1087,12 @@ def segment_season(
             "made": ev["made"][lo:hi], "stolen": ev["stolen"][lo:hi],
             "on_floor": ev["on_floor"][lo:hi] if ev["on_floor"] is not None else None,
         }
-        machine = _GameMachine(gm, sub, tech_lookahead=tech_lookahead)
+        machine = _GameMachine(gm, sub, tech_lookahead=tech_lookahead, **fixes)
         machine.run()
+        if any(fixes.values()):
+            diag["n_andone_live_miss"] += machine.n_andone_live_miss
+            diag["n_stray_dreb"] += machine.n_stray_dreb
+            diag["n_stray_oreb"] += machine.n_stray_oreb
         diag["n_games"] += 1
         diag["n_mismatch_closes"] += machine.n_mismatch_closes
         diag["n_tech_trips"] += machine.n_tech_trips

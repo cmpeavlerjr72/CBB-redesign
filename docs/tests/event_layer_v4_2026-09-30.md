@@ -6,7 +6,7 @@ EVENT-LAYER defect). **A versioned sibling only.** `possessions`, `_v2` and
 `_v3` are untouched, no consumer is switched, nothing is retrained, nothing is
 adopted.
 
-## 1. Design, written before the code (13:05 EDT)
+## 1. Design, written and committed before the code (commit `ef7a0cd`)
 
 Three new switches on `cbb_sim.pbp.possessions._GameMachine` /
 `segment_season`, **all default False**. With every switch off, the machine's
