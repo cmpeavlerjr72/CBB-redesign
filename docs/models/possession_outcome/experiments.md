@@ -3547,3 +3547,35 @@ Known caveats (stated, not fixed): the 500-game sample contains one unplayed gam
 as v3 inputs tonight. Paired deltas stand; absolute levels are provisional.
 Hard constraint unchanged: no constant is tuned toward any aggregate; `s^2` is fitted on training
 seasons from the two-team residual covariance and never adjusted to a gate.
+
+## 23. Round 8 AMENDMENT A -- the v3 state fails its own verification; round 8 runs on the v2 state (written 2026-09-30 13:05 EDT, BEFORE any round-8 fit; section 22 is not edited)
+
+Verification of 22.1 (`scripts/diag_foul_state_v3_verify_v1.py`, `results/foul_joint/state_v3_verify.json`):
+
+1. **Round 7's box-vs-pbp "1.60 fouls per team-game" was an artifact of MY replay log, not of the
+   pbp counter.** `possessions.py` `_handle_fga` increments `team_fouls` for an and-one foul
+   directly, never through `_handle_foul`, so the round-6/7 replay (which wraps `_handle_foul`)
+   never logged and-one fouls. The segmenter's COUNTER includes them. Counter vs box per
+   team-game, 2022/2023/2024/2025: mean gap +0.07/+0.10/+0.12/+0.16, MAE 0.17/0.16/0.15/0.18,
+   exact 86.7/86.5/86.8/85.6%. Raw `PersonalFoul` rows vs box (2025): MAE 0.18, 85.6% exact.
+   **The pbp counter is verified against the box.** Round 7's E6 and finding 7 are RETRACTED, and
+   the "2.26% of possessions with an FT trip and no foul row" were overwhelmingly and-ones (0.021
+   and-ones per possession), not rowless trips.
+2. Rowless trips as defined in 22.1 are rare (964-1,268 per season, ~0.0013/poss), and adding
+   them makes box agreement WORSE (v3 MAE 0.21/0.22/0.19/0.20; exact 83.3/81.6/83.8/83.2%): v3
+   fails the pre-registered criterion and is NOT VERIFIED. The detection over-counts.
+3. Consequently the round-7 decomposition tables understate the ACTUAL total and non-trip foul
+   rates by the and-one rate (~0.021/poss): actual total fouls/poss ~0.245 (not 0.2235) and
+   non-trip ~0.092 (not 0.0714). The round-7 targets are unaffected (`y_nt` is a >= 1 event and
+   and-ones are counted in `trips`), and so are the arms' state features (the counter).
+
+Amendment: the corrected state for round 8 is **v2** (pbp counter minus the possession's own
+pre-open fouls; `foul_accrual_poss_v2.parquet`), the state whose counter reconciles with the box.
+On that state the round-7 fold-2 fits ARE the refitted objects of 22.2 (`A3` = round-7 `A2`,
+`T3c` = round-7 `T2c`, same spec, same state, same fold-2 train window); they are not refitted
+a second time. Therefore `R8a` = round-7 `CL2a` and `R8b` = round-7 `CL2` (same LUTs, same code
+path; reused as the no-latent arms, with the new build proven bit-identical on them), and the
+overshoot check of 22.2 is answered by round 7 itself: the pre-open correction was already in
+`CL2` and it still overshot the first half (H1 0.2506 vs 0.2367). New closed-loop runs: `R8aS`,
+`R8bS`, `R8bU`. The whistle-variance fit (22.2) uses the v2 state and the round-7 specs, refit per
+fold (fold 1 needs its own fits). Everything else in section 22 stands.
