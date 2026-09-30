@@ -983,3 +983,126 @@ Script: `scripts/diag_team_rate_stageb_smoke_v1.py`. Output: `results/team_rate_
 | rebound (lgbm, S1 features) | `off_oreb_c`, `opp_def_dreb_c` | 388 | 0.63655 / 0.63727 | 125 s |
 
 These log losses come from one cut on a 25% sample. They are plumbing checks and decide nothing: Stage B's arms, floors and folds are in sections 7 and 7a.
+
+---
+
+## 7c. Stage C draw code, proofs and box runbook (written 2026-09-30 about 13:00 EDT; DEFAULT OFF, nothing adopted)
+
+### 7c.1 Files
+
+| file | role |
+|---|---|
+| `src/cbb_sim/engine/team_rate_draw.py` (new) | `ENGINE_TEAM_RATE_DRAW=<path.npz>` loads K sets, aligned to the inputs' game order (asserted). The index is k = floor(K u), with u the first draw of the new family `team_rate`; with K = 1 there is no RNG call. |
+| `src/cbb_sim/engine/loop.py` | Chunk start: `trd`, `ksim`. Step: `kk`. The gather sites for the clock team row, the event team row, fg_make and rebound take `trd.team_static_k[kk, gidx, off]` instead of `inp.team_static[gidx, off]`. |
+| `src/cbb_sim/engine/adapters.py` | `EventAdapter.predict(..., kidx=None)` reads `team_block_k[kidx, gidx, off]`. |
+| `src/cbb_sim/engine/rng.py` | Adds the family `team_rate`. |
+| `scripts/build_engine_inputs_trdraw_v1.py` (new) | Builds the draw files. It defaults to the v3 replay inputs (`data/processed/models/engine_v3`, the path imported from `build_engine_inputs_v3_replay.OUT`) and does not edit them. Every input is a path argument: the table, variance, K, seed and `--artifact` (recorded in the meta). |
+| `tests/test_team_rate_draw.py` | 4 tests pass. |
+| `scripts/diag_team_rate_draw_proofs_v1.py` | The proofs below. |
+
+Hooks were committed as `725e8f1`. The engine tests passed 20/20 after the hooks.
+
+- The FT gather site is untouched, because FT features hold no team rate.
+- **Incompatibility:** `ENGINE_LATE_GAME` wraps the event adapter, so combining it with the draw is not supported until that wrapper forwards `kidx`. Both are default off.
+
+**Key coverage for the engine universe.** The F2 engine inputs hold 7 games with neither pbp nor box, which are in no design. They are covered by `scripts/exp_team_rate_estimator_v6.py` in the same way as 7a.1 (schedule-only rows), and asserted: 0 missing of 5,710 x 2.
+
+**Final tables for Stages B and C:**
+
+- `team_rate_features_E3_v4.parquet` and `..._E3opp_v4.parquet` (78,036 rows);
+- `team_rate_variance_O1a_v3.parquet`.
+
+**v4 supersedes v3.** They differ only in the 14 new rows and in 233 later rows of the teams that played those games (1,744 rows for E3opp). Stage B should read v4 as well, so that B and C use one table.
+
+### 7c.2 Proofs (local, 2 cores, on the served v2 inputs; v3 does not exist yet)
+
+**(a) Flag off.** 60 games x 5 seeds against `docs/ops/parity_reference_windows_v6.json`: **PASS, bit-identical**, sha256 `0d4ddccc64d7...`.
+
+**(b) K = 1.**
+
+- `k_from_book` leaves the `team_rate` counter at 0, so there is no RNG call.
+- A K = 1 identity file (base values) run through the hook gives the same digest, **PASS `0d4ddccc...`**.
+- The hook is engaged: a K = 1 file carrying the substituted S1 point estimates changes 310 of 320 (game, seed) scores in the end-to-end run.
+
+**(c) Moments of the perturbed sets, K = 64, all 5,710 games, the 16 mapped columns x 2 sides.**
+
+- Standardised mean error (mean over K minus the estimate, divided by sqrt(v/K)): its mean lies in [-0.025, +0.036] and its SD in [0.984, 1.023], against the target N(0, 1).
+- SD over K divided by sqrt(v): its mean lies in [0.993, 0.999]. The small-sample bias at K = 64 predicts 0.996.
+- This holds for BOTH the E3 variance (S2) and the O1a variance (S3). The two share the same normals by construction, so the arms are paired.
+
+**Support clip.** Rates are clipped to [1e-4, 1 - 1e-4] (binomial) or >= 1e-4 (the Poisson FT rate). The clip **never binds**: 0 of about 1.46M draws per rate, in both files.
+
+**(d) Paired streams.**
+
+- A K = 4 zero-variance file consumes the `team_rate` stream (k counts 88/65/84/63 over 300 simulations) and reproduces the reference digest, **PASS `0d4ddccc...`**.
+- Every other family's keys and counters are identical with and without the draw.
+- `k_from_book` equals the offline `k_index` exactly.
+- So a game's margin under seed s changes only through the drawn inputs.
+
+**(e) End-to-end run: 40 F2 games x 8 seeds, the served models.**
+
+| arm | ran (games x seeds) |
+|---|---|
+| S0 | 40 x 8 |
+| S1 (K = 1 substituted) | 40 x 8 |
+| S2 (K = 64, E3 v) | 40 x 8 |
+| S3 (K = 64, O1a v) | 40 x 8 |
+
+The between-seed spread of a game's drawn inputs matches the draw SD. Median SD across seeds vs SD over K:
+
+| input | S2 | S3 |
+|---|---|---|
+| `off_tov_c` | 1.06 vs 1.03 | 1.11 vs 1.08 |
+| `off_make_c__rim` | 0.0169 vs 0.0174 | 0.0180 vs 0.0184 |
+| `off_oreb_c` | 0.0186 vs 0.0190 | 0.0192 vs 0.0197 |
+| `off_3pa_c` | 1.47 vs 1.59 | 1.51 vs 1.63 |
+
+This is a mechanical check. No gate is read from it, and these are not the Stage B models.
+
+### 7c.3 Box runbook (tonight)
+
+**Prerequisites that other lanes or ops must provide; none of these exist yet:**
+
+1. **The v3 replay inputs** from the replay lane: `data/processed/models/engine_v3/{games,arrays,names}_F2_2025.*` and `event_block_F2_2025.npz`, in the v2 game order. There must also be a way for `run_engine.py --input-dir data/processed/models/engine_v3` to load them. `EngineInputs.resolve_tag` must find the bare `F2_2025` tag, and S0 needs the replay lane's event-block mechanism, because the served `EventAdapter` still reads its own `team_block.npz` when the draw is off. With the draw on, the event block comes from the draw file.
+2. **The Stage B retrained artifacts,** served through `ENGINE_*` modes or directories that the adapters can load. The draw file does not depend on them; `--artifact` only records the paths.
+3. **These files on the box** (about 43 MB). They are local and untracked, so push them through an HF bulk key or copy them:
+   - `data/processed/team_rate_features_E3_v4.parquet` (plus `E3opp_v4` if possession_outcome's Topp advances);
+   - `data/processed/team_rate_variance_O1a_v3.parquet`.
+
+**Build the draw files** (about 20 s each on one core; outputs about 2 MB for S1 and about 126 MB each for S2 and S3). Use the same seed for S2 and S3, so they are paired:
+
+```
+python scripts/build_engine_inputs_trdraw_v1.py --variance none --K 1 \
+    --table data/processed/team_rate_features_E3_v4.parquet --out data/processed/models/engine_v3_trdraw/S1_K1
+python scripts/build_engine_inputs_trdraw_v1.py --variance e3 --K 64 --seed 20260930 \
+    --table data/processed/team_rate_features_E3_v4.parquet --out data/processed/models/engine_v3_trdraw/S2_e3_K64
+python scripts/build_engine_inputs_trdraw_v1.py --variance o1a --K 64 --seed 20260930 \
+    --table data/processed/team_rate_features_E3_v4.parquet \
+    --variance-table data/processed/team_rate_variance_O1a_v3.parquet --out data/processed/models/engine_v3_trdraw/S3_o1a_K64
+```
+
+For a mixed stack, where a sub-model's T lost in Stage B, rebuild with that sub-model's columns kept at their served values. The builder needs a `--keep-served <submodel>` flag for that, and it does not exist yet. It is a small follow-up, to be written only if Stage B returns a mixed verdict.
+
+**Parity.** Run the parity gate first, with the draw UNSET: `bash scripts/run_aws_sweep.sh --tag TRD_parity --parity only`.
+
+**Sims.** Paired seeds, each arm on streams A (0-199) and B (1000-1199), with the same v3 input dir and the same retrained-model flags:
+
+```
+bash scripts/run_aws_sweep.sh --tag TRC_S0_A --parity skip --input-dir data/processed/models/engine_v3 --seeds 200 --seed-offset-start 0
+ENGINE_TEAM_RATE_DRAW=$PWD/data/processed/models/engine_v3_trdraw/S1_K1.npz \
+  bash scripts/run_aws_sweep.sh --tag TRC_S1_A --parity skip --input-dir data/processed/models/engine_v3 --seeds 200 --seed-offset-start 0
+ENGINE_TEAM_RATE_DRAW=$PWD/data/processed/models/engine_v3_trdraw/S2_e3_K64.npz \
+  bash scripts/run_aws_sweep.sh --tag TRC_S2_A --parity skip --input-dir data/processed/models/engine_v3 --seeds 200 --seed-offset-start 0
+ENGINE_TEAM_RATE_DRAW=$PWD/data/processed/models/engine_v3_trdraw/S3_o1a_K64.npz \
+  bash scripts/run_aws_sweep.sh --tag TRC_S3_A --parity skip --input-dir data/processed/models/engine_v3 --seeds 200 --seed-offset-start 0
+# repeat each with _B and --seed-offset-start 1000 (the A/B noise floor)
+```
+
+**Expected wall time and memory.**
+
+- The v5b read (`engine_v1_gates_F2_2025_s200_v5b_full_2026-09-18.md`) did 125 seeds per stream in about 21 min at 70 workers per stream. On 192 vCPUs, one 200-seed arm-stream is therefore about 13-15 min at about 180 workers.
+- The whole plan is 4 arms x 2 streams = 8 runs, about 1.8-2 h if run back to back, or about 1 h with two concurrent at about 90 workers each.
+- The draw adds one gather per team-rate site; its cost is negligible.
+- Each worker memory-maps nothing: it loads the whole npz, about 126 MB per worker for S2 and S3, which is about 23 GB at 180 workers and fits a 384 GB box.
+
+**Grading.** Grade each arm with `scripts/eval_gates.py` and the close-referenced split (`scripts/diag_g9_g6_margin_v1.py --part close`, pointing `RUN_A`/`RUN_B` at the arm's A/B dirs). Apply the section 7.2 rule.
