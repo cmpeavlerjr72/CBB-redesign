@@ -3270,3 +3270,143 @@ Run by the PM on the then-idle machine with the section-16 runner, unchanged (`s
 | A2 | `G0 x S1_weekly` | 1.514895 | -0.000533 | 0.66 | 2.510 | 1.730 |
 
 Reading. Neither cell clears the floor on the primary, so by the pre-registered rule neither is a winner and Decision 9's conference-alignment arm is NULL for the `first` tree (A1's segment moves, ~0.15 pp, are far inside the 0.8 pp retrain spread). A2 is different in kind: its primary gain is inside the floor, but the weeks 0-3 gap falls 1.32 pp and the non-conference gap 0.76 pp, the first larger than the retrain spread. One seed; not a selection. It says refit CADENCE may be where the early-season reliability lives, without the spread compression that sank G2 in section 12. Next: A2 under seed 1 and the reference under the weekly cadence's own floor, `cont` cells, then (only if it holds) the paired closed loop on a weeks-0-7 game sample. Nothing adopted; no default changed.
+
+## 20. Round 7 pre-registration -- JOINT foul accrual + FT-trip production (lane A, 2026-09-30; written and COMMITTED BEFORE any fitting or arm run)
+
+Owner: lane A (worker). **Nothing here is adopted and no default changes; the PM decides.**
+Motivation: gate G4 FTA/FGA 0.31953 served vs 0.32955 target (500 x 25 paired sample),
+and section 17.2's finding that replacing the served constant with an honest accrual law
+alone moves FTA/FGA AWAY (F5 20.5 floors, F5e 9.8 floors).
+
+### 20.1 Step-1 evidence (instrumentation, run before this section was written)
+
+Instrument: `scripts/run_foul_joint_tap_v1.py` (in-process tap; `src/cbb_sim/` untouched).
+Its reference run `fj_R_s25` is **BIT-IDENTICAL** to `po4b_R_s25` (12,500 x 28, every column),
+and its F5e run `fj_F5e_s25` is bit-identical to 09-18's `foul6_F5e_s25`. Decomposition:
+`scripts/diag_foul_joint_decomp_v1.py` -> `results/foul_joint/decomp_R_F5e.json`. Actual
+side: 2025 event layer (`chances_2025`) joined to a replay rebuilt with pre-open foul counts,
+`scripts/build_foul_accrual_design_v2.py` -> `round6/foul_accrual_poss_v2.parquet` (sibling).
+Units per possession, so the engine's +2 possessions/game cancel.
+
+E1. **The shortfall is bonus trips in minutes 25-40 only.** Bonus trips/poss sim - actual:
+    -0.008 / -0.026 / -0.029 / -0.053 in minutes 25-29 / 30-34 / 35-37 / 38-40; minutes 0-19
+    are +0.000 to +0.006 (FTA/FGA +1.6 to +2.3 pp there). Shooting trips and and-ones are
+    within +-0.009 everywhere. FTA per trip is right (section 2.1 of the G4 diagnostic).
+E2. **Total foul arrival is NOT low.** Served engine 0.2721 fouls/poss vs actual (pbp) 0.2235;
+    F5e 0.2212. With F5e the TOTAL matches and FTA/FGA still falls (0.3021), so the defect
+    is WHERE in the count distribution fouls land, not how many.
+E3. **The actual state labels the served models were fitted on are shifted.** `_GameMachine._open`
+    reads `team_fouls` AFTER any foul committed while no possession was open (the common case
+    for a bonus foul or a dead-ball foul), so `def_team_fouls` / `off_in_bonus` at open INCLUDE
+    the possession's own pre-open fouls: 0.173 defence fouls/poss, on 16.5% of possessions.
+    The engine's state is the count BEFORE the possession's own fouls. On the TRUE
+    (engine-definition) state, `def_team_fouls_true = def_team_fouls - def_pre_open`:
+    actual non-trip fouls are 0.074-0.107/poss (H1) and 0.108-0.128 (H2) before the bonus,
+    rising with the count, and **~0.00 in the bonus** (a non-shooting defensive foul in the
+    bonus IS a bonus trip); the served engine draws 0.123 at every count, bonus included.
+E4. **Shooting-trip classes carry the label shift.** On the true state, H2 shooting trips/poss
+    at counts 4 / 5 are actual 0.111 / 0.109 vs engine 0.087 / 0.082, and in the bonus
+    (counts 6-8) actual 0.034-0.036 vs engine 0.050-0.064: a shooting foul that is a team's
+    6th foul opens its possession labelled `in_bonus = 1`, so the served PO moved shooting
+    trips from the approach-to-bonus state into the bonus state. In-bonus total trips (bonus
+    + shooting) are right or high (H2 counts 6-10: engine 0.253-0.290, actual 0.226-0.293).
+E5. **The count distribution is over-dispersed and does not self-regulate.** H2 mean count
+    at open matches (minute 35-37: 7.56 engine vs 7.53 actual true) but SD is 3.45 vs 2.48 and
+    P(in bonus) 0.658 vs 0.789 (true state; the label shift itself is only 1.3-3.5 pp of
+    occupancy). Actual pre-bonus foul arrival depends on the foul DIFFERENTIAL: true-state
+    def-minus-off -4 -> 0.264 / 0.321 fouls per poss (H1 / H2), 0 -> 0.159 / 0.233; the engine
+    is flat (0.210-0.243). Nothing in the served stack sees either team's count.
+E6. Grading source, reported not fixed: box `fouls` 16.96 per team-game vs pbp replay 15.36
+    (+1.60, 79% of team-games differ by >= 1; corr with technical fouls 0.26). The engine's
+    count process is defined on the pbp count (the only one with a clock), consistently with
+    every state label; the box excess is a free_throw / data-layer item.
+
+Reading: the served 0.123346 constant was compensating for a trip-production and state
+structure the engine does not have (E3-E5). The fix must be made at the two producers:
+the non-trip accrual law AND the FT-trip classes, both on the engine-definition state.
+
+### 20.2 Offline objects and arms (fold 2 selects, fold 1 confirms, 2025-26 SEALED)
+
+Rows: `foul_accrual_poss_v2` (possessions) and `round2/design.parquet` (chances, the served
+PO design), seasons 2022-2025, fit mask regulation outside the final 2:00 (13.5 breakdown 8),
+technical-anti-joined as in 15.4. **Every arm is scored on TEST rows fed the TRUE state**,
+because that is what the engine feeds; labelled-state arms are fitted on labels and queried
+with true values, exactly as they would be served.
+
+Block A -- non-trip accrual under the engine's attribution (all charged to the defence).
+Target `y_nt = 1[(all fouls in possession) - (FT trips + and-ones in possession) >= 1]`
+(the honest non-trip event; `def_silent` alone contains ~0.023/poss of trip fouls whose FT
+row is not adjacent).
+  - `A0`  fitted constant (simplest)
+  - `A1`  cell table: half x true defence count (0..10+), Laplace k=200 (round-6 `_cells`)
+  - `A2`  GBM (round-6 F5 hyper-parameters, n_jobs=1) on the true state: period, sec_rem,
+          margin, abs_margin, game_seconds, def/off true counts, true bonus / double-bonus
+          flags, site_home, site_away, is_ot
+  - `A2lab` = `A2` fitted on the LABELLED state (isolates the label repair)
+  - `A2_D9a` = `A2` + opponent-adjusted as-of foul rates; `A2_D9b` = `A2` + conference flag
+          (single cheap Decision-9 arms; offline only; the engine cannot serve as-of rates)
+Block D/O -- the explicit offensive-foul mechanism (split attribution).
+  - `D2`  = `A2` features on `y_dnt = 1[max(0, def fouls - trips) >= 1]` (defence only)
+  - `O0`  constant; `O2` GBM on the true state + `ended_tov` for `y_off = 1[offence fouls >= 1]`,
+          charged to the OFFENCE's count in the engine.
+Block T -- FT-trip production, per chance, two binaries `y_bonus`, `y_shoot`, served as a
+logit OFFSET on the served PO probabilities (the served PO is LightGBM with no booster
+persisted; its logistic proxy `T0` = the `C_plus_state` bundle + is_cont refit, as in
+round 6 Block T, is the offset base offline; a declared approximation):
+  - `T0`  base only (labelled `in_bonus`, queried with true `in_bonus`)
+  - `T1c` + cell offsets: half x true in_bonus
+  - `T2c` + cell offsets: half x true defence count (0..10+) x foul-differential bucket
+          (def - off true counts: <= -2, -1..1, >= 2)
+  - `T2lab` = `T2c` cells fitted on LABELLED counts (the round-6 `T2` definition), queried
+          with true counts -- "T2 as it stood"
+The served adjustment is `logit p'_c = logit p_PO,c + delta_arm(cell)` for c in {bonus,
+shooting}; the other four classes are rescaled by `(1 - p'_b - p'_s) / (1 - p_b - p_s)`.
+`delta` is a fitted model term learned on TRAIN rows, not a correction to sim output.
+
+Primary (offline): fold-2 test log loss per block (A: `y_nt`; D/O: `y_dnt` + `y_off`;
+T: `y_bonus` + `y_shoot` summed). Floor: spec-identical reseed (seed 0 vs 7) measured per
+arm; the APPLIED floor is max(measured, round-4b 0.000804) as in section 17. Decision: an arm
+beats its reference only by > 1 applied floor; ties go to the simpler arm in the order
+A0 < A1 < A2lab < A2 < D9 arms; T0 < T1c < T2lab < T2c. Fold 1 must reproduce the ordering
+of the winner vs the reference, else NOT CONFIRMED. Segments (reported for every arm):
+half, true defence count, minute bucket, site, conference/non-conference, month; team SD
+ratio (SD of team-mean predictions / SD of realised team rates, >= 300 poss) and
+prior-season quintile slope; underpowered cells (< 2,000 rows) labelled.
+
+### 20.3 Closed-loop arms (500 games x 25 seeds, the `po4b_R_s25` sample and seeds)
+
+Wired behind NEW default-off flag `ENGINE_FOUL_JOINT=<arm>` in a new module
+`src/cbb_sim/engine/foul_joint.py` with a minimal hook in `loop.py`; LUTs exported from
+the FOLD-2 fits (train 2022-2024 only). Parity of the default path is proved before any
+arm is read: (i) `docs/ops/parity_reference_windows_v6.json` digest and (ii) the full
+500 x 25 default run bit-identical to `po4b_R_s25`.
+
+| arm | accrual | offensive fouls | trip classes |
+|---|---|---|---|
+| `CL0` served reference | constant 0.123346 | none | served PO |
+| `CL1` simplest | `A1` table | none | served PO |
+| `CL2a` accrual only | Block-A winner (expected `A2`) | none | served PO |
+| `CL2` joint | Block-A winner | none | Block-T winner (expected `T2c`) |
+| `CL3` + offensive fouls | `D2` (defence only) | `O2` to the offence | Block-T winner |
+| `CL4` + T2 as it stood | `D2` | `O2` | `T2lab` in place of the Block-T winner |
+
+(`CL4` REPLACES rather than stacks the trip term: two count-conditioned bonus offsets
+would double-count the same effect.) If a block has no winner beyond the floor, its
+simplest arm is substituted and the substitution is stated. 09-18's `foul6_F5e_s25` is
+carried as a comparison row (bit-identical under the tap).
+
+Primary (closed loop): |FTA/FGA - 0.32955| (box), change vs `CL0` in floors, floor =
+|`po4b_R_s25_floor` - `po4b_R_s25`| = 0.001782. Vetoes (any failure = not eligible):
+  V1 bonus occupancy by game minute (true-state actual as truth): max |gap| over the 9
+     buckets must fall vs `CL0` (0.151 at minute 35-37) and no bucket may worsen by > 3 pp;
+  V2 per-team FT-rate slope (prior-season 2024 FT-rate quintiles; sim span / actual span on
+     the same games, team ids from the new `games_v2.parquet`) must not fall by more than
+     0.05 below `CL0`;
+  V3 no other gate line moves AWAY from its target by > 2 floors: G1 possessions mean and
+     SD, G5 total SD and margin SD, G9 total-points bias;
+  V4 SD of team FT-rate predictions / SD of realised team FT rates must not fall vs `CL0`.
+Also reported, not vetoes: FTA/FGA by half and for the final 2:00, FT-trip rate by true
+defence count, foul-count SD by minute, OREB% (a known side channel).
+
+Hard constraint: no arm re-tunes a constant toward the aggregate. Every LUT is a fold-2
+TRAIN fit; nothing is fitted to 2025 or to sim output.
