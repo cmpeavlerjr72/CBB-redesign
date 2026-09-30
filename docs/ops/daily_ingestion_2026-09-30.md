@@ -126,3 +126,30 @@ Quota read from `X-CallLimit-Remaining`: 28,288 at the 2026-09-30 10:54 audit, 2
 2. Event-table files are all-season files (2022-2025, FT through 2026); 2027 rows are appended to them, the repo-root guard must be lifted deliberately (`--allow-backfill` is for seasons <= 2026 only; season 2027 needs nothing).
 3. hoopR `mbb_schedule_2027` has 1,629 games; CBBD has 5,286. Ingestion runs from hoopR's schedule rows, so any CBBD-only game is never a candidate (audit gap 5).
 4. Add the step to the chain: `import chain_ingest_daily_v1 as CI; STEPS.insert(1, CI.STEP)`.
+
+## 7. Follow-up (2026-09-30 afternoon): chain v2, dry run on the live 2027 files, flip backfill, box cross-check
+
+New: `scripts/chain_daily_v2.py` (`chain_daily.py` untouched; its schedule, lines, injuries, overrides steps are reused by import), `tests/test_chain_daily_v2.py`.
+Stage order follows the readiness stage table with ingestion ahead of the as-of stages: schedule, lines, ingest, ratings, kenpom (off, audit gap 10), injuries, overrides, inputs, sim, publish, grade, bias_clv.
+Each stage is exception-isolated, idempotent and logged; live runs write `data/processed/ingest/chain_v2/<date>.json`. The inputs stage asserts `created_at < tipoff` on the slate (`guards.assert_created_before_tipoff`) before anything else.
+`CBB_UNSEAL=1` is set only inside `unsealed()`, reached only when `data/overrides/ratings_day1_choices.json` holds all six decisions (implemented options in the script); the dry run never reaches it and reads no 2026 outcome.
+
+Dry run, `chain_daily_v2.py --dry-run`, run date 2026-09-30, slate 2026-11-02 (first real slate), 12 s wall:
+
+| stage | result | expected | verdict |
+|---|---|---|---|
+| schedule | ok, 0 games today/yesterday both sources | ok | PASS |
+| lines | ok, 0 rows | ok | PASS |
+| ingest | ok: LIVE hoopR download of `mbb_schedule_2027` (133,247 bytes, 1,629 rows, ETag recorded), 0 schedule rows for 2026-09-29, 0 verified finals, pending list 0, 0 CBBD calls. HEAD probe of the 2027 season files: schedules 200, team_box / player_box / pbp / shots **404** (not created until the first game day) | zero verified, empty pending | PASS |
+| ratings | BLOCKED, lists the six missing decisions (seal lift, team source, prior weight policy, new-team prior, fixed-term prior, early D-I rule); 2026 chain not read | stop at the choices | PASS |
+| kenpom | skipped (PM decision) | skipped | PASS |
+| injuries, overrides | ok (0 rows) | ok | PASS |
+| inputs | guard PASS (created 17:54Z < first tip 2026-11-02 05:00Z); 118 mapped / 38 unmapped games; day-1 census reproduces **14 of 14** of lane G's breakage rows (own_ratings, tipoff, possession_outcome, rebound, fg_make, free_throw, usage, rotation, roster, ids, adapters, bonus era, rule constants, lines); 19 rows: 8 DEGENERATE, 6 MISSING, 3 BREAKS, 1 partial, 1 STALE | day-1 list | PASS (blocked, as expected) |
+| sim, publish, grade, bias_clv | not_built | not built | FAIL (known gaps) |
+
+Finding and fix: hoopR returns 404 for team_box / player_box / pbp / shots 2027 until the first game day, which would have raised in the ingest on the first real day. `HooprSource` now treats a 404 on those datasets as an empty frame (recorded in the manifest), so the day's games go to the pending list as `awaiting_data` and are retried.
+
+**D-I flip backfill** (implemented): games stored earlier with `is_d1_game = False` whose teams now qualify are rebuilt (universe row, possessions, events, truth) in the next run that has candidates; listed as `d1_flips_backfilled`. Test on the replay root: one ingested game (401725665) had its flag set False and all its derived rows deleted, then 2025-01-16 was ingested; the game's rows came back and all tables equal disk (same two known differences: the non-D-I games and `trip_id`).
+**CBBD box cross-check** (implemented): `/games/teams`, one call per run, compared with hoopR team_box per game and side. Hard fields (points, fgm, tpm, ftm) must agree or the game goes pending as `box_disagree`; soft fields (fga, tpa, fta, oreb, dreb, tov) are reported. A missing CBBD team box is `awaiting_data` until the patience window. Replay 2025-01-12..17: 448 team rows, 0 hard mismatches, soft mismatching rows fga 1, tpa 2, oreb 1, dreb 4, tov 1; the 2025-01-16 ingest compared 62 games, 0 hard, 0 soft.
+
+CBBD calls in this follow-up: 3 probes of `/games/teams`, 4 for the 2025-01-16 replay ingest (`/games`, 2 x `/plays/date`, `/games/teams`), 4 for the chain dry run = 11. Steady state is now **4 calls per ingested game date** (3 + `/games/teams`), 3 per pending date retried; 0 calls on a day with nothing to do. Quota about 28,246 remaining. Day-1 list for the PM is section 4 of `docs/ops/own_ratings_daily_2026-09-30.md` plus the `ratings_day1_choices.json` keys above.

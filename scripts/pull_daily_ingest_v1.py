@@ -176,6 +176,12 @@ class HooprSource:
             url = HOOPR_URL.format(dirname=dirname, stem=stem, season=season)
             r = requests.get(url, timeout=300, stream=True,
                              headers={"User-Agent": "cbb-clean-sheet-daily-ingest/1.0"})
+            if r.status_code == 404 and dataset != "schedules":   # season file not created yet (first game day): no rows, never an error
+                df = pd.DataFrame({"game_id": pd.Series(dtype="int64")})
+                self.meta[f"{dataset}_{season}"] = {"source": url, "http_status": 404, "bytes": 0, "rows": 0,
+                                                    "fetched_at": str(utcnow())}
+                self._frames[k] = df
+                return df
             r.raise_for_status()
             self.cache_dir.mkdir(parents=True, exist_ok=True)
             p = self.cache_dir / f"{dataset}_{season}.parquet"
@@ -305,6 +311,53 @@ def verify_finals(hs: pd.DataFrame, cg: pd.DataFrame) -> pd.DataFrame:
     return pd.DataFrame(out)
 
 
+# --------------------------------------------------------------------------- box cross-check
+HARD = (("pts", "points"), ("fgm", "fgm"), ("tpm", "tpm"), ("ftm", "ftm"))      # the scoring identity: must agree
+SOFT = ("fga", "tpa", "fta", "oreb", "dreb", "tov")                              # reported, not blocking
+
+
+def box_crosscheck(cbbd, season: int, lo: date, hi: date, ver: pd.DataFrame, vids: set, tb: pd.DataFrame):
+    """CBBD /games/teams (one call for the window) vs hoopR team_box, per game and side. Replay 2025-01-12..17: 448 team rows,
+    points / fgm / tpm / ftm / fta identical on all, fga 1, tpa 2, oreb 1, dreb 4, tov 1 mismatching rows."""
+    data = cbbd.get("/games/teams", {"season": season, "startDateRange": f"{lo - timedelta(days=1)}T00:00:00Z",
+                                     "endDateRange": f"{hi + timedelta(days=2)}T23:59:59Z"})
+    c2h = {int(r.cbbd_game_id): int(r.game_id) for r in ver.itertuples() if pd.notna(r.cbbd_game_id)}
+    rows = []
+    for x in data:
+        g = c2h.get(int(x["gameId"]))
+        if g is None or g not in vids:
+            continue
+        t = x["teamStats"]
+        rows.append(dict(game_id=g, home=bool(x["isHome"]), pts=t["points"]["total"], fgm=t["fieldGoals"]["made"],
+                         fga=t["fieldGoals"]["attempted"], tpm=t["threePointFieldGoals"]["made"],
+                         tpa=t["threePointFieldGoals"]["attempted"], ftm=t["freeThrows"]["made"], fta=t["freeThrows"]["attempted"],
+                         oreb=t["rebounds"]["offensive"], dreb=t["rebounds"]["defensive"], tov=t["turnovers"]["total"]))
+    c = pd.DataFrame(rows)
+    if not len(c) or "team_home_away" not in tb.columns:
+        return {}, {}, {}
+    h = tb[tb["game_id"].isin(set(c["game_id"]))].copy()
+    h["home"] = h["team_home_away"] == "home"
+    h = h.rename(columns={"team_score": "pts", "field_goals_made": "fgm", "field_goals_attempted": "fga",
+                          "three_point_field_goals_made": "tpm", "three_point_field_goals_attempted": "tpa",
+                          "free_throws_made": "ftm", "free_throws_attempted": "fta", "offensive_rebounds": "oreb",
+                          "defensive_rebounds": "dreb", "total_turnovers": "tov"})
+    j = c.merge(h[["game_id", "home", "pts", "fgm", "fga", "tpm", "tpa", "ftm", "fta", "oreb", "dreb", "tov"]],
+                on=["game_id", "home"], suffixes=("_c", "_h"))
+    bad, soft = {}, {}
+    for r in j.itertuples(index=False):
+        d = r._asdict()
+        hb = [f"{k}:{d[k + '_c']}!={d[k + '_h']}" for k, _ in HARD if float(d[k + "_c"]) != float(d[k + "_h"])]
+        sb = [f"{k}:{d[k + '_c']}!={d[k + '_h']}" for k in SOFT if float(d[k + "_c"]) != float(d[k + "_h"])]
+        if hb:
+            bad.setdefault(int(d["game_id"]), "")
+            bad[int(d["game_id"])] = (bad[int(d["game_id"])] + " " + ("home " if d["home"] else "away ") + ",".join(hb)).strip()
+        if sb:
+            soft[int(d["game_id"])] = ("home " if d["home"] else "away ") + ",".join(sb)
+    have = set(j["game_id"])
+    cb = {g: True for g in have}
+    return cb, bad, soft
+
+
 # --------------------------------------------------------------------------- derived builds
 @contextlib.contextmanager
 def v1_classify(off: bool):
@@ -334,27 +387,26 @@ def build_universe_rows(root: Path, season: int, ids: set, ledger: dict, notes: 
         carry = {(season, int(t)) for t in pd.concat([u_prev["home_team_id"], u_prev["away_team_id"]]).unique()}
     d1 = strict | carry
     ids_ = pd.to_numeric(full["game_id"]).astype("int64")
-    rows = full[ids_.isin(ids)].copy()
-    new_d1 = np.array([(season, int(h)) in d1 and (season, int(a)) in d1
-                       for h, a in zip(rows["home_team_id"], rows["away_team_id"])])
-    strict_d1 = rows["is_d1_game"].to_numpy()
-    notes["d1_rule"] = "strict(>=5 conf games through the ingested date) UNION prior-season D-I teams"
-    notes["d1_flag_changed_by_carry"] = int((new_d1 != strict_d1).sum())
-    rows["is_d1_game"] = new_d1
-    # DETECTION ONLY: games ingested earlier as non-D-I (stored flag False) whose teams now qualify (a team crossing the
-    # >= 5 conference-game threshold, e.g. a new D-I member). Their derived rows were never built; listed, not repaired.
+    # D-I FLIP BACKFILL: games stored earlier with is_d1_game False whose teams now qualify are rebuilt with this run's games
     flips: list = []
     if up.exists():
         cur = pd.read_parquet(up, columns=["game_id", "season", "is_d1_game"])
         cur = cur[(cur["season"] == season) & ~cur["is_d1_game"]]
         now_d1 = np.array([(season, int(h)) in d1 and (season, int(a)) in d1
                            for h, a in zip(full["home_team_id"], full["away_team_id"])])
-        flips = sorted(set(cur["game_id"].astype("int64")) & set(pd.to_numeric(full.loc[now_d1, "game_id"]).astype("int64")))
-    notes["d1_flips_detected_not_repaired"] = [int(x) for x in flips]
+        flips = sorted(set(cur["game_id"].astype("int64")) & set(ids_[now_d1].tolist()) - set(ids))
+    rows = full[ids_.isin(set(ids) | set(flips))].copy()
+    new_d1 = np.array([(season, int(h)) in d1 and (season, int(a)) in d1
+                       for h, a in zip(rows["home_team_id"], rows["away_team_id"])])
+    strict_d1 = rows["is_d1_game"].to_numpy()
+    notes["d1_rule"] = "strict(>=5 conf games through the ingested date) UNION prior-season D-I teams"
+    notes["d1_flag_changed_by_carry"] = int((new_d1 != strict_d1).sum())
+    rows["is_d1_game"] = new_d1
+    notes["d1_flips_backfilled"] = [int(x) for x in flips]
     return rows.reset_index(drop=True)
 
 
-def rebuild_derived(root: Path, season: int, ids: set, ts: pd.Timestamp, ledger: dict, notes: dict) -> None:
+def rebuild_derived(root: Path, season: int, ids: set, ts: pd.Timestamp, ledger: dict, notes: dict) -> set:
     from cbb_sim.models import event_stream as ES
     from cbb_sim.models import fg_make as FG
     from cbb_sim.models import free_throw as FT
@@ -364,6 +416,7 @@ def rebuild_derived(root: Path, season: int, ids: set, ts: pd.Timestamp, ledger:
 
     t0 = time.time()
     urows = build_universe_rows(root, season, ids, ledger, notes)
+    all_ids = set(pd.to_numeric(urows["game_id"]).astype("int64"))
     upsert(root / "data/processed/games_universe.parquet", urows, "game_id", ts, ledger, "games_universe")
     have = set(pd.read_parquet(root / f"data/raw/cbbd/pbp/plays_{season}.parquet", columns=["gameId"])["gameId"].astype("int64"))
     n_no_plays = int((~urows["cbbd_game_id"].astype("float64").isin({float(x) for x in have})).sum())
@@ -415,6 +468,7 @@ def rebuild_derived(root: Path, season: int, ids: set, ts: pd.Timestamp, ledger:
         upsert(mdir / "free_throw/trips_v1_era.parquet", trips, "game_id", ts, ledger, "ft_trips_v1_era")
         upsert(mdir / "free_throw/attempts_v1_era.parquet", att, "game_id", ts, ledger, "ft_attempts_v1_era")
     notes["derived_seconds"] = round(time.time() - t0, 1)
+    return all_ids
 
 
 def rebuild_truth(root: Path, season: int, ids: set, ts: pd.Timestamp, ledger: dict, notes: dict) -> None:
@@ -455,6 +509,7 @@ def main(argv=None) -> int:
     ap.add_argument("--now", default=None, help="clock for the patience rule (ISO UTC); default wall clock")
     ap.add_argument("--retry-days", type=int, default=14, help="pending games older than this are listed but not retried")
     ap.add_argument("--patience-hours", type=int, default=PATIENCE_HOURS)
+    ap.add_argument("--no-box-crosscheck", action="store_true")
     ap.add_argument("--allow-backfill", action="store_true")
     ap.add_argument("--dry-run", action="store_true")
     a = ap.parse_args(argv)
@@ -501,14 +556,16 @@ def main(argv=None) -> int:
         manifest.update(finished_at=str(utcnow()), note="nothing to do: every game on the requested dates is already complete",
                         cbbd_calls=0, rows_added={}, hoopr_sources=hoopr.meta)
         _write_manifest(ing, manifest, a.dry_run)
-        print(json.dumps({"run_id": run_id, "nothing_to_do": True}))
+        print(json.dumps({"run_id": run_id, "nothing_to_do": True, "complete": 0, "pending": int(len(pend)), "cbbd_calls": 0,
+                          "n_schedule_rows": int(len(cand_all)), "hoopr": hoopr.meta}))
         return 0
 
     if not (cand["home_conference_id"].notna() & cand["away_conference_id"].notna()).any():
         manifest.update(finished_at=str(utcnow()), note="nothing to do: only out-of-scope (non-D-I) games remain on the requested dates",
                         n_out_of_scope_non_d1=int(len(cand)), cbbd_calls=0, rows_added={}, hoopr_sources=hoopr.meta)
         _write_manifest(ing, manifest, a.dry_run)
-        print(json.dumps({"run_id": run_id, "nothing_to_do": True, "out_of_scope": int(len(cand))}))
+        print(json.dumps({"run_id": run_id, "nothing_to_do": True, "complete": 0, "pending": int(len(pend)), "cbbd_calls": 0,
+                          "out_of_scope": int(len(cand)), "n_schedule_rows": int(len(cand_all)), "hoopr": hoopr.meta}))
         return 0
 
     # ---- 2. CBBD games for the window, finals verification
@@ -540,6 +597,17 @@ def main(argv=None) -> int:
     plays = pd.concat(play_frames, ignore_index=True) if play_frames else pd.DataFrame()
     n_cplays = plays.groupby("gameId").size() if len(plays) else pd.Series(dtype="int64")
 
+    box_bad: dict = {}
+    box_soft: dict = {}
+    cb_box: dict = {}
+    if vids and not a.no_box_crosscheck:
+        cb_box, box_bad, box_soft = box_crosscheck(cbbd, season, lo, hi, ver, vids, tb)
+        for g in box_bad:
+            i = ver.index[ver["game_id"] == g][0]
+            ver.loc[i, ["state", "reason", "detail"]] = ["pending", "box_disagree", box_bad[g]]
+        vids = vids - set(box_bad)
+    manifest["box_crosscheck"] = {"games_compared": len(cb_box), "hard_disagree": box_bad, "soft_mismatch_games": len(box_soft),
+                                  "soft_examples": dict(list(box_soft.items())[:5])}
     gaps, complete, awaiting = {}, [], []
     tip = ver.set_index("game_id")["tipoff_utc"]
     for g in sorted(vids):
@@ -548,6 +616,7 @@ def main(argv=None) -> int:
         if n_pb.get(g, 0) < 10: miss.append("hoopr_player_box")
         if n_pbp.get(g, 0) < 1: miss.append("hoopr_pbp")
         if n_cplays.get(need_plays[g], 0) < 1: miss.append("cbbd_plays")
+        if not a.no_box_crosscheck and g not in cb_box: miss.append("cbbd_team_box")
         if not miss:
             complete.append(g)
         elif pd.notna(tip.get(g)) and now > tip[g] + pd.Timedelta(hours=a.patience_hours):
@@ -584,9 +653,9 @@ def main(argv=None) -> int:
         derived_ok = True
         if ids:
             try:
-                rebuild_derived(root, season, ids, ts, ledger, notes)
+                all_ids = rebuild_derived(root, season, ids, ts, ledger, notes)
                 try:
-                    rebuild_truth(root, season, ids, ts, ledger, notes)
+                    rebuild_truth(root, season, all_ids, ts, ledger, notes)
                 except Exception as exc:
                     import traceback
                     manifest["warnings"].append(f"truth tables not rebuilt: {exc!r} :: {traceback.format_exc()[-600:]}")
