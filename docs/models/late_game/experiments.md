@@ -641,3 +641,30 @@ UNDERPOWERED. Per-player: not applicable.
 
 R, R_floor, W_C2, W_D, E_BL3, E_L0S0, W_best+E_BL3. Anything not reached is
 listed with its exact resume command; nothing is read from a partial run.
+
+---
+
+## 5. RESULTS -- round 2, RUN 2026-09-30 (status PROPOSED -> RUN; NO ARM ADOPTED, no served default changed)
+
+Full evidence: `docs/tests/late_game_round2_2026-09-30.md`. Default path
+bit-identical (v6 digest PASS; R vs `po4b_R_s25` 28/28 columns); first half
+bit-identical to R in 12,500/12,500 simulations in every arm. Power adequate
+(floor on `P(0)/P(1)` 0.0623, 390 ties); enriched sample not triggered.
+
+| arm | P(0)/P(1) | floors vs R | OT | vetoes |
+|---|---:|---:|---:|---|
+| R | 0.551 | -- | 0.0312 | -- |
+| W_C2 | 0.543 | -0.13 | 0.0306 | FAIL G1 mean, half share |
+| W_D | 0.854 | +4.88 | 0.0437 | FAIL G1 mean, G1 SD, half share |
+| E_BL3 | 0.579 | +0.46 | 0.0318 | PASS |
+| E_L0S0 (control) | 0.576 | +0.41 | 0.0326 | PASS |
+| W_C2+E_BL3 (4.2.6 combo) | 0.607 | +0.90 | 0.0314 | FAIL G1 mean, half share |
+| W_D+E_BL3 (exploratory) | 0.851 | +4.82 | 0.0420 | FAIL G1 mean, G1 SD, half share |
+
+Only `D_clk` moves the primary, and under 1.3 it does NOT fix the defect
+(ratio < 1.0; OT below the 2.3 band). The mechanism is the TIED offence holding
+for the last shot, which D represents (role first in its fallback hierarchy)
+and C2 does not (tied rows fall back below `eg_role6`). Every duration arm
+over-produces window possessions against the like-for-like pbp count, which is
+what fails G1 and the half share. The event half is not the lever (enrichment
+~+0.05 floors net of its cadence control). **Status: RUN. NO ARM ADOPTED.**
