@@ -506,3 +506,36 @@ probability on real rows.
 **Decision under 5.4: neither arm is put forward.** Nothing adopted; the flag
 stays default-off. Box commands for a 200-seed read with its own floor pair are
 in the report, section 7.
+
+---
+
+## 7. Addendum: diagnostic arm `SB_K2O_noteam` (written ~13:10 EDT, COMMITTED BEFORE THE RUN)
+
+PM rulings recorded: the G4 TOV% veto is a denominator effect of the gate's
+box-possession formula (the turnover COUNT moves +0.028 per team-game; the
+guardrail is amended to read the TOV veto on the count); the G5 total SD ratio
+veto is an ACCURACY loss (correlation of sim mean totals with actual totals
+0.293 -> 0.270), not a dispersion change.
+
+**Diagnostic arm (not a candidate for serving):** `ENGINE_SHOT_BLOCK=K2_Ocell_noteam`
+= `K2_Ocell` with both TEAM block-rate inputs (`def_block_c`, `off_blocked_c`)
+held at the as-of league level (centred value 0.0) for every game; the shooter
+term, the anchor, the coefficients and every other input unchanged. A sibling
+lookup `shot_block_K2_Ocell_noteam_F2_2025.npz`; no engine code change beyond
+one entry in `engine/shot_block.py`'s arm table.
+
+**Hypothesis on record before the run:** the as-of team block rates are
+expanding-mean features of the kind shown this morning to add game-to-game
+noise (`docs/tests/g9_g6_margin_slope_home_diagnostic_2026-09-30.md` section 6;
+replacement E3, `docs/models/team_rate_estimator/experiments.md`); removing the
+team term should recover most of the correlation while keeping most of the
+OREB% gain. If so, the owner of the veto is the team-rate feature and shot_block
+joins the E3 retrain set; if not, report what remains.
+
+**Run and reads:** same 500 games x seeds 0-24, same served pins, same grader
+(`scripts/grade_shot_block_closed_loop_v1.py`), plus the paired game bootstrap
+(2,000 draws) on G5 total SD ratio, TOV% and TOV count per team-game, OREB%
+pooled, G9 total bias, and the correlation of sim mean totals with actual
+totals, for served vs `SB_K2O` vs `SB_K2O_noteam`. "Recovers most" = at least
+half of `SB_K2O`'s correlation loss recovered, with at least half of its
+OREB% gain kept (point estimates, with the game intervals reported beside them).
