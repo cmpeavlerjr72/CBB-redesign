@@ -51,7 +51,7 @@ The objective is profitability against lines. Until a free lines source is valid
 
 - Every rating feature is expressed relative to its own snapshot's league mean. Raw levels are banned (KenPom's league-mean AdjO drifted 100 -> 109.3 across last year's data and inflated every model).
 - Home/away/neutral is a first-class feature in every scoring-stage model; audit each model's feature list for it.
-- Opponent adjustment of as-of rate features, a conference-game flag, and refit cadence/conference alignment are mandatory bake-off arms wherever a model consumes team or player rates (Decision 9, PENDING EVIDENCE: adopted nowhere until they beat the raw-centred reference beyond the floor on possession-outcome round 3 and confirm on a second sub-model).
+- Opponent adjustment of as-of rate features, a conference-game flag, and conference alignment of refits are NOT mandatory bake-off arms (Decision 9, CLOSED 2026-09-30: null or negative in five sub-models; the raw-centred rate is the standing reference). They may be entered as optional arms when a round's own evidence motivates them. Refit cadence (monthly vs weekly) stays an open bake-off dimension. Free throw keeps its adopted `S1_conf_aligned` scheme.
 - One pace realisation per simulated game, both teams scaled by it. Dispersion comes from the model's own variance function and is validated against realised residual SD.
 - Rates per possession, not counts.
 - RNG seeded on (seed, game_id, family). Paired bake-off arms share aligned streams.
