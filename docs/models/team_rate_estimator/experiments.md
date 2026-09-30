@@ -706,3 +706,170 @@ E9 is therefore carried into Stage B as ONE extra arm, on possession_outcome onl
 - possessions: box formula vs pbp;
 - rebound opportunities: box vs live;
 - rim split: box plus event-layer shares vs pure event layer.
+
+---
+
+## 7. Stage B and Stage C pre-registration, plus the 3PA-per-possession rate and the S3 variance pre-check (written 2026-09-30 about 12:15 EDT; COMMITTED BEFORE ANY STAGE B OR C RUN)
+
+The PM rulings are recorded in the ledger (`d88642d`):
+
+- Q1: V0 is the POINT estimate.
+- Q2: P0 stands.
+- Q3: E3opp goes to Stage B as the possession_outcome-only extra arm.
+- O1a's variance becomes Stage C's registered draw arm S3.
+
+**Where this runs.** Nothing below runs on this machine today. Stages B and C run on the box tonight.
+
+**Scope.** The whole Stage B/C registration lives in this file, so no other lane's experiments.md is touched.
+
+### 7.0 Done today, before this registration (inputs to B and C, not selections)
+
+**Adapter** (`2ccf964`): `src/cbb_sim/team_rate_adapter.py`, `apply(frame, table_path, submodel, fold, missing)`.
+
+- It uses the name-for-name mapping of section 6.5, and `off_3pa_c`/`opp_def_3pa_c` now map to `pa3`.
+- It recomputes possession_outcome's `x_off_<r>_c__opp_def_<r>_c` products from the replaced factors.
+- It asserts row count, order, no new NaN and key coverage. Missing keys raise unless `missing="keep_served"` is passed explicitly, and the count kept is stored in `frame.attrs`.
+- Tests: `tests/test_team_rate_adapter.py` substitutes REAL design samples for fg_make, rebound and possession_outcome round 2, and covers the refusal and missing-key paths. 5 passed.
+
+**3PA per possession (`pa3`), like for like with possession_outcome's served `3pa`.**
+
+- Procedure: the identical E3 procedure (`scripts/exp_team_rate_estimator_v4.py --part fit`).
+- Fitted rho: 0.60 (off) and 0.58 (def).
+- Guard line (medians over off/def):
+
+| band | F2 slope | F2 variance ratio | F2 z SD | F1 slope | F1 variance ratio | F1 z SD |
+|---|---:|---:|---:|---:|---:|---:|
+| game 1 | 0.652 (underpowered) | 0.608 | 1.462 | 0.990 | 0.575 | 1.439 |
+| games 2-3 | 0.832 | 0.648 | 1.504 | 1.097 | 0.628 | 1.389 |
+| games 4-6 | 1.094 | 0.705 | 1.355 | 0.983 | 0.708 | 1.404 |
+| 7+ | 0.980 | 1.001 | 1.365 | 0.979 | 1.020 | 1.365 |
+| pooled | 0.972 | 0.937 | 1.377 | 0.984 | 0.950 | 1.372 |
+
+For comparison, the 16 other rate-sides' pooled medians (V0) are slope 0.942 / 0.966, variance ratio 1.061 / 0.998 and z SD 1.085 / 1.087 (F2 / F1).
+
+- **Point estimate:** calibrated pooled.
+- **Variance:** under-covers early, like the other rates.
+- **z SD:** 1.37, the same binomial-overdispersion signature as share3.
+
+**Tables v2** (the v1 files stay):
+
+- `data/processed/team_rate_features_E3_v2.parquet` and `..._E3opp_v2.parquet`.
+- 78,004 rows x 59 columns (17 rate-sides x {c, v, L}).
+- The 48 shared columns are identical to v1 (maximum absolute difference 0.0, asserted).
+- As-of is asserted by tipoff order.
+- About 29 MB each, NOT committed. Regenerate with `exp_team_rate_estimator_v4.py --part emit [--opp]`.
+
+**S3's variance source:** `data/processed/team_rate_variance_O1a_v1.parquet`.
+
+- 78,004 rows; `<rate>_<side>_v_o1a` and `_phi_o1a` for all 17 rate-sides (pa3 phi 1.11 off, 2.03 def).
+- The Kalman variance path depends only on exposures, L, q, P0 and phi, never on outcomes, so v is as-of by construction.
+- Regenerate with `--part o1a`.
+
+**S3 pre-check** (`scripts/grade_team_rate_estimator_v4.py`): the O1a variance around the V0 MEANS. Medians over the 16 round-2 rate-sides; figures are variance ratio / z SD.
+
+| band | S2: V0 mean + V0 v, F2 | F1 | S3: V0 mean + O1a (v, phi), F2 | F1 |
+|---|---|---|---|---|
+| game 1 | 0.739 / 1.214 | 0.710 / 1.179 | **0.956 / 1.065** | **0.907 / 1.052** |
+| games 2-3 | 0.779 / 1.148 | 0.772 / 1.144 | **0.961 / 1.044** | **0.937 / 1.028** |
+| games 4-6 | 0.825 / 1.115 | 0.847 / 1.116 | **0.983 / 1.027** | **0.964 / 1.021** |
+| 7+ | 1.092 / 1.069 | 1.047 / 1.077 | 1.142 / 0.993 | 1.114 / 1.000 |
+| pooled | 1.061 / 1.085 | 0.998 / 1.087 | 1.099 / 1.001 | 1.079 / 1.004 |
+
+- O1a's variance IS calibrated around the V0 point estimates at games 1-6 on both folds. The z SD is in band at every band, with 15/16 rate-sides in band.
+- It over-covers at 7+ by 11-14%. S3 therefore slightly over-restores spread late in the season. That is recorded here as a known property of the arm, not tuned.
+
+### 7.1 Stage B (per sub-model, box, tonight)
+
+**Arms, for each sub-model** (possession_outcome `first` and `cont`, fg_make rim / jump2 / three, rebound):
+
+- **R:** the served model on the served features, graded today by the same grader.
+- **R2:** R retrained spec-identically under another seed. This is the noise floor.
+- **T:** the same spec, scheme (S1) and seed as R, on E3 **v2** features through `team_rate_adapter.apply(..., fold=<fold>)`.
+- **Topp (possession_outcome only):** as T, with `team_rate_features_E3opp_v2.parquet`.
+
+Everything else in the design (ratings, site, state, player/slot blocks, derived columns not in the mapping) is the served value.
+
+- Any arm the trainer refuses on an overlaid table (for example rebound round-3's derived-column arms) is not part of Stage B.
+- Only the served spec is retrained.
+
+**Primary and floor: each sub-model's OWN registered primary, quoted.**
+
+- **possession_outcome** (served event `round2_s1`: `first` = lgbm, `cont` = cascade, S1_monthly).
+  - `docs/models/possession_outcome/experiments.md` section 1: "Primary metric | multiclass log loss on F2, `first` population". `cont` is graded on the same metric separately.
+  - Floor: the section 7.2 second-seed floors, "Applied floor **0.000804**" (`first`) and "**0.001982**" (`cont`). Tonight's R2 replaces the floor if larger.
+- **fg_make** (served `round4_B1`).
+  - `docs/models/fg_make/experiments.md` section 20: "**Primary:** attempt-level log loss", per class.
+  - Floor: section 20.3, "second-seed refit of B1's whole S1 schedule: **4.386e-5 / 1.1216e-4 / 1.813e-5** (rim / jumper / three)". Tonight's R2 replaces it if larger.
+- **rebound** (served `S1_weekly`).
+  - `docs/models/rebound/experiments.md` section 1: "Primary metric | three-class log loss on F2".
+  - Floor: the operative floor used by that file's latest graded round (section 11): "max(spread, published 5-seed SD 6.7e-05) = **0.000067**". Tonight's R2 spread is reported beside it.
+
+**Selection.**
+
+- Fold 2 selects and fold 1 confirms: same sign, and on fold 1 T does not lose beyond the floor either.
+- **T advances to Stage C unless it LOSES to R beyond the floor.** A tie advances T, because the change is motivated by the closed-loop slope that Stage C tests, and T is not more complex than R.
+- **A sub-model where T loses keeps its served features.** This is reported, and Stage C then runs the MIXED stack.
+- **Topp advances instead of T only if it beats T beyond the floor** (it is the more complex arm).
+
+**Mandatory lines, per arm and fold:**
+
+- quintile responsiveness slope (each sub-model's registered form);
+- team-level slope of realised on predicted, and the SD of team predictions vs realised;
+- cells: weeks 0-3, and each team's games 1-6;
+- level calibration on the held-out season (predicted vs actual class/make/OREB share).
+
+**Compute estimate.** The PO first + cont refits run on lane J's box-parallel trainers (`scripts/train_*_par*`, when committed).
+
+### 7.2 Stage C (paired closed loop, fold 2, 200 seeds, box)
+
+**Stacks:**
+
+| arm | stack |
+|---|---|
+| S0 | the served stack, on the v3 inputs rebuilt tonight |
+| S1 | Stage B winners (T or Topp where they advanced, served features elsewhere), point estimates only |
+| S2 | S1 plus a per-game draw of every team rate from its E3 (V0) estimation variance v |
+| S3 | S1 plus the draw from the O1a variance (`team_rate_variance_O1a_v1.parquet`). The means stay V0, and the pre-check above passed at games 1-6 |
+
+**Primary.** The G9 calibration slope.
+
+**Co-primary.**
+
+- slope(close on sim mean margin);
+- the close-referenced within-season term k_within (`scripts/diag_g9_g6_margin_v1.py --part close`, section 1.2 method).
+
+**Must not regress beyond the paired A/B floors:**
+
+- G5 margin SD ratio and total SD ratio;
+- G5 home/away score correlation;
+- G9 margin bias and total bias;
+- G1 possessions mean and SD;
+- the G4 lines.
+
+**Decision.**
+
+- Each of S1, S2 and S3 is compared with S0, and S2 and S3 with S1, on paired seeds.
+- An arm wins only if it improves the primary beyond the A/B floor with no must-not-regress line broken.
+- Ties go to S1 (no draw), then S2, then S3.
+
+**Draw mechanics (keeps the engine on lookup tables):**
+
+- **K = 64** perturbed input sets per game, precomputed by the inputs builder.
+  - Why 64: a set of K draws reproduces the draw variance to about sqrt(2/K) = 18% for one game, and to under 1% pooled over 5,710 games.
+  - Memory: K x G x 2 sides x (27 team + 16 PO-block columns) x 4 bytes = about 126 MB, which fits the box workers.
+  - With 200 seeds each draw is used about 3 times per game.
+  - 32 is the fallback if memory binds; 128 buys nothing measurable at 200 seeds.
+- **Joint draw per game.**
+  - For each team, each of its 17 rate-sides is drawn as c_k = c + sqrt(v) e_k (S3: v = v_o1a), with e_k ~ N(0, 1).
+  - Draws are **independent** across a team's rates, sides and the two teams. No as-of estimate of the between-rate covariance exists today. Estimating one from the filter innovations is a follow-up, not in this round.
+  - Each drawn team rate is then mapped into every model feature that consumes it, exactly as the adapter maps point estimates, so the offence row and the opponent's opposite-side row see the same draw. PO interaction products are recomputed.
+- **Selection in the engine.**
+  - Each simulated game picks its draw index once: k = floor(K u), with u from the RNG family `team_rate` seeded on (seed, game_id, family).
+  - It is a separate family, so no other stream advances. Paired arms (S2 vs S3) use the same k for the same (seed, game_id) and differ only in the drawn values.
+- **K = 1 reproduces S1 bit for bit.** The single set is the point estimate itself, and the hook makes NO RNG call when K = 1. This is asserted by a parity run against S1's digest before any S2/S3 seed is read.
+- **Files (to write tomorrow; default-off; not written today):**
+  - `src/cbb_sim/engine/team_rate_draw.py` (new): builds the (K, G, 2, F) arrays from a features table plus a variance table, and does the draw-index lookup.
+  - `scripts/build_engine_inputs_trdraw_v1.py` (new): writes a versioned sibling of the v3 inputs with the K axis.
+  - A minimal hook in `src/cbb_sim/engine/loop.py`, and `EventAdapter.predict` in `src/cbb_sim/engine/adapters.py`. Where the loop gathers `inp.team_static[gidx, off]` and the event adapter gathers `team_block[gidx, off]`, the hook gathers `[k_g, gidx, off]` when `ENGINE_TEAM_RATE_DRAW` is not `off`.
+  - One new family name in `src/cbb_sim/engine/rng.py`.
+  - Default `off`, so the served path is untouched (parity reference v6/v3 must pass unchanged).

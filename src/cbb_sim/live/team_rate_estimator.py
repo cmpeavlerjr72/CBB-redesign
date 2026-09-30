@@ -38,6 +38,9 @@ RATES: dict[str, tuple[str, str, str]] = {
     "make_jump": ("fgm_jump", "fga_jump", "binom"), "make3": ("fgm3", "fga3", "binom"),
     "oreb": ("oreb", "reb_ch", "binom"),
 }
+#: table v2 onwards adds 3PA per POSSESSION (`pa3`), which is possession_outcome's served `3pa`
+#: definition; `share3` (3PA per FGA) is kept.
+RATES_V2: dict[str, tuple[str, str, str]] = {**RATES, "pa3": ("fga3", "P", "binom")}
 SIDES = ("off", "def")
 
 
@@ -92,7 +95,8 @@ class RateParams:
 
 
 def estimate_asof(team_games: pd.DataFrame, as_of: pd.Timestamp, params: dict[str, RateParams],
-                  league_level: dict[str, float], carry: pd.DataFrame) -> pd.DataFrame:
+                  league_level: dict[str, float], carry: pd.DataFrame,
+                  rates: dict[str, tuple[str, str, str]] | None = None) -> pd.DataFrame:
     """Live-slate estimate: one row per team and rate-side, as of `as_of`.
 
     Inputs:
@@ -116,7 +120,7 @@ def estimate_asof(team_games: pd.DataFrame, as_of: pd.Timestamp, params: dict[st
     hist = hist.sort_values(["team_id", "game_date"])
     teams = pd.Index(sorted(set(carry["team_id"]) | set(hist["team_id"])))
     rows = []
-    for rate, (num, den, fam) in RATES.items():
+    for rate, (num, den, fam) in (rates or RATES).items():
         L = float(league_level[rate])
         for side in SIDES:
             n_col, d_col = (num, den) if side == "off" else (f"o_{num}", f"o_{den}")
