@@ -476,3 +476,33 @@ same-game leaks that are being rebuilt tonight, so paired deltas are valid and
 absolute levels are provisional. The block lookups built for this round are
 strictly as-of, so they do not share that leak. Block credit to a defender
 (player props) is not wired.
+
+---
+
+## 6. Section-5 results: drawn block flag, paired closed loop (run 2026-09-30 12:49-13:02 EDT; full report `docs/tests/shot_block_drawn_flag_2026-09-30.md`)
+
+Proofs passed: flag-off digest equals `parity_reference_windows_v6.json`; the
+flag-off engine reproduces `po4b_R_s25` bit-for-bit on 6 games x 25 seeds, so
+`SB0` = `po4b_R_s25`; the engine path reproduces the offline K2_Ocell
+probability on real rows.
+
+- **Primary PASSES in both arms:** pooled OREB% 0.2836 -> 0.2912 (`SB_K2O`,
+  +38 floors toward 0.2984) / 0.2910 (`SB_K2`, +37); G4 OREB% FAIL -> PASS;
+  team offence / defence mean gaps -1.63 / -1.53 -> -0.87 / -0.77 pp; team
+  offence slope 0.571 -> 0.546 (-0.41 floors, not a fall beyond floor).
+- **Mechanism:** blocked share rim 0.266 (actual 0.258), jump2 0.083 (0.079),
+  three 0.014 (0.014); OREB% blocked vs unblocked rim 0.425 / 0.365 (actual
+  0.418 / 0.374), jump2 0.396 / 0.272 (0.403 / 0.282).
+- **Vetoes FIRE in both arms:** G5 total SD ratio 0.8355 -> 0.8247 / 0.8236
+  (-12.0 / -13.2 floors; via the correlation of sim and actual game totals,
+  0.293 -> 0.270, not the within-game spread; single-draw floor 0.0009 flagged
+  as likely understated) and G4 TOV% 0.1762 -> 0.1768 (-1.5 floors; more
+  chances per possession). Every other veto line moves toward or inside floor.
+- **G9 total bias** -0.962 -> -0.521 / -0.535 points (+0.44, as pre-stated
+  0.4-0.6); reported, not a veto.
+- **Anchor value in the loop:** `SB_K2O` vs `SB_K2` +1 floor of OREB% (0.2912
+  vs 0.2910); rim blocked share 0.266 vs 0.253 around the actual 0.258.
+
+**Decision under 5.4: neither arm is put forward.** Nothing adopted; the flag
+stays default-off. Box commands for a 200-seed read with its own floor pair are
+in the report, section 7.

@@ -10,6 +10,8 @@ Gate lines are computed with `cbb_sim.eval.gates` (the functions
 check rows, so the numbers are the gate report's own; nothing is re-derived.
 
     .venv/Scripts/python.exe scripts/grade_shot_block_closed_loop_v1.py po4b_R_s25 sb_K2O_s25 sb_K2_s25
+    # a different floor pair (e.g. a 200-seed box run):
+    ... grade_shot_block_closed_loop_v1.py sb_R_s200 sb_K2O_s200 sb_K2_s200 --floor sb_R_s200_floor,sb_R_s200
 """
 from __future__ import annotations
 
@@ -139,7 +141,12 @@ def mechanism_actual(game_ids) -> dict:
 
 
 def main() -> None:
+    global FLOOR_A, FLOOR_B
     tags = sys.argv[1:]
+    if "--floor" in tags:                      # --floor <seed-offset run>,<its paired reference>
+        i = tags.index("--floor")
+        FLOOR_A, FLOOR_B = tags[i + 1].split(",")
+        del tags[i:i + 2]
     ref = tags[0]
     gl = {t: gate_lines(t) for t in dict.fromkeys([FLOOR_A, FLOOR_B, *tags])}
     floors = {k: abs(gl[FLOOR_A][k]["value"] - gl[FLOOR_B][k]["value"]) for k in gl[FLOOR_B]}
