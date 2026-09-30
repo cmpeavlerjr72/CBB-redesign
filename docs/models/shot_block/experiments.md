@@ -331,3 +331,72 @@ Among eligible arms the lowest F2 log loss wins; an eligible arm within one
 floor of it and simpler wins the tie. If no arm is eligible, nothing is
 selected. Nothing ships on offline evidence (rule 1.9.6 unchanged): serving
 needs an engine block-draw hook, DEFAULT-OFF, parity and a paired closed loop.
+
+---
+
+## 4. Round 2 results (run 2026-09-30 ~12:23 EDT, `scripts/train_shot_block_v2_round2.py`; POST-HOC on folds 1-2, see 3)
+
+Gates by round 1's own grader. Level in pp (predicted minus actual). Floor for
+the anchor arms = max(4.1e-05, 2 x paired SE vs `K2`).
+
+| fold | arm | log loss | gain vs K0 | gain vs K2 | pooled level | rim | jump2 | three | calib gap | def-prior slope / mono | Nov-Dec level | team slope | SD ratio (nc) | level gate |
+|---|---|---:|---:|---:|---:|---:|---:|---:|---:|---|---:|---:|---:|---|
+| F2 | K0 | 0.265250 | 0 | -0.002011 | -0.091 | -0.527 | +0.202 | -0.009 | 0.85 | 0.11 / 4 | -0.174 | 0.113 | 0.392 | FAIL (rim) |
+| F2 | K2 | 0.263239 | 0.002011 | 0 | -0.167 | **-0.833** | +0.289 | -0.046 | 1.07 | 0.71 / 4 | -0.235 | 0.694 | 0.832 | FAIL (rim) |
+| F2 | K2_Ocell | 0.263209 | 0.002041 | 3.0e-05 (SE 2.9e-05) | +0.122 | +0.432 | +0.113 | -0.052 | 1.07 | 0.72 / 4 | +0.170 | 0.706 | 0.852 | PASS |
+| F2 | K2_Pcell | 0.263190 | 0.002060 | 4.9e-05 (SE 2.5e-05) | +0.132 | +0.353 | +0.166 | -0.015 | 0.95 | 0.72 / 4 | +0.096 | 0.708 | 0.853 | PASS |
+| F1 | K0 | 0.271238 | 0 | -0.001891 | -0.375 | -1.106 | -0.162 | -0.060 | 1.34 | 0.11 / 3 | -0.410 | 0.127 | 0.362 | FAIL |
+| F1 | K2 | 0.269347 | 0.001891 | 0 | -0.178 | -0.558 | +0.004 | -0.060 | 1.10 | 0.77 / 4 | -0.245 | 0.785 | 0.826 | FAIL (rim) |
+| F1 | K2_Ocell | 0.269358 | 0.001880 | -1.1e-05 | -0.051 | -0.085 | -0.142 | +0.030 | 0.96 | 0.78 / 4 | -0.084 | 0.793 | 0.834 | PASS |
+| F1 | K2_Pcell | 0.269344 | 0.001894 | 3.0e-06 | -0.115 | -0.163 | -0.155 | -0.058 | 0.91 | 0.78 / 4 | -0.218 | 0.788 | 0.831 | PASS |
+
+**Decision (3.3), mechanical:** eligible {`K2_Ocell`, `K2_Pcell`} (both beat
+`K0` by ~50 floors, pass calibration, responsiveness and the level gate on both
+folds, F1 keeps the sign); `K2` is NOT eligible (rim level -0.83 / -0.56 pp).
+Lowest F2 log loss `K2_Pcell`; `K2_Ocell` is within one floor (1.9e-05 < 5.0e-05)
+and simpler: **selected `K2_Ocell`** (per-shot-type anchor O on the linear K2).
+POST-HOC selection on seen folds; NOTHING ADOPTED, nothing wired. Honest reading:
+the anchor buys the LEVEL gate, not likelihood (vs `K2`: +0.5 floor on F2,
+-0.3 floor on F1); rim over-shoots on F2 (+0.43 pp, inside the 0.50 gate), and
+matchup slope and spread are unchanged or slightly up.
+
+### 4.1 What the engine needs to serve `K2_Ocell` as a DRAWN 0/1 block flag (spec only; no engine edit today)
+
+Rebound round 3 showed `blocked_f` must be a drawn 0/1: LightGBM splits it at
+exactly 0.0, so any probability fed continuously reads as "blocked" (+7 to +8 pp).
+
+- **Hook point:** `src/cbb_sim/engine/loop.py`, rebounds block, after
+  `miss_rows` / `miss_kind` are concatenated and `xr` is built, replacing
+  `xr[:, I["blocked_f"]] = 0.0` (currently loop.py ~line 546) for rows whose
+  `mk` is rim / jump2 / three; free-throw misses (`mk == ft`) stay 0.0. The
+  fg_make path's `xs[:, I["blocked_f"]] = 0.0` (~line 466) is CORRECT and stays:
+  fg_make bans `blocked` and prices blocked attempts inside its miss population,
+  so the block draw sits after make/miss and changes no FG aggregate.
+- **Probability:** `p = sigmoid(b0 + sum_j b_j (x_j - mu_j)/sd_j + off[g, type])`
+  with the 17 `Kc` inputs: miss-type dummies (from `mk`); `def_block_c`,
+  `off_blocked_c` (as-of team rates, per game x side, pre-game constants);
+  `shooter_blocked_c` (as-of shooter rate, k = 50, per game x side x roster slot,
+  indexed by the shot's `shooter`, which therefore has to be carried from the
+  usage draw into `miss_rows`, alongside `miss_kind`); `shooter_known`; site;
+  the four ratings; `period`, `seconds_remaining`, `score_diff`, `in_bonus` from
+  `_state_block`.
+- **LUT shapes (all built pre-game by the engine-inputs builder, strictly as-of):**
+  `coef` float64 (18,) [intercept + 17], `mu`, `sd` float64 (17,) — one set per
+  fold's fitted model; `blk_team` float32 (n_games, 2 sides, 2) [def_block_c of
+  the defence, off_blocked_c of the offence]; `blk_shooter` float32
+  (n_games, 2, n_slots) + `shooter_known` uint8 (n_games, 2, n_slots);
+  `blk_anchor` float32 (n_games, 3) = `logit(L_asof(type, game date)) -
+  logit(Lbar(type))` for rim / jump2 / three from
+  `cbb_sim.season_anchor.anchor_O` run per shot type (day 0 = prior season's end
+  level per type). No live model call; one vectorised dot product per miss batch.
+- **RNG:** a NEW family `"shot_block"` appended to `engine/rng.py::FAMILIES`
+  (keys are derived per family name, so adding it shifts no other family's
+  stream), drawn as `u = book.draw("shot_block", act[mr_fga])`,
+  `blocked = (u < p)`, one draw per missed FGA, only when the flag is on, so the
+  default path consumes nothing and stays bit-identical.
+- **Switch and checks:** DEFAULT-OFF env flag (e.g. `ENGINE_SHOT_BLOCK=K2_Ocell`);
+  parity of the default path against `docs/ops/parity_reference_windows_v6.json`;
+  a paired 500 x 25 closed loop reading G4 OREB% (round 3 projected the drawn
+  block closes the -0.740 pp feed channel) and the block count per game against
+  the box. Block credit to a defender (player props) is a separate attribution
+  change and is not in this spec.
