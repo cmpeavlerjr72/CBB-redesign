@@ -520,7 +520,8 @@ class _GameMachine:
     def __init__(self, game_meta: dict, ev: dict[str, np.ndarray],
                  tech_lookahead: bool = DEFAULT_TECH_LOOKAHEAD,
                  andone_live_miss: bool = False, stray_reb_guard: bool = False,
-                 stray_oreb_guard: bool = False) -> None:
+                 stray_oreb_guard: bool = False,
+                 andone_made_next: str = "made_FT") -> None:
         self.m = game_meta
         self.ev = ev
         self.tech_lookahead = bool(tech_lookahead)
@@ -528,6 +529,12 @@ class _GameMachine:
         self.andone_live_miss = bool(andone_live_miss)
         self.stray_reb_guard = bool(stray_reb_guard)
         self.stray_oreb_guard = bool(stray_oreb_guard)
+        #: next start type after a MADE and-one FT when `andone_live_miss` is on:
+        #: "made_FT" (v4, the floor) or "made_FG" (the v2 label; clock round 6
+        #: arm L2a keeps it to separate the phantom fix from the relabel)
+        if andone_made_next not in ("made_FT", "made_FG"):
+            raise ValueError(f"andone_made_next={andone_made_next!r}")
+        self.andone_made_next = andone_made_next
         self.n_andone_live_miss = 0
         self.n_stray_dreb = 0
         self.n_stray_oreb = 0
@@ -770,7 +777,7 @@ class _GameMachine:
                     if self.andone_live_miss:
                         if ft_made:
                             # a dead-ball inbound after a made FT (v4)
-                            self._close(c, k, reason_next="made_FT")
+                            self._close(c, k, reason_next=self.andone_made_next)
                         else:
                             # a live rebound follows the miss: keep the
                             # possession open, as a missed last FT of a trip does
@@ -1037,6 +1044,7 @@ def segment_season(
     andone_live_miss: bool = False,
     stray_reb_guard: bool = False,
     stray_oreb_guard: bool = False,
+    andone_made_next: str = "made_FT",
 ) -> tuple[pd.DataFrame, pd.DataFrame, dict]:
     """Segment one season into possessions and chances.
 
@@ -1087,7 +1095,8 @@ def segment_season(
             "made": ev["made"][lo:hi], "stolen": ev["stolen"][lo:hi],
             "on_floor": ev["on_floor"][lo:hi] if ev["on_floor"] is not None else None,
         }
-        machine = _GameMachine(gm, sub, tech_lookahead=tech_lookahead, **fixes)
+        machine = _GameMachine(gm, sub, tech_lookahead=tech_lookahead,
+                               andone_made_next=andone_made_next, **fixes)
         machine.run()
         if any(fixes.values()):
             diag["n_andone_live_miss"] += machine.n_andone_live_miss

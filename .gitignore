@@ -54,6 +54,7 @@ data/processed/possessions_v3/
 # rebuilt by scripts/build_possessions_v4.py; HF key proposed in
 # docs/tests/event_layer_v4_2026-09-30.md section 2
 data/processed/possessions_v4/
+data/processed/possessions_v4a/
 data/processed/models/**/design.parquet
 data/processed/models/**/*_design.parquet
 

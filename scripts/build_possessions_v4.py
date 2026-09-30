@@ -4,6 +4,11 @@ build_possessions_v4.py -- EVENT LAYER v4 as a VERSIONED SIBLING.
 
     .venv/Scripts/python.exe scripts/build_possessions_v4.py                 # 2022-2026
     .venv/Scripts/python.exe scripts/build_possessions_v4.py --seasons 2025
+    .venv/Scripts/python.exe scripts/build_possessions_v4.py --variant l2a   # -> possessions_v4a
+
+`--variant l2a` (clock round 6 arm L2a, experiments.md section 28): the v4
+switches with the made-and-one start label kept at the v2 `made_FG`, written to
+data/processed/possessions_v4a/ (gitignored; not built today).
 
 v4 = the served v2 event layer + the 09-18 technical-FT lookahead (v3) + the
 three phantom-possession switches (`cbb_sim.pbp.possessions.EVENT_FIX_SWITCHES`;
@@ -70,16 +75,19 @@ def same(a: pd.DataFrame, b: pd.DataFrame) -> dict:
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--seasons", type=int, nargs="*", default=[2025, 2024, 2023, 2022, 2026])
+    ap.add_argument("--variant", choices=["v4", "l2a"], default="v4")
     args = ap.parse_args()
     t0 = time.time()
     u = load_universe()
-    out_dir = PZ.possessions_dir("v4")
+    out_dir = PZ.possessions_dir("v4") if args.variant == "v4" else ROOT / "data/processed/possessions_v4a"
+    made_next = "made_FT" if args.variant == "v4" else "made_FG"
     out_dir.mkdir(parents=True, exist_ok=True)
     rp = out_dir / "build_report.json"
     report = json.loads(rp.read_text()) if rp.exists() else {"seasons": {}}
     report["switches"] = PZ.VERSION_EVENT_FIXES["v4"]
     report["tech_lookahead"] = PZ.VERSION_TECH_LOOKAHEAD["v4"]
     report["stray_reb_max_s"] = PZ.STRAY_REB_MAX_S
+    report["andone_made_next"] = made_next
     for s in args.seasons:
         ts = time.time()
         rec: dict = {}
@@ -90,7 +98,7 @@ def main() -> int:
         del p_d, c_d
         # 2. v4
         p4, c4, diag = PZ.segment_season(s, u, pbp_dir=PBP_DIR, tech_lookahead=PZ.VERSION_TECH_LOOKAHEAD["v4"],
-                                         **PZ.VERSION_EVENT_FIXES["v4"])
+                                         andone_made_next=made_next, **PZ.VERSION_EVENT_FIXES["v4"])
         p4.to_parquet(out_dir / f"possessions_{s}.parquet", index=False)
         c4.to_parquet(out_dir / f"chances_{s}.parquet", index=False)
         diag.update({"n_possessions": int(len(p4)), "n_chances": int(len(c4)),

@@ -117,6 +117,11 @@ def test_made_andone_start_label_follows_the_floor():
     assert d.possessions[2].start_reason == "made_FG"
     assert v.possessions[2].start_reason == "made_FT"
     assert events(v) == events(d)
+    # clock round 6 arm L2a: phantom fix without the made-branch relabel
+    a = run(ANDONE_MADE, andone_made_next="made_FG", **V4)
+    assert a.possessions[2].start_reason == "made_FG"
+    b = run(ANDONE_MISS_DREB, andone_made_next="made_FG", **V4)
+    assert len(b.possessions) == len(run(ANDONE_MISS_DREB, **V4).possessions)
 
 
 # B1: two made FTs, then a stray DREB row by the shooting team 0-1 s later
