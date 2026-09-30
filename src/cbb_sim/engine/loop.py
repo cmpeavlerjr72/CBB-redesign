@@ -55,6 +55,7 @@ import pandas as pd
 from cbb_sim.engine import andone_label as AL
 from cbb_sim.engine import foul_joint as FJ
 from cbb_sim.engine import rotation_adapter as RA
+from cbb_sim.engine import shot_block as SBK
 from cbb_sim.engine import state as S
 from cbb_sim.engine import team_rate_draw as TRD
 from cbb_sim.engine.adapters import STATE_INDEX, Adapters
@@ -245,6 +246,10 @@ def simulate_chunk(inp: EngineInputs, ad: Adapters, game_index: np.ndarray,
     # Round 7 (experiments.md s20): joint foul accrual + FT-trip offsets.
     # DEFAULT OFF -- `FJ.load` returns None unless ENGINE_FOUL_JOINT names an arm.
     fj = FJ.load(os.environ.get("ENGINE_FOUL_JOINT", "reference"))
+    # shot_block section 5: drawn block flag. DEFAULT OFF -- `SBK.load` returns None
+    # unless ENGINE_SHOT_BLOCK names an arm; then no "shot_block" draw is ever made.
+    sbk = SBK.load(os.environ.get("ENGINE_SHOT_BLOCK", "reference"), inp)
+    sb_type = np.array([SBK.TYPE_INDEX.get(m, -1) for m in RB.MISS_TYPES], dtype=np.int64)
     if fj is not None:
         fj.init_whistle(seeds, gids)     # round 8; a no-whistle arm draws nothing
     neutral_g = ((inp.games["neutral"].to_numpy() > 0)
@@ -458,6 +463,7 @@ def simulate_chunk(inp: EngineInputs, ad: Adapters, game_index: np.ndarray,
             # ================= field-goal attempts ========================
             miss_rows: list[np.ndarray] = []
             miss_kind: list[np.ndarray] = []
+            miss_sh: list[np.ndarray] = []       # shooter slot per miss (shot_block only)
             ft_rows: list[np.ndarray] = []
             ft_shooter: list[np.ndarray] = []
             ft_natt: list[np.ndarray] = []
@@ -505,6 +511,8 @@ def simulate_chunk(inp: EngineInputs, ad: Adapters, game_index: np.ndarray,
                     xr = r[~made]
                     miss_rows.append(xr)
                     miss_kind.append(np.full(len(xr), miss_type_index[SHOT_KEY[sc]]))
+                    if sbk is not None:
+                        miss_sh.append(sh[~made])
 
             # ================= free-throw trips ===========================
             for tc in (CLS_FT_SHOOT, CLS_FT_BONUS):
@@ -544,6 +552,8 @@ def simulate_chunk(inp: EngineInputs, ad: Adapters, game_index: np.ndarray,
                 if last_missed.any():
                     miss_rows.append(fr[last_missed])
                     miss_kind.append(np.full(int(last_missed.sum()), miss_type_index["ft"]))
+                    if sbk is not None:
+                        miss_sh.append(np.full(int(last_missed.sum()), -1, dtype=np.int64))
 
             # ================= rebounds ===================================
             if miss_rows:
@@ -557,6 +567,18 @@ def simulate_chunk(inp: EngineInputs, ad: Adapters, game_index: np.ndarray,
                                  ("three", "miss_three")):
                     xr[:, I[col]] = (mk == miss_type_index[key]).astype(np.float64)
                 xr[:, I["blocked_f"]] = 0.0
+                if sbk is not None:
+                    tix = sb_type[mk]
+                    fgm = tix >= 0                      # free-throw misses are never blocked
+                    blk = np.zeros(len(mr), dtype=bool)
+                    if fgm.any():
+                        rr = mr[fgm]
+                        p_blk = sbk.prob(inp.team_static, gidx[rr], off[rr],
+                                         np.concatenate(miss_sh)[fgm], tix[fgm],
+                                         xr[fgm, I["period"]], xr[fgm, I["seconds_remaining"]],
+                                         xr[fgm, I["score_diff"]], xr[fgm, I["in_bonus"]])
+                        blk[fgm] = book.draw("shot_block", amr[fgm]) < p_blk
+                        xr[:, I["blocked_f"]] = blk.astype(np.float64)
                 p3 = ad.reb.predict((inp.team_static[gidx[mr], off[mr]] if kk is None
                                      else trd.team_static_k[kk[mr], gidx[mr], off[mr]]), xr, gidx[mr])
                 # dead balls as the measured fixed share per miss type (L17),
@@ -568,6 +590,13 @@ def simulate_chunk(inp: EngineInputs, ad: Adapters, game_index: np.ndarray,
                 out3 = categorical(book.draw("rebound", amr), p3)
                 is_o = out3 == RB.CLASS_INDEX["OREB"]
                 is_d = out3 == RB.CLASS_INDEX["DREB"]
+                if sbk is not None:
+                    for tn, ti in SBK.TYPE_INDEX.items():
+                        for bl, lab in ((True, "blk"), (False, "unblk")):
+                            cm = (tix == ti) & (blk == bl)
+                            bump(f"sb_{tn}_{lab}_n", int(cm.sum()))
+                            bump(f"sb_{tn}_{lab}_oreb", int((cm & is_o).sum()))
+                            bump(f"sb_{tn}_{lab}_dreb", int((cm & is_d).sum()))
                 is_x = out3 == RB.CLASS_INDEX["DEAD"]
                 if is_o.any():
                     ro = mr[is_o]
