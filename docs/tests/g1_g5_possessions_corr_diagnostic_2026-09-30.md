@@ -465,3 +465,270 @@ games from `load_actual_games`. Owner: eval.
    200-seed run; the seed-sample term is -0.004.
 7. **Nothing here is a fix.** No multiplier, cap, clip, offset or blend on sim
    output is proposed; the 0-0 finals are reported to their owner, not edited.
+
+---
+
+## 5. Follow-up (same day, 11:37-12:55 EDT): the `unknown` possessions, a like-for-like G1, the and-one labels, and clock round 6 arm L1
+
+PM follow-up to section 4 item 2 and to the G1 grading definition. Sections 0-4
+above are unchanged. Nothing is adopted and no default changes; the one
+shared-file edit (a default-off hook) is parity-proved in 5.5.
+
+New scripts:
+
+    scripts/diag_g1_unknown_poss_v1.py    re-runs the possession machine (subclass, delegates unchanged) and
+                                          records every `unknown` close with its trigger and context
+    scripts/diag_g1_unknown_sample_v1.py  mechanical classes, stratified raw-row read of BOTH feeds
+    scripts/diag_g1_unknown_box_v1.py     game-by-game regression of (pbp count - box estimator) on each class
+    scripts/diag_g1_possessions_v2.py     phantom-corrected pbp table (in memory) and the like-for-like G1 chain
+    scripts/diag_g1g5_tap_v2.py           tap v2: passes ENGINE_ANDONE_LABEL through, records halftime score
+    scripts/grade_clock_r6_v1.py          one grader for the round-6 closed loop (R, L1, R floor)
+    src/cbb_sim/engine/andone_label.py    arm L1, default-off (5.5)
+
+The re-run machine reproduces `possessions_v2` exactly: 0 per-game count
+mismatches in 21,969 games (2022-2025) and the same `unknown` totals
+(8,573 / 8,601 / 6,803 / 6,405).
+
+### 5.1 What the `unknown` possessions are
+
+The layer writes `unknown` in exactly three places: a defensive rebound
+arrives while no possession is open (`_handle_dreb` opens a possession for the
+non-rebounder and closes it at once), the mismatch guard closes a possession
+that has nothing pending, or a rebound closes a possession opened by an OREB.
+Mechanical classes, then rows read from CBBD `plays_{season}` and hoopR
+`play_by_play_{season}` at the same moment (3 per class per season, 72
+moments; `results/g1g5_diag/unknown_sample_rows.txt`), then the box check.
+
+| class | what the raw rows show | 2022 | 2023 | 2024 | 2025 | median s | box slope (SE) | verdict |
+|---|---|---:|---:|---:|---:|---:|---:|---|
+| **A** DREB after a missed and-one FT | "X made layup / foul / X missed FT / Y defensive rebound": the and-one handler already closed X's possession at the FT, so the rebound opens a 1-s possession for X | 3,719 | 3,914 | 4,042 | 3,754 | 1 | +0.575 (0.022) | **phantom** |
+| **E** shooter's own OREB of a missed and-one FT (not `unknown`, same bug) | the layer opens a new possession for X instead of continuing X's | 474 | 504 | 595 | 586 | 2.5 | +0.654 (0.061) | **phantom** |
+| **B1** DREB with no open possession right after free throws | stray rebound row at an FT moment, incl. technical-FT sequences at a frozen clock (the 09-18 lookahead pattern) | 469 | 533 | 465 | 419 | 1 | +0.693 (0.063) | **phantom** |
+| **B2** DREB with no open possession, elsewhere | <= 3 s: stray or out-of-order rebound row (shot logged after the rebound); > 3 s: the missed shot is absent from both feeds | 2,521 | 2,091 | 536 | 510 | 12 | +0.843 (0.023); -0.12 to +1.27 by season | **mixed**: <= 3 s phantom (22-30% of B2 in 2022-23, 70-73% in 2024-25), > 3 s real |
+| **C1** possession opened by a stray OREB (after a make, TOV or FT), closed by the other team | the wrong team gets a possession spanning the other team's real one | 840 | 970 | 1,027 | 1,019 | 16 | +1.184 (0.040) | **phantom** |
+| **C2** other mismatch closes | possession ended by an offensive or loose-ball foul, or an unlogged turnover | 690 | 724 | 511 | 506 | 30 | +0.705 (0.054) | **real** (the box cannot see it either) |
+| **D** rebound closes an OREB-opened possession with nothing pending | contradictory OREB/DREB pair at one second; the possession is real, its terminal is lost | 334 | 369 | 222 | 197 | 21 | -0.402 (0.082) | **real**, no extra possession |
+
+The box slope is from regressing per-game (pbp count - box estimator) on per-game
+class counts per team-game, with all classes in one regression (21,962 games
+pooled, season effects). A possession the box cannot see moves the gap
+one-for-one (+1). For A and E the phantom is +1 in the count, but the and-one's
+own FTA adds 0.44 to the estimator, so a pure phantom reads **+0.56**. It
+measures +0.575 and +0.654. **C1 reads +1.18, one-for-one.**
+
+**The second source cannot decide the question.** On every one of the 72
+moments read, the hoopR rows were the same as CBBD's, row for row (both come
+from ESPN). The box score is the independent check.
+
+The PM's list of candidate classes, answered:
+- **End-of-period heaves:** not in `unknown`. Only 1.8% of `unknown`
+  possessions are period-final; eventless horn possessions are `end_period`
+  and real.
+- **Administrative rows at a frozen clock:** inside B1.
+- **Jump-ball rows:** jump balls are inert classes, and none appeared in the
+  sample.
+- **Feed gaps:** B2 > 3 s and C2.
+- **Real empty trips:** C2 and D.
+
+**Verdict.** Of the 0.567 `unknown` possessions per team-game (pc, 2025),
+the phantoms are A, B1, C1 and B2 <= 3 s; with E they come to **0.548 per
+team-game** removed from the count. C2, D and B2 > 3 s are real. Neither
+existing count is the right truth:
+- the raw pbp count carries about 0.55 phantoms per team-game;
+- the box estimator misses real possessions (C2, eventless horn possessions)
+  and approximates FT trips (+0.24; the engine's own trip approximation is
+  +0.49), so estimator-vs-estimator is not like-for-like either.
+
+**Proposed G1 definition: engine count vs the pbp possession count with
+classes A, B1, C1, B2 <= 3 s removed (their seconds given to the next
+possession) and E merged into its and-one possession**, on pbp-complete
+games. The script is `diag_g1_possessions_v2.corrected_table`, in memory
+only: `data/processed` is not touched. Tiling is preserved; 12 s are lost
+over 1,989 games, from 96 phantoms with no later possession in their period.
+
+### 5.2 The like-for-like G1
+
+Engine count (200 seeds, pc) 69.837 vs corrected count **68.231** (raw pbp
+68.779, box estimator 67.847):
+
+| channel | engine labels | training labels |
+|---|---:|---:|
+| **like-for-like gap** | **+1.606** | +1.606 |
+| overtime (G7 owner) | -0.301 | -0.301 |
+| seed sample, subset, tiling slack | +0.011 | +0.011 |
+| start-type composition | +0.538 | +0.330 |
+| **duration law** | **+1.433** | **+1.620** |
+| of which the `made_FG` cell | +0.995 | +1.181 |
+| interaction | -0.074 | -0.054 |
+| closure | residual -0.000001 | |
+
+The two B2 sensitivities give +1.576 (all B2 kept) and +1.617 (all B2
+removed; the set section 28 pre-registered).
+
+**Compared with the gate's +1.991:** the grading-definition term (+0.932)
+splits into +0.548 of pbp phantoms and +0.384 of real possessions the box
+cannot see. Against a truth under one definition, **the engine is +1.61
+high, not +1.06** as the raw pbp count suggested.
+
+Owners of the residual:
+- **`clock` law, 1.43-1.62, dominated by the `made_FG` cell.** The engine draws
+  21.40 s where the corrected cell is 22.10 s and clean made-FG starts are
+  22.16 s. Of that 0.76 s gap, 0.37 s is and-one contamination of the
+  training cell (5.3) and about 0.39 s is L34's season-level drift.
+- **The and-one labelling.** It moves 0.21 between composition and law, and
+  it is also what causes the contamination above.
+- **Composition +0.33 (training labels):** the upstream rates of section 1.4.
+- **Overtime -0.30:** the G7 owner.
+
+### 5.3 The and-one label, by branch
+
+**Which label is right for the clock: the engine's, in both branches.** On
+the floor (2025, clock-complete, pbp layer):
+- **FT made** (73% of and-ones): the next possession is an inbound after a
+  made FT, lasting 20.29 s (20.85 s mid-game, 300+ s left). That is closer to
+  the `made_FT` cell (18.59; 20.27 mid-game) than to clean `made_FG` (22.16;
+  22.60 mid-game).
+- **FT missed** (27%): the ball is a live FT-miss rebound. The rebounding
+  team's possession lasts 19.8 s (18.70 s plus the 1.1 s phantom), like a
+  defensive rebound of a regular missed last FT (17.6 s; 19.0 s mid-game).
+  That is a `DREB` start, which is also how the training table labels every
+  other FT-miss rebound.
+
+The training table is what is wrong: `made_FG` in both branches, plus the
+class A phantom or the class E restart in the missed branch.
+
+Sizes, arithmetic (possessions per team-game, K = 3.89 possessions per second
+of mean duration; engine and-one rate 0.0222 per possession, FT% 0.709,
+P(OREB | FT miss) 0.130):
+
+| branch | channel | engine share of possessions | size |
+|---|---|---:|---:|
+| made FT | engine feeds `made_FT` (draws 18.41 s vs 20.29 s real) | 1.571% | +0.115 |
+| made FT | (if fed `made_FG` instead: draws 21.40 s) | | -0.068 |
+| made FT | successors inside the `made_FG` training cell (4.07% of it at 20.29 s) pull the engine's made-FG draws down | 34.3% (made-FG starts) | +0.101 |
+| missed FT | engine feeds `DREB` (draws 14.43 s vs 19.8 s real; the DREB cell mixes FG-miss and FT-miss rebounds) | 0.562% | +0.118 |
+| missed FT | class A phantoms inside the `made_FG` training cell (1.27% of it at 1.1 s) | 34.3% | **+0.356** |
+
+The largest single and-one effect is **the phantom inside the clock's
+`made_FG` training cell (+0.36)**. Fixing the engine label cannot remove it.
+Only a corrected training table can (arms L2 / L2a).
+
+### 5.4 Clock round 6 pre-registered BEFORE any run
+
+`docs/models/clock/experiments.md` **section 28**, commit `33e9db5`, pushed
+at 11:46 EDT, before the wiring (11:49) and the closed loop (11:56).
+
+| arm | what it is |
+|---|---|
+| R | served reference |
+| L1 | engine fed the training convention (`made_FG` after an and-one in both branches), no refit |
+| L2 | clock retrained on the corrected table with the engine's convention (so the two conventions are compared, not assumed) |
+| L2a | L2's phantom correction only, without the relabel |
+| D1 | L2 plus season-part pooling of the S1 refit, aimed at the mis-fit `made_FG` cell (L34), or lane C's anchor if it lands first |
+
+All arms are default-off.
+- **Primary:** count minus like-for-like truth.
+- **Floor:** seed offset, plus a second fit seed for the refit arms.
+- **Vetoes:** possession SD, G5 SD ratios, first-half share, OT rate.
+- The spec notes that the count fix moves the G9 total by about -2.2 on its
+  own, so it can ship only together with the G4 fixes.
+
+### 5.5 Arm L1 wired default-off, and its paired closed loop
+
+- **Wiring.** New module `src/cbb_sim/engine/andone_label.py`
+  (`ENGINE_ANDONE_LABEL=engine|training`, default `engine`), plus an 8-line
+  hook in `loop.py`. `git diff` showed only these hunks; commit `2185b27` at
+  11:49 EDT.
+- **Parity.** A 60 x 5 default smoke (`laneB_parity_default_smoke60x5`)
+  digests to sha256 `0d4ddccc...`: **PASS, bit-identical** to
+  `parity_reference_windows_v6.json`.
+- **Tests.** `pytest tests/test_engine.py tests/test_clock_adapter_v3.py`:
+  57 passed.
+- **The loop.** The L1 hook adds no RNG draw; only an integer label changes.
+  - Closed loop: tap v2, section-14.4 subset (500 games), 25 paired seeds per
+    arm, 3 processes, 11:56 to 12:45 EDT.
+  - R seeds 0-24 are bit-identical to the served 200-seed run (12,500 rows,
+    0 mismatching cells).
+  - Primary truth: the section-28 set (all B2 removed); the B2-split truth is
+    reported alongside.
+
+| | R (seeds 0-24) | **L1** (0-24, paired) | R floor (100-124) |
+|---|---:|---:|---:|
+| **primary: count - like-for-like truth** (subset pc games) | +1.613 | **+1.276** | +1.528 |
+| same, B2-split truth | +1.605 | +1.267 | +1.519 |
+| split: OT | -0.345 | -0.396 | -0.361 |
+| split: composition (cc) | +0.487 | **+0.144** | +0.519 |
+| split: law (cc) | +1.984 | +2.030 | +1.902 |
+| possession SD (pooled) | 5.561 | 5.495 | 5.533 |
+| G5 margin SD ratio | 0.989 | 0.991 | 0.966 |
+| G5 total SD ratio | 0.905 | 0.897 | 0.892 |
+| first-half points share (actual 0.4778) | 0.4721 | 0.4722 | 0.4721 |
+| OT rate (actual on the subset 0.074) | 0.0317 | **0.0282** | 0.0312 |
+
+The closures hold on every arm (primary = OT + regulation, residual under
+4e-6; regulation split residual 1e-14).
+
+**Reading, per the section-28 rule:**
+- **Primary:** L1 moves the count **-0.337 against a floor of 0.086 (3.9
+  floors)**. It matches the arithmetic in section 1.3 (-0.34). It moves
+  composition (0.49 to 0.14) and leaves the law term where it was, as designed.
+- **Vetoes passed:** possession SD, both G5 SD ratios and the first-half share
+  are not worse beyond their floors.
+- **Veto that fires: OT rate**, 0.0317 to 0.0282, which is further from the
+  actual. The floor for this line from one R pair is 0.0005, which is below
+  the binomial SE of an OT rate at 12,500 sims (about 0.0015 per arm). The veto
+  is therefore decided on an underpowered floor; the PM should adjudicate it,
+  and this lane does not.
+- **Under the pre-registered rule L1 is REJECTED on the OT veto.** No default
+  changes either way.
+
+What L1 does not do: +1.28 remains, and it is the clock law, dominated by the
+`made_FG` cell. L1 also feeds the label that section 5.3 shows is the wrong
+class on the floor; it helps only because the training cell carries the same
+label. **L2 / L2a (refit on the corrected table) are the arms that test the
+right fix. They need a new training-table build and a clock refit, which do
+not exist yet. They were not started, so there is no resume command for them.**
+ARITHMETIC: at L1's -0.34 possessions the G9 total moves about -0.7 points.
+
+To re-run the L1 loop:
+
+    set ENGINE_ANDONE_LABEL=training & .venv/Scripts/python.exe scripts/diag_g1g5_tap_v2.py 500 25 results/g1g5_diag/tap_r6_L1 0
+    (R: ENGINE_ANDONE_LABEL unset -> tap_r6_R 0; floor: tap_r6_Rfloor 100)
+    .venv/Scripts/python.exe scripts/grade_clock_r6_v1.py
+
+### 5.6 Still not established
+
+1. **Which of the 2022-23 B2 > 3 s rows are real.** The box slope for B2 swings
+   by season (-0.12 to +1.27); the duration split is a reading of the rows, not
+   a proof. The headline moves by at most 0.03 across the three B2 treatments.
+2. **The OT veto's floor** (5.5).
+3. **L2, L2a and D1** (not built).
+4. **The corrected table is not written to disk** and no consumer is switched.
+   Whether `possessions_v2`'s machine should be fixed at the source (the
+   and-one handler and the rebound-with-no-open-possession path) is an
+   event-layer decision.
+
+### 5.7 Incident caused by this lane
+
+12:47-12:54 EDT. While appending this section, I passed a text containing
+backtick-quoted file names inside a double-quoted shell string, and the shell
+executed them as command substitutions. Bash then interpreted
+`tests/test_engine.py`, `docs/models/clock/experiments.md` and
+`docs/models/DOCUMENTATION_STANDARD.md` line by line as shell scripts. The
+nested substitutions spawned a recursive subshell chain (about 740 `bash.exe`
+processes at the peak), which loaded the shared box for about 6 minutes.
+
+What was checked and done:
+- **Commands:** every executed line failed ("command not found" or a syntax
+  error). The captured output has no successful command output. The only
+  risky line was a bare `set ...`, which is harmless in a subshell.
+- **Files:** no tracked file was modified and no stray file was created
+  (`git status` and a find for files newer than 12:44 were checked). Nothing
+  was committed or pushed by that command.
+- **Clean-up:** I stopped only processes whose command line carried this
+  command's own text (`sec5.md` / `Run R14`): 765 in five passes, then 0
+  remained. Lane A's `results/foul_joint/run_r8.sh` processes (11708, 38736)
+  and every other process were not touched.
+
+This section and section 29 were then appended from a Python file, with no
+shell quoting.

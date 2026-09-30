@@ -4258,3 +4258,32 @@ fixes** (rebound round 3, possession-outcome foul round). Round 6's question is
 only whether the count closes against a like-for-like truth. The G1 grading
 definition itself (box estimator vs corrected count) is a PM/eval decision and
 is not decided here.
+
+## 29. Run R14 -- round 6, arm L1 paired closed loop (2026-09-30, lane B)
+
+Section 28 is STATIC and is not edited. Only arm L1 was built (commit `2185b27`,
+default-off `ENGINE_ANDONE_LABEL=training`; default-path parity PASS against
+`parity_reference_windows_v6.json`; `tests/test_engine.py` and
+`tests/test_clock_adapter_v3.py` 57 passed). L2, L2a and D1 were NOT built
+and NOT run.
+
+500-game section-14.4 subset, 25 paired seeds; R seeds 0-24 are bit-identical to
+the served 200-seed run. Graded by `scripts/grade_clock_r6_v1.py` against the
+section-28 like-for-like truth:
+
+| | R | L1 | R floor (seeds 100-124) |
+|---|---:|---:|---:|
+| primary: count - like-for-like truth | +1.613 | **+1.276** | +1.528 |
+| OT rate (subset actual 0.074) | 0.0317 | 0.0282 | 0.0312 |
+
+- **Primary:** L1 moves the count -0.337 against a floor of 0.086 (3.9 floors).
+- **Vetoes passed:** possession SD, G5 margin and total SD ratios, and the
+  first-half share are not worse beyond their floors.
+- **Veto that fires: OT rate**, worse by 0.0034 against a one-pair floor of
+  0.0005. That floor is below the binomial SE of the line, so it is flagged
+  for PM adjudication.
+- **Under the section-28 rule L1 is REJECTED on the OT veto.** No default
+  changed.
+
+Full tables: `docs/tests/g1_g5_possessions_corr_diagnostic_2026-09-30.md`
+section 5.5.
