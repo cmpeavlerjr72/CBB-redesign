@@ -22,7 +22,9 @@ from pathlib import Path
 import numpy as np
 
 LUT_DIR = Path("data/processed/models/engine")
-ARMS = {"K2": "shot_block_K2", "K2_Ocell": "shot_block_K2_Ocell"}
+ARMS = {"K2": "shot_block_K2", "K2_Ocell": "shot_block_K2_Ocell",
+        # DIAGNOSTIC (section 7): K2_Ocell with both team block rates at the league level (0.0)
+        "K2_Ocell_noteam": "shot_block_K2_Ocell_noteam"}
 TYPE_INDEX = {"rim": 0, "jump2": 1, "three": 2}
 
 _CACHE: dict = {}

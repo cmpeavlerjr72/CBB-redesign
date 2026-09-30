@@ -188,3 +188,56 @@ K2_Ocell 12.281, K2 12.279, actual 12.021 (hoopR box, same games). The count
 moves +0.028 per team-game (+0.23%) away from the actual; the rest of the
 +0.33% relative TOV% move is the OREB term in the denominator. Engine
 possessions per game: 70.019 -> 69.953 / 69.950.
+
+## 10. Diagnostic arm `SB_K2O_noteam` (pre-registered in experiments.md section 7, 98cddaf; run 13:08-13:14 EDT)
+
+`K2_Ocell` with both team block rates held at the as-of league level (0.0);
+shooter term and anchor unchanged. Same 500 x 25 paired loop, same grader;
+paired game bootstrap `scripts/diag_shot_block_game_bootstrap_v2.py`
+(`results/shot_block_round2/game_bootstrap_v2.json`). Arm minus served [95% game CI]:
+
+| line | `SB_K2O` | `SB_K2` | `SB_K2O_noteam` |
+|---|---|---|---|
+| corr(sim mean total, actual total) (served 0.2909) | -0.0216 [-0.0335, -0.0110] | -0.0234 [-0.0354, -0.0128] | -0.0171 [-0.0289, -0.0070] |
+| G5 total SD ratio (served 0.8355) | -0.0108 [-0.0189, -0.0041] | -0.0119 [-0.0199, -0.0052] | -0.0102 [-0.0179, -0.0038] |
+| OREB% pooled (served 0.2836) | +0.0076 [+0.0072, +0.0079] | +0.0074 [+0.0070, +0.0078] | +0.0075 [+0.0071, +0.0079] |
+| TOV per team-game, count (served 12.253; actual 12.021) | +0.028 [+0.016, +0.039] | +0.026 [+0.014, +0.038] | +0.028 [+0.017, +0.039] |
+| TOV% pooled | +0.00058 | +0.00056 | +0.00060 |
+| G9 total bias, points | +0.441 [+0.333, +0.545] | +0.428 [+0.319, +0.533] | +0.423 [+0.318, +0.526] |
+
+Grader verdict for `SB_K2O_noteam`: primary passes (+37.5 floors), vetoes G5
+total SD ratio and G4 TOV% fire as in the other arms; team offence slope
+0.550 (-0.35 floors).
+
+**The pre-registered hypothesis is NOT supported.** Removing the team term keeps
+99% of the OREB% gain but recovers only 21% of the correlation loss
+(0.0045 of 0.0216; the pre-registered bar was half). The team block-rate
+inputs are not the owner of the accuracy loss, and on this evidence shot_block
+does not need to join the E3 retrain set for this reason.
+
+**What remains, measured (SUPPLEMENTARY, not pre-registered;
+`scripts/diag_shot_block_seed_noise_v1.py`, `results/shot_block_round2/seed_noise_v1.json`):**
+the game bootstrap holds the seeds fixed, so it cannot see SEED noise, and the
+0.0009 floor was one draw. Two more served runs on disjoint seeds (2000-2024,
+3000-3024, same subset, flag off) give four served draws:
+
+| served run (seeds) | corr (sim mean total, actual) | G5 total SD ratio |
+|---|---:|---:|
+| 0-24 (`po4b_R_s25`) | 0.2909 | 0.8355 |
+| 1000-1024 (`po4b_R_s25_floor`) | 0.2905 | 0.8346 |
+| 2000-2024 | 0.3011 | 0.8285 |
+| 3000-3024 | **0.2713** | **0.8248** |
+| seed SD (4 draws) | 0.0124 | 0.0051 |
+| `SB_K2O` / `SB_K2` / noteam | 0.2693 / 0.2675 / 0.2738 | 0.8247 / 0.8236 / 0.8253 |
+
+The served engine itself, with nothing changed but the seed range, reaches
+0.2713 / 0.8248 — the arms' values. The arm changes are 1.4-1.9 seed SDs on the
+correlation and 2.0-2.3 on the G5 ratio (unpaired SDs; the paired arm's own
+noise is smaller, since its per-game means move by SD 1.2 points against 4.8
+between independent seed sets, so this comparison is conservative in the
+arm's favour). At 25 seeds the G5 total SD ratio veto is not distinguishable
+from the served engine's own seed-to-seed variation, and the single-draw floor
+of 0.0009 understated that variation about fivefold. What remains is a
+question the 200-seed box read (section 7 commands) with a multi-draw floor
+answers; nothing here resolves it, and the registered verdict (vetoes fire)
+is unchanged.
