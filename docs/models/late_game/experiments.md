@@ -514,3 +514,130 @@ only, so a gate at `period == 2 and seconds_remaining <= 120 and
 nowhere near where round 4 shows it is load-bearing. **That is the recommended
 round-2 candidate, and it needs a DEFAULT-OFF composite clock adapter that this
 round did not write.**
+
+---
+
+## 4. PROPOSED -- Round 2 pre-registration: window-gated arms, wired DEFAULT-OFF, paired closed loop (written 2026-09-30 by lane D, BEFORE any arm was wired or run; NOT RUN, NOT ADOPTED)
+
+**Nothing below has been simulated. No served default is changed by this round;
+every arm is reachable only through a new DEFAULT-OFF flag. The PM decides.**
+Evidence carried in: section 3 and `docs/tests/late_game_round1_2026-09-18.md`.
+The only closed-loop numbers seen before this section was written are the two
+EXISTING reference runs' own `P(0)/P(1)` (`po4b_R_s25` 0.551, `po4b_R_s25_floor`
+0.489, read from their `games.parquet`); no arm output of any kind has been seen.
+
+### 4.1 The window (frozen; the bounds are section 1.1's, not chosen here)
+
+`period == 2` AND `seconds_remaining <= 120` AND `|score_diff| <= 6`, read on the
+engine's live state block with `score_diff` in the OFFENCE's perspective, at the
+START of the possession for the clock draw and at the start of the CHANCE for
+the event draw. **Overtime is OUTSIDE the window**: periods >= 3 keep the served
+law in every arm, because round 1 fitted and graded every window arm on
+`period == 2` rows only and section 1.9 put overtime out of scope. The first
+half is outside the window by construction, so the first-half-horn possessions
+that sank clock round 4's global floor removal are untouched. No bound is varied
+in this round; an OT-inclusive or wider window would be its own pre-registered
+arm and is NOT in this grid.
+
+### 4.2 Arms (flag `ENGINE_LATE_GAME`; unset or `off` = served, bit-identical)
+
+| arm | flag value | what changes inside the window | outside the window |
+|---|---|---|---|
+| **R** | unset | nothing (served reference) | served |
+| R_floor | unset, seeds 1000-1024 | nothing -- the spec-identical reseed that defines the floor | served |
+| **W_C2** | `clk_C2` | clock: intended duration drawn from round 1's `C2_clk` law (P3R cells, `sr_floor_bucket = 0`, fitted on window rows) | served, bit-identical |
+| **W_D** | `clk_D` | clock: round 1's `D_clk` law (role3 x fine bucket x bonus x prev_end, window rows) | served, bit-identical |
+| **E_BL3** | `ev_BL3` | event, FIRST chances: round 1's `B / L3_gates` LightGBM (served `C_plus_state` plus the nine late-game columns) | served, bit-identical |
+| E_L0S0 (control) | `ev_L0S0` | event, FIRST chances: round 1's arm-A `L0_reference` LightGBM, static S0 | served, bit-identical |
+| **W_best+E_BL3** | `clk_<best>+ev_BL3` | both | served, bit-identical |
+
+Fixed details, none tuned on any output:
+
+1. **Artifacts** are the round-1 SELECTED cells refit spec-identically: fold 2,
+   seed 0, S0 (trained on the 2022-2024 seasons, so `max_train_date` precedes
+   every 2024-25 tipoff). Each refit is verified against round 1's saved
+   test-row predictions (`round1_clock/pmf/{C2,D}_clk_F2.npy`,
+   `round1/pred/c027.npy` and `c024.npy`) before it is served: Kaplan-Meier arms
+   must match exactly; LightGBM arms to max |diff| <= 1e-4 (thread-count
+   summation order). A cell that does not reproduce is not served and the round
+   stops on it.
+2. **Clock latent.** The served clock is `v5b_glat_pmean`: the cell law scaled
+   by ONE per-game latent `A`. The window law is scaled by the SAME `A` (same
+   uniform, same location), so the game keeps one pace realisation, and the
+   window draw uses the served draw's own duration uniform. Outside the window
+   the served draw is returned untouched.
+3. **Event populations.** Only first chances inside the window are re-served.
+   Continuations keep the served cascade: round 1 graded first chances only
+   (its section 7 item 3), so no continuation fit has evidence behind it.
+4. **Cadence control.** Inside the window the served event model is an S1
+   monthly schedule while `B / L3_gates` is static S0. `E_L0S0` serves the
+   reference bundle under the same S0 cadence, so `E_BL3 - E_L0S0` is the
+   enrichment and `E_L0S0 - R` is the cadence. It is a control, not a candidate.
+5. **`in_double_bonus`** is an `L3_gates` column the engine state block lacks.
+   It is APPENDED to `STATE_COLS` and filled from `GameState.in_double_bonus()`
+   -- the engine's own rule-era counter -- so no existing plan's column index
+   moves and the default path stays bit-identical.
+6. **The "best" duration arm** for the combined arm = whichever of W_C2 / W_D
+   lands `P(0)/P(1)` closer to the 1.546 target without a veto failure; if both
+   fail a veto, W_C2 (round 1's primary winner). Named in the report.
+
+### 4.3 Sample, seeds, floor
+
+The standing 500-game subset (F2 2025 slate sorted by `game_id`, every 11th row,
+first 500 -- identical to `po4b_R_s25`), seeds 0-24 for every arm, paired by the
+`(seed, game_id, family)` streams. Served stack pinned and asserted exactly as
+`scripts/run_po4b_closed_loop.py` does; no players file (G8 is not a line here).
+**Floor per line = |R_floor - R|** on that line (the project's seed-offset
+convention, seeds 1000-1024 as in `po4b_R_s25_floor`). A game-level paired
+bootstrap SE of each delta vs R is reported beside it, secondary, not the
+decision floor. R and R_floor are RE-RUN under this round's tap at the current
+HEAD rather than borrowed, and R is also checked bit-identical against
+`po4b_R_s25/games.parquet`.
+
+### 4.4 Primary, and power
+
+**Primary:** the regulation-margin density near zero. `P(0)` = share of
+simulations reaching overtime; `P(1)` = share ending regulation at
+`|margin| = 1`; and the ratio `P(0)/P(1)`. Target 2024-25 verified: 1.546, OT
+rate 0.0557; the restated two-sided band `0.046 <= OT rate <= 0.055` (section
+2.3) stands. Reported per arm in floors vs R. Section 1.3's rule is carried
+verbatim: an arm that moves the tie rate while leaving `P(0)/P(1)` below 1.0 is
+recorded as NOT fixing the defect, regardless of G7.
+
+**Power.** The stride sample is declared adequate for the primary if R's floor
+on `P(0)/P(1)` is <= 0.10 (one tenth of the 1.0 gap to target) AND R has >= 300
+regulation ties. If not, the arms are re-run on a CLOSE-GAME-ENRICHED sample:
+the 500 F2-2025 games with the smallest `|mean simulated margin|` in the served
+75-seed run `results/engine_v0/F2_2025_s200_v5b_A` (a sim-side, pregame-
+determined quantity; no actual outcome enters the selection), same seeds, same
+floor construction. The enriched sample's actual `P(0)/P(1)` is descriptive
+only.
+
+### 4.5 Vetoes (no regression)
+
+A line REGRESSES if the arm's absolute error against the actual exceeds R's by
+more than one floor on that line.
+
+| veto | line(s) |
+|---|---|
+| G1 | possessions per game: pooled mean and pooled SD |
+| G5 | margin SD ratio, total SD ratio (`|ratio - 1|`) |
+| G9 | margin bias, total bias (`|bias|`) |
+| first half | per-simulation first-half points (both teams) and first-half possession count must be BIT-IDENTICAL to R in every simulation; one mismatch fails the veto |
+| half share | pooled first-half share of regulation points vs the G7 target |
+
+### 4.6 Reported lines (not decision lines)
+
+Regulation-margin distribution for `|m| = 0..5`; window possessions per
+simulation; window duration by role x clock bucket (the closed-loop R4);
+bonus-FT rate and three-point share of FGA on window FIRST chances by LIVE
+role, signed by the offence side (the tap reads the offence's own `score_diff`
+on every row, so no row carries the opponent's sign); **final-2:00 FTA per
+game** (both teams, from the first H2 possession starting at `<= 120 s` to the
+end of regulation); per-game paired deltas; per-team cells where n >= 200, else
+UNDERPOWERED. Per-player: not applicable.
+
+### 4.7 Order under the wall clock
+
+R, R_floor, W_C2, W_D, E_BL3, E_L0S0, W_best+E_BL3. Anything not reached is
+listed with its exact resume command; nothing is read from a partial run.
