@@ -515,3 +515,194 @@ The round-2 winner (the Q1 winner combined with the Q2 winner) writes `data/proc
 **Live function:** `estimate_asof(...)` in the new module, for a future slate. It is not run for 2026-27 today.
 
 **Trainer consumption:** a name-for-name mapping of which existing columns the table replaces is written in section 6.
+
+---
+
+## 6. Round 2 results (run 2026-09-30, about 11:55-12:10 EDT; 1 core)
+
+**Code**
+
+- Fitter: `scripts/exp_team_rate_estimator_v3.py`. V0 reproduces round-1 E3 exactly (maximum absolute difference 0.0 in c and v).
+- Grader: `scripts/grade_team_rate_estimator_v3.py`.
+- Estimator core: `src/cbb_sim/live/team_rate_estimator.py`, a new module.
+
+**Outputs:** `results/team_rate_estimator/*_v3.*`.
+
+**Test.** Every comparison below is a PAIRED team-block bootstrap (1,000 draws, 95% interval). A positive difference favours the second arm.
+
+### 6.1 Q1: variance. Winner under the rule: V0
+
+Medians over the 16 rate-sides, fold 2. The target band is 0.90-1.10.
+
+| arm | variance ratio g1 / g2-3 / g4-6 / 7+ | z SD g1 / g2-3 / g4-6 / 7+ | cells in band (of 128) | paired deviance vs V0, F2 | F1 |
+|---|---|---|---:|---|---|
+| V0 | 0.739 / 0.779 / 0.825 / 1.092 | 1.214 / 1.148 / 1.115 / 1.069 | 45 | - | - |
+| V1 | 1.702 / 1.757 / 1.799 / 1.535 | 1.163 / 1.107 / 1.093 / 1.069 | 32 | -4,258 [-4,707, -3,835] | -4,519 [-4,901, -4,103] |
+| V2 | 1.753 / 1.819 / 1.845 / 1.560 | 1.159 / 1.103 / 1.092 / 1.069 | 32 | -4,445 [-4,897, -4,016] | -4,582 [-4,963, -4,168] |
+| O1a (V1 base) | **0.956 / 0.982 / 1.021** / 1.163 | **1.065 / 1.043 / 1.027 / 0.993** | **90** | -101 [-186, -20] | -104 [-193, -13] |
+| O1b (V2 base) | 0.914 / 0.919 / 0.959 / 1.145 | 1.051 / 1.038 / 1.026 / 0.993 | 84 | -1,909 [-2,426, -1,439] | -3,370 [-3,963, -2,871] |
+
+**How the rule reads.**
+
+- No arm passes the primary at all four bands.
+- V1, V2, O1a and O1b all fail the deviance guard: each paired interval vs V0 lies entirely below zero.
+- The most-cells fallback therefore has only V0 left. **V0 wins.** It is what the emitted table carries.
+
+**Why V1 and V2 over-shoot.** They fitted the starting variance by a Gaussian likelihood with BINOMIAL sampling variance. Game-level counts are over-dispersed, so the fit absorbed that excess into P0: the variance ratio is about 1.7 and the calibration slope about 0.72. This is the case for O1.
+
+**O1a for the PM.**
+
+- It is the only arm that calibrates the variance at games 1-6 and the z SD at every band.
+- Its fitted overdispersion factors are:
+
+| rate-side | phi |
+|---|---:|
+| ftr | about 3.2-3.4 |
+| share3 | 1.6-1.9 |
+| share_rim | 1.1-2.2 |
+| oreb | 1.1-1.3 |
+| make classes | 1.0-1.2 |
+
+- Its deviance cost is 0.03% (-101 [-186, -20]).
+- It still over-covers at 7+ (1.16), because q was held at E3's deviance-fitted value.
+- Adopting O1a for Stage C's draw arm needs an amendment to the deviance guard (for example a tolerance of 0.1%), or a registered joint refit of q, P0 and phi. It is NOT selected here.
+
+**Final arm's guard line (V0 + P0 = E3).**
+
+| fold | band | calibration slope | underpowered rate-sides | variance ratio | z SD |
+|---|---|---:|---:|---:|---:|
+| F2 | g1 | 0.915 | 16/16 | 0.739 | 1.214 |
+| F2 | g2-3 | 1.074 | 15/16 | 0.779 | 1.148 |
+| F2 | g4-6 | 0.995 | 12/16 | 0.825 | 1.115 |
+| F2 | 7+ | 0.933 | 1/16 | 1.092 | 1.069 |
+| F2 | pooled | 0.942 | 1/16 | 1.061 | 1.085 |
+| F1 | g1 | 0.992 | 16/16 | 0.710 | 1.179 |
+| F1 | g2-3 | 1.145 | 15/16 | 0.772 | 1.144 |
+| F1 | g4-6 | 1.009 | 13/16 | 0.847 | 1.116 |
+| F1 | 7+ | 0.966 | 2/16 | 1.047 | 1.077 |
+| F1 | pooled | 0.966 | 1/16 | 0.998 | 1.087 |
+
+**Stage C consequence.** The draw arm, run with V0's v, would restore only about 74-83% of the needed early-season spread in games 1-6.
+
+### 6.2 Q2: prior mean at day 0 (POST-HOC pair). Winner under the rule: P0
+
+| cell | fold 2: P1 - P0 paired | fold 1 |
+|---|---|---|
+| game 1 | +55.9 [+10.7, +100.1] (0.50%) | -0.6 [-30.9, +32.4] |
+| games 2-3 | +55.7 [+18.3, +98.5] | +33.2 [+1.1, +67.3] |
+| all games | +236 [+133, +349] | +125 [+44, +219] |
+
+- **Game-1 team slope (fold 2, median):** P0 0.915, P1 0.995.
+- **Verdict.** P1 is better on fold 2 at game 1, but fold 1's game-1 interval spans zero. The registered condition (both folds excluding zero) is not met, so **P0 stands**.
+- P1 does win on every games-2+ cell in both folds. The continuity carry helps, just not detectably at game 1 on fold 1.
+
+**Fitted carry weight rho (P0, fold 2).**
+
+| rate | off | def |
+|---|---:|---:|
+| tov | 0.50 | 0.58 |
+| ftr | 0.45 | 0.65 |
+| share3 | 0.58 | 0.57 |
+| share_rim | 0.50 | 0.61 |
+| make_rim | 0.56 | 0.38 |
+| make_jump | 0.32 | 0.39 |
+| make3 | 0.21 | 0.25 |
+| oreb | 0.61 | 0.58 |
+
+**Rim FG% offence: the per-rate carry does not repair the slope.**
+
+- Carry fits: P0 rho 0.56 (fold 2) and 0.53 (fold 1). P1 is 0.58 + 0.07 x continuity - 0.10 x coach change. Pd, with rho fitted by the first-6-games likelihood, is 0.65.
+- Fold-2 pooled slope: P0 0.896, P1 0.900, Pd 0.846 (worse). At 7+ the slope is 0.84, not underpowered (SE 0.04).
+- Fold-1 pooled slope: 1.02, calibrated.
+- **Reading.** The fold-2 miss is a 2024-25 within-season shift in rim finishing that no carry weight addresses. It is not a carry mis-weight. It stays an open exception for the season-drift work (Lane C).
+
+### 6.3 Q3: opponent adjustment, two-sided (POST-HOC). CLEARS both folds
+
+| scoring | fold 2: final+opp - final | fold 1 |
+|---|---|---|
+| **two-sided (registered)** | **+1,465 [+1,247, +1,701] (+1.02%)** | **+1,552 [+1,315, +1,812] (+1.09%)** |
+| one-sided (round-1 primary, for reference) | -788 [-1,073, -518] | -870 [-1,097, -660] |
+
+E9 is therefore carried into Stage B as ONE extra arm, on possession_outcome only, using table `E3opp`. Its parameters are identical to the final arm's. The only difference is that each past observation is centred on the opponent's as-of opposite-side estimate. It is not adopted here.
+
+### 6.4 Emitted Stage B tables
+
+**Files**
+
+- `data/processed/team_rate_features_E3_v1.parquet`: the round-2 winner, E3 = V0 + P0.
+- `data/processed/team_rate_features_E3opp_v1.parquet`: the possession_outcome-only E9 arm.
+- Each is 78,004 rows x 53 columns, about 26 MB.
+- **Not committed.** Each is over the 20 MB guidance for processed artifacts, so tracking or HF sync is the PM's call. They regenerate in about 1 minute with:
+
+```
+.venv/Scripts/python.exe scripts/exp_team_rate_estimator_v3.py --part emit --final q2:P0 --label E3
+.venv/Scripts/python.exe scripts/exp_team_rate_estimator_v3.py --part emit --final q2:P0 --opp --label E3opp
+```
+
+**Rows.** One per (fold, season, game_id, team_id):
+
+| fold | seasons | rows per season |
+|---|---|---|
+| F1 | 2022-2024 | 10,792 / 11,246 / 11,264 |
+| F2 | 2022-2025 | 10,792 / 11,246 / 11,264 / 11,400 |
+
+- F1 rows use parameters fitted on 2023; F2 rows use parameters fitted on 2023+2024.
+- A Stage B trainer for fold k reads `fold == k` only.
+- 2026 is not computed.
+
+**Schema**
+
+- Keys: `fold`, `season`, `game_id`, `team_id`, `game_date`.
+- Then, for rate in {tov, ftr, share3, share_rim, make_rim, make_jump, make3, oreb} and side in {off, def}, three columns:
+  - `<rate>_<side>_c`: the centred estimate entering the game;
+  - `<rate>_<side>_v`: its estimation variance;
+  - `<rate>_<side>_L`: the as-of league level. It is identical for off and def.
+- Everything is on a 0-1 rate scale.
+
+**Strictly as-of.** The emitter asserts that within every team-season the game index order is strictly increasing in tipoff time. One 2023 team played twice on the calendar date 2022-11-25, so a date-only check was insufficient and tipoff time is used. Given that, the estimate at index j uses only games 0..j-1. The league level uses only dates strictly before the game.
+
+- The final arm (P0) uses no roster-continuity input, so the only non-performance input in section 5.5 is NOT present in this table.
+- `c_prev` is the prior season's final.
+
+**Live function.** `cbb_sim.live.team_rate_estimator.estimate_asof(team_games, as_of, params, league_level, carry)`.
+
+- It asserts that every game used has game_date < as_of.
+- Given per-game `L_<rate>` columns, it reproduces the emitted F2 table exactly: maximum absolute difference 0.0 on four 2024-25 dates (Nov 4, Dec 10, Jan 15, Mar 1).
+- It was not run for 2026-27.
+- Parameters are in `results/team_rate_estimator/params_emit_E3_v3.json`, keyed `F2|<rate>|<side>`.
+
+### 6.5 How Stage B trainers consume the table (name for name)
+
+**Joins**
+
+- For a row where team T is on offence against opponent O in game g, take T's `_off_` columns and O's `_def_` columns from the same game_id.
+- possession_outcome's served features are on a x100 scale (`RATE_SCALE`), so multiply its columns by 100.
+- fg_make and rebound are on the 0-1 scale.
+
+| served column (consumer) | replaced by | notes |
+|---|---|---|
+| `off_tov_c` (PO) | 100 x `tov_off_c` (T) | served tov is per pbp possession; the table uses the box possession formula |
+| `opp_def_tov_c` (PO) | 100 x `tov_def_c` (O) | |
+| `off_ftr_c` (PO) | 100 x `ftr_off_c` (T) | FTA / FGA, the same definition |
+| `opp_def_ftr_c` (PO) | 100 x `ftr_def_c` (O) | |
+| `off_rim_c` (PO) | 100 x `share_rim_off_c` (T) | rim FGA / FGA; the table uses the box 2PT count split by event-layer shares |
+| `opp_def_rim_c` (PO) | 100 x `share_rim_def_c` (O) | |
+| `off_3pa_c` (PO) | **NO DIRECT REPLACEMENT** | see below |
+| `opp_def_3pa_c` (PO) | **NO DIRECT REPLACEMENT** | as above |
+| `off_make_c__rim` / `__jump2` / `__three` (fg_make) | `make_rim_off_c` / `make_jump_off_c` / `make3_off_c` (T) | |
+| `def_allow_c__rim` / `__jump2` / `__three` (fg_make) | `make_rim_def_c` / `make_jump_def_c` / `make3_def_c` (O) | |
+| `off_oreb_c` (rebound) | `oreb_off_c` (T) | the table uses box OREB / (OREB + opponent DREB); rebound's served version uses live rebound opportunities |
+| `opp_def_dreb_c` (rebound) | **minus** `oreb_def_c` (O) | the defence's DREB% minus the league's = -(OREB% allowed minus the league's) |
+
+**The 3PA gap.** Served `3pa` is 3PA per POSSESSION. The table's `share3` is 3PA per FGA. Stage B must choose one of two options, and that choice must be registered:
+
+- (a) add a `three_per_poss` rate-side to the estimator (one more rate, same code, about 1 minute to re-emit);
+- (b) use `share3` as a changed feature definition.
+
+**Untouched columns.** The rating features (`off_rating_*`, `def_rating_*`, which are ridge and site-adjusted), site, date, tempo and player/slot features are not touched. The `_v` and `_L` columns are new, for Stage C's draw arm, and are not model features.
+
+**Other definitional deltas to note in each trainer's Stage B registration:**
+
+- possessions: box formula vs pbp;
+- rebound opportunities: box vs live;
+- rim split: box plus event-layer shares vs pure event layer.
