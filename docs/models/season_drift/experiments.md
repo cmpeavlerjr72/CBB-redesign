@@ -188,3 +188,44 @@ OMP/MKL/OPENBLAS pinned to 1. Priority: all F2 cells of the three sub-models,
 the po F2 control, the F2 reseeds, then F1 cells (rebound, shot_block, ft_tech),
 then po F1. Any cell not finished by 15:00 EDT is reported NOT RUN with its
 exact resume command; an arm missing its F1 cell cannot pass E7.
+
+---
+
+## 2. Round 1 results (run 2026-09-30 11:02-12:10 EDT; `scripts/exp_season_drift_anchor_v1.py`, graded by `scripts/grade_season_drift_anchor_v1.py`; full report `docs/tests/season_drift_anchor_round_2026-09-30.md`)
+
+All 58 pre-registered cells ran (7 arms x 4 models x 2 folds, plus the `R`
+seed-1 reseeds for rebound and po on F2). Harness checks: rebound `R` = round 3
+`A0B0C0` (0.645565, -1.137 pp); `T` = round 3 `A5` (0.645024, -0.337 pp);
+shot_block `R` = sklearn `K2` to 1.5e-06.
+
+**Mechanical decision (section 1.7): NO DESIGN WINS.** Selections: rebound `R`
+(no eligible arm), shot_block `F` (1.24 floors, gain 7.2e-06), ft_tech `R` (no
+eligible arm). No design is selected in two of three sub-models. NOTHING
+ADOPTED.
+
+- E4 (drift-stops, pooled over 10 flat/reversed cells) makes `C0` (+0.061),
+  `T` (+0.092) and `W` (+0.008) ineligible everywhere. `T` fails where FT
+  technicals reverse (F1 +114%); `C0` carries the 2023 technical spike (+78%).
+- `F` (level as a feature) works in the linear models and breaks both trees
+  (rebound -4.2 floors, team slope 0.67 -> 0.37; po -4.4 floors).
+- `O` / `P` (target relative to the as-of league level; `P` with the fitted
+  update weight, n0 ~ 1e4 units, a few days of play) pass E4 and improve level
+  and likelihood in every model on both folds (`O` except shot_block F1):
+  rebound -1.137 -> -0.084 / -0.115 pp (4.0 / 4.1 floors, F1 confirms); ft_tech
+  +32.5% -> -10.1% / -8.5%; po control max class gap 1.54 -> 0.40 / 0.29 pp at
+  ~1 published floor, calibration gate F -> P. They are blocked by (i) rebound
+  E6: the top OREB decile (+2.20 / +2.07 pp vs the 2.0 gate), a shape defect
+  `R` already had (+0.88 pp under a -1.02 pp level shift) that the level bias
+  was hiding; (ii) ft_tech E5: the one-sided slope/spread line reads the removal
+  of `R`'s +32% multiplicative level error as spread compression (level-
+  normalised, the spread is unchanged: 0.68 -> 0.65-0.66). A supplementary
+  symmetric check is reported beside the rule; it is not the rule.
+- shot_block's rim miss is not a league-level drift (pooled -0.17 pp; rim
+  -0.83, jump2 +0.29). An EXPLORATORY, not pre-registered, per-shot-type anchor
+  (`scripts/exp_season_drift_anchor_cell_v1.py`) moves rim to +0.35 pp (`P`,
+  F2) / -0.16 pp (F1) and passes the shot_block level gate on both folds. It
+  decides nothing; it is the obvious next pre-registration.
+
+Open for the PM: a ruling on E5's one-sidedness and on whether rebound's
+unmasked top-decile shape defect blocks a level fix; then stage 2
+(`S1_weekly`) for `R` / `O` / `P` (fitter v2 not yet written) and a closed loop.
