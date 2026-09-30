@@ -3450,3 +3450,100 @@ possessions hold an FT trip with no foul row of their own (only 15% matched by a
 non-trip row in the previous possession); at ~68.7 possessions per team-game that is ~1.55
 fouls, against the box-minus-pbp foul gap of 1.60 per team-game. Every pbp state label lags the
 true count by them (proposed next object: state v3; not pre-registered here).
+
+## 22. Round 8 pre-registration -- corrected foul state (v3) + shared game-level whistle latent (lane A, 2026-09-30; written and COMMITTED BEFORE any fit)
+
+PM ruling on round 7 (section 21): no arm adopted, V3 stands. Round 8 fixes the two state-label
+defects first, then adds the variance source the round-7 V3 failure exposed: a whistle shared by
+both teams (other lane: actual two-team FT-rate residual correlation +0.207, SE 0.013; engine
+-0.012; `docs/tests/g1_g5_possessions_corr_diagnostic_2026-09-30.md` 2.3). **Nothing here is
+adopted; no default changes; no served table is overwritten; no consumer is switched.**
+
+### 22.1 The corrected state ("v3 state"), a sibling table
+
+`scripts/build_foul_accrual_design_v3.py` -> `round6/foul_accrual_poss_v3.parquet` (v1, v2 untouched).
+Per possession, per side: `def_team_fouls_v3 = def_team_fouls - def_pre_open + def_rowless_prior`,
+where `def_rowless_prior` = FT trips earlier in the same half-segment (period 1; periods 2+ as one
+segment, NCAA carry-over) that were awarded against that team and have NO personal-foul row
+(detected in the replay: a non-technical trip reached with no immediately preceding foul row AND
+no foul by the other team logged at the same period and clock). Same for `off_team_fouls_v3`.
+The possession's OWN fouls are excluded, which is the engine's definition.
+
+Verification against a second source (box `fouls`, which the grader trusts): per team-game,
+`corrected total = pbp foul rows + rowless trips` vs box; reported as the distribution of
+(box - corrected) and (box - pbp), by season 2022-2025, and mean |gap|. Pass criterion stated
+now: mean |box - corrected| must be below half of mean |box - pbp|; otherwise v3 is reported as
+NOT VERIFIED and the arms below run anyway as labelled-provisional. Bonus-state agreement by game
+minute: share of possessions whose v3 bonus flag equals the labelled flag and the v2 flag; and a
+rule check -- among 1-FT missed trips that are not and-ones (a one-and-one front end, which can
+only occur in the bonus), the share whose v3 prior count is >= 6, vs the same share under the
+labelled and v2 counts.
+
+Train/serve skew trace (read-only) for every served model consuming a foul/bonus state feature,
+and the answer on a corrected-state retrain arm for tonight's AWS possession-outcome retrain
+(`scripts/train_possession_outcome_s1_par_v1.py`, NOT edited): reported in the round-8 report.
+
+### 22.2 Arms (every one on the v3 state; fold 2 selects, fold 1 confirms, 2025-26 sealed)
+
+Offline objects are section 20.2's, re-targeted to v3 counts, scored on test rows fed the v3 state:
+  - Block A: `A0` const; `A2v2` (round-7 A2 spec on the v2 state, queried with v3); **`A3`** (A2 spec on v3).
+  - Block T: `T0` (served-bundle proxy); `T2c_v2` (round-7 cells on v2 counts, queried with v3);
+    **`T3c`** (the same cells on v3 counts). The live count at a chance adds the possession's
+    earlier trips, as in round 7.
+Section 20.2's floor rule, tie rule and fold-1 confirmation rule apply unchanged. Segments as 20.2.
+**Overshoot check (mandatory, before adding anything):** first-half and second-half predicted vs
+actual trip rates for `T3c` vs `T2c_v2` on fold 2, and the closed-loop H1 FTA/FGA of `R8b` vs
+round-7 `CL2` (0.2506; actual 0.2367).
+
+Whistle latent (`W`). One draw per simulated game, z ~ N(0,1) from a NEW stream family
+`foul_whistle` keyed on (seed, game_id); multiplier `A = exp(s z - s^2/2)` (E[A] = 1, the v5b
+pace-latent construction rule) applied to the ODDS of the fouling team's non-trip accrual draw and
+of both FT-trip classes (and-ones excluded: a fixed rule rate). SHARED (`W_s`): one z per game for
+both teams. UNSHARED control (`W_u`): an independent z per team per game (two columns of the same
+block; home uses the column the shared arm uses), same s. Latent OFF takes the no-latent code path
+exactly (bit-identical, shown on a smoke run).
+Variance FITTED on TRAINING seasons only, method of moments: per team-game, whistle count
+`W = FT trips (shooting + bonus) awarded against the team + its non-trip fouls (y_nt events)`,
+expectation `E` = the fold's own `A3` + `T3c` probabilities summed over that team-game (in-sample
+on train seasons); `r = W/E - 1`; `c = cov(r_home, r_away)` across games (independent sampling
+noise cancels); `s^2 = ln(1 + c)`. Reported with a game-bootstrap SE (200), both folds. Offline
+check: the same `c` on the fold's TEST season (the model applied out of sample) must lie within
+2 SE of the train estimate; otherwise the latent is labelled NOT CONFIRMED (still run).
+
+Closed-loop arms (500 x 25, the `po4b_R_s25` games and seeds; `ENGINE_FOUL_JOINT` family, new
+module, minimal hook; LUTs from fold-2 TRAIN fits):
+
+| arm | accrual | trips | whistle |
+|---|---|---|---|
+| `CL0` served (reuse `fj_R_s25`) | constant | served PO | none |
+| `R8a` | `A3` | served PO | none |
+| `R8aS` | `A3` | served PO | shared |
+| `R8b` | `A3` | `T3c` | none |
+| `R8bS` | `A3` | `T3c` | shared |
+| `R8bU` | `A3` | `T3c` | unshared (control) |
+
+### 22.3 Primaries, vetoes, noise
+
+Primary 1: |FTA/FGA - 0.32955|, change vs `CL0` in floors (floor 0.001782, section 17/20).
+Primary 2: two-team FT-rate correlation toward +0.207 -- the engine statistic is the pooled
+within-game correlation across the 25 seeds of home vs away FTA/FGA (the other lane's "sim within
+corr"); noise band = SE from 200 game bootstraps; reported as distance to 0.207 in SEs.
+Mandatory lines: H1 and H2 FTA/FGA (actual 0.2367 / 0.4126, event layer).
+Vetoes (any failure = not eligible):
+  V1 bonus occupancy by minute vs the v3-state actual: max |gap| must fall vs `CL0` and no bucket
+     may worsen by > 3 pp;
+  V2 per-team FT-rate slope (prior-season quintiles) must not fall by more than max(0.05, 2 x
+     paired game-bootstrap SE) below `CL0`;
+  V3 G5 total SD ratio (gates.py definition) and home/away SCORE correlation (gates.py: row-level
+     sim corr vs actual across the same games) must not move AWAY from their targets (1.0; the
+     actual corr) by more than 1 paired floor (|`po4b_R_s25_floor` - `po4b_R_s25`| on that line);
+     G1 possessions mean/SD, G5 margin ratio, G9 total bias: not away by > 2 floors;
+  V4 team SD ratio (sim team FT-rate SD / realised season SD) must not fall by more than 2 x paired
+     game-bootstrap SE.
+Noise bands for team-level statistics (not run in round 7): paired game-bootstrap SE (200) of the
+arm-minus-CL0 delta for the team slope, team SD ratio and the FT-rate correlation.
+Known caveats (stated, not fixed): the 500-game sample contains one unplayed game (loader opt-in
+`verified_finals`, default unchanged); the served engine inputs carry same-game leaks being rebuilt
+as v3 inputs tonight. Paired deltas stand; absolute levels are provisional.
+Hard constraint unchanged: no constant is tuned toward any aggregate; `s^2` is fitted on training
+seasons from the two-team residual covariance and never adjusted to a gate.
