@@ -105,11 +105,14 @@ def simulate(inp: EngineInputs, fold: str, season: int, seeds, keep_players=True
     return games, players, ad
 
 
-def stamp_rows(games: pd.DataFrame, inp: EngineInputs, created_at) -> pd.DataFrame:
-    """Attach tipoff_utc + created_at to every row and enforce created_at < tipoff."""
-    info = inp.games[["game_id", "tipoff_utc"]].drop_duplicates("game_id")
+def stamp_rows(games: pd.DataFrame, inp: EngineInputs, created_at, per_game: bool = False) -> pd.DataFrame:
+    """Attach tipoff_utc + created_at to every row and enforce created_at < tipoff.
+    `per_game`: replay of many dates, use each game's own build-time created_at column."""
+    cols = ["game_id", "tipoff_utc"] + (["created_at"] if per_game else [])
+    info = inp.games[cols].drop_duplicates("game_id")
     out = games.merge(info, on="game_id", how="left")
-    out["created_at"] = pd.Timestamp(created_at)
+    if not per_game:
+        out["created_at"] = pd.Timestamp(created_at)
     G.assert_created_before_tipoff(out)
     return out
 
@@ -119,6 +122,7 @@ def main() -> int:
     ap.add_argument("--tag", required=True)
     ap.add_argument("--input-dir", default="data/processed/models/engine_live")
     ap.add_argument("--fold", default="F2")
+    ap.add_argument("--inputs-version", default="v1", help="v1 = bare tag (live and v3 dirs); v2 for the served backtest inputs")
     ap.add_argument("--season", type=int, required=True)
     ap.add_argument("--seeds", type=int, default=3)
     ap.add_argument("--seed-offset", type=int, default=0)
@@ -133,6 +137,11 @@ def main() -> int:
     ap.add_argument("--backtest-dir", default="data/processed/models/engine")
     ap.add_argument("--out-dir", default="results/engine_live")
     ap.add_argument("--no-players", action="store_true")
+    ap.add_argument("--subset-po4b", action="store_true",
+                    help="the standing 500-game subset (sorted by game_id, every 11th row, first 500)")
+    ap.add_argument("--max-games", type=int, default=0, help="debug: first N rows of the (subset) inputs")
+    ap.add_argument("--plain-out", action="store_true",
+                    help="write results/engine_v0-style dir <out-dir>/<tag>_s<seeds> without the run tag suffixes")
     ap.add_argument("--reverse", action="store_true", help="reverse game order (RNG-alignment control)")
     args = ap.parse_args()
     if args.season == 2026 and os.environ.get("CBB_UNSEAL") != "1":
@@ -140,9 +149,10 @@ def main() -> int:
     t0 = time.time()
     import run_engine as RE                     # for engine_provenance only
     prov = RE.engine_provenance()
-    live = EngineInputs.load(args.input_dir, args.tag, version="v1")
+    live = EngineInputs.load(args.input_dir, args.tag, version=args.inputs_version)
     inp = live
-    block = np.load(Path(args.input_dir) / f"event_block_{args.tag}.npz")["team_block"]
+    bp_ = Path(args.input_dir) / f"event_block_{args.tag}.npz"
+    block = np.load(bp_ if bp_.exists() else Path(args.input_dir) / f"event_round2_s1_{args.tag}/team_block.npz")["team_block"]
     if args.slice_from_backtest:
         bt = EngineInputs.load(args.backtest_dir, args.slice_from_backtest)
         inp = slice_inputs(bt, live.games["game_id"].tolist())
@@ -162,9 +172,19 @@ def main() -> int:
         order = np.arange(inp.n_games)[::-1]
         inp = slice_inputs(inp, inp.games["game_id"].to_numpy()[order])
         block = block[order]
+    if args.subset_po4b:
+        order = np.argsort(inp.games["game_id"].to_numpy(), kind="stable")[::11][:500]
+        inp = slice_inputs(inp, inp.games["game_id"].to_numpy()[order])
+        block = block[order]
+    if args.max_games:
+        inp = slice_inputs(inp, inp.games["game_id"].to_numpy()[:args.max_games])
+        block = block[:args.max_games]
+    per_game = "created_at" in inp.games.columns and args.replay
     created_at = pd.Timestamp(args.created_at) if args.created_at else pd.Timestamp.now("UTC")
     created_at = created_at.tz_localize("UTC") if created_at.tzinfo is None else created_at.tz_convert("UTC")
-    if not args.replay:
+    if per_game:
+        G.assert_created_before_tipoff(inp.games)
+    elif not args.replay:
         G.assert_created_before_tipoff(inp.games.assign(created_at=created_at))
     seeds = np.arange(args.seed_offset, args.seed_offset + args.seeds, dtype=np.int64)
     adir = prepare_adapter_dir(block, args.fold, args.season,
@@ -173,14 +193,16 @@ def main() -> int:
                                                                        + ("_rev" if args.reverse else "")))
     games, players, ad = simulate(inp, args.fold, args.season, seeds, keep_players=not args.no_players,
                                   adapter_dir=adir)
-    games = stamp_rows(games, inp, created_at)
+    games = stamp_rows(games, inp, created_at, per_game)
     out = Path(args.out_dir) / (args.tag + ("__bt_arrays" if args.slice_from_backtest else "")
                                 + ("__hybrid" if args.hybrid_slots_from_backtest else "")
                                 + ("__rev" if args.reverse else "") + f"_s{args.seeds}")
+    if args.plain_out:
+        out = Path(args.out_dir) / f"{args.tag}_s{args.seeds}_o{args.seed_offset}"
     out.mkdir(parents=True, exist_ok=True)
     games.to_parquet(out / "games.parquet", index=False)
     if players is not None:
-        players = stamp_rows(players, inp, created_at)
+        players = stamp_rows(players, inp, created_at, per_game)
         players.to_parquet(out / "players.parquet", index=False)
     meta = {"engine_tag": f"engine_live/{out.name}", "created_at": str(created_at), "live": True,
             "backtest": False, "replay": bool(args.replay), "input_tag": args.tag,

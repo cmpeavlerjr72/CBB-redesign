@@ -64,7 +64,7 @@ class Ctx:
 
 def build_ctx(slate: pd.DataFrame, as_of, season: int, universe: pd.DataFrame,
               season_start=None, ratings_dir: str = "data/processed/ratings",
-              prior_season: bool = True) -> Ctx:
+              prior_season: bool = True, strict_finish: bool = True) -> Ctx:
     """`slate`: SLATE_COLS only. `universe`: the games universe (it may contain
     results; only rows dated strictly before the slate date are ever kept, and
     those are COMPLETED games, which is what the backtest also reads)."""
@@ -87,12 +87,12 @@ def build_ctx(slate: pd.DataFrame, as_of, season: int, universe: pd.DataFrame,
     u["game_date"] = pd.to_datetime(u["game_date"])
     u = u[u["is_d1_game"] & ~u["pbp_truncated"] & u["season"].isin(seasons) & (u["game_date"] < D)]
     G.assert_sources_before(u, D, "universe_prior")
-    G.assert_sources_finished(u, T)
+    n_unfinished = G.assert_sources_finished(u, T, strict=strict_finish)
     if season_start is None:
         season_start = slate["game_date"].min()
     return Ctx(slate=slate, slate_date=D, as_of=T, season=int(season), seasons=seasons,
                universe_prior=u.reset_index(drop=True), season_start=pd.Timestamp(season_start),
-               ratings_dir=ratings_dir)
+               ratings_dir=ratings_dir, notes={"n_source_unfinished_at_cutoff": n_unfinished})
 
 
 def stub_universe(ctx: Ctx) -> pd.DataFrame:

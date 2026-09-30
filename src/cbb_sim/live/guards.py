@@ -44,14 +44,19 @@ def assert_sources_before(frame: pd.DataFrame, slate_date, name: str,
                              f"{pd.Timestamp(slate_date).date()}")
 
 
-def assert_sources_finished(universe_prior: pd.DataFrame, as_of) -> None:
-    """Every source game must have finished (tip + FINISH_MARGIN_H) before the cutoff."""
+def assert_sources_finished(universe_prior: pd.DataFrame, as_of, strict: bool = True) -> int:
+    """Every source game must have finished (tip + FINISH_MARGIN_H) before the cutoff.
+    `strict=False` (replay only) returns the NUMBER of source games that had not finished
+    instead of raising: date-keyed as-of features count a game dated D-1 that tips after
+    ~03:00 UTC of day D even when D's first tip is earlier than that game's finish."""
     if "tipoff_utc" not in universe_prior.columns or not len(universe_prior):
-        return
+        return 0
     t = _utc(as_of)
-    last = pd.to_datetime(universe_prior["tipoff_utc"], utc=True).max()
-    if pd.notna(last) and not last + pd.Timedelta(hours=FINISH_MARGIN_H) <= t:
-        raise LeakGuardError(f"source game tipped {last} is not finished before cutoff {t}")
+    tip = pd.to_datetime(universe_prior["tipoff_utc"], utc=True)
+    n = int((tip + pd.Timedelta(hours=FINISH_MARGIN_H) > t).sum())
+    if n and strict:
+        raise LeakGuardError(f"{n} source game(s) not finished before cutoff {t}; last tip {tip.max()}")
+    return n
 
 
 def assert_created_before_tipoff(df: pd.DataFrame, created_col: str = "created_at",

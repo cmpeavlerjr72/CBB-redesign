@@ -79,7 +79,8 @@ def run_date(D: str, zb, gb, nb, log) -> dict:
     slate = BL.load_slate_from_universe(D, 2025, only_ids=ids)
     first_tip = pd.to_datetime(slate["tipoff_utc"], utc=True).min()
     as_of = first_tip - pd.Timedelta(minutes=30)
-    inp, diag = BL.build_live(slate, as_of, 2025, "F2", created_at=as_of, season_start="2024-11-04", t0=t0)
+    inp, diag = BL.build_live(slate, as_of, 2025, "F2", created_at=as_of, season_start="2024-11-04", t0=t0,
+                           strict_finish=False)
     inp.save(ROOT / "data/processed/models/engine_live", f"LIVE_F2_2025_{D}")
     np.savez_compressed(ROOT / f"data/processed/models/engine_live/event_block_LIVE_F2_2025_{D}.npz",
                         team_block=inp.event_block, cols=np.array(list(BL.B.TEAM_COLS[:16])))

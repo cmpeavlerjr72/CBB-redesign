@@ -112,7 +112,7 @@ def load_slate_from_cbbd(path: str, slate_date: str, crosswalk_path: str) -> pd.
 # ---------------------------------------------------------------------------
 def build_live(slate: pd.DataFrame, as_of, season: int, fold: str, created_at=None,
                season_start=None, template_tag: str | None = None, families: str = "all",
-               t0: float | None = None) -> tuple[EngineInputs, dict]:
+               t0: float | None = None, strict_finish: bool = True) -> tuple[EngineInputs, dict]:
     t0 = t0 or time.time()
     template_tag = template_tag or f"{fold}_{season}_v2"
     names_t = json.loads((ENGINE_DIR / f"names_{template_tag}.json").read_text(encoding="utf-8"))
@@ -120,7 +120,7 @@ def build_live(slate: pd.DataFrame, as_of, season: int, fold: str, created_at=No
     slot_names = {k: int(v) for k, v in names_t["slot_names"].items()}
     rules = dict(names_t["rules"])
     u = pd.read_parquet(UNIVERSE)
-    ctx = LF.build_ctx(slate, as_of, season, u, season_start=season_start)
+    ctx = LF.build_ctx(slate, as_of, season, u, season_start=season_start, strict_finish=strict_finish)
     from cbb_sim.data.seal import assert_not_sealed
     assert_not_sealed(ctx.seasons, context="live inputs (prior-season carry reads season-1 tables)")
     created_at = pd.Timestamp(created_at) if created_at is not None else pd.Timestamp.now("UTC")
@@ -131,7 +131,8 @@ def build_live(slate: pd.DataFrame, as_of, season: int, fold: str, created_at=No
     Gn, S = len(games), N_SLOTS
     gpos = {int(g): i for i, g in enumerate(games["game_id"])}
     diag: dict = {"n_games": Gn, "slate_date": str(ctx.slate_date.date()), "as_of": str(ctx.as_of),
-                  "created_at": str(created_at), "n_universe_prior": len(ctx.universe_prior)}
+                  "created_at": str(created_at), "n_universe_prior": len(ctx.universe_prior),
+                  "n_source_unfinished_at_cutoff": ctx.notes.get("n_source_unfinished_at_cutoff", 0)}
     log(f"ctx: {Gn} games on {ctx.slate_date.date()}, {len(ctx.universe_prior)} prior games in "
         f"seasons {ctx.seasons}", t0)
 
