@@ -55,6 +55,8 @@ data/processed/possessions_v3/
 # docs/tests/event_layer_v4_2026-09-30.md section 2
 data/processed/possessions_v4/
 data/processed/possessions_v4a/
+# clock round 6 arm artifacts (48-66 MB each; scripts/exp_clk6_r6_arms_v1.py); HF: `model_artifacts` key
+data/processed/models/clock/r6_*/
 data/processed/models/**/design.parquet
 data/processed/models/**/*_design.parquet
 
