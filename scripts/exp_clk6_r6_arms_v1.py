@@ -36,7 +36,8 @@ for _v in ("OMP_NUM_THREADS", "MKL_NUM_THREADS", "OPENBLAS_NUM_THREADS", "NUMEXP
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 CK = ROOT / "data/processed/models/clock"
-POSS = {"L2": ROOT / "data/processed/possessions_v4", "L2a": ROOT / "data/processed/possessions_v4a"}
+POSS = {"L2": ROOT / "data/processed/possessions_v4", "L2a": ROOT / "data/processed/possessions_v4a",
+        "D1": ROOT / "data/processed/possessions_v4"}
 SEASONS = [2022, 2023, 2024, 2025]
 
 
@@ -51,7 +52,7 @@ def load(name: str, file: str):
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--arm", choices=sorted(POSS), required=True)
-    ap.add_argument("--step", choices=["design", "s1", "latent"], required=True)
+    ap.add_argument("--step", choices=["censor", "design", "s1", "latent"], required=True)
     ap.add_argument("--dry-run", action="store_true")
     a = ap.parse_args()
     root = CK / f"r6_{a.arm}"
@@ -59,11 +60,45 @@ def main() -> int:
     if a.dry_run:
         return 0
     root.mkdir(parents=True, exist_ok=True)
-    if a.step == "design":
+    censor_dir = root / "clock_censoring"
+    # every served clock trainer joins the horn-censoring side table on
+    # (game_id, period, poss_index); v4 renumbers poss_index, so the arm reads
+    # its OWN side table (same rule as scripts/diag_clock_censoring_v1.py:
+    # censored_horn = end_clock <= 0, flag_end_period = terminal end_period)
+    if a.step in ("s1", "latent"):
+        # importing clock_v3 extends clock's feature lists, so it must NOT be
+        # imported before `design` (the served train_clock_v2 never imports it)
+        import functools
+        from cbb_sim.models import clock_v3 as c3
+        c3.attach_horn_censoring = functools.partial(c3.attach_horn_censoring, censor_dir=censor_dir)
+    if a.step == "censor":
+        import pandas as pd
+        censor_dir.mkdir(parents=True, exist_ok=True)
+        for s in SEASONS:
+            q = pd.read_parquet(POSS[a.arm] / f"possessions_{s}.parquet")
+            side = q[["game_id", "period", "poss_index", "start_clock", "end_clock", "duration_s"]].copy()
+            side["censored_horn"] = (q["end_clock"] <= 0).to_numpy()
+            side["flag_end_period"] = (q["terminal_event"] == "end_period").to_numpy()
+            side.to_parquet(censor_dir / f"censoring_v1_{s}.parquet", index=False)
+            print(s, len(side), flush=True)
+    elif a.step == "design":
         from cbb_sim.models import clock as ck
         design, diag = ck.build_design(SEASONS, poss_dir=POSS[a.arm])
         design.to_parquet(root / "design_v2.parquet", index=False)
         print(f"design {len(design):,} rows", flush=True)
+    elif a.step == "s1" and a.arm == "D1":
+        # D1 = L2's table + the round-4 `calpart` refit (season-part pooling, L34),
+        # trained by the UNEDITED round-4 trainer on L2's design and censoring table
+        import shutil
+        for f in ("design_v2.parquet",):
+            if not (root / f).exists():
+                shutil.copy2(CK / "r6_L2" / f, root / f)
+        if not censor_dir.exists():
+            shutil.copytree(CK / "r6_L2" / "clock_censoring", censor_dir)
+        m = load("train_clock_v4_r6", "train_clock_v4.py")
+        m.OUT, m.S1_DIR, m.DESIGN_V2 = CK, root / "v4_s1", root / "design_v2.parquet"
+        sys.argv = [sys.argv[0], "--only", "calpart", "--skip-f1"]
+        return m.main()
     elif a.step == "s1":
         m = load("train_clock_v3c_s1_r6", "train_clock_v3c_s1.py")
         # OUT stays the clock dir so every manifest's `model_file` is relative
