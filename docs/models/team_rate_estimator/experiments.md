@@ -120,3 +120,93 @@ Among qualifying arms, the higher pooled fold-2 gain wins, unless its interval o
 - **Grading, blind across all arms:** `scripts/grade_team_rate_estimator_v1.py`. One grader scores every arm from the same estimate table, keyed by arm.
 - **Outputs:** versioned files under `results/team_rate_estimator/`. No served table, engine input or other lane's file is written.
 - **Results:** appended as section 2 of this file, once, when final, plus `docs/tests/team_rate_estimator_stageA_2026-09-30.md` for long tables.
+
+---
+
+## 2. Results: Stage A (run 2026-09-30, about 11:33-11:37 EDT; 1 core; about 2 minutes of fitting plus grading)
+
+Full tables: `docs/tests/team_rate_estimator_stageA_2026-09-30.md`.
+
+**What ran.** Every arm registered in section 1.4 except E9. The E2c continuity build ran cleanly:
+
+- **Source:** hoopR `player_box` 2022-2025, with the roster read from box listings (including DNP rows) in each team's first 3 games.
+- **Filter:** restricted to teams with at least 2,000 prior-season minutes, i.e. full D-I seasons.
+- **Median returning-minutes share by season:** 2023 0.495, 2024 0.457, 2025 0.407.
+- **Coach change rate:** about 9% of teams per season.
+
+**Not run: E9 (opponent adjustment).** It is registered on top of a qualifying winner, and none qualifies (2.3).
+
+### 2.1 Pooled primary: fold-2 next-game deviance gain vs E0 (16 rate-sides)
+
+| arm | F2 gain (%) | F2 95% team-block interval | F1 gain (%) | level-SD ratio (G-A1, median) | lag-1 move ratio (G-A2, median) | day-0 g1 gain | g1 slope (median) | g2-3 slope |
+|---|---:|---|---:|---:|---:|---:|---:|---:|
+| E0 | 0 | - | 0 | 1.133 | 0.694 | 0 | undefined | 0.179 |
+| E1 | 28,731 (8.37) | [27,035, 30,778] | 29,492 (8.62) | 0.611 | 1.424 | 0 (= E0 by construction) | undefined | 1.031 |
+| E2 | 31,281 (9.11) | [29,524, 33,487] | 32,531 (9.50) | 0.694 | 1.465 | 475 | 0.916 | 1.068 |
+| E2c | 31,504 (9.18) | [29,793, 33,687] | 32,653 (9.54) | 0.688 | 1.442 | **534** | **0.997** | 1.104 |
+| E4 | **32,068 (9.34)** | [30,309, 34,255] | 33,497 (9.79) | 0.673 | **0.940** | 476 | 0.924 | 0.989 |
+| E3 | 32,045 (9.33) | [30,219, 34,232] | 33,537 (9.80) | 0.704 | 1.240 | 476 | 0.915 | 1.074 |
+
+**Gains are positive everywhere.** Every arm beats E0:
+
+- on every one of the 16 rate-sides;
+- in both folds;
+- with no rate-side interval touching zero.
+
+**Where the gain comes from.**
+
+- By weeks: the gain is concentrated early (weeks 0-3: 22-24%; 4-7: 6-7%; 8-15: 3%; 16+: 1-2%).
+- E3 and E4 keep about 2% in weeks 16+, where E1, E2 and E2c keep about 1.2%. This is the part a recency weight adds.
+- **E0 over-reacts badly early.** Its team slope in games 2-3 is 0.18, and 0.28 in games 4-6.
+
+### 2.2 Per-rate exceptions
+
+**ftr off, game 1.** E2, E4 and E3 LOSE 0.36-0.39% vs E0; the carried prior-season FT rate is worse than the league level. E2c is the exception at +0.12%.
+
+**make3 def.** This side carries almost no team signal.
+- Game-1 slope is 0.30. Game 2-3 slopes are negative in every arm (-0.03 to -1.0).
+- The level-SD ratio collapses to 0.17-0.28, which is heavy but correct shrinkage of a noise-dominated rate.
+- Its lag-1 move ratio overshoots to 2.3-3.5 in E1, E2, E2c and E3, and is 1.19 in E4.
+
+**make_rim off.** The move ratio overshoots in every arm (1.45-2.02). The prior dominates too long.
+
+**E2c's continuity gain is small.** On the pooled score it is +0.07 pp over E2 on fold 2 and +0.04 pp on fold 1.
+- It is concentrated at game 1 (534 vs 475 deviance units): share3 off 9.3% vs 7.4%, tov def 5.6% vs 4.0%, make_jump off 1.2% vs 0.6%.
+- It brings the game-1 slope to 0.997. It is the best arm for the day-0 launch condition.
+
+### 2.3 Decision under the registered rule: NO ARM QUALIFIES
+
+**Interval and transfer: pass for every arm.** Each arm clears zero on the pooled fold-2 interval, and the fold-1 gain has the same sign.
+
+**G-A1 (level-SD ratio must not fall below E0): FAIL for every arm on every rate-side** (E0 1.13 vs 0.61-0.70 for the other arms).
+
+- As registered, this guard compares against E0.
+- E0's ratio above 1 is itself few-game noise: its season-mean estimate is MORE dispersed than the realised season rates.
+- Against RAW realised rates, which also carry sampling noise, any estimator that stops chasing noise lowers the ratio.
+- A post-hoc, noise-aware variant is below. It is labelled as post-hoc and was not used here.
+  - It compares the estimate built on 20 or more games against a split-half true SD.
+  - E0 reads 1.18, meaning it is over-dispersed against truth.
+  - The arms read 0.83 (E4), 0.86-0.88 (E1, E2, E2c) and 0.92 (E3; last estimate 0.96).
+
+**G-A2 (lag-1 movement ratio moves toward 1 relative to E0's 0.694): pass for E4 (0.94) and E3 (1.24). Fail for E1 (1.42), E2 (1.47) and E2c (1.44).** Those three over-shoot: after reliability weighting, the movement they do make is MORE predictive than their level, so they are too sluggish.
+
+**What the PM would get with an amended G-A1.** This is the PM's call, not a selection here. If G-A1 were amended to a noise-aware comparison, E4 and E3 would qualify.
+- Their pooled fold-2 gains are tied: 9.342% vs 9.335%, with each interval containing the other's point estimate.
+- Under the tie rule the simpler arm is **E4**.
+- E3 holds levels better (0.92 vs 0.84 noise-aware) and has the best fold-1 gain.
+- Neither carries continuity. E2c's day-0 advantage would argue for adding its continuity-dependent carry to the E4 prior, which would be a new arm and a new registration.
+
+### 2.4 Stage B resume plan (sequenced after Lane C; nothing retrained today)
+
+1. **Register the G-A1 amendment** (PM) and select.
+2. **Emit the winner's as-of centred rates** as a versioned sibling feature table (`data/processed/team_rate_features_<arm>_v1.parquet`), in the exact column names that possession_outcome (`off_/opp_def_{tov,ftr,3pa,rim}_c`), fg_make (`off_make_c__*`, `def_allow_c__*`) and rebound (`off_oreb_c`, `opp_def_dreb_c`) consume.
+   - This needs one new `build_` script plus an estimator module.
+   - Estimate: about 2 h of coding, and minutes to run.
+3. **Retrain under S1 on the box**, fold 2 then fold 1:
+   - possession_outcome round2 S1: 6 refits x 2 populations, about 1-2 h;
+   - fg_make round4 B1: 6 refits x 3 classes, about 2 h;
+   - rebound S1_weekly: 23 refits, about 3 h per cell per PROJECT_STATUS.
+   - Each is graded on its own registered primary plus quintile responsiveness.
+4. **Build engine inputs v3** as a sibling (about 30 min), then run **Stage C**: a paired 200-seed closed loop (about 35 min on AWS at 70 workers per stream), with the G9 slope, slope(close on X) and k_within via `scripts/diag_g9_g6_margin_v1.py --part close`.
+
+**Total Stage B+C:** about 1 working day, of which about 7-8 h is box compute.
