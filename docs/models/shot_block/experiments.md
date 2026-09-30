@@ -278,3 +278,56 @@ statement about what the feed needs, not a licence to adopt: wiring it requires 
 engine change (a new `book.draw("shot_block", ...)` family placed after the
 make/miss draw), a DEFAULT-OFF flag, a parity check and a paired closed loop, none
 of which this round ran.
+
+---
+
+## 3. Round 2 pre-registration: the per-shot-type level anchor (written 2026-09-30 ~12:20 EDT by lane C under the PM ruling in `docs/models/season_drift/experiments.md` section 3.3; COMMITTED BEFORE THE ROUND-2 RUN)
+
+**POST-HOC on folds 1-2.** The anchor arms below were run EXPLORATORILY on both
+folds in the season-drift round (`scripts/exp_season_drift_anchor_cell_v1.py`,
+`docs/tests/season_drift_anchor_round_2026-09-30.md` section 2) before this
+section was written. No fold here is unseen; this round is a registered
+re-run with the full gate set, not a clean holdout test. A clean test needs
+2025-26, which stays sealed.
+
+### 3.1 Why
+
+Round 1's arms all failed the rim level gate (-0.78 to -0.83 pp). The
+season-drift round showed this is NOT a league-level drift: under `K2` the
+pooled level error is only -0.17 pp while rim is -0.83 pp and jump2 +0.29 pp
+(F2). A scalar league anchor cannot move a per-shot-type drift; an anchor built
+in the model's own level-gate cells can.
+
+### 3.2 Arms
+
+| arm | what | simplicity |
+|---|---|---|
+| `K0` | round-1 reference: last train season's blocked share by shot type | 0 |
+| `K2` | round-1 leader: standardised L2 logistic on `Kc` (C = 1), unchanged | 1 |
+| `K2_Ocell` | `K2` + a fit-time logit OFFSET `logit(L_asof(type, s, t)) - logit(Lbar(type))`, where `L_asof` is the league blocked share of that shot type in season `s` over games strictly before date `t`, day 0 = the previous completed season's end level for that type (season-drift arm `O`, per shot type) | 2 |
+| `K2_Pcell` | as `K2_Ocell` with the prior-season level carried and updated in season with pseudo-count `n0` FITTED per shot type on the fold's train seasons (season-drift arm `P`, per shot type) | 3 |
+
+The offset is an input of the model applied identically at fit and predict time
+(a GLM offset), not an adjustment of model output; section 1.10's ban on output
+offsets is not engaged. Shooter shrinkage k = 50 (round 1's fitted value).
+
+### 3.3 Gates, floor, decision rule
+
+Gates exactly as 1.6 (calibration <= 2.0 pp; defence-prior quintile
+responsiveness monotone >= 3/4 with slope ratio > 0; level: |pooled| <= 0.25 pp
+and each of rim / jump2 / three <= 0.50 pp), scored by round 1's own grader
+function (`train_shot_block_v1.grade`), on both folds. Also reported: Nov-Dec
+level, team slope and noise-corrected SD ratio (season-drift grader).
+
+Floor: `K2`, `K2_Ocell`, `K2_Pcell` are deterministic (L-BFGS), so a reseed is
+zero. Operative floor = max(round-1 published floor 4.1e-05, 2 x paired
+game-block bootstrap SE of the arm-minus-`K2` log-loss difference, 200 reps).
+
+Decision (made explicit where 1.9 was silent on the ordering of gates and
+ties): an arm is ELIGIBLE iff (i) it beats `K0` on F2 log loss by more than the
+floor, (ii) it passes all three gates on F2, (iii) fold 1 does not reverse the
+sign of its F2 margin over `K0`, and (iv) it passes the level gate on F1.
+Among eligible arms the lowest F2 log loss wins; an eligible arm within one
+floor of it and simpler wins the tie. If no arm is eligible, nothing is
+selected. Nothing ships on offline evidence (rule 1.9.6 unchanged): serving
+needs an engine block-draw hook, DEFAULT-OFF, parity and a paired closed loop.
