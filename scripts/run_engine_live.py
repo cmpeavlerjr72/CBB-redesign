@@ -80,13 +80,41 @@ def prepare_adapter_dir(block: np.ndarray, fold: str, season: int, dest: Path) -
     return dest
 
 
+def prepare_from_overlay(overlay: Path, fold: str, season: int, dest: Path, n_rows: int = 0) -> dict:
+    """Serve a `build_engine_inputs_v3_tag_v1.py` overlay in-process (no docker): ENGINE_DIR points at a scratch
+    dir holding the overlay's event dir plus the three engine joblibs; FG_DIR / RB_S1_MANIFEST point at the overlay's
+    fg_make / rebound trees when those exist (else the served ones stay)."""
+    import shutil
+    src = ROOT / "data/processed/models/engine"
+    m = overlay / "data/processed/models"
+    dest.mkdir(parents=True, exist_ok=True)
+    ev = dest / f"event_round2_s1_{fold}_{season}"
+    if ev.exists():
+        shutil.rmtree(ev)
+    shutil.copytree(m / f"engine/event_round2_s1_{fold}_{season}", ev)
+    if n_rows:                                   # prefix of the rows: the block is indexed by input row
+        tb = np.load(ev / "team_block.npz")["team_block"][:n_rows]
+        np.savez_compressed(ev / "team_block.npz", team_block=tb)
+    for name in (f"fg_make_FGA_3_decision8_{fold}.joblib", f"free_throw_{fold}.joblib", f"rebound_{fold}.joblib"):
+        if not (dest / name).exists():
+            shutil.copy2(src / name, dest / name)
+    over = {"ENGINE_DIR": dest}
+    if (m / "fg_make").exists():
+        over["FG_DIR"] = m / "fg_make"
+    if (m / "rebound/s1_confirm/S1_weekly/F2/manifest.json").exists():
+        over["RB_S1_MANIFEST"] = m / "rebound/s1_confirm/S1_weekly/F2/manifest.json"
+    return over
+
+
 def simulate(inp: EngineInputs, fold: str, season: int, seeds, keep_players=True, games_per_block=20,
-             flags: dict | None = None, adapter_dir: Path | None = None):
+             flags: dict | None = None, adapter_dir: Path | None = None, attr_overrides: dict | None = None):
     from cbb_sim.engine import adapters as AD
     from cbb_sim.engine import loop as L
     from cbb_sim.engine.adapters import Adapters
     if adapter_dir is not None:
         AD.ENGINE_DIR = Path(adapter_dir)
+    for k, v in (attr_overrides or {}).items():
+        setattr(AD, k, Path(v))
     for k, v in (flags or {}).items():
         os.environ[k] = str(v)
     ad = Adapters.load(inp, fold, int(season))
@@ -142,6 +170,8 @@ def main() -> int:
     ap.add_argument("--max-games", type=int, default=0, help="debug: first N rows of the (subset) inputs")
     ap.add_argument("--plain-out", action="store_true",
                     help="write results/engine_v0-style dir <out-dir>/<tag>_s<seeds> without the run tag suffixes")
+    ap.add_argument("--overlay-dir", default=None,
+                    help="<engine_v3_tag>/overlay from build_engine_inputs_v3_tag_v1.py: serve its artifacts in-process")
     ap.add_argument("--reverse", action="store_true", help="reverse game order (RNG-alignment control)")
     args = ap.parse_args()
     if args.season == 2026 and os.environ.get("CBB_UNSEAL") != "1":
@@ -187,12 +217,21 @@ def main() -> int:
     elif not args.replay:
         G.assert_created_before_tipoff(inp.games.assign(created_at=created_at))
     seeds = np.arange(args.seed_offset, args.seed_offset + args.seeds, dtype=np.int64)
-    adir = prepare_adapter_dir(block, args.fold, args.season,
+    over = None
+    if args.overlay_dir:
+        if args.subset_po4b or args.reverse or args.hybrid_slots_from_backtest:
+            raise SystemExit("--overlay-dir serves the overlay's own event block by input row; only --max-games "
+                             "(a row prefix) may be combined with it")
+        adir = Path(args.out_dir) / "_adapter_dirs" / (args.tag + "_overlay")
+        over = prepare_from_overlay(Path(args.overlay_dir), args.fold, args.season, adir, args.max_games)
+        adir = None
+    else:
+      adir = prepare_adapter_dir(block, args.fold, args.season,
                                Path(args.out_dir) / "_adapter_dirs" / (args.tag + ("_bt" if args.slice_from_backtest else "")
                                                                        + ("_hyb" if args.hybrid_slots_from_backtest else "")
                                                                        + ("_rev" if args.reverse else "")))
     games, players, ad = simulate(inp, args.fold, args.season, seeds, keep_players=not args.no_players,
-                                  adapter_dir=adir)
+                                  adapter_dir=adir, attr_overrides=over)
     games = stamp_rows(games, inp, created_at, per_game)
     out = Path(args.out_dir) / (args.tag + ("__bt_arrays" if args.slice_from_backtest else "")
                                 + ("__hybrid" if args.hybrid_slots_from_backtest else "")
