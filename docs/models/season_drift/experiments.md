@@ -229,3 +229,42 @@ ADOPTED.
 Open for the PM: a ruling on E5's one-sidedness and on whether rebound's
 unmasked top-decile shape defect blocks a level fix; then stage 2
 (`S1_weekly`) for `R` / `O` / `P` (fitter v2 not yet written) and a closed loop.
+
+---
+
+## 3. PM ruling on round 1 (2026-09-30, recorded ~12:17 EDT by lane C, COMMITTED BEFORE THE FOLLOW-UP WORK)
+
+NO design is adopted and NO gate is waived.
+
+1. **Rebound.** The 2.0 pp calibration gate stands; `O` and `P` are not
+   selected standalone. The finding that the top-OREB-decile shape defect was
+   already in `R` (hidden under its level bias) is accepted as a finding, not as
+   grounds to waive: it is a team-responsiveness problem (team slope 0.67). A
+   separate round today selected a new as-of team-rate estimator
+   (`docs/models/team_rate_estimator/experiments.md` sections 1-6; E3, a
+   state-space rate replacing the expanding-mean team features) whose Stage B
+   retrains run on AWS tonight. `O` is carried into Stage B as a COMBINATION arm
+   **`TO` = E3 team features + anchor `O`**, for rebound and for
+   possession_outcome (where `O` moved calibration from fail to pass); the
+   registered Stage B gates decide. **`P` is dropped** (fails the control's slope
+   line; `O` is the simpler of the two).
+2. **FT technicals.** The E5 slope/spread line is mis-specified when the level
+   moves 32%: a one-sided absolute spread reads a level correction as
+   compression. It is REPLACED, for a re-score labelled **POST-HOC**, by the
+   level-normalised spread (ratio of coefficients of variation of team
+   predictions vs noise-corrected realised team rates) plus the team slope. The
+   re-score reports whether `O` is then eligible under every other registered
+   line. FT technicals stays low priority; nothing is adopted.
+3. **shot_block.** The rim miss is per shot type, not league drift; the
+   cross-model anchor does not apply. shot_block round 2 is pre-registered in
+   `docs/models/shot_block/experiments.md` with the per-shot-type anchor as an
+   arm beside the round-1 reference and leader (`K2`), labelled POST-HOC on folds
+   1-2, run offline, every registered gate reported including rim level. If an
+   arm passes the level gates, the engine serving spec for a DRAWN 0/1 block
+   flag is written (no engine edits today).
+4. Follow-up build: anchor `O` as a reusable module `src/cbb_sim/season_anchor.py`
+   with a test reproducing this round's `O` predictions on a rebound cell; a
+   comparison of its league level against the `L` columns of
+   `data/processed/team_rate_features_E3_v2.parquet`; and an `--anchor O`
+   patch/wrapper for lane J's parallel S1 trainers (rebound `S1_weekly`,
+   possession_outcome).
