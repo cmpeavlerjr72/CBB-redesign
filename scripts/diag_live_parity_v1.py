@@ -193,13 +193,13 @@ def run_date(D: str, zb, gb, nb, log) -> dict:
         base = col.split("__")[0]
         key = col.split("__")[1] if "__" in col else None
         if col.startswith(("shooter_ft", "prior_season_ft", "has_prior_season_ft")):
-            return np.array([(int(g), int(p)) in sets["ft"] for g, p in zip(gid_cell, pids)])
+            return np.array([(int(g), int(p)) in sets["ft"] for g, p in zip(gid_cell, pids)], dtype=bool)
         if col in ("sh_share_rim", "sh_share_jump2", "sh_share_three", "sh_assisted_share"):
             # backtest wide table keeps these shared columns only on the RIM frame's rows
-            return np.array([(int(g), int(p), "FGA_rim") in sets["fg_cls"] for g, p in zip(gid_cell, pids)])
+            return np.array([(int(g), int(p), "FGA_rim") in sets["fg_cls"] for g, p in zip(gid_cell, pids)], dtype=bool)
         if key in cls_of:
-            return np.array([(int(g), int(p), cls_of[key]) in sets["fg_cls"] for g, p in zip(gid_cell, pids)])
-        return np.array([(int(g), int(p)) in sets["fg_any"] for g, p in zip(gid_cell, pids)])
+            return np.array([(int(g), int(p), cls_of[key]) in sets["fg_cls"] for g, p in zip(gid_cell, pids)], dtype=bool)
+        return np.array([(int(g), int(p)) in sets["fg_any"] for g, p in zip(gid_cell, pids)], dtype=bool)
 
     for c, j in sn.items():
         a = inp.slot_static[ii, ss, kk, j].astype("f8")
@@ -212,14 +212,14 @@ def run_date(D: str, zb, gb, nb, log) -> dict:
     for k, cls in enumerate(BL.B.USAGE_CLASSES):
         a = inp.usage_rate[ii, ss, kk, k].astype("f8")
         b = zb["usage_rate"][bi][ii, ss, kk, k].astype("f8")
-        hasr = np.array([(int(g), int(p)) in sets["usage"] for g, p in zip(gid_cell, pids)])
+        hasr = np.array([(int(g), int(p)) in sets["usage"] for g, p in zip(gid_cell, pids)], dtype=bool)
         res = attribute(f"usage_rate.{cls}", np.abs(a - b) > 0, hasr)
         if res:
             add(f"usage_rate.{cls}", len(pids), res[1], np.abs(a - b).max(), res[0])
     for k, c in enumerate(("oreb_rate", "dreb_rate")):
         a = inp.reb_rate[ii, ss, kk, k].astype("f8")
         b = zb["reb_rate"][bi][ii, ss, kk, k].astype("f8")
-        hasr = np.array([(int(g), int(p)) in sets["reb"] for g, p in zip(gid_cell, pids)])
+        hasr = np.array([(int(g), int(p)) in sets["reb"] for g, p in zip(gid_cell, pids)], dtype=bool)
         res = attribute(f"reb_rate.{c}", np.abs(a - b) > 0, hasr)
         if res:
             add(f"reb_rate.{c}", len(pids), res[1], np.abs(a - b).max(), res[0])
@@ -230,11 +230,18 @@ def run_date(D: str, zb, gb, nb, log) -> dict:
     for cls in BL.B.USAGE_CLASSES:
         bt_c = names_b[f"usage_prior_{cls}"]["no_history_rate"]
         lv_c = inp.rules[f"usage_prior_{cls}"]["no_history_rate"]
+        kk_ = list(BL.B.USAGE_CLASSES).index(cls)
+        at_fb = np.isclose(zb["usage_rate"][bi][..., kk_], bt_c, atol=2e-6) & (inp.roster_cbbd > 0)
         leak[f"usage_no_history_rate.{cls}"] = {"backtest_full_table_median": bt_c, "live_cut_median": lv_c,
-                                                "abs_diff": None if lv_c is None else abs(bt_c - lv_c)}
+                                                "abs_diff": None if lv_c is None else abs(bt_c - lv_c),
+                                                "backtest_real_slots_at_the_constant": int(at_fb.sum()),
+                                                "real_slots": int((inp.roster_cbbd > 0).sum())}
     leak["clock_tempo_fallback.tempo_prior_game"] = {
         "backtest_full_season_median": names_b["clock_tempo_fallback"]["tempo_prior_game"],
-        "live_asof_league_mean": float(np.nanmedian(inp.team_static[:, :, tn["tempo_prior_game"]]))}
+        "live_asof_league_mean": float(np.nanmedian(inp.team_static[:, :, tn["tempo_prior_game"]])),
+        "backtest_team_games_at_the_constant": int(np.isclose(bt_ts[:, :, tn["tempo_prior_game"]],
+                                                             names_b["clock_tempo_fallback"]["tempo_prior_game"], atol=1e-4).sum()),
+        "team_games": int(bt_ts.shape[0] * 2)}
     # ---- proof of the BT_STALE_ROW explanation for the fg per-class shooter columns: the
     # backtest value must equal the player's most recent EARLIER design row (merge_asof backward)
     fgd = pd.read_parquet(ROOT / "data/processed/models/fg_make/design_v2_shotshooter.parquet",
@@ -252,7 +259,7 @@ def run_date(D: str, zb, gb, nb, log) -> dict:
             a = inp.slot_static[ii, ss, kk, j].astype("f8")
             b = zb["slot_static"][bi][ii, ss, kk, j].astype("f8")
             stale_cells = (np.abs(a - b) > 0) & ~np.array(
-                [(int(g), int(p), cls) in sets["fg_cls"] for g, p in zip(gid_cell, pids)])
+                [(int(g), int(p), cls) in sets["fg_cls"] for g, p in zip(gid_cell, pids)], dtype=bool)
             exp = last[c].reindex(pids[stale_cells]).to_numpy(dtype="f8")
             exp = np.where(np.isfinite(exp), exp, 0.0)
             proof[f"{c}__{key}"] = {"stale_cells": int(stale_cells.sum()),
@@ -281,7 +288,10 @@ def main() -> int:
         n_diff_cols = sum(1 for x in r["rows"] if x["n_diff"])
         log(f"{D}: {r['n_games']} games, {n_cols} column-groups compared, {n_diff_cols} differ, "
             f"UNEXPLAINED: {r['unexplained'] or 'none'}")
-        (OUT / "parity.json").write_text(json.dumps(res, indent=1, default=str), encoding="utf-8")
+        prev = json.loads((OUT / "parity.json").read_text(encoding="utf-8")) if (OUT / "parity.json").exists() else []
+        merged = {x["date"]: x for x in prev}
+        merged.update({x["date"]: x for x in res})
+        (OUT / "parity.json").write_text(json.dumps(list(merged.values()), indent=1, default=str), encoding="utf-8")
     return 0
 
 

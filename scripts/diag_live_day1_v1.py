@@ -60,6 +60,20 @@ def main() -> int:
                 .dt.strftime("%Y-%m-%d") == args.date]
     slate = BL.load_slate_from_cbbd(str(PRE / "games_2027.parquet"), args.date, args.crosswalk)
     unm = slate.attrs.get("unmapped", [])
+    cw_v2 = BL.load_slate_from_cbbd(str(PRE / "games_2027.parquet"), args.date, "data/reference/team_crosswalk_v2.parquet")
+    allg = raw[(raw["homeTeam"] == "West Florida") | (raw["awayTeam"] == "West Florida")]
+    rep["west_florida"] = {"games_in_cbbd_2027": int(len(allg)),
+                           "unmapped_on_date_with_crosswalk_v1": [u for u in unm if "West Florida" in (u["homeTeam"], u["awayTeam"])],
+                           "mapped_games_on_date_v1": int(len(slate)), "mapped_games_on_date_v2": int(len(cw_v2))}
+    cwv1 = pd.read_parquet(args.crosswalk)
+    cwv2 = pd.read_parquet("data/reference/team_crosswalk_v2.parquet")
+    d1 = set(cwv1["cbbd_team_id"].astype("int64")); d2 = set(cwv2["cbbd_team_id"].astype("int64"))
+    both = lambda ids: raw["homeTeamId"].astype("int64").isin(ids) & raw["awayTeamId"].astype("int64").isin(ids)  # noqa: E731
+    rep["west_florida"].update({
+        "season_games_both_sides_mapped_v1": int(both(d1).sum()), "season_games_both_sides_mapped_v2": int(both(d2).sum()),
+        "wf_games_with_a_mapped_opponent_v1": int((both(d1 | {1073}) & ~both(d1)).sum()),
+        "wf_games_recovered_by_v2": int(both(d2).sum() - both(d1).sum()),
+        "season_games_total": int(len(raw))})
     rep["schedule"] = {"cbbd_games_that_date": int(len(d_all)), "mapped_to_engine_ids": int(len(slate)),
                        "unmapped": unm, "start_time_tbd": int(d_all["startTimeTbd"].sum())}
     row("schedule", "team crosswalk (CBBD -> ESPN ids)", "BREAKS" if unm else "ok",
@@ -133,16 +147,18 @@ def main() -> int:
         "of season 2027 only), so the slot block is all zeros; prior_season_* need season-2026 tables joined at "
         "2027 (the code does this via `shooter_form` season+1 totals, but season 2027 has no events table)",
         "fg_make (shooter block), usage attribution")
-    row("free_throw", "shooter_ft_asof / shooter_fta_asof / prior_season_ft / has_prior_season_ft", "DEGENERATE",
-        "no named candidates and no 2027 attempts; prior_season_ft needs the 2026 attempts table joined at season+1",
-        "free_throw adapter")
-    row("usage", "usage_rate (5 classes)", "DEGENERATE",
-        "no player rows; every slot falls to the class no-history median, which the code takes from rows dated < D "
-        "(there are none in season 2027, so the fallback is NaN -> 0.0). `prev_rate_*` needs player_box 2026 minutes "
-        "+ the 2026 usage events joined at season+1",
-        "usage adapter, attribution")
-    row("attribution/rebound", "reb_rate (oreb_rate, dreb_rate)", "DEGENERATE",
-        "no player rows; class median of an empty table", "attribution (L17)")
+    attempt("free_throw", "shooter_ft_asof / shooter_fta_asof / prior_season_ft / has_prior_season_ft",
+            lambda: LP.ft_design_live(ctx, str(BL.FT_ATTEMPTS), cand),
+            "free_throw adapter",
+            lambda o: ("DEGENERATE", f"runs, {len(o)} design rows: no named candidates and no 2027 attempts; "
+                       "prior_season_ft would need the 2026 attempts joined at season+1 (not read: sealed)"))
+    attempt("usage", "usage_rate (5 classes)", lambda: LP.usage_asof_live(ctx, str(BL.USAGE_EVENTS_V2), cand),
+            "usage adapter, attribution",
+            lambda o: ("DEGENERATE", f"runs, {len(o)} player rows; every slot falls to the class no-history "
+                       "median, which live takes from rows dated < D (none in season 2027: NaN -> 0.0)"))
+    prr = attempt("attribution/rebound", "reb_rate (oreb_rate, dreb_rate)",
+                  lambda: LF.rebound_player_rates(ctx, rb, cand, prior_opps=50), "attribution (L17)",
+                  lambda o: ("DEGENERATE", f"runs, {len(o[0])} player rows; medians {o[1]}"))
     row("roster", "CBBD /teams/roster season 2027", "MISSING",
         f"{len(pd.read_parquet(PRE / 'roster_players_2027.parquet'))} player rows for "
         f"{len(pd.read_parquet(PRE / 'roster_teams_2027.parquet'))} teams (populates weeks before tip)",

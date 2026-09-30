@@ -121,6 +121,8 @@ def build_live(slate: pd.DataFrame, as_of, season: int, fold: str, created_at=No
     rules = dict(names_t["rules"])
     u = pd.read_parquet(UNIVERSE)
     ctx = LF.build_ctx(slate, as_of, season, u, season_start=season_start)
+    from cbb_sim.data.seal import assert_not_sealed
+    assert_not_sealed(ctx.seasons, context="live inputs (prior-season carry reads season-1 tables)")
     created_at = pd.Timestamp(created_at) if created_at is not None else pd.Timestamp.now("UTC")
     created_at = created_at.tz_localize("UTC") if created_at.tzinfo is None else created_at.tz_convert("UTC")
     if not created_at < pd.to_datetime(ctx.slate["tipoff_utc"], utc=True).min():

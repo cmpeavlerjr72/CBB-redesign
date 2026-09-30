@@ -74,6 +74,8 @@ def usage_asof_live(ctx: Ctx, events_path: str, cand: dict) -> pd.DataFrame:
             if rows else ev.iloc[0:0])
     allev = pd.concat([ev, stub], ignore_index=True)
     per_season = {int(s): allev[allev["season"] == s] for s in ctx.seasons if (allev["season"] == s).any()}
+    if not per_season:
+        return pd.DataFrame(columns=["season", "player_id", "game_id", "game_date"])   # no history, no candidates
     minutes = U.load_minutes(ctx.seasons)
     minutes = minutes[minutes["game_id"].isin(ctx.prior_ids)]
     asof = U.build_player_asof(per_season, minutes=minutes)
@@ -87,6 +89,8 @@ def usage_rates(asof: pd.DataFrame, slate_date, params: dict, classes) -> dict:
     strictly before D only (the backtest builder takes them over the whole
     season table: leak finding, quantified by the parity script)."""
     out = {}
+    if not len(asof):
+        return {cls: (pd.DataFrame(columns=["game_id", "pid", "u_rate"]), float("nan")) for cls in classes}
     past = (asof["game_date"] < slate_date).to_numpy()
     for cls in classes:
         prior_kind = params[cls]["prior_kind"]

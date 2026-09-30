@@ -154,7 +154,7 @@ def po_team_block(ctx: Ctx, poss_dir=PO.DEFAULT_POSS_DIR) -> pd.DataFrame:
             f = pd.read_parquet(p, columns=cols)
             f = f[f["game_id"].isin(ctx.prior_ids)]
         else:
-            f = pd.DataFrame(columns=cols)
+            f = stub.iloc[0:0].copy()                  # typed empty frame (no history)
         if s == ctx.season:
             f = pd.concat([f, stub], ignore_index=True)
         frames[s] = f
@@ -191,7 +191,7 @@ def po_team_block_r2(ctx: Ctx, poss_dir=None) -> pd.DataFrame:
     frames = {}
     for s_ in ctx.seasons:
         p = Path(d) / f"chances_{s_}.parquet"
-        f = pd.read_parquet(p, columns=cols) if p.exists() else pd.DataFrame(columns=cols)
+        f = pd.read_parquet(p, columns=cols) if p.exists() else stub.iloc[0:0].copy()
         f = f[f["game_id"].isin(ids)]
         if s_ == ctx.season:
             f = pd.concat([f, stub], ignore_index=True)
@@ -306,7 +306,7 @@ def rebound_player_rates(ctx: Ctx, ev: pd.DataFrame, cand: dict, prior_opps: int
     for gm in ctx.slate.itertuples(index=False):
         h = [p for p in cand.get((int(gm.game_id), int(gm.home_team_id)), []) if p > 0]
         a = [p for p in cand.get((int(gm.game_id), int(gm.away_team_id)), []) if p > 0]
-        n = max((len(h) + 4) // 5, (len(a) + 4) // 5, 1)
+        n = max((len(h) + 4) // 5, (len(a) + 4) // 5)
         for k in range(n):
             d = dict(tpl)
             d.update(game_id=int(gm.game_id), season=ctx.season, game_date=ctx.slate_date,
@@ -352,8 +352,11 @@ def rotation_priors(ctx: Ctx, fit, min_prior_games: int = 1):
         except Exception:                                                # noqa: BLE001
             fouls = None
     else:
-        pgm = pd.DataFrame(columns=["game_id", "season", "game_date", "team_id", "pid",
-                                    "duration_s", "minutes", "is_starter", "minutes_rank"])
+        pgm = pd.DataFrame({"game_id": pd.Series(dtype="int64"), "season": pd.Series(dtype="int64"),
+                            "game_date": pd.Series(dtype="datetime64[ns]"), "team_id": pd.Series(dtype="int64"),
+                            "pid": pd.Series(dtype="int64"), "duration_s": pd.Series(dtype="float64"),
+                            "minutes": pd.Series(dtype="float64"), "is_starter": pd.Series(dtype="bool"),
+                            "minutes_rank": pd.Series(dtype="int64")})
         fouls = None
     tg = ctx.team_games()
     stub = pd.DataFrame({"game_id": tg["game_id"].to_numpy(), "season": ctx.season,
