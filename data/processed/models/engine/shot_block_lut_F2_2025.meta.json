@@ -1,0 +1,90 @@
+{
+ "validation": {
+  "team_def_block_c_match_1e-6": 1.0,
+  "team_def_block_c_max_abs": 0.0,
+  "n_team_games": 11185
+ },
+ "features": [
+  "miss_rim",
+  "miss_jump2",
+  "miss_three",
+  "def_block_c",
+  "off_blocked_c",
+  "shooter_blocked_c",
+  "shooter_known",
+  "site_home",
+  "site_away",
+  "off_rating_off_c",
+  "off_rating_def_c",
+  "def_rating_off_c",
+  "def_rating_def_c",
+  "period",
+  "seconds_remaining",
+  "score_diff",
+  "in_bonus"
+ ],
+ "k_shooter": 50.0,
+ "slate": "games_F2_2025 (engine inputs v2)",
+ "n_games": 5710,
+ "K2": {
+  "file": "data\\processed\\models\\engine\\shot_block_K2_F2_2025.npz",
+  "converged": true,
+  "coef": [
+   -2.894977,
+   0.707535,
+   0.14038,
+   -0.756128,
+   0.175791,
+   0.029529,
+   0.07378,
+   0.011648,
+   -0.032137,
+   0.055928,
+   0.004857,
+   0.027558,
+   -0.001982,
+   -0.061254,
+   0.021326,
+   -0.021635,
+   -0.002878,
+   -0.000251
+  ]
+ },
+ "K2_Ocell_rim": {
+  "Lbar": 0.2520314320239069,
+  "prior_2024_end": 0.25689804661600446
+ },
+ "K2_Ocell_jump2": {
+  "Lbar": 0.08383518485092138,
+  "prior_2024_end": 0.08370847677052991
+ },
+ "K2_Ocell_three": {
+  "Lbar": 0.014129778098843946,
+  "prior_2024_end": 0.014530210861411416
+ },
+ "K2_Ocell": {
+  "file": "data\\processed\\models\\engine\\shot_block_K2_Ocell_F2_2025.npz",
+  "converged": true,
+  "coef": [
+   -2.907391,
+   0.713701,
+   0.130485,
+   -0.752552,
+   0.174507,
+   0.029289,
+   0.074124,
+   0.010155,
+   -0.03201,
+   0.055808,
+   0.005063,
+   0.027193,
+   -0.002056,
+   -0.062396,
+   0.021469,
+   -0.021958,
+   -0.002638,
+   -0.000808
+  ]
+ },
+ "created_at": "2026-09-30T16:44:31.370919+00:00"
+}
