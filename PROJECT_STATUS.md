@@ -1,6 +1,31 @@
 # PROJECT_STATUS.md
 
-Last updated: 2026-09-18 21:40 EDT (end of the evening session). Season tips Nov 1-3, 2026.
+Last updated: 2026-09-30 11:05 EDT (session start; six lanes running). Season tips Nov 1-3, 2026.
+
+## Session 2026-09-30 (started 10:50 EDT): restart after a 12-day gap; 33 days to tip-off
+
+Six lanes launched 11:00 EDT, reports due 15:30 (E at 14:00). Core caps sum to 20.
+
+| lane | worker | object | cores | output |
+|---|---|---|---|---|
+| A | Opus | Foul accrual + FT-trip production JOINT round (tap instrumentation, pre-registration, offline, paired closed loop 500 x 25) | 6 | PO experiments.md new section; `docs/tests/foul_joint_round_2026-09-30.md` |
+| B | Opus | DIAGNOSTIC: G1 possession mean +2.0 and G5 home/away corr 0.117 vs 0.253 / total SD 0.898; both were unowned. Tests whether the passing total bias is a compensation between +2.0 possessions and low OREB% / FT rate | 3 | `docs/tests/g1_g5_possessions_corr_diagnostic_2026-09-30.md` |
+| C | Opus | Season-drift anchor: one cross-model offline round (rebound, shot_block, FT technicals; PO control) | 4 | `docs/models/season_drift/experiments.md`; `docs/tests/season_drift_anchor_round_2026-09-30.md` |
+| D | Opus | Late-game round 2: window-gated clock floor removal + B_L3, default-off, paired closed loop | 4 | late_game experiments.md new section; `docs/tests/late_game_round2_2026-09-30.md` |
+| E | Sonnet | Ops readiness audit for 2026-27: lines source liveness, schedule, rosters, daily chain gaps, day-1 as-of features, HF sync | 1 | `docs/ops/readiness_2026-27_2026-09-30.md` |
+| F | Opus | DIAGNOSTIC: G9 calibration slope 0.910 and G6 home margin; both were unowned and both sit on the margin side, the committed deliverable | 2 | `docs/tests/g9_g6_margin_slope_home_diagnostic_2026-09-30.md` |
+
+Re-plan against `docs/FRAMEWORK_PLAN.md` section 7 (PM, 2026-09-30). The plan had G1-G7 passing by Oct 8; the served stack passes possession SD, margin SD ratio and both G9 biases, and fails the rest. Remaining calendar:
+
+| dates | phase | exit |
+|---|---|---|
+| Sep 30 - Oct 9 | Game-gate fix sprint: FT rate, OREB% (drift anchor + drawn block), possession mean, score correlation / total SD, calibration slope, OT rate. Each fix pre-registered, default-off, paired closed loop | Every game gate either passes or has a closed decomposition and a dated decision to ship without it |
+| Oct 10 | FREEZE the game stack; full 200-seed read on the box (needs the user's AWS approval) | Gate table for the frozen stack |
+| Oct 10 - 17 | Audit: full walk-forward 2024-25, then unseal 2025-26 with lines; market scorecard; leak detector | G9 / G10 reported honestly |
+| Oct 17 - 27 | Daily ops for 2026-27: chain stages, day-1 as-of features with prior-season carry, lines capture, grading, bias monitor | End-to-end dry run on the exhibition slate |
+| Oct 28 - Nov 3 | Paper-trade opening week; go / no-go | First live-week grading report |
+
+Player props stay the stretch goal (rotation parked 2026-09-18); game markets validated honestly are the committed deliverable.
 
 ## Evening 2026-09-18 ~17:30 -> 22:00 EDT: read `HANDOFF.md` "SUMMARY FOR USER, EVENING 2026-09-18" first
 
