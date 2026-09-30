@@ -231,7 +231,7 @@ def t_cells(ch, which: str, arm: str) -> np.ndarray:
 
 
 def fit_offsets(keys: np.ndarray, y: np.ndarray, off: np.ndarray, lam: float = 20.0,
-                iters: int = 25) -> dict:
+                iters: int = 200) -> dict:
     """Independent per-cell logit offsets delta_k solving sum(y - s(o + d)) = lam*d
     (one-hot cells, disjoint, so the cells decouple; the L2 pseudo-count lam=20 is
     fixed before the run and not tuned)."""
@@ -241,10 +241,10 @@ def fit_offsets(keys: np.ndarray, y: np.ndarray, off: np.ndarray, lam: float = 2
         yy, oo = g["y"].to_numpy(float), g["o"].to_numpy(float)
         dlt = 0.0
         for _ in range(iters):
-            p = 1.0 / (1.0 + np.exp(-(oo + dlt)))
+            p = 1.0 / (1.0 + np.exp(-np.clip(oo + dlt, -35, 35)))
             grad = (yy - p).sum() - lam * dlt
             hess = (p * (1 - p)).sum() + lam
-            step = grad / hess
+            step = float(np.clip(grad / hess, -1.0, 1.0))   # damped Newton (solver guard)
             dlt += step
             if abs(step) < 1e-9:
                 break
