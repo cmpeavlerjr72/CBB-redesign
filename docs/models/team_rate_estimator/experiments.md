@@ -210,3 +210,96 @@ Full tables: `docs/tests/team_rate_estimator_stageA_2026-09-30.md`.
 4. **Build engine inputs v3** as a sibling (about 30 min), then run **Stage C**: a paired 200-seed closed loop (about 35 min on AWS at 70 workers per stream), with the G9 slope, slope(close on X) and k_within via `scripts/diag_g9_g6_margin_v1.py --part close`.
 
 **Total Stage B+C:** about 1 working day, of which about 7-8 h is box compute.
+
+---
+
+## 3. Amendment (PM ruling 2026-09-30, registered about 11:45 EDT, COMMITTED BEFORE THE RUNS IT ADDS)
+
+**POST-HOC STATUS.** This amendment was written AFTER the section 2 results were read. Every re-score of E0, E1, E2, E2c, E4 and E3 under the new guards is therefore POST-HOC. Only E4c, E3c and E9 are new arms whose results were not seen before registration.
+
+### 3.1 G-A1 is withdrawn
+
+The registered guard was "the level-SD ratio must not fall below E0". It rewards noise.
+
+- **E0 is noisier than the truth.** E0's season-mean estimates are MORE spread than the realised season rates: 1.13, and 1.18 on the noise-aware read (section 2.3). So any estimator that removes noise fails the guard by construction.
+- **A calibrated estimate must be less spread than the truth.** It is a posterior mean, so its dispersion across teams is below the true team rates'. The spread the point estimate gives up is estimation uncertainty. It must be carried as a variance, not smuggled back in as noise in the mean.
+- **Reconciliation with the refused possession-outcome G2 arm (2026-09-18).** G2 compressed the spread of team estimates with nothing carrying the variance. The engine then lost between-game spread.
+- **Responsibility.** The mis-specification was the PM's amendment 4, not the section 1 draft.
+
+### 3.2 Replacement guards
+
+**G-A1a (calibration).** The slope of realised on predicted (WLS by denominator, over team-games) must be within 0.90-1.10:
+
+- pooled, and per games band (game 1, games 2-3, 4-6, 7+), per rate-side;
+- a cell whose slope SE exceeds 0.10 is labelled UNDERPOWERED and does not count as a failure.
+
+**G-A1b (variance accounting).** Every arm emits an estimation variance v for each team-game-rate. Write sigma^2 = L(1-L) for binomial rates and L for Poisson rates.
+
+| arm | v |
+|---|---|
+| E3, E3c | the filter's posterior variance before tipoff |
+| E1, E2, E2c | sigma^2 / (D + k), the posterior variance implied by the effective sample size D and the fitted prior strength k |
+| E4, E4c | sigma^2 / (D_w + k), with D_w the exponentially weighted denominator |
+| E0 | sigma^2 / D; undefined at D = 0, so those rows are excluded and the exclusion is counted |
+
+The arm must pass two checks:
+
+- **(i) Between-team variance.** [var(c across team-games) + mean(v)] / (split-half true between-team variance of centred season rates) is within 0.90-1.10. This is checked pooled over the season and per games band.
+- **(ii) Standardised residuals.** The SD of z = (y - p) / sqrt(v + s^2) is within 0.90-1.10, pooled and per games band. Here s^2 is the next-game sampling variance at p (binomial p(1-p)/den or Poisson p/den).
+
+An arm whose v is not calibrated cannot later feed the engine an honest uncertainty draw.
+
+**G-A2 (lag-1 move ratio toward 1 relative to E0) stays as registered.**
+
+### 3.3 New arms
+
+| arm | definition | free parameters |
+|---|---|---|
+| **E4c** | E4 with E2c's carry, rho = rho0 + rho1 (cont - mean cont) + rho2 coach_change | lambda, k, rho0, rho1, rho2 |
+| **E3c** | E3 with the same carry | q, P0, rho0, rho1, rho2 |
+
+**Reason.** E2c is the best arm at game 1, with slope 0.997 vs about 0.92. Game 1 is the launch condition. But E2c is sluggish later (move ratio 1.44), and E4 and E3 are the opposite.
+
+Fitting is as in section 1: training seasons only, by next-game likelihood.
+
+### 3.4 Decision rule (amended)
+
+- **Primary metric and noise floor:** as registered in section 1.5.
+- **To qualify, an arm must:**
+  - clear zero on the pooled fold-2 interval;
+  - show the same sign on fold 1;
+  - pass G-A1a (pooled, over the rate-sides that are not underpowered);
+  - pass G-A1b (i) and (ii), pooled;
+  - pass G-A2.
+- **Ties** go to the simpler arm, in the order E1, E2, E2c, E4, E4c, E3, E3c.
+- **Calibrated variance is a requirement, not a tiebreak.** If the E4 and E3 families tie on gain but only one passes G-A1b, the passing one wins.
+
+### 3.5 E9
+
+E9 is opponent adjustment on the amended winner, as registered: a single arm, run if time remains. Each past game's observation is corrected by the opponent's as-of estimate on the opposite side, taken from the winner's unadjusted estimates. The winner's parameters are then refitted on training seasons.
+
+### 3.6 Stage C pre-registration (spec only; nothing runs today)
+
+The paired 200-seed closed loop on fold 2 compares two arms, both on the Stage B retrained sub-models:
+
+- **C-point:** the winner's point estimates alone as the team-rate features;
+- **C-draw:** the winner plus a per-game draw of each team rate from N(c, v), its own estimation variance. It is drawn once per simulated game, per team-rate and side, on the RNG family `team_rate` seeded on (seed, game_id, family).
+
+C-draw follows the CLAUDE.md dispersion rule: the engine restores spread from the estimator's own variance function.
+
+- **Primary:** G9 calibration slope.
+- **Must not regress beyond the paired A/B floor:**
+  - G5 total SD ratio;
+  - G5 home/away score correlation.
+- **Also reported:**
+  - slope(close on X) and k_within (`scripts/diag_g9_g6_margin_v1.py --part close`);
+  - G5 margin SD ratio;
+  - G1.
+- **Reference:** the served stack (E0 features) is carried as the reference row.
+
+### 3.7 Execution
+
+- **Fitter:** `scripts/exp_team_rate_estimator_v2.py`.
+- **Grader:** `scripts/grade_team_rate_estimator_v2.py`, the section 1 grader extended with G-A1a and G-A1b. Its section 1 metrics are unchanged.
+- **Outputs:** `results/team_rate_estimator/*_v2.*`. The v1 scripts and outputs are not overwritten.
+- **Results:** section 4, written once when final.
