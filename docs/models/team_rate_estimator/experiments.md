@@ -1106,3 +1106,38 @@ ENGINE_TEAM_RATE_DRAW=$PWD/data/processed/models/engine_v3_trdraw/S3_o1a_K64.npz
 - Each worker memory-maps nothing: it loads the whole npz, about 126 MB per worker for S2 and S3, which is about 23 GB at 180 workers and fits a 384 GB box.
 
 **Grading.** Grade each arm with `scripts/eval_gates.py` and the close-referenced split (`scripts/diag_g9_g6_margin_v1.py --part close`, pointing `RUN_A`/`RUN_B` at the arm's A/B dirs). Apply the section 7.2 rule.
+
+## 7d. Box commands for the TO arms (rebound and possession_outcome: E3 v4 features + anchor O) (lane M, written 2026-09-30 about 14:05 EDT; nothing selected)
+
+Serving: default-off engine mode `ENGINE_SEASON_ANCHOR=<offsets .npz>` (`src/cbb_sim/engine/season_anchor_serving.py`); proofs in `docs/tests/season_anchor_serving_2026-09-30.md`. The anchored trainers of section 7a.2 write no servable artifacts; use the lane M wrappers below (same arguments, plus the artifact dir; their joblibs are MARKED anchored, and the engine refuses a marked artifact without the offsets and non-zero offsets on unmarked artifacts). `box_run_v2.sh` does not pass `ENGINE_SEASON_ANCHOR` into the container, and `box_v3_sims_v1.sh sim` overwrites `BOX_DOCKER_ARGS`, so the TO sim passes the switch as `-e` inside `BOX_DOCKER_ARGS` directly (neither lane G file is edited).
+
+```
+B=scripts/box_run_v2.sh; M=data/processed/models; E3=data/processed/team_rate_features_E3_v4.parquet
+# 1. retrains (wave 1, alongside T; one process each)
+$B scripts/train_possession_outcome_s1_par_anchor_artifacts_v1.py --anchor O --fold F2 --season 2025 \
+    --team-rate-table $E3 --team-rate-missing raise --n-jobs 24 --out-root $M/possession_outcome/round_stageb/TO
+$B scripts/train_rebound_v3_par_anchor_artifacts_v1.py --anchor O --stage 2 --folds F2 --arms O \
+    --team-rate-table $E3 --team-rate-missing raise --n-jobs 24 --out-dir $M/rebound/round_stageb/TO
+#    -> $M/possession_outcome/round_stageb/TO/team_rate_features_E3_v4/event_round2_s1_F2_2025/ (scores in par_anchor_artifacts_v1_report.json)
+#    -> $M/rebound/round_stageb/TO/team_rate_features_E3_v4/artifacts/s2_F2_O_seed0/          (cell in .../cells/s2_F2_O_seed0.json)
+# 2. tagged inputs (fg keeps its T artifacts: fg has no TO arm), then the per-game offsets next to them
+$B scripts/build_engine_inputs_v3_tag_v1.py --tag S1TO --team-rate-table $E3 --team-rate-missing raise \
+    --po-artifacts $M/possession_outcome/round_stageb/TO/team_rate_features_E3_v4 \
+    --fg-artifacts $M/fg_make/round_stageb/T/team_rate_features_E3_v4/B1 \
+    --rb-artifacts $M/rebound/round_stageb/TO/team_rate_features_E3_v4/artifacts/s2_F2_O_seed0
+$B scripts/build_engine_anchor_offsets_v1.py --input-dir $M/engine_v3_S1TO --families po,rb
+#    If only one sub-model's TO beats its T offline (7a.2 rule): point the other's artifact flag at its T dir and pass
+#    --families po (or rb) only. The engine errors if a marked artifact has no offsets or offsets meet unmarked ones.
+# 3. sim (paired with S0 / S1 on the same sample and seeds; the overlay check first)
+IN=$M/engine_v3_S1TO
+export BOX_DOCKER_ARGS="$(sed "s#\$PWD#$PWD#g" $IN/docker_mounts.txt | tr '\n' ' ') -e ENGINE_SEASON_ANCHOR=/app/$IN/anchor_offsets_F2_2025.npz"
+$B scripts/ops_overlay_check_v1.py --input-dir $IN --root /app
+CBB_TRUTH=verified_v1 $B scripts/run_po4b_closed_loop_sample_v1.py \
+    --sample-file data/processed/truth/stride500_verified_minswap_v1_F2_2025.parquet --arm round2_s1 \
+    --input-dir $IN --seeds 200 --seed-offset 0 --workers 64 --tag v3box_S1TO_s200_o0 --results-dir results/engine_v0
+unset BOX_DOCKER_ARGS
+# 4. grade: scripts/box_v3_sims_v1.sh grade picks up v3box_S1TO_*; pair S1 vs S1TO with S0f1..S0f4 as floors
+#    (diag_pair_gate_reports.py); run_meta.json must show adapter_flags.ENGINE_SEASON_ANCHOR and sources.season_anchor.
+```
+
+Estimated cost: the PO TO retrain is the T retrain plus an init_score (lane C smoke: 720 s for one full-size `first` refit on one core); rebound TO is T's cost (smoke 68-193 s per weekly cut). Offsets build: seconds. The TO sim costs what S1 costs (one extra raw-score add per `first`/rebound predict batch).
