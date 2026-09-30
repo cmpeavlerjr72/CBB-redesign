@@ -225,3 +225,53 @@ Lowest F2 MAE among qualifiers: C (-0.147). Its interval [-0.183, -0.113] contai
 - **Primary (fold 2, weeks 0-7 cell of the sample, i.e. games before 2024-12-30):** G9 calibration slope (`polyfit(sim_margin_mean, margin)`, the gates.py definition) and margin MAE of the seed-mean margin. The cell has about 40% of the sample (its n is reported; it is underpowered for slope if n < 150). The full-sample G9 slope and MAE are co-reported.
 - **Vetoes:** every line of the full gate list (G1-G9 headline tables) must not move AWAY from its target by more than its floor. Per Decision 12, a 25-seed loop does not decide G5 ratio / correlation lines; they are reported, marked PROVISIONAL.
 - **Pass:** the weeks 0-7 margin MAE difference C - R is negative with its game-bootstrap interval excluding 0 OR within the floor, AND the weeks 0-7 slope does not move away from 1.0 beyond its floor, AND no veto fires. The PM decides serving; nothing is adopted here.
+
+---
+
+## 4. Closed-loop results (run 2026-09-30, 14:06-14:36 EDT; 4 workers; six runs of 500 games x 25 seeds, about 5 min each)
+
+**Runs** (`results/engine_v0/`): `laneN_R_s25_o0` (R), `laneN_C_s25_o0` (C), floors `laneN_R_s25_o{1000,2000,3000,4000}` (FOUR seed-offset draws, as Decision 12 asks). All completed every seed. Grader `scripts/grade_own_ratings_closed_loop_v1.py` under `CBB_TRUTH=verified_v1`; outputs `results/engine_v0/laneN_grade/closed_loop_v1.{json,md}` and one `eval_gates` report per run. Floor (a) = max |floor - R| over the four draws; floor (b) = paired game-bootstrap 95% interval of C - R.
+
+### 4.1 Primary and G9 lines
+
+| cell | line | R | C | C - R | game bootstrap 95% | floor (a) | reading |
+|---|---|---:|---:|---:|---|---:|---|
+| weeks 0-7 (n 181; slope underpowered-adjacent) | margin MAE | 9.451 | 9.424 | -0.026 | [-0.474, +0.464] | 0.197 | inside floor: no detectable gain |
+| weeks 0-7 | G9 slope | 0.928 | 0.842 | -0.085 | [-0.149, -0.024] | 0.036 | **moves AWAY from 1.0 beyond both floors** |
+| weeks 0-7 | margin bias | -0.840 | -0.235 | +0.606 | [+0.102, +1.127] | 0.331 | toward 0 |
+| all (n 500) | margin MAE | 9.692 | 9.660 | -0.032 | [-0.277, +0.237] | 0.268 | inside floor |
+| all | G9 slope | 0.908 | 0.869 | -0.039 | [-0.081, +0.001] | 0.018 | away; beyond (a), inside (b) |
+| all | G9 margin bias | +0.649 | +0.916 | +0.268 | [+0.013, +0.552] | 0.148 | **VETO: away from 0 beyond both floors** |
+
+### 4.2 Veto lines (full gate list; only lines that moved are shown; everything else moved less than its floor (a) or not at all)
+
+| gate | line | R | C | C - R | floor (a) | flag |
+|---|---|---:|---:|---:|---:|---|
+| G5 | home/away correlation (target 0.2105) | 0.1255 | 0.1073 | -0.018 | 0.007 | away beyond (a); PROVISIONAL (G5 correlation is not decided at 25 seeds, Decision 12) |
+| G5 | total SD (target 17.44) | 15.933 | 15.786 | -0.147 | 0.116 | away beyond (a); PROVISIONAL |
+| G5 | margin SD ratio | 1.0085 | 0.9975 | -0.011 | 0.017 | inside |
+| G6 | home margin non-neutral (target +4.212) | +4.939 | +5.187 | +0.248 | 0.254 | away, at the floor |
+| G8 | top-1 FGA share | 0.2573 | 0.2579 | +0.0006 | 0.0006 | equal to its floor; not a gated line |
+| G9 | margin bias | +0.649 | +0.916 | +0.268 | 0.148 | VETO (above) |
+| G9 | calibration slope | 0.908 | 0.869 | -0.039 | 0.018 | away beyond (a), inside (b) |
+| G1, G3, G4, G7, G8 rotation | all | | | | | inside floor (a) |
+
+### 4.3 Decision under 3.4: C FAILS the closed loop; R stays served
+
+- Weeks 0-7 MAE gain is not detectable (-0.03 against a floor of about 0.47), and the weeks 0-7 G9 slope moves away from 1.0 beyond both floors (0.93 -> 0.84). The G9 margin bias veto fires on the full sample. The pass rule is not met.
+- **Mechanism (why the offline gain does not reach the sim).** The rating-consuming sub-models (possession_outcome, fg_make, clock) were trained on R-distributed ratings. Chained-C ratings are more spread (SD +0.7 to +1.3 net points in 2025, section 3.2), so the unchanged sub-models turn the extra spread into extra sim margin spread. The engine already over-spreads margins (R slope 0.91; 0.93 in weeks 0-7), so extra spread moves the slope further from 1. Offline, C's rating-level slope was calibrated (1.00) because the prediction used the ratings directly.
+- This is a serving swap under models fitted to another rating distribution: the compensation pattern CLAUDE.md warns about (downstream fitted to an upstream quirk). The honest test of C is to retrain the rating consumers on chained-C training tables (2022-2024 from `data/processed/ratings_C_v1`), then repeat this paired loop. Not done here; it is a PM decision (Decision 11: fixes that expose compensation ship as a set).
+- Nothing adopted; the served ratings, manifest and engine are untouched.
+
+### 4.4 Commands (reproduce)
+
+```
+.venv/Scripts/python.exe scripts/build_own_ratings_C_v1.py
+.venv/Scripts/python.exe scripts/build_own_ratings_asof_C_v1.py --parity
+.venv/Scripts/python.exe scripts/build_engine_inputs_v3_tag_v1.py --tag N_R
+.venv/Scripts/python.exe scripts/build_engine_inputs_v3_ratings_tag_v1.py --tag N_C --ratings-dir data/processed/ratings_C_v1
+CBB_TRUTH=verified_v1 .venv/Scripts/python.exe scripts/run_po4b_closed_loop_sample_overlay_v1.py --overlay-dir data/processed/models/engine_v3_<N_R|N_C>/overlay \
+  --sample-file data/processed/truth/stride500_verified_v1_F2_2025.parquet --arm round2_s1 --input-dir data/processed/models/engine_v3_<N_R|N_C> \
+  --seeds 25 --seed-offset <0|1000|2000|3000|4000> --workers 4 --games-per-block 20 --tag laneN_<R|C>_s25_o<off> --results-dir results/engine_v0
+CBB_TRUTH=verified_v1 .venv/Scripts/python.exe scripts/grade_own_ratings_closed_loop_v1.py
+```
