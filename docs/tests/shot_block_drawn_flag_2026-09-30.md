@@ -152,3 +152,39 @@ None this job. Every process was my own (children identified by command line
 and parent PID); `loop.py` / `rng.py` were edited only when `git diff` showed
 no other lane's hunk and committed within minutes (5187017, 30 lines, mine
 only); `git diff --stat` checked for line-ending churn before every commit.
+
+## 9. PM follow-up: game-sampling intervals, the G5 decomposition, TOV as a count (13:07 EDT)
+
+`scripts/diag_shot_block_game_bootstrap_v1.py` -> `results/shot_block_round2/game_bootstrap_v1.json`.
+Paired bootstrap over the 500 GAMES (2,000 draws, seed 20260930; each game keeps
+its 25 paired seeds in both arms), gate formulas unchanged, arm minus served:
+
+| line | seed-offset floor | K2_Ocell diff [95% game CI] | K2 diff [95% game CI] | excludes 0 |
+|---|---:|---|---|---|
+| G5 total SD ratio | 0.0008 | -0.0108 [-0.0189, -0.0041] | -0.0119 [-0.0199, -0.0052] | yes / yes |
+| G4 TOV% pooled | 0.0004 | +0.00058 [+0.00042, +0.00073] | +0.00056 [+0.00040, +0.00072] | yes / yes |
+| G4 OREB% pooled | 0.0002 | +0.00756 [+0.00717, +0.00795] | +0.00738 [+0.00700, +0.00777] | yes / yes |
+| G9 total bias (pts) | 0.353 | +0.441 [+0.333, +0.545] | +0.428 [+0.319, +0.533] | yes / yes |
+
+Under game sampling both vetoes still exclude zero; the game interval is about
+10x the seed floor on the G5 line but does not reach it.
+
+**How the G5 total SD ratio is computed** (`cbb_sim.eval.gates.gate_g5`):
+per game, the sim mean and SD of the total over its seeds; ratio =
+mean over games of the sim SD / SD over games of (actual total - sim mean
+total). The denominator mixes dispersion with prediction accuracy: it grows
+when the sim's game means track the actual totals less well. Components
+(served -> K2_Ocell): mean within-game sim SD 15.842 -> 15.781 (diff -0.061,
+game CI [-0.174, +0.051], includes 0); SD(actual - sim mean) 18.962 -> 19.135
+(diff +0.174, CI [+0.087, +0.270], excludes 0). The veto is carried by the
+ACCURACY component (correlation of sim mean totals with actual 0.293 -> 0.270),
+not by a narrower sim.
+
+**TOV%'s denominator** is not the engine's possession count: it is the box
+estimate FGA - OREB + TOV + 0.44 FTA on the sim's own box (the same formula on
+the actual box), so it does not carry the +1.6 possession bias, but it does
+fall mechanically as OREB rises. TOV per team-game as a count: served 12.253,
+K2_Ocell 12.281, K2 12.279, actual 12.021 (hoopR box, same games). The count
+moves +0.028 per team-game (+0.23%) away from the actual; the rest of the
++0.33% relative TOV% move is the OREB term in the denominator. Engine
+possessions per game: 70.019 -> 69.953 / 69.950.
