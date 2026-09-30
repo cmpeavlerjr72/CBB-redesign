@@ -121,3 +121,23 @@ Every major design decision, the reasoning, and the alternatives considered. For
 **Alternative considered:** Drop `score_diff` everywhere. Rejected: it removes real end-game effects (12 points of total in the ablation) and is a deletion chosen because it is convenient, which the bake-off rule bans.
 
 **Risk acknowledged:** A closed-loop gate depends on the rest of the engine being right; a feature can fail it because another sub-model is broken. Ablations are therefore run one sub-model at a time with all others frozen, and the attribution of a failure is written with the ablation table, never from the aggregate.
+
+## Decision 11: Fixes that expose a hidden compensation ship as a SET, judged on the combined stack (PM, 2026-09-30)
+
+**Decision:** When a pre-registered fix passes its own primary and fails only veto lines whose miss is owned by a different, named defect that the fix stops compensating for, the fix is NOT refused and NOT shipped alone: it is marked VALIDATED-PENDING-SHIP-ACTION in the ledger with the owning defect named, and it enters the next combined closed loop with the other pending fixes and the owner's candidate. The vetoes are applied to the combination, at 200 seeds with the multi-draw floor of SIM_GUARDRAILS revision 2026-09-30(c). No fix is ever shipped alone on the strength of this entry, and a combination that fails is not rescued by dropping the member that fails: the owner must be found.
+
+**Why:** Three times on 2026-09-30 a mechanism repair that removed a compensation was vetoed by the line the compensation had been propping up: the joint foul rounds (the over-dispersed served foul constant was carrying total variance), the drawn block flag (more second chances expose the total-accuracy line and the TOV% denominator), and, on 09-18, the possession-outcome shrinkage arm. The served engine passes the total-bias line only because +2.0 possessions offsets a points-per-possession deficit (`g1_g5_possessions_corr_diagnostic_2026-09-30.md`). CLAUDE.md bans accepting a downstream stage that compensates for an upstream bias; the mirror is that removing compensation must not be punished one fix at a time, or the engine can never leave the compensated state.
+
+**How it is applied:** Every such fix is registered default-off with exact parity, has its own primary passed, its vetoes read with the game bootstrap and a multi-draw seed floor, and the owner of each failed veto named in the ledger row. The PM schedules the combined loop; the combined loop's arms are pre-registered like any other.
+
+**Alternative considered:** Waive the failing veto for the fix in isolation. Rejected: that is how a compensated engine ships; the veto is information about a defect elsewhere.
+
+**Risk acknowledged:** "Pending ship action" can become a parking lot. Each pending fix carries the date and the owner; if the owner is not in a registered round within two weeks, the fix is re-read and either shipped on its own merits or refuted.
+
+## Decision 12: Closed-loop noise floors are multi-draw and game-bootstrapped (PM, 2026-09-30)
+
+**Decision:** A paired closed-loop line's noise floor is the larger of (a) the spread across at least four seed-offset reference runs and (b) the paired game bootstrap interval (resampling games with each game's paired seeds kept together). A 500-game x 25-seed loop decides sub-model primaries and mechanism lines; it does not decide G5 ratio or correlation lines, which need the 200-seed read.
+
+**Why:** The single seed-offset draw used as the G5 floor since 09-18 understated the line's seed variation about fivefold (`shot_block_drawn_flag_2026-09-30.md`, supplementary served runs on seeds 2000-2024 and 3000-3024). Vetoes were being read as 5-14 "floors" on a line whose true 25-seed SD was 0.005.
+
+**How it is applied:** graders report both floors on every veto line; the ledger row of every 25-seed veto read on 2026-09-18 and 2026-09-30 is marked PROVISIONAL until the 200-seed read.
