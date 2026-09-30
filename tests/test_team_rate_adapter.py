@@ -82,3 +82,22 @@ def test_missing_key_raises_by_default():
     f.loc[f.index[0], "game_id"] = -1
     with pytest.raises(AssertionError):
         TRA.apply(f, T1, "rebound", fold="F2")
+
+
+T3 = Path("data/processed/team_rate_features_E3_v3.parquet")
+
+
+@pytest.mark.skipif(not (T3.exists() and PO.exists() and FG.exists() and RB.exists()), reason="local data absent")
+@pytest.mark.parametrize("sub,path,cols", [
+    ("possession_outcome", PO, ["season", "game_id", "offense_team_id", "defense_team_id", "off_3pa_c", "off_rim_c",
+                                "off_tov_c", "off_ftr_c", "opp_def_3pa_c", "opp_def_rim_c", "opp_def_tov_c", "opp_def_ftr_c"]),
+    ("fg_make", FG, ["season", "game_id", "off_team_id", "def_team_id", "shot_class", "off_make_c", "def_allow_c"]),
+    ("rebound", RB, ["season", "game_id", "off_team_id", "def_team_id", "off_oreb_c", "opp_def_dreb_c"]),
+])
+def test_v3_table_covers_full_design_with_raise(sub, path, cols):
+    """Table v3 (schedule-only rows for the 6 box-less games) covers every design row, both folds, missing='raise'."""
+    f = pd.read_parquet(path, columns=cols)
+    out = TRA.apply(f, T3, sub, fold="F2", missing="raise")
+    assert out.attrs["team_rate_adapter"]["rows_kept_served"] == 0
+    f1 = f[f["season"] <= 2024]
+    TRA.apply(f1, T3, sub, fold="F1", missing="raise")
