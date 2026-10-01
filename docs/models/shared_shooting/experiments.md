@@ -207,3 +207,17 @@ Secondary (reported, not deciding): held-out between-team covariance obs/pred by
 
 - New arm values `G3L` / `G3A` of `ENGINE_SHARED_SHOOTING` in `src/cbb_sim/engine/shared_shooting.py` (the default stays `G3`). G3A reads a per-game Sigma table built offline for the fold-2 slate from completed earlier weeks only.
 - Read: paired vs served v2, full slate, 200 seeds on the box with four floor draws (Decision 12). A local tap is direction only. Status per section 1.7's wording.
+
+## 4. Results, round 2 (appended 2026-10-01 ~06:45 EDT; evidence `docs/tests/g5_variance_channels_2026-10-01.md` section 2)
+
+`scripts/exp_shared_shooting_v2.py wf` ran at 06:29 EDT, after commit `5a62b8e`. Output: `results/shared_shooting/wf_v2.json`.
+
+| arm | fold 1 gain vs G3P (floors) | fold 2 gain vs G3P (floors) | between-team obs/pred F1 / F2 | eligible |
+|---|---|---|---|---|
+| G3P | 0 | 0 | 0.66 / 0.73 | reference |
+| G3L | 0 (identical by construction) | +0.000003 (+0.001) | 0.66 / 0.90 | no |
+| G3A | -0.00055 (-0.61) | -0.00010 (-0.22) | 0.77 / 0.85 | no |
+
+**STATUS: REFUTED offline (rule 3.3); G3P (served `params_v1.json`) stands.**
+- The refits fix the level of the held-out covariance, but the per-game density cannot separate them.
+- Delivery diagnostic (3.0): the rate-level delivery is 94-95% of `E[W Sigma W]`. The count-level 58% is the attempts' response (OREB and possession routes). Scale is not the cause.

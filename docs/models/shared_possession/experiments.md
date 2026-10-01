@@ -72,3 +72,26 @@ nothing is wired.
 - One draw per simulated game from its own stream family `shared_poss` keyed on (seed, game_id), added to the logit of the binary OREB / (OREB + DREB) probability of BOTH teams' live misses before the fixed dead-ball share is composed. Not mean-corrected (the Jensen shift is reported through the realised OREB% line).
 - Closed loop: paired vs the served default (v2), v3 inputs, verified truth. Local tap for direction and parity only (Decision 12: underpowered for G5). Full size on the box: 5,710 x 200 with four served-default floor draws.
 - Status: VALIDATED-PENDING-SHIP-ACTION if the G5 home/away corr and the total SD ratio both move toward target beyond floor at 200 seeds and no other line regresses beyond floor except through a named compensation (the G4 OREB% level is included: a Jensen level move beyond floor counts as a regression); REFUTED if neither moves beyond floor; UNDERPOWERED if only the tap exists. Mechanism line: sim between-team OREB covariance vs `E[W_h s_o^2 W_a]`.
+
+---
+
+## 2. Results, round 1 (appended 2026-10-01 ~06:45 EDT; evidence `docs/tests/g5_variance_channels_2026-10-01.md` section 3)
+
+`scripts/exp_shared_poss_v1.py measure` and `bakeoff` ran at 06:31 EDT, after commit `5a62b8e`. Outputs: `results/shared_possession/{measure,bakeoff}_v1.json`.
+
+**Measurement (2023-24 pooled, logit^2):**
+- OREB shared s^2 is 0.0013 (SE 0.0016): not detectable.
+- TOV shared s^2 is 0.0074 (0.0011).
+- The OREB x TOV term is -0.0046 (0.0009).
+- 2025 is not an outlier.
+
+| arm | fold 1 gain (floors) | fold 2 gain (floors) | eligible |
+|---|---|---|---|
+| O1 | -0.00002 (-0.13) | +0.00010 (+0.74) | no |
+| T1 | +0.00294 (+3.76) | +0.00184 (+2.23) | yes |
+| OT | +0.00386 (+3.48) | +0.00294 (+2.68) | yes; winner by the letter (beats T1 by 0.001101 against a 0.001097 floor) |
+
+**STATUS:**
+- `O1` is REFUTED offline.
+- `T1` and `OT` are eligible offline but NOT WIRED under pre-condition 1.4. The served engine already reproduces between-team TOV covariance in points (0.84 vs 0.76 pts^2).
+- No engine module was written, `params_v1.json` was not written, and there is no closed loop.

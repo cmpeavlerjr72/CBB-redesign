@@ -182,6 +182,63 @@ def wcov(X: np.ndarray, w: np.ndarray | None = None) -> np.ndarray:
     return (Xc * w[:, None]).T @ Xc
 
 
+GROUPS = {
+    "pace x pace": [("pace", "pace")],
+    "pace x makes": [("pace", b) for b in ("rim", "jump", "three", "ft")],
+    "pace x OREB": [("pace", "oreb")],
+    "pace x TOV": [("pace", "tov")],
+    "pace x FTA": [("pace", "fta")],
+    "pace x shot mix": [("pace", "mix3"), ("pace", "mixRJ")],
+    "pace x imbalance": [("pace", "imbal")],
+    "two-point block": [(a, b) for a in ("rim", "jump", "mixRJ") for b in ("rim", "jump", "mixRJ")],
+    "three make": [("three", "three")],
+    "FT make": [("ft", "ft")],
+    "FTA (whistle)": [("fta", "fta")],
+    "OREB": [("oreb", "oreb")],
+    "TOV": [("tov", "tov")],
+    "3PA share": [("mix3", "mix3")],
+    "imbalance": [("imbal", "imbal")],
+    "makes cross-type (three, FT with each other and with twos)": [
+        (a, b) for a in ("three", "ft") for b in ("rim", "jump", "mixRJ", "three", "ft") if a != b],
+    "OREB x makes / shot mix": [("oreb", b) for b in ("rim", "jump", "three", "ft", "mixRJ", "mix3")],
+    "TOV x non-pace": [("tov", b) for b in ("oreb", "fta", "mix3", "mixRJ", "rim", "jump", "three", "ft")],
+    "FTA x non-pace": [("fta", b) for b in ("oreb", "mix3", "mixRJ", "rim", "jump", "three", "ft")],
+    "imbalance x non-pace": [("imbal", b) for b in ("oreb", "tov", "fta", "mix3", "mixRJ", "rim", "jump", "three", "ft")],
+}
+
+
+def grouped(Ca: np.ndarray, Cs: np.ndarray, Da: float, Ds: float, nch: int) -> dict:
+    """Corr units (between-team block) and total-variance pts^2 by GROUPS; 'other cross
+    terms' is every remaining ordered pair, so the groups close to the residual gap."""
+    names = CH[:nch]
+    ix = {c: i for i, c in enumerate(names)}
+    H, A = slice(0, nch), slice(nch, 2 * nch)
+    Ba, Bs = Ca[H, A], Cs[H, A]
+    Ta = Ca[H, H] + Ca[A, A] + Ca[H, A] + Ca[A, H]
+    Ts = Cs[H, H] + Cs[A, A] + Cs[H, A] + Cs[A, H]
+    used = set()
+    out = {}
+    def take(pairs):
+        v = np.zeros(4)
+        for p, q in pairs:
+            for x, y in {(p, q), (q, p)}:
+                if (x, y) in used:
+                    continue
+                used.add((x, y))
+                i, j = ix[x], ix[y]
+                v += [Ba[i, j], Bs[i, j], Ta[i, j], Ts[i, j]]
+        return v
+    for g, pairs in GROUPS.items():
+        v = take(pairs)
+        out[g] = {"act": v[0] / Da, "sim": v[1] / Ds, "gap": v[0] / Da - v[1] / Ds,
+                  "tot_act": v[2], "tot_sim": v[3], "tot_gap": v[2] - v[3]}
+    rest = [(x, y) for x in names for y in names if (x, y) not in used]
+    v = take(rest)
+    out["other cross terms"] = {"act": v[0] / Da, "sim": v[1] / Ds, "gap": v[0] / Da - v[1] / Ds,
+                                "tot_act": v[2], "tot_sim": v[3], "tot_gap": v[2] - v[3]}
+    return out
+
+
 def group_tables(Ca: np.ndarray, Cs: np.ndarray, Da: float, Ds: float, nch: int) -> dict:
     """Ca, Cs: (2nch x 2nch) covariance of [h channels, a channels]. Corr units of the
     between-team block, and pts^2 of the total-variance decomposition, by group."""
@@ -317,6 +374,18 @@ def run_read(run: Path, season: int, segments: bool = True, boot: int = NB) -> d
             bst[lab].append(tb_["total_pts2"][lab]["act"])
     out["boot_se"] = {"corr_units": {k: float(np.std(v)) for k, v in bs.items()},
                       "total_pts2": {k: float(np.std(v)) for k, v in bst.items()}}
+    out["grouped"] = grouped(Ca, Cs, Da, Ds, nch)
+    gb = {k: [] for k in out["grouped"]}
+    gbt = {k: [] for k in out["grouped"]}
+    rng2 = np.random.default_rng(20261002)
+    for _ in range(boot):
+        w = rng2.poisson(1.0, len(Ra)).astype(float)
+        gg = grouped(wcov(Ra, w), Cs, Da, Ds, nch)
+        for k in gb:
+            gb[k].append(gg[k]["act"])
+            gbt[k].append(gg[k]["tot_act"])
+    out["grouped_se"] = {k: {"corr": float(np.std(gb[k])) if gb[k] else None,
+                             "tot": float(np.std(gbt[k])) if gbt[k] else None} for k in gb}
     if segments:
         out["segments"] = segment_reads(gorder, Ra, Xs, gid, Ms, Xa, fin, season, nch)
     out["Ca"] = Ca.tolist()
@@ -360,7 +429,19 @@ def segment_reads(gorder, Ra, Xs, gid, Ms, Xa, fin, season, nch, boot=100):
             tb_ = group_tables(wcov(R_, w), Cs_, Da, Ds, nch)
             for k in bsv:
                 bsv[k].append(tb_["corr_units"][k]["act"])
-        res[lab] = {"n": int(m.sum()), "corr_act": act_corr, "corr_sim": sim_corr,
+        gq = grouped(Ca_, Cs_, Da, Ds, nch)
+        gqb = {k: [] for k in gq}
+        for _ in range(boot):
+            w = rng.poisson(1.0, int(m.sum())).astype(float)
+            g2 = grouped(wcov(R_, w), Cs_, Da, Ds, nch)
+            for k in gqb:
+                gqb[k].append(g2[k]["act"])
+        res[lab] = {"grouped": {k: v["gap"] for k, v in gq.items()},
+                    "grouped_se": {k: float(np.std(v)) for k, v in gqb.items()},
+                    "grouped_tot": {k: v["tot_gap"] for k, v in gq.items()},
+                    "chain_cross_m_r": float((np.cov(mh, xa - ma, bias=True)[0, 1]
+                                              + np.cov(xh - mh, ma, bias=True)[0, 1]) / Da),
+                    "n": int(m.sum()), "corr_act": act_corr, "corr_sim": sim_corr,
                     "total_sd_ratio_sqrt": float(np.sqrt(Cs_.sum() / np.var(R_[:, :nch].sum(1) + R_[:, nch:].sum(1)))),
                     "corr_units": {k: v["gap"] for k, v in t["corr_units"].items()},
                     "corr_se": {k: float(np.std(v)) for k, v in bsv.items()},
@@ -413,7 +494,16 @@ def season_descriptive(season: int, boot: int = NB) -> dict:
         tb_ = group_tables(wcov(Rg, w), zero, Da, 1.0, nch)
         for k in bsv:
             bsv[k].append(tb_["cov_pts2"][k]["act"])
-    return {"season": season, "n_games": n,
+    gq = grouped(C, zero, 1.0, 1.0, nch)
+    gqb = {k: [] for k in gq}
+    for _ in range(boot):
+        w = rng.poisson(1.0, n).astype(float)
+        g2 = grouped(wcov(Rg, w), zero, 1.0, 1.0, nch)
+        for k in gqb:
+            gqb[k].append(g2[k]["act"])
+    return {"grouped_cov_pts2": {k: v["act"] for k, v in gq.items()},
+            "grouped_cov_se": {k: float(np.std(v)) for k, v in gqb.items()},
+            "season": season, "n_games": n,
             "cov_pts2": {k: v["act"] for k, v in t["cov_pts2"].items()},
             "cov_se": {k: float(np.std(v)) for k, v in bsv.items()},
             "corr_units": {k: v["act"] for k, v in t["corr_units"].items()},
