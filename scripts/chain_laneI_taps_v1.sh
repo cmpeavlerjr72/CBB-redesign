@@ -12,7 +12,7 @@ run() {  # tag overrides input_dir [env...]
   local tag=$1 ov=$2 in=$3; shift 3
   if [ -f results/engine_v0/$tag/games.parquet ]; then echo "SKIP $tag"; return; fi
   echo "$(date '+%F %T') START $tag"
-  env "$@" $PY scripts/run_engine_overlay_v1.py --overrides $ov --runner sample -- --sample-file $S --arm round2_s1 \
+  env "$@" $PY scripts/run_laneI_overlay_served_v1.py --overrides $ov --runner sample -- --sample-file $S --arm round2_s1 \
     --input-dir $in --seeds 25 --seed-offset 0 --workers 1 --tag $tag --results-dir results/engine_v0 > $O/$tag.log 2>&1
   echo "$(date '+%F %T') END $tag rc=$? $(tail -1 $O/$tag.log)"
 }
