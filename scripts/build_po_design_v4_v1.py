@@ -34,7 +34,7 @@ SERVED = ROOT / "data/processed/models/possession_outcome/round2/design.parquet"
 
 def main() -> int:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--poss-version", default="v4", choices=["v1", "v2", "v3", "v4"])
+    ap.add_argument("--poss-version", default="v4", choices=["v1", "v2", "v3", "v4", "v4otc"])
     ap.add_argument("--ratings-dir", default="data/processed/ratings")
     ap.add_argument("--out", type=Path, required=True)
     ap.add_argument("--identity", action="store_true", help="compare to the served round2 design.parquet")

@@ -156,6 +156,7 @@ was actually used to build a given possessions version out of that build's own
 from __future__ import annotations
 
 import json
+import os
 from pathlib import Path
 
 import numpy as np
@@ -370,6 +371,10 @@ def build_stream(
     return df
 
 
+#: set to "1" to carry team fouls from the second half into every overtime (default: reset per period, as built)
+OT_FOUL_CARRY_ENV = "CBB_OT_FOUL_CARRY"
+
+
 def _attach_team_fouls(df: pd.DataFrame) -> pd.DataFrame:
     """Each team's PRIOR personal-foul count in the current period.
 
@@ -382,7 +387,12 @@ def _attach_team_fouls(df: pd.DataFrame) -> pd.DataFrame:
     c = df["cls"].to_numpy(dtype=object)
     sd = df["side"].to_numpy()
     is_foul = c == "foul"
-    key = pd.DataFrame({"g": df["cbbd_game_id"].to_numpy(), "p": df["period"].to_numpy()})
+    per = df["period"].to_numpy()
+    if os.environ.get(OT_FOUL_CARRY_ENV) == "1":
+        # DEFAULT OFF (lane F, 2026-10-01): NCAA men's team fouls reset at the end of the FIRST HALF only, so every extra period
+        # continues the second half's count (docs/tests/ot_team_foul_state_audit_2026-10-01.md). Periods 1 and 2 are unchanged.
+        per = np.where(per >= 2, 2, per)
+    key = pd.DataFrame({"g": df["cbbd_game_id"].to_numpy(), "p": per})
     for s, name in ((0, "fouls_home"), (1, "fouls_away")):
         f = (is_foul & (sd == s)).astype("int32")
         k = key.assign(f=f)

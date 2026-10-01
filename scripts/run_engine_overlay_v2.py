@@ -113,7 +113,15 @@ def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--overrides", type=Path, required=True)
     ap.add_argument("--runner", choices=["sample", "full"], required=True)
+    ap.add_argument("--clock", default="",
+                    help="sample runner only: the ENGINE_CLOCK it pins. run_po4b_closed_loop.PINNED_SUBMODELS still "
+                         "pins the pre-2026-10-01 clock v5b_glat_pmean and OVERWRITES the environment, so without this "
+                         "a sample read cannot serve the adopted L2 clock. Recorded in run_meta.")
     a = ap.parse_args(own)
+    if a.clock:
+        if a.runner != "sample":
+            raise SystemExit("--clock is for the sample runner; the full runner reads ENGINE_CLOCK from the environment")
+        _R.PINNED_SUBMODELS["ENGINE_CLOCK"] = a.clock
     ov = json.loads(a.overrides.read_text(encoding="utf-8"))
     os.environ[ENV] = json.dumps(ov)
     apply_overrides()
@@ -133,6 +141,7 @@ def main() -> int:
         meta = json.loads(mp.read_text(encoding="utf-8"))
         meta["overlay_v2_overrides"] = ov
         meta["overlay_v2_overrides_file"] = str(a.overrides)
+        meta["overlay_v2_sample_clock_pin"] = a.clock or None
         bad = check_sources(meta, ov)
         meta["overlay_v2_source_check"] = bad or "PASS"
         mp.write_text(json.dumps(meta, indent=2, default=str), encoding="utf-8")

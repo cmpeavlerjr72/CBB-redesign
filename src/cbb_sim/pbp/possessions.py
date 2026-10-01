@@ -306,6 +306,9 @@ POSSESSION_VERSIONS: dict[str, Path] = {
     # docs/tests/event_layer_v4_2026-09-30.md). A NEW SIBLING DIRECTORY: no
     # consumer reads it until the PM switches one.
     "v4": Path("data/processed/possessions_v4"),
+    # v4otc = v4 PLUS the overtime team-foul carry (`ot_foul_carry`, below; docs/tests/ot_team_foul_state_audit_2026-10-01.md).
+    # A NEW SIBLING DIRECTORY: regulation rows equal v4's; no consumer reads it until a retrain is pointed at it.
+    "v4otc": Path("data/processed/possessions_v4otc"),
 }
 DEFAULT_POSSESSION_VERSION = "v1"
 DEFAULT_OUT_DIR = POSSESSION_VERSIONS[DEFAULT_POSSESSION_VERSION]
@@ -313,7 +316,7 @@ DEFAULT_OUT_DIR = POSSESSION_VERSIONS[DEFAULT_POSSESSION_VERSION]
 #: Which versions turn the technical lookahead ON. Keyed by version label so a
 #: caller that only knows "v3" gets the right machine without a second flag.
 #: v1/v2 are False, so the default path is bit-identical to what is on disk.
-VERSION_TECH_LOOKAHEAD: dict[str, bool] = {"v1": False, "v2": False, "v3": True, "v4": True}
+VERSION_TECH_LOOKAHEAD: dict[str, bool] = {"v1": False, "v2": False, "v3": True, "v4": True, "v4otc": True}
 
 #: EVENT LAYER v4 (2026-09-30). Three switches, all OFF by default, so every
 #: existing caller gets the machine that wrote v1/v2/v3. `VERSION_EVENT_FIXES`
@@ -333,6 +336,11 @@ EVENT_FIX_SWITCHES: tuple[str, ...] = ("andone_live_miss", "stray_reb_guard", "s
 VERSION_EVENT_FIXES: dict[str, dict[str, bool]] = {
     v: {k: (v == "v4") for k in EVENT_FIX_SWITCHES} for v in ("v1", "v2", "v3", "v4")
 }
+#: OVERTIME TEAM-FOUL CARRY (lane F, 2026-10-01). NCAA men's team fouls reset at the end of the FIRST HALF only, so an overtime continues
+#: the second half's count. The machine above resets at every period boundary. `ot_foul_carry=True` keeps the count across the
+#: 2 -> 3 and every later boundary (periods 1 and 2 are untouched, so regulation rows are bit-identical). A separate key, NOT in
+#: EVENT_FIX_SWITCHES: v4 and every earlier version stay as built. Label `v4otc` = v4 + this switch.
+VERSION_EVENT_FIXES["v4otc"] = {**VERSION_EVENT_FIXES["v4"], "ot_foul_carry": True}
 #: The diagnostic's measured split between stray rebound rows and real
 #: possessions whose shot the feed lost (diagnostic section 5.1): not fitted.
 STRAY_REB_MAX_S = 3
@@ -521,8 +529,10 @@ class _GameMachine:
                  tech_lookahead: bool = DEFAULT_TECH_LOOKAHEAD,
                  andone_live_miss: bool = False, stray_reb_guard: bool = False,
                  stray_oreb_guard: bool = False,
-                 andone_made_next: str = "made_FT") -> None:
+                 andone_made_next: str = "made_FT",
+                 ot_foul_carry: bool = False) -> None:
         self.m = game_meta
+        self.ot_foul_carry = bool(ot_foul_carry)
         self.ev = ev
         self.tech_lookahead = bool(tech_lookahead)
         # EVENT LAYER v4 switches (module constants above); all False = v2.
@@ -658,7 +668,8 @@ class _GameMachine:
                 if self.cur is not None:
                     self._close("end_period", i - 1 if i else 0, reason_next="period_start")
                 self.period = p
-                self.team_fouls = {self.home: 0, self.away: 0}
+                if not (self.ot_foul_carry and p >= 3):      # carry: an extra period continues the 2nd half's count
+                    self.team_fouls = {self.home: 0, self.away: 0}
                 self.prev_end_clock = period_length(p)
                 self.next_start_reason = "period_start"
                 self.last_closed_offense = None
@@ -666,8 +677,10 @@ class _GameMachine:
             if c in ("end_period", "end_game"):
                 if self.cur is not None:
                     self._close("end_period", i, reason_next="period_start")
-                self.team_fouls = {self.home: 0, self.away: 0}
                 nxt = self._next_real(i)
+                # carry only when the NEXT event is in an extra period (>= 3); a halftime marker mislabelled with period 2 still resets
+                if not (self.ot_foul_carry and nxt >= 0 and int(per[nxt]) >= 3):
+                    self.team_fouls = {self.home: 0, self.away: 0}
                 self.period = int(per[nxt]) if nxt >= 0 else self.period
                 self.prev_end_clock = period_length(self.period)
                 self.next_start_reason = "period_start"
@@ -1045,6 +1058,7 @@ def segment_season(
     stray_reb_guard: bool = False,
     stray_oreb_guard: bool = False,
     andone_made_next: str = "made_FT",
+    ot_foul_carry: bool = False,
 ) -> tuple[pd.DataFrame, pd.DataFrame, dict]:
     """Segment one season into possessions and chances.
 
@@ -1096,7 +1110,7 @@ def segment_season(
             "on_floor": ev["on_floor"][lo:hi] if ev["on_floor"] is not None else None,
         }
         machine = _GameMachine(gm, sub, tech_lookahead=tech_lookahead,
-                               andone_made_next=andone_made_next, **fixes)
+                               andone_made_next=andone_made_next, ot_foul_carry=ot_foul_carry, **fixes)
         machine.run()
         if any(fixes.values()):
             diag["n_andone_live_miss"] += machine.n_andone_live_miss

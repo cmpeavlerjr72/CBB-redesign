@@ -159,7 +159,7 @@ def identity(root: Path) -> dict:
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--root", type=Path, required=True, help="NEW dir; becomes the served-layout clock dir")
-    ap.add_argument("--poss-version", default="v4", choices=["v1", "v2", "v3", "v4"])
+    ap.add_argument("--poss-version", default="v4", choices=["v1", "v2", "v3", "v4", "v4otc"])
     ap.add_argument("--ratings-dir", default="data/processed/ratings")
     ap.add_argument("--steps", default="censor,design,s1,latent,serve")
     ap.add_argument("--identity", action="store_true")

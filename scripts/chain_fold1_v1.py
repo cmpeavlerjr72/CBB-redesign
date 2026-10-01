@@ -233,8 +233,9 @@ class Chain:
                         rargs = ["--fold", FOLD, "--season", SEASON, "--seeds", self.a.gate_seeds, "--seed-offset", off,
                                  "--workers", self.a.gate_workers, "--games-per-block", 60, "--seeds-per-block", 25,
                                  "--tag", tag, "--results-dir", "results/engine_v0", "--input-dir", rel(M / "engine_v3_f1")]
+                    clk = ["--clock", env["ENGINE_CLOCK"]] if self.a.gate_mode == "sample" else []
                     self.run("gate", [PY, "scripts/run_engine_overlay_v2.py", "--overrides", rel(F1 / ov),
-                                      "--runner", self.a.gate_mode, "--", *rargs], extra=env)
+                                      "--runner", self.a.gate_mode, *clk, "--", *rargs], extra=env)
                 md = ROOT / "results/engine_v0/v3full_grade" / f"{tag}__verified.md"
                 if not md.exists():
                     self.run("gate", [PY, "scripts/eval_gates.py", "--results", f"results/engine_v0/{tag}",

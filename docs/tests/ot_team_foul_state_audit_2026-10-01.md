@@ -49,3 +49,63 @@ Free throws per possession (FTA/poss) from the possession design: regulation sec
 ## Not done / limits
 
 No sim was run to size the effect on scores. The carried count is a lower bound. Shot block and late-game rows are inferred from shared designs. 2025-26 was not touched.
+
+---
+
+# Part 2 (same day): the corrected foul-state tables as versioned siblings, regulation identity, OT row diffs, retrain switch
+
+Nothing existing was overwritten; no trainer default, served artifact or engine behaviour changed. The retrain on the siblings is not run.
+
+## What was built
+
+| sibling | where | how | consumers it serves |
+|---|---|---|---|
+| possessions and chances, event layer v4 + OT carry (`v4otc`) | `data/processed/possessions_v4otc/{possessions,chances}_{2022..2025}.parquet` (gitignored, 68 MB, rebuild about 4 min: `.venv/Scripts/python.exe scripts/build_possessions_v4otc_v1.py --seasons 2022 2023 2024 2025`) | `cbb_sim.pbp.possessions` machine switch `ot_foul_carry` (default off): the team-foul dict is not reset at the 2-to-3 boundary or later ones (period 1 to 2 still resets). Registered as version label `v4otc`; `VERSION_EVENT_FIXES["v4"]` and every earlier version are untouched | PO design (`off_in_bonus`), clock (`in_bonus`), FT-trip terminal classes, late-game design |
+| foul state (counts, bonus, double bonus, silent / trip decomposition) on the v4otc machine | `data/processed/models/possession_outcome/round6_v4otc/foul_accrual_poss.parquet` (+ `build_report.json`; gitignored by the `round*` rule) | lane D's `build_foul_state_v4_v1.build_state("v4otc", ...)`, imported and unedited apart from the argparse choice | foul joint R7 / R8 / R9ao3 trainers, PO `in_bonus` overlay |
+| event-stream team-foul counts with OT carry | `cbb_sim.models.event_stream` env switch `CBB_OT_FOUL_CARRY=1` (unset = as built); no stored table, the consumer designs are rebuilt with the env set | `_attach_team_fouls` groups by (game, 1 or 2 for periods >= 2) instead of (game, period); `trip_prior_fouls` follows | fg_make, rebound, free-throw designs (and the shot-block design that shares them) |
+
+Machine detail that mattered: the first version carried whenever the machine's current period was 2 or later at an `end_period` row, which changed 196 regulation possessions (a halftime marker the feed labels with period 2 wiped second-half fouls). The final rule carries only when the NEXT real event is in period 3 or later (or the unannounced boundary is into period >= 3). Caught by the regulation-identity check.
+
+## Proof: regulation rows are bit-identical
+
+`DataFrame.equals` on the regulation rows (period <= 2), same columns and dtypes, same row keys, v4 (on disk) vs v4otc, per season (`data/processed/possessions_v4otc/build_report.json`):
+
+| table | 2022 | 2023 | 2024 | 2025 |
+|---|---|---|---|---|
+| possessions, regulation rows | 715,609 identical | 747,463 identical | 756,996 identical | 755,531 identical |
+| chances, regulation rows | 818,929 identical | 856,243 identical | 870,364 identical | 871,182 identical |
+
+Foul-state table (v4 machine rebuilt in a scratch dir vs v4otc, 3,002,772 rows, keys equal): 2,975,599 regulation rows identical (`results/foul_state_v4otc_vs_v4.json`). Event stream (`scripts/diag_ot_carry_event_stream_v1.py`, flag unset vs `1`): regulation rows identical in all four seasons (1,541,127; 1,615,886; 1,648,750; 1,653,967). The default machine path is unchanged because the switch is off: `tests/test_event_layer_v4.py` and `tests/test_ot_foul_carry.py` pass.
+
+## OT row diffs per fold (seasons are end years)
+
+Possessions (v4 vs v4otc; nearly every OT possession changes its counts):
+
+| scope | OT possessions | counts changed | `off_in_bonus` changed | `off_in_double_bonus` changed | `terminal_event` changed (FT trip class) | `ft_trip_ambiguous` changed |
+|---|--:|--:|--:|--:|--:|--:|
+| 2022 | 6,427 | 6,427 | 6,243 | 4,768 | 1,426 | 1,430 |
+| 2023 | 6,934 | 6,927 | 6,632 | 5,093 | 1,542 | 1,551 |
+| 2024 | 7,034 | 7,034 | 6,784 | 5,304 | 1,631 | 1,649 |
+| 2025 | 6,778 | 6,778 | 6,580 | 5,250 | 1,627 | 1,635 |
+| fold 1 train (2022-2023) | 13,361 | 13,354 | 12,875 | 9,861 | 2,968 | 2,981 |
+| fold 1 test (2024) | 7,034 | 7,034 | 6,784 | 5,304 | 1,631 | 1,649 |
+| fold 2 train (2022-2024) | 20,395 | 20,388 | 19,659 | 15,165 | 4,599 | 4,630 |
+| fold 2 test (2025) | 6,778 | 6,778 | 6,580 | 5,250 | 1,627 | 1,635 |
+
+Chances (what the PO design reads): OT chances 7,417 / 8,012 / 8,100 / 7,839 for 2022-2025; `off_in_bonus` changed on 7,218 / 7,675 / 7,824 / 7,614, `off_in_double_bonus` on 5,446 / 5,876 / 6,093 / 6,039, `terminal_event` on 1,470 / 1,578 / 1,676 / 1,685 (about 21% of OT chances: a shooting-foul trip becomes a bonus trip once the carried count is used).
+
+Foul-state table: OT possessions per season 6,427 / 6,934 / 7,034 / 6,778; `def_team_fouls_true` changed on 6,427 / 6,926 / 7,034 / 6,778, `off_in_bonus_true` on 6,275 / 6,659 / 6,809 / 6,617, `off_in_double_bonus` on 4,768 / 5,093 / 5,304 / 5,250. Part 1 used the round-6 v2-machine accrual table (6,848 OT possessions in 2025); this is the v4 machine, whose segmentation differs slightly (6,778), so the counts are not interchangeable.
+
+Event stream (OT event rows, all changed): 15,379 / 16,642 / 16,872 / 16,430 for 2022-2025; `fouls_opp_prior` changed on 14,813 / 16,013 / 16,223 / 15,769; `trip_prior_fouls` on 3,292 / 3,547 / 3,745 / 3,738. Mean opponent prior count on 2025 OT rows: 1.43 (reset) vs 11.18 (carry).
+
+The trained TARGETS move too, not only the features: about 23% of OT possessions change terminal class (FT_trip_shooting vs FT_trip_bonus), so PO's OT labels and the FT-trip-class counts differ under the correct rule.
+
+## Retrain switch (applied; default off)
+
+`scripts/chain_full_retrain_v1.py` was re-read and `git diff` was clean immediately before the edit (no other lane's hunks). It gains `--ot-foul-carry` (default off). With it: the possessions stage builds / checks `possessions_v4otc` (via `scripts/build_possessions_v4otc_v1.py`), the `po_design`, `clock` and foul-state stages read version `v4otc`, and the subprocess environment sets `CBB_OT_FOUL_CARRY=1`; the flag is part of the tag-resume compatibility check. Three scripts gained `"v4otc"` in an argparse `choices` list and nothing else: `build_po_design_v4_v1.py`, `train_clock_chain_v1.py`, `build_foul_state_v4_v1.py`. Off path: the dry-run plan of the edited chain without the flag is byte-identical (28 lines, variant F_T, timestamps stripped) to the plan of the committed HEAD version. With the flag the planned commands show `--poss-version v4otc`, `--machine v4otc`, `build_possessions_v4otc_v1.py` (dry run only; nothing run).
+
+NOT wired (stated, not hidden): (1) the fg_make / rebound / free-throw / shot-block designs are prebuilt files in the chain (`FG_DESIGN`, the rebound design) and are not rebuilt by it; to carry OT fouls into them, rebuild their designs with `CBB_OT_FOUL_CARRY=1` in the environment and point the retrain at them. (2) Rotation keeps reading `possessions_v4` (on-floor lineups, not foul counts). (3) The engine-inputs event-block replay (`inputs_base`) is team-rate features and was not checked for a foul-count dependence. (4) The size of the effect on served models needs the retrain; not done.
+
+## Files
+
+`src/cbb_sim/pbp/possessions.py` (switch + version registry), `src/cbb_sim/models/event_stream.py` (env switch), `scripts/build_possessions_v4otc_v1.py`, `scripts/diag_ot_carry_event_stream_v1.py`, `scripts/chain_full_retrain_v1.py` (+ three `choices` edits), `tests/test_ot_foul_carry.py`, `.gitignore` (one line for the 68 MB sibling dir).

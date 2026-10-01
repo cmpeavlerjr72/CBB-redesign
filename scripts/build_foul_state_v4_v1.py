@@ -171,7 +171,7 @@ def identity(out_dir: Path, overlay_out: Path | None) -> dict:
 
 def main() -> int:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--machine", choices=["v2", "v4"], required=True)
+    ap.add_argument("--machine", choices=["v2", "v4", "v4otc"], required=True)
     ap.add_argument("--out-dir", type=Path, required=True)
     ap.add_argument("--seasons", type=int, nargs="*", default=[2022, 2023, 2024, 2025])
     ap.add_argument("--workers", type=int, default=3)

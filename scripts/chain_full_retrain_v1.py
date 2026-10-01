@@ -148,9 +148,16 @@ class Chain:
             e[v] = "1"
         e["PYTHONIOENCODING"] = "utf-8"
         e["CBB_TRUTH"] = "verified_v1"
+        if getattr(self.a, "ot_foul_carry", False):          # DEFAULT OFF: event-stream consumers carry team fouls into overtime
+            e["CBB_OT_FOUL_CARRY"] = "1"
         if extra:
             e.update(extra)
         return e
+
+    @property
+    def pv(self) -> str:
+        """possessions / machine version the foul-state consumers read: v4, or v4otc (--ot-foul-carry, default off)"""
+        return "v4otc" if getattr(self.a, "ot_foul_carry", False) else "v4"
 
     def n(self, stage: str) -> int:
         """worker processes for a parallel trainer stage"""
@@ -211,11 +218,14 @@ class Chain:
     # ----------------------------------------------------------------- stages
     def st_possessions_v4(self):
         missing = [f"{k}_{s}" for s in SEASONS for k in ("possessions", "chances")
-                   if not (ROOT / f"data/processed/possessions_v4/{k}_{s}.parquet").exists()]
+                   if not (ROOT / f"data/processed/possessions_{self.pv}/{k}_{s}.parquet").exists()]
         if not missing:
             print(f"[{now()}] possessions_v4: present (2022-2025)", flush=True)
             return {"built": False}
-        self.run("possessions_v4", [PY, "scripts/build_possessions_v4.py", "--seasons", *map(str, SEASONS)])
+        if self.pv == "v4otc":
+            self.run("possessions_v4", [PY, "scripts/build_possessions_v4otc_v1.py", "--seasons", *map(str, SEASONS)])
+        else:
+            self.run("possessions_v4", [PY, "scripts/build_possessions_v4.py", "--seasons", *map(str, SEASONS)])
         return {"built": True, "missing_before": missing}
 
     def st_rotation(self):
@@ -233,12 +243,12 @@ class Chain:
         return None
 
     def st_po_design(self):
-        self.run("po_design", [PY, "scripts/build_po_design_v4_v1.py", "--poss-version", "v4",
+        self.run("po_design", [PY, "scripts/build_po_design_v4_v1.py", "--poss-version", self.pv,
                                "--ratings-dir", self.ratings, "--out", self.s(self.d("po_design") / "design.parquet")])
         return {"design": self.s(self.d("po_design") / "design.parquet")}
 
     def st_foul_state(self):
-        self.run("foul_state", [PY, "scripts/build_foul_state_v4_v1.py", "--machine", "v4",
+        self.run("foul_state", [PY, "scripts/build_foul_state_v4_v1.py", "--machine", self.pv,
                                 "--out-dir", self.s(self.o("foul_state")), "--workers", str(min(4, self.cores)),
                                 "--overlay-design", self.s(self.d("po_design") / "design.parquet"),
                                 "--compare-to",
@@ -271,7 +281,7 @@ class Chain:
 
     def st_clock(self):
         self.run("clock", [PY, "scripts/train_clock_chain_v1.py", "--root", self.s(self.d("clock") / "root"),
-                           "--poss-version", "v4", "--ratings-dir", self.ratings])
+                           "--poss-version", self.pv, "--ratings-dir", self.ratings])
         return {"root": self.s(self.d("clock") / "root")}
 
     def st_fg_design(self):
@@ -564,8 +574,8 @@ class Chain:
                                            indent=1, default=str))
             else:
                 old = json.loads(meta.read_text())["args"]
-                for k in ("variant", "anchor", "ratings_dir", "team_rate_table", "smoke", "inputs_event_layer"):
-                    if k not in old and k == "inputs_event_layer":
+                for k in ("variant", "anchor", "ratings_dir", "team_rate_table", "smoke", "inputs_event_layer", "ot_foul_carry"):
+                    if k not in old and k in ("inputs_event_layer", "ot_foul_carry"):
                         continue          # a run started before this switch existed (laneD_1): --redo covers it
                     if old.get(k) != getattr(self.a, k):
                         raise SystemExit(f"tag {self.a.tag} was started with {k}={old.get(k)!r}; refusing to "
@@ -657,6 +667,10 @@ def main() -> int:
     ap.add_argument("--inputs-event-layer", choices=["v2", "v4"], default="v4",
                     help="event layer of the PO round-2 event block in the engine inputs (v4 = matches the retrained "
                          "PO; v2 = engine_v3 as built)")
+    ap.add_argument("--ot-foul-carry", action="store_true",
+                    help="DEFAULT OFF. Retrain on the OVERTIME TEAM-FOUL CARRY sibling (possessions_v4otc, foul state machine v4otc, "
+                         "CBB_OT_FOUL_CARRY=1 for event-stream consumers). Needs the sibling built: scripts/build_possessions_v4otc_v1.py. "
+                         "Not wired: prebuilt fg / rebound / free-throw designs (docs/tests/ot_team_foul_state_audit_2026-10-01.md)")
     ap.add_argument("--redo", default="",
                     help="comma list of THIS tag's stages to rebuild (the old output is archived, not deleted), "
                          "e.g. inputs,gate after the inputs switch")
