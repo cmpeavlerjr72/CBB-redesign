@@ -1,6 +1,6 @@
 # SUMMARY FOR USER, OVERNIGHT 2026-09-30 20:39 -> 2026-10-01 04:00 EDT
 
-Written by the PM 02:35-03:45 EDT, all times from the system clock. User away; AWS approved and adoption delegated to the PM at ~20:45 ("if you think the data supports adoption I say go for it"). Ten worker lanes plus the AWS operator and an adoption executor. Every number is in a committed doc; paths in brackets.
+Written by the PM from 02:27 EDT (system clock; first commit 02:28). User away; AWS approved and adoption delegated to the PM at ~20:45 ("if you think the data supports adoption I say go for it"). Ten worker lanes plus the AWS operator and an adoption executor. Every number is in a committed doc; paths in brackets.
 
 ## The headline
 
@@ -64,19 +64,19 @@ How it came together: the 09-30 pending set (L2 + K2_Ocell + R8b) at full size f
 ## Open items, in order
 
 1. FULL RETRAIN x ADOPTED SET: run `chain_full_retrain_v1.py` F_R and F_T (v2 adapter) with the five adopted flags on and read at full size vs the new served stack (the clock stage of the chain is the L2 refit already; check the chain does not double-apply). This is the honest baseline on the clean foundation and decides E3 (F_T) and ratings C. ~40 min of box.
-2. Event team block: the box (and the adoption evidence) served the inputs-v3 block; the local default dir held the 09-10 block (265 of 5,710 games differ). PM ruling: v3 is the served block. See the executor's last section in `docs/tests/adoption_served_v2_2026-10-01.md` for whether parity v9 was cut tonight.
+2. DONE 02:42 EDT (commits 32ec026, bcf6bb7): the event team block. The box (and the adoption evidence) served the inputs-v3 block while the local default dir held the 09-10 block (265 of 5,710 games differ). The v3 block is now the default (`ENGINE_EVENT_TEAM_BLOCK=v1` keeps the old one and is part of `SERVED_V1`); a plain local default run matches the box's adopted run exactly on 600 games x 5 seeds; CURRENT PARITY REFERENCE IS v9 (`docs/ops/parity_reference_windows_v9.json`). Also done: the daily chain builds the K2_Ocell shot-block table per slate and runs the adopted stack with no flag overrides (missing table = hard stop, never a silent fallback). Two 2026-27 gaps remain behind the seal decision: `R9ao3`'s team-prior table covers seasons 2023-2026 only (a 2026-27 game would get a zero prior term), and the shot-block live builder refuses any season but 2025 until that season's inputs exist.
 3. Remaining PPP channels after KD: OREB% (anchor `TO` on rebound), FT% (who shoots; foul state), TOV / mix (PO level), possessions +0.65.
 4. G9 slope 0.948: PO and fg_make team-rate response (beta ~0.57), lane A's fix candidates G1 / G3 not run; fold-1 confirmations not run.
 5. G5: correlation 0.126 vs 0.228 and total SD 0.925. Pace x efficiency channel unowned (lane B suspects clock structure); refit G3's variance walk-forward per season.
 6. Clock: replace the raw-tercile tempo input (rule violation) with a design that does not over-spread the game level; in-season level term for the drift round 7 exposed.
 7. G7 OT rate: late-game round 3 is pre-registered on the corrected foul state.
 8. Team FT slope 0.617 on v3 inputs; K2_Ocell team responsiveness; fg_make site arm G4 box read (`laneG_1.done.md`).
-9. Ops: live shot-block table (see the adoption doc's last section for tonight's status), 2027 rule constants audit, tip-time refresh schedule (20:00 ET evening pass + 09:00 ET morning pass), player-layer day-1 priors (none exist on an opening day), lines re-probe Oct 26 / Nov 2, seed-count study for the chain.
+9. Ops: 2026-27 tables for the adopted flags (R9ao3 team priors, shot-block season guard; both need the seal decision), 2027 rule constants audit, tip-time refresh schedule (20:00 ET evening pass + 09:00 ET morning pass), player-layer day-1 priors (none exist on an opening day), lines re-probe Oct 26 / Nov 2, seed-count study for the chain.
 10. Rotation stays PARKED; props the stretch goal.
 
 ## Worker incidents (disclosed)
 
-Four lanes (A, B, D, I) each converted `change_ledger.md` CRLF -> LF in a commit and repaired it in the next. Lane I's ledger commit swept in lane H's uncommitted row (content correct, on main). Lane E's `CL4` and `R8aS` re-reads ran while other lanes' engine edits were uncommitted in the shared tree. Lane A ran 5 processes against a cap of 4 for ~90 s. Lane C's first two taps used the wrong event team block (caught by parity, rerun). The operator noticed the first spot reclaim ~10 minutes late; its bootstrap tool mixes a non-S0 reference into the draw SD (each affected table says so; use the bootstrap CI column there). Lane N's 09-30 `laneN_R_s25_o*` runs are not valid draws of the served stack on v3 (26 of 28 columns differ) and must not be used as floors. PM: I wrote "22:35 EDT" in one worker message at 22:31 without reading the clock.
+Four lanes (A, B, D, I) each converted `change_ledger.md` CRLF -> LF in a commit and repaired it in the next. Lane I's ledger commit swept in lane H's uncommitted row (content correct, on main). Lane E's `CL4` and `R8aS` re-reads ran while other lanes' engine edits were uncommitted in the shared tree. Lane A ran 5 processes against a cap of 4 for ~90 s. Lane C's first two taps used the wrong event team block (caught by parity, rerun). The operator noticed the first spot reclaim ~10 minutes late; its bootstrap tool mixes a non-S0 reference into the draw SD (each affected table says so; use the bootstrap CI column there). Lane N's 09-30 `laneN_R_s25_o*` runs are not valid draws of the served stack on v3 (26 of 28 columns differ) and must not be used as floors. PM: three times I wrote a time into a message or doc without reading the clock and was 4-8 minutes fast each time (22:35 for 22:31; 02:32 for ~02:27; this summary's first header); no deadline depended on any of them. My wrap-up commit also normalised 44 stray CRLF lines in `docs/LEARNINGS.md` to LF (the file was mixed; it is now uniformly LF).
 
 ---
 
