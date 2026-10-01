@@ -150,6 +150,7 @@ def harness_metrics(names: dict, nb: int = 200) -> dict:
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--arms", type=Path, required=True)
+    ap.add_argument("--out", default="grade_v1.json")
     a = ap.parse_args()
     arms = json.loads(a.arms.read_text(encoding="utf-8"))
     labels = sorted(arms)
@@ -183,8 +184,8 @@ def main() -> int:
         return s
     res = json.loads(unb(json.dumps(res, default=float)))
     res["codes"] = codes
-    (OUT / "grade_v1.json").write_text(json.dumps(res, indent=1, default=float), encoding="utf-8")
-    print("wrote", OUT / "grade_v1.json")
+    (OUT / a.out).write_text(json.dumps(res, indent=1, default=float), encoding="utf-8")
+    print("wrote", OUT / a.out)
     return 0
 
 

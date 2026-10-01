@@ -169,3 +169,67 @@ A two-stage fg_make, as a sub-model change and not a sim adjustment. Fit the tea
 Separately:
 - PO's margin over-spread needs a points-valuation diagnostic (realised PPP against predicted style at team-game level), not a PO retrain.
 - free_throw's team-game FT% slope of 0.64 is the next-largest unowned own-level excess.
+
+## 7. Round 2: two-stage fg_make
+
+This round was tasked by the PM. Pre-registration: `fg_make/experiments.md` section 25, commit 476ca10 (08:55 EDT), committed before any arm ran.
+
+**Run.** 08:56-09:30 EDT, local, 4 processes.
+- Trainer: `scripts/train_fg_make_two_stage_v1.py`. Stage A is shared by the three arms of one fold and seed; each fold and seed takes about 7 min.
+- Served-shape object: `scripts/fg_two_stage_model_v1.py`.
+- Runner: `scripts/run_ts_round_v1.sh`.
+- Grader: the same `grade_g9_team_response_v1.py` (`--arms arms_ts.json --out grade_ts_v1.json`).
+- Artifacts: `data/processed/models/fg_make/round_ts/`. They are untracked and not uploaded, because there is no winner.
+
+**Train/serve parity: EXACT.**
+- The engine-side offsets and league rates were computed from the same as-of stats for all 5,710 games x 2 sides x 3 types, with 0 missing cells.
+- They equal the design's per-shot values on every fold-2 test row (max |diff| 0).
+- The shooter dev differs on 0.03-0.045% of rows, as in every stack.
+
+**Fitted stage B** (F2; seeds 0 and 1 give the same values):
+- tau_off / tau_def (logit scale): rim 0.13 / 0.10-0.13, jumper 0.08-0.10 / 0.08, three 0.06 / 0.04-0.06.
+- TS3 prior-season carry rho: 0.75.
+- Site terms: b_home +0.036 to +0.059, b_away -0.028 to -0.066.
+
+### 7.1 Verdicts per pre-registered line
+
+| line | aR (s0 / s1) | TS1 | TS2 | TS3 | verdict |
+|---|---|---|---|---|---|
+| Primary: harness 1 - slope (served 0.0880; floor 0.0089) | 0.0880 / 0.0970 | -0.216 / -0.219 | -0.238 / -0.241 | -0.155 / -0.157 | see 7.2: the slope OVERSHOOTS to 1.16-1.24 |
+| Harness margin SD (served 9.65) | 9.65 / 9.72 | 6.96 | 6.84 | 7.38 | under-spread |
+| Responsiveness: team-game make slope rim / jump / three (F2), toward 1.0 | 0.83 / 0.79 / 0.73 | 0.81 / 0.63 / 0.82 | 0.85 / 0.61 / 0.85 | 0.80 / 0.67 / 0.85 | jumper moves AWAY by 0.11-0.18 (limit 0.03): FAIL |
+| Offence-quintile slope (F2) | 0.95 / 1.16 / 1.31 | 1.00 / 1.12 / 1.26 | 0.99 / 0.89 / 1.23 | 0.81 / 0.96 / 1.06 | pass |
+| Guard: jumper log loss, at most aR + 0.25 x (stage A - aR) = 0.667048 | 0.666385 | 0.668218 / 0.668138 | 0.668221 / 0.668144 | 0.667890 / 0.667818 | FAIL, all arms |
+| Guard: rim log loss (at most 0.667937) and three (at most 0.637818) | | 0.66787 / 0.63776-8 | 0.66783 / 0.63777-9 | 0.66738 / 0.63768-70 | pass |
+| Guard: D8 calibration, both seeds | pass | jumper FAIL (3.8-3.9 pp); rim FAIL | jumper FAIL (3.7-4.0 pp) | jumper FAIL (3.6-3.8 pp) | FAIL, all arms |
+| Guard: level, predicted - actual within 0.5 pp | | jumper -0.10, three +0.27 to +0.31 pp | | | pass |
+| Fold 1 (design level), team-game slope | 0.80 / 0.65 / 0.74 | 0.75 / 0.59 / 0.90 | 0.79 / 0.59 / 0.90 | 0.77 / 0.63 / 0.87 | three moves toward 1; jumper and rim move away |
+
+**Outcome: NO WINNER.** All three arms break the jumper log-loss guard, the jumper D8 guard and the jumper responsiveness line, on both seeds and both folds. No engine flag, tap, HF upload or box request was made. `d1001_A_1.md` was NOT written, because step 4 needs an offline winner.
+
+### 7.2 The primary crossed 1.0 (disclosed, not used for the verdict)
+
+The registered primary said "1 - slope, lower is better". It did not anticipate the slope crossing 1.0.
+- Every two-stage arm drives the harness slope to 1.16-1.24, so 1 - slope is -0.15 to -0.24.
+- That means the margin became UNDER-spread: SD 6.8-7.4 against 9.65.
+- Read literally, that is a gain of 17-37 floors. Against the G9 target (slope 1.0) it is a larger miss than served: |1 - slope| is 0.155-0.241 against 0.088.
+
+I do not call it a win. The verdict above rests on the guards, which fail independently. For the PM: future slope primaries should be written as |1 - slope|.
+
+### 7.3 What it shows
+
+1. **Ratings carry real make signal that residual history cannot replace.** This round took the four own-rating columns and the as-of team rates out of fg_make and gave it only a partially pooled effect of its own make residuals. That removes about 28% of the harness margin SD. So the served fg_make's game-level over-spread (sections 1-3) is not "too much team signal" in total. Team strength enters makes legitimately through the ratings, and the excess is a smaller over-response on top of that.
+2. **Threes respond as hoped.** The pooled effect calibrates the three-point team-game slope (0.73 -> 0.82-0.85 on F2, 0.74 -> 0.87-0.90 on F1; team-effect beta 1.04-1.19), with shot-level log loss inside the guard. Rim is neutral (TS2: 0.83 -> 0.85).
+3. **Jumpers break in stage A itself.** With no team inputs, the trees over-use the state and shooter features. At shot level the deciles are over-spread: the bottom decile predicts 0.30 against 0.34 realised, the top 0.47 against 0.44. The trees also cannot follow the league level from `lg_make_asof` used as a split variable (by month: Nov -1.4 pp, Mar +2.4 pp). This is a stage-A specification defect of this round (the league level should enter as an offset), not evidence about the pooled term.
+4. **Variance composition: nothing is double-counted.**
+   - Team-game residual variance above binomial (x1e-4, F2 rim / jump / three): aR 20.2 / 19.8 / 3.5; TS arms 21-23 / 22-24 / 3.2-3.5. The predictable term explains LESS than served, so it absorbs none of the zero-mean latents' variance.
+   - Two-team shared residual covariance (G3's fitting basis, x1e-4): aR 10.6 / 14.5 / 1.4; TS arms 9.1-9.7 / 13.9-14.5 / 0.8-1.1. These are within about 10%, so G3's Sigma would need at most a small refit under such an arm.
+
+### 7.4 Recommended next step (not run; needs its own pre-registration)
+
+A two-stage arm `TS-R`:
+- Stage B: the pooled residual effect (TS2) PLUS linear own-rating terms relative to the snapshot league mean (the offence's offensive rating, the defence's defensive rating). Fit the coefficients walk-forward on training seasons.
+- Stage A: the league level enters as a logit OFFSET (`logit(lg_make_asof)`), not as a tree feature.
+- Primary written as |1 - slope|.
+
+The three-point result suggests the pooled term is the right tool for the noisy shot type, and the rating terms keep the strength signal the margin needs.

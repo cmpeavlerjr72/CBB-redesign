@@ -2261,3 +2261,7 @@ NO WINNER. Fold-2 harness `1 - slope` vs served 0.0880 (seeds 0 / 1): aG3R +0.00
 - Fold 1 (design level): the team-game slope moves toward 1 in the same types.
 
 **Decision.** An arm wins offline if the primary is lower than served by more than 2 floors, the close lens agrees, the responsiveness line holds, and no guard breaks. Several: the larger primary gain unless within one floor, then the simpler (TS1 < TS2 < TS3). A winner gets a default-off flag (off path bit-identical to parity v9 on a clean `src/` tree), a local tap for direction (underpowered, Decision 12), artifacts to HF under a bulk key and `docs/ops/box_queue/d1001_A_1.md` for the full-size paired read with four floor draws. Nothing is adopted by this lane. Labels: REFUTED / NO WINNER / OFFLINE WINNER.
+
+## 26. Lane A day round 2: RESULTS (run 2026-10-01 08:56-09:30 EDT; pre-registration section 25, commit 476ca10)
+
+NO WINNER. All of TS1 / TS2 / TS3, both seeds, break the jumper log-loss guard (0.66782-0.66822 vs the fixed bound 0.667048), the jumper D8 calibration guard (3.6-4.0 pp) and the jumper responsiveness line (team-game slope 0.79 -> 0.61-0.68). The registered primary ("1 - slope, lower is better") was crossed: the harness slope overshoots to 1.16-1.24 (margin SD 9.65 -> 6.8-7.4) because the ratings leave fg_make; disclosed, not used as a win. Threes improve (team-game slope 0.73 -> 0.82-0.85 F2, 0.87-0.90 F1). Parity exact. Full tables: `docs/tests/g9_slope_team_response_2026-10-01.md` section 7.
