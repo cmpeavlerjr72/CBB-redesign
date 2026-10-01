@@ -212,7 +212,10 @@ def main() -> int:
     from cbb_sim.engine.inputs import EngineInputs
     in_tag = f"{args.fold}_{args.season}"
     inp = EngineInputs.load(args.input_dir, in_tag)
-    ids = np.sort(pd.read_parquet(args.sample_file)["game_id"].to_numpy().astype("int64"))
+    if args.sample_file == "all":            # full-size box read: every F2 2025 game
+        ids = np.sort(inp.games["game_id"].to_numpy().astype("int64"))
+    else:
+        ids = np.sort(pd.read_parquet(args.sample_file)["game_id"].to_numpy().astype("int64"))
     pos = {int(g): k for k, g in enumerate(inp.games["game_id"].to_numpy())}
     rows = np.array([pos[int(g)] for g in ids], dtype=np.int64)
     if args.max_games:
