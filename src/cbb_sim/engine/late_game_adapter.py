@@ -45,13 +45,17 @@ from cbb_sim.models import clock as CK
 from cbb_sim.models import late_game as LGM  # registers the P3R/LGD cell dims
 
 R2_DIR = Path("data/processed/models/late_game/round2")
-CLOCK_ARMS = ("clk_C2", "clk_D", "clk_Dt", "clk_Dtt")
+CLOCK_ARMS = ("clk_C2", "clk_D", "clk_Dt", "clk_Dtt", "clk_DtL")
 EVENT_ARMS = ("ev_BL3", "ev_L0S0")
 # Round 3 (experiments.md sections 6.3 / 7.3): the SAME clk_D law, gated by the offence's
 # live score_diff sign at possession start. None = every window row (round 2's clk_D).
 #   clk_Dt  -> tied rows only; clk_Dtt -> tied and trailing rows. No artifact is refit.
-ROLE_GATE = {"clk_Dt": (0,), "clk_Dtt": (0, -1)}
-ARTIFACT_OF = {"clk_Dt": "clk_D", "clk_Dtt": "clk_D"}
+# Round 4 (experiments.md section 9.3): clk_DtL = clk_D on tied rows + the LGL law (role refined to
+# five bands) on LEADING rows; trailing rows keep the served law.
+ROLE_GATE = {"clk_Dt": (0,), "clk_Dtt": (0, -1), "clk_DtL": (0,)}
+ARTIFACT_OF = {"clk_Dt": "clk_D", "clk_Dtt": "clk_D", "clk_DtL": "clk_D"}
+R4_DIR = Path("data/processed/models/late_game/round4")
+LEAD_ARTIFACT = {"clk_DtL": R4_DIR / "clk_LGL.pkl"}
 
 
 def parse_mode(mode: str) -> tuple[str | None, str | None]:
@@ -88,6 +92,7 @@ class LateGameClock:
     n_window: int = 0
     _state_idx: dict = field(default_factory=dict)
     roles: tuple | None = None       # round 3: allowed sign(score_diff) values; None = all
+    arm_lead: object = None          # round 4: law for LEADING window rows (clk_DtL); None = none
 
     def __getattr__(self, k):
         return getattr(self.__dict__["inner"], k)
@@ -98,20 +103,133 @@ class LateGameClock:
     def draw(self, team, state, u, gidx=None, keys=None):
         dur = np.asarray(self.inner.draw(team, state, u, gidx, keys), dtype=np.float64).copy()
         idx = self.inner.inner.state_idx
-        w = LGM.in_window(state[:, idx["period"]], state[:, idx["seconds_remaining"]],
-                          state[:, idx["score_diff"]])
+        win = LGM.in_window(state[:, idx["period"]], state[:, idx["seconds_remaining"]],
+                            state[:, idx["score_diff"]])
+        w = win.copy()
         if self.roles is not None:
             w &= np.isin(np.sign(state[:, idx["score_diff"]]), self.roles)
+        self._redraw(self.arm, w, team, state, u, gidx, keys, dur)
+        if self.arm_lead is not None:
+            self._redraw(self.arm_lead, win & (state[:, idx["score_diff"]] > 0),
+                         team, state, u, gidx, keys, dur)
+        return dur
+
+    def _redraw(self, arm, w, team, state, u, gidx, keys, dur):
         if not w.any():
-            return dur
+            return
         r = np.flatnonzero(w)
         base = self.inner.inner                     # ClockAdapterV3: the frame builder
         df = base._frame(team[r], state[r], None if gidx is None else np.asarray(gidx)[r])
-        t = CK.sample_from_pmf(self.arm.pmf(df), np.asarray(u)[r]).astype(np.float64)
+        t = CK.sample_from_pmf(arm.pmf(df), np.asarray(u)[r]).astype(np.float64)
         a = self.inner._latent(np.asarray(keys)[r], team[r])
         dur[r] = np.clip(np.rint(a * t), 0.0, float(CK.DURATION_CAP))
         self.n_window += len(r)
-        return dur
+
+
+# ---------------------------------------------------------------------------
+# Round 4 (experiments.md section 9): the end-of-period make law and the no-shot law.
+# Both are fitted cell laws (data, not sim output), DEFAULT OFF, periods 1-2 only.
+# ---------------------------------------------------------------------------
+MAKE_ARMS = ("MK1", "MK2")
+BUZZER_ARMS = ("BZ1", "BZ2", "BZ3")
+_CLS = {"FGA_rim": 0, "FGA_jump2": 1, "FGA_3": 2}
+
+
+@dataclass
+class LateGameMake:
+    """Served fg_make everywhere; on FIRST-chance shots with <= 1 s left AT THE SHOT
+    (possession-start clock minus the fed chance_elapsed_s, rounded) in periods 1-2, the buzzer
+    make law (`train_late_game_r4_make_v1.py`, fold 2 fit) replaces the probability."""
+
+    inner: object
+    lut: dict
+    arm: str
+    source: dict
+    n_replaced: int = 0
+
+    def __getattr__(self, k):
+        return getattr(self.__dict__["inner"], k)
+
+    def predict(self, shot_class, team, slot, xs, gidx=None, *a, **k):
+        p = np.asarray(self.inner.predict(shot_class, team, slot, xs, gidx, *a, **k), dtype=np.float64)
+        from cbb_sim.engine.adapters import STATE_INDEX as I
+        per = xs[:, I["period"]]
+        tl = np.rint(xs[:, I["seconds_remaining"]] - xs[:, I["chance_elapsed_s"]])
+        w = (per <= 2) & (xs[:, I["chance_number"]] == 1) & (tl <= 1)
+        if not w.any() or shot_class not in _CLS:
+            return p
+        p = p.copy()
+        key = _CLS[shot_class] * 2 + (per[w].astype(np.int64) - 1)
+        if self.arm == "MK2":
+            key = key * 2 + np.clip(tl[w], 0, 1).astype(np.int64)
+        p[w] = np.asarray(self.lut[self.arm])[key]
+        self.n_replaced += int(w.sum())
+        return p
+
+
+def wrap_make(fg, mode: str):
+    if mode not in MAKE_ARMS:
+        raise ValueError(f"ENGINE_LG_MAKE={mode!r}: expected one of {MAKE_ARMS}")
+    import json
+    p = R4_DIR / "make_F2.json"
+    lut = json.loads(p.read_text(encoding="utf-8"))
+    src = {"arm": mode, "path": str(p), "fold": "F2", "train_seasons": [2022, 2023, 2024],
+           "scope": "first-chance FGA, periods 1-2, rint(sec - chance_elapsed_s) <= 1",
+           "preregistration": "docs/models/late_game/experiments.md section 9", "adopted": False}
+    return LateGameMake(inner=fg, lut=lut, arm=mode, source={**getattr(fg, "source", {}), "late_game_make": src}), src
+
+
+class Buzzer:
+    """P(possession ends at the horn with no terminal event | start state), periods 1-2, start <= 35 s
+    (`train_late_game_r4_buzzer_v1.py`, fold 2 fit). Own stream (seed, game_id, "lg_buzzer")."""
+
+    ST = {"made_FG": 0, "made_FT": 0, "DREB": 1, "TOV": 2}
+    SIZES = {"per": 2, "sb": 7, "role": 3, "st": 4}
+
+    def __init__(self, lut: dict, arm: str, seeds, gids):
+        from cbb_sim.engine import rng as RNG
+        from cbb_sim.engine import state as S
+        self.rate = np.asarray(lut["rate"])
+        self.dims = lut["dims"]
+        self.edges = np.asarray(lut["edges"])
+        self.arm = arm
+        self.book = RNG.StreamBook(seeds, gids, families=("lg_buzzer",))
+        code = S.PREV_END_CODE
+        self.st_of = np.full(max(code.values()) + 1, 3, dtype=np.int64)
+        for name, v in self.ST.items():
+            if name in code:
+                self.st_of[code[name]] = v
+        self.n_noshot = 0
+
+    def draw(self, act, period, sec, off_sd, prev) -> np.ndarray:
+        ns = np.zeros(len(act), dtype=bool)
+        g = (period <= 2) & (sec <= 35)
+        if not g.any():
+            return ns
+        r = np.flatnonzero(g)
+        c = {"per": period[r].astype(np.int64) - 1,
+             "sb": np.clip(np.searchsorted(self.edges, sec[r], side="left"), 0, len(self.edges) - 1),
+             "role": (np.sign(off_sd[r]).astype(np.int64) + 1),
+             "st": self.st_of[np.asarray(prev[r], dtype=np.int64)]}
+        k = np.zeros(len(r), dtype=np.int64)
+        for dm in self.dims:
+            k = k * self.SIZES[dm] + c[dm]
+        u = self.book.draw("lg_buzzer", act[r])
+        ns[r] = u < self.rate[k]
+        self.n_noshot += int(ns.sum())
+        return ns
+
+
+def load_buzzer(seeds, gids):
+    """ENGINE_LG_BUZZER unset/off -> None (nothing imported or drawn)."""
+    mode = os.environ.get("ENGINE_LG_BUZZER", "off") or "off"
+    if mode == "off":
+        return None
+    if mode not in BUZZER_ARMS:
+        raise ValueError(f"ENGINE_LG_BUZZER={mode!r}: expected one of {BUZZER_ARMS}")
+    import json
+    lut = json.loads((R4_DIR / f"buzzer_{mode}_F2.json").read_text(encoding="utf-8"))
+    return Buzzer(lut, mode, seeds, gids)
 
 
 @dataclass
@@ -167,8 +285,14 @@ def wrap(inp, event, clock, mode: str) -> tuple[object, object, dict]:
         if clk_name in ROLE_GATE:
             s["role_gate_sign_score_diff"] = list(ROLE_GATE[clk_name])
             s["preregistration"] = "docs/models/late_game/experiments.md sections 6-7"
+        arm_lead = None
+        if clk_name in LEAD_ARTIFACT:
+            with open(LEAD_ARTIFACT[clk_name], "rb") as f:
+                arm_lead = pickle.load(f)
+            s["leading_rows_law"] = str(LEAD_ARTIFACT[clk_name])
+            s["preregistration"] = "docs/models/late_game/experiments.md section 9"
         clock = LateGameClock(inner=clock, arm=arm, name=clk_name, source={**clock.source,
-                              "late_game": s}, roles=ROLE_GATE.get(clk_name))
+                              "late_game": s}, roles=ROLE_GATE.get(clk_name), arm_lead=arm_lead)
         src["clock"] = s
     if ev_name is not None:
         if getattr(event, "team_block", None) is None:

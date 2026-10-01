@@ -307,6 +307,12 @@ def simulate_chunk(inp: EngineInputs, ad: Adapters, game_index: np.ndarray,
     cbook = None
     if clk_cont is not None:
         cbook = StreamBook(seeds, gids, families=("clock_cont",))
+    # late-game round 4 (late_game/experiments.md s9): DEFAULT-OFF no-shot-at-the-horn law;
+    # ENGINE_LG_BUZZER unset/off -> None, nothing imported or drawn.
+    bz = None
+    if (os.environ.get("ENGINE_LG_BUZZER", "off") or "off") != "off":
+        from cbb_sim.engine.late_game_adapter import load_buzzer
+        bz = load_buzzer(seeds, gids)
     if ssl is not None:
         ssl.init_game(seeds, gids, book.keys["clock"])
     # round 16 (shared_shooting experiments.md s5): FT form shift, None unless ENGINE_TEAM_FORM is set
@@ -467,12 +473,20 @@ def simulate_chunk(inp: EngineInputs, ad: Adapters, game_index: np.ndarray,
         e1 = used
         if ctf is not None:
             e1, trans = ctf.first(act, used, (prev == PREV["DREB"]) | (prev == PREV["TOV"]), trans)
+        ns = None
+        if bz is not None:                     # round 4: the possession runs to the horn, no event
+            ns = bz.draw(act, st.period[act], st.seconds_remaining[act], off_sd[act], prev)
+            if ns.any():
+                used = np.where(ns, left, used).astype(np.float64)
+                st.poss_duration[act] = used.astype(np.int16)
 
         # ---- (b)-(d) the chance cascade ----------------------------------
         if clk_cont is not None:
             pts0 = st.pts[act, off].copy()
             end1 = np.full(m, 4, dtype=np.int64)
         live = np.ones(m, dtype=bool)          # rows whose possession is still open
+        if ns is not None:
+            live &= ~ns
         chance = np.ones(m, dtype=np.int64)
         end_code = np.full(m, PREV["other"], dtype=np.int8)
         for c_iter in range(MAX_CHANCES):

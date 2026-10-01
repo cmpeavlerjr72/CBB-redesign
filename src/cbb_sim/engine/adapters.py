@@ -1156,6 +1156,12 @@ class Adapters:
         if lg_mode != "off":
             from cbb_sim.engine.late_game_adapter import wrap as _lg_wrap
             event, clock, lg_src = _lg_wrap(inp, event, clock, lg_mode)
+        # LATE-GAME ROUND 4 (late_game/experiments.md section 9): DEFAULT-OFF buzzer make law.
+        lg_mk = os.environ.get("ENGINE_LG_MAKE", "off") or "off"
+        lg_mk_src = None
+        if lg_mk != "off":
+            from cbb_sim.engine.late_game_adapter import wrap_make as _lg_mk
+            fg, lg_mk_src = _lg_mk(fg, lg_mk)
         # ROTATION, 2026-09-11: round 3b adopted S1 as the SCHEME (not an arm --
         # no rotation arm has ever passed the state-dependence gate, so
         # `provisional_rotation` stays True). The six dated R2 fits are selected
@@ -1238,6 +1244,11 @@ class Adapters:
         if lg_src is not None:
             flags["ENGINE_LATE_GAME"] = lg_mode
             flags["sources"]["late_game"] = lg_src
+        if lg_mk_src is not None:
+            flags["ENGINE_LG_MAKE"] = lg_mk
+            flags["sources"]["late_game_make"] = lg_mk_src
+        if (os.environ.get("ENGINE_LG_BUZZER", "off") or "off") != "off":
+            flags["ENGINE_LG_BUZZER"] = os.environ["ENGINE_LG_BUZZER"]   # late-game round 4 (loop.py)
         if sa_src is not None:
             flags["ENGINE_SEASON_ANCHOR"] = sa_mode
             flags["sources"]["season_anchor"] = sa_src
