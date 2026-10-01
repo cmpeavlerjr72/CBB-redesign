@@ -45,8 +45,13 @@ from cbb_sim.models import clock as CK
 from cbb_sim.models import late_game as LGM  # registers the P3R/LGD cell dims
 
 R2_DIR = Path("data/processed/models/late_game/round2")
-CLOCK_ARMS = ("clk_C2", "clk_D")
+CLOCK_ARMS = ("clk_C2", "clk_D", "clk_Dt", "clk_Dtt")
 EVENT_ARMS = ("ev_BL3", "ev_L0S0")
+# Round 3 (experiments.md sections 6.3 / 7.3): the SAME clk_D law, gated by the offence's
+# live score_diff sign at possession start. None = every window row (round 2's clk_D).
+#   clk_Dt  -> tied rows only; clk_Dtt -> tied and trailing rows. No artifact is refit.
+ROLE_GATE = {"clk_Dt": (0,), "clk_Dtt": (0, -1)}
+ARTIFACT_OF = {"clk_Dt": "clk_D", "clk_Dtt": "clk_D"}
 
 
 def parse_mode(mode: str) -> tuple[str | None, str | None]:
@@ -82,6 +87,7 @@ class LateGameClock:
     wants_sim_keys: bool = True
     n_window: int = 0
     _state_idx: dict = field(default_factory=dict)
+    roles: tuple | None = None       # round 3: allowed sign(score_diff) values; None = all
 
     def __getattr__(self, k):
         return getattr(self.__dict__["inner"], k)
@@ -94,10 +100,12 @@ class LateGameClock:
         idx = self.inner.inner.state_idx
         w = LGM.in_window(state[:, idx["period"]], state[:, idx["seconds_remaining"]],
                           state[:, idx["score_diff"]])
+        if self.roles is not None:
+            w &= np.isin(np.sign(state[:, idx["score_diff"]]), self.roles)
         if not w.any():
             return dur
         r = np.flatnonzero(w)
-        base = self.inner.inner                      # ClockAdapterV3: the frame builder
+        base = self.inner.inner                     # ClockAdapterV3: the frame builder
         df = base._frame(team[r], state[r], None if gidx is None else np.asarray(gidx)[r])
         t = CK.sample_from_pmf(self.arm.pmf(df), np.asarray(u)[r]).astype(np.float64)
         a = self.inner._latent(np.asarray(keys)[r], team[r])
@@ -153,11 +161,14 @@ def wrap(inp, event, clock, mode: str) -> tuple[object, object, dict]:
     if clk_name is not None:
         if not hasattr(clock, "_latent") or not hasattr(getattr(clock, "inner", None), "_frame"):
             raise ValueError("ENGINE_LATE_GAME clock arms wrap the served v5b latent clock only")
-        arm, p = _load(clk_name)
+        arm, p = _load(ARTIFACT_OF.get(clk_name, clk_name))
         s = {"arm": clk_name, "path": p, "scheme": "S0", "fold": "F2",
              "train_seasons": [2022, 2023, 2024]}
+        if clk_name in ROLE_GATE:
+            s["role_gate_sign_score_diff"] = list(ROLE_GATE[clk_name])
+            s["preregistration"] = "docs/models/late_game/experiments.md sections 6-7"
         clock = LateGameClock(inner=clock, arm=arm, name=clk_name, source={**clock.source,
-                              "late_game": s})
+                              "late_game": s}, roles=ROLE_GATE.get(clk_name))
         src["clock"] = s
     if ev_name is not None:
         if getattr(event, "team_block", None) is None:
