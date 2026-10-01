@@ -246,19 +246,19 @@ def simulate_chunk(inp: EngineInputs, ad: Adapters, game_index: np.ndarray,
     # clock round 6 arm L1 (experiments.md s28): default-off start-type label
     ao_relabel = AL.active()
     # Round 7 (experiments.md s20): joint foul accrual + FT-trip offsets.
-    # DEFAULT OFF -- `FJ.load` returns None unless ENGINE_FOUL_JOINT names an arm.
-    fj = FJ.load(os.environ.get("ENGINE_FOUL_JOINT", "reference"))
-    # shot_block section 5: drawn block flag. DEFAULT OFF -- `SBK.load` returns None
-    # unless ENGINE_SHOT_BLOCK names an arm; then no "shot_block" draw is ever made.
-    sbk = SBK.load(os.environ.get("ENGINE_SHOT_BLOCK", "reference"), inp)
+    # SERVED DEFAULT `FJ.DEFAULT` (R9ao3, adopted 2026-10-01); `reference` -> None (served-v1).
+    fj = FJ.load(os.environ.get("ENGINE_FOUL_JOINT", FJ.DEFAULT))
+    # shot_block section 5: drawn block flag. SERVED DEFAULT `SBK.DEFAULT` (K2_Ocell,
+    # adopted 2026-10-01); `reference` -> None, no "shot_block" draw (served-v1).
+    sbk = SBK.load(os.environ.get("ENGINE_SHOT_BLOCK", SBK.DEFAULT), inp)
     sb_type = np.array([SBK.TYPE_INDEX.get(m, -1) for m in RB.MISS_TYPES], dtype=np.int64)
     if fj is not None:
         fj.init_whistle(seeds, gids)     # round 8; a no-whistle arm draws nothing
-    # shared_shooting round 1: per-game shared fg_make logit effect. DEFAULT OFF
-    # (ENGINE_SHARED_SHOOTING unset -> None, no draw, no stream touched).
+    # shared_shooting round 1: per-game shared fg_make logit effect. SERVED DEFAULT G3
+    # (adopted 2026-10-01); ENGINE_SHARED_SHOOTING=reference -> None, no draw (served-v1).
     ssl = SSL.load()
-    # chance_time round 1 (chance_time/experiments.md s1): fed chance timing. DEFAULT OFF
-    # (ENGINE_CHANCE_TIME unset -> None, no draw, no stream touched).
+    # chance_time round 1 (chance_time/experiments.md s1): fed chance timing. SERVED DEFAULT
+    # KD (adopted 2026-10-01); ENGINE_CHANCE_TIME=reference -> None, no draw (served-v1).
     ctf = CT.load(seeds, gids)
     if ssl is not None:
         ssl.init_game(seeds, gids, book.keys["clock"])

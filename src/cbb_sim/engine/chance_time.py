@@ -114,8 +114,13 @@ class ChanceTime:
         xs[c2, col] = self.cont_q[bk, KEY_OF_SHOT[shot_class], self._qi(u)]
 
 
+#: SERVED DEFAULT, ADOPTED 2026-10-01 (Decision 11 set, PM under user delegation;
+#: docs/tests/adoption_served_v2_2026-10-01.md). `reference` reproduces served-v1.
+DEFAULT = "KD"
+
+
 def load(seeds, game_ids) -> ChanceTime | None:
-    arm = os.environ.get(ENV, "reference")
+    arm = os.environ.get(ENV, DEFAULT)
     if arm in ("", "reference"):
         return None
     return ChanceTime(arm, seeds, game_ids)

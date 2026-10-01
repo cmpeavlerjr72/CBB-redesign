@@ -34,8 +34,10 @@ GAMES_PER_BLOCK=60
 SEEDS_PER_BLOCK=25
 MAX_GAMES=0             # 0 = all games in the fold
 ENGINE_EVENT="round2_s1"
-ENGINE_CLOCK="v5b_glat_pmean"   # lane J 2026-09-30: was "reference", which the always-set env prefix
+ENGINE_CLOCK="v5b_r6L2_glat_pmean"   # 2026-10-01: the adopted served-v2 clock (adapters.py default).
+                                # lane J 2026-09-30: was "reference", which the always-set env prefix
                                 # used to force over the adapter's adopted default (09-18 gotcha)
+PARITY_INPUT_DIR=""     # parity gate only; empty = default inputs. v8 needs data/processed/models/engine_v3
 ENGINE_ROTATION="reference"
 ENGINE_FG3="decision8"
 INPUT_DIR_SWEEP=""      # sweep chunks only; the parity gate ALWAYS uses the default inputs
@@ -67,7 +69,8 @@ Usage: run_aws_sweep.sh --tag TAG [options]
   --max-games N           0 = all games (default). Set for a smoke subset.
   --engine-event MODE     reference | round2_s1 (default round2_s1, the
                          adopted round-2 winners)
-  --engine-clock MODE     v5b_glat_pmean (adopted, default) | reference | reference_empirical
+  --engine-clock MODE     v5b_r6L2_glat_pmean (adopted 2026-10-01, default) | v5b_glat_pmean
+                         (SERVED_V1) | reference | reference_empirical
                          | any ENGINE_CLOCK arm name run_engine understands
   --input-dir DIR         sweep chunks only: run_engine.py --input-dir DIR (e.g.
                          data/processed/models/engine_v3). The parity gate never uses it: the
@@ -85,6 +88,11 @@ Usage: run_aws_sweep.sh --tag TAG [options]
                          docs/ops/parity_reference_windows.json, emitted on
                          the home Windows box by scripts/digest_engine_run.py
                          --emit)
+  --parity-input-dir DIR  parity smoke only: run_engine.py --input-dir DIR (default: the
+                         default inputs). The adopted-stack reference
+                         parity_reference_windows_v8.json is on data/processed/models/engine_v3;
+                         v6 (default inputs) and v7 (engine_v3) need the SERVED_V1 env
+                         (docs/tests/adoption_served_v2_2026-10-01.md).
   --parity-games N        smoke game count (default 60)
   --parity-seeds N        smoke seed count (default 5)
   --push on|off           hf_sync_data.py push --dirs results after each
@@ -130,6 +138,7 @@ while [ $# -gt 0 ]; do
     --engine-fg3)        ENGINE_FG3="$2"; shift 2 ;;
     --parity)            PARITY="$2"; shift 2 ;;
     --parity-ref)        PARITY_REF="$2"; shift 2 ;;
+    --parity-input-dir)  PARITY_INPUT_DIR="$2"; shift 2 ;;
     --parity-games)      PARITY_GAMES="$2"; shift 2 ;;
     --parity-seeds)      PARITY_SEEDS="$2"; shift 2 ;;
     --push)              PUSH="$2"; shift 2 ;;
@@ -236,10 +245,13 @@ case "$PARITY" in
   gate|only)
     echo "[cloud] --- PARITY GATE: ${PARITY_GAMES} games x ${PARITY_SEEDS} seeds ---"
     PARITY_TAG="${TAG}_paritycheck"
+    PARITY_EXTRA=()
+    if [ -n "$PARITY_INPUT_DIR" ]; then PARITY_EXTRA+=(--input-dir "$PARITY_INPUT_DIR"); fi
     $PY -u scripts/run_engine.py --fold "$FOLD" --season "$SEASON" \
         --seeds "$PARITY_SEEDS" --max-games "$PARITY_GAMES" --workers "$WORKERS" \
         --games-per-block "$PARITY_GAMES" --seeds-per-block "$PARITY_SEEDS" \
-        --tag "$PARITY_TAG" --results-dir results/engine_v0
+        --tag "$PARITY_TAG" --results-dir results/engine_v0 \
+        ${PARITY_EXTRA[@]+"${PARITY_EXTRA[@]}"}
     ENGINE_EVENT="$ENGINE_EVENT" ENGINE_CLOCK="$ENGINE_CLOCK" \
     ENGINE_ROTATION="$ENGINE_ROTATION" ENGINE_FG3="$ENGINE_FG3" \
     $PY -u scripts/digest_engine_run.py --compare "$PARITY_REF" \

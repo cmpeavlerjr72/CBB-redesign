@@ -38,6 +38,10 @@ from pathlib import Path
 import numpy as np
 
 LUT_DIR = Path("data/processed/models/possession_outcome/round7")
+#: SERVED DEFAULT, ADOPTED 2026-10-01 (Decision 11 set, PM under user delegation;
+#: docs/tests/adoption_served_v2_2026-10-01.md): `loop.py` passes this when
+#: `ENGINE_FOUL_JOINT` is unset. `reference` reproduces served-v1 (no tables).
+DEFAULT = "R9ao3"
 
 #: arm -> which tables it serves (file stems under LUT_DIR)
 ARMS = {

@@ -652,7 +652,9 @@ V5_MODES: dict[str, dict] = {
 #: which is read into `run_meta.json`'s `adapter_flags.provisional_clock`, and
 #: nothing else. It does not touch `pmf`, `draw`, any fitted coefficient, or any
 #: RNG stream, so it cannot change a single simulated number.
-ADOPTED_MODES: frozenset[str] = frozenset({"v5b_glat_pmean"})
+#: 2026-10-01: round 6 arm L2 (`v5b_r6L2_glat_pmean`) ADOPTED as part of the
+#: Decision 11 served set (docs/tests/adoption_served_v2_2026-10-01.md).
+ADOPTED_MODES: frozenset[str] = frozenset({"v5b_glat_pmean", "v5b_r6L2_glat_pmean"})
 
 # ---------------------------------------------------------------------------
 # Clock round 6 (experiments.md section 28; lane B 2026-09-30): the SERVED v5b

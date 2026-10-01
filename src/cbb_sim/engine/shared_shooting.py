@@ -90,9 +90,14 @@ class SharedShooting:
         return 1.0 / (1.0 + np.exp(-x))
 
 
+#: SERVED DEFAULT, ADOPTED 2026-10-01 (Decision 11 set, PM under user delegation;
+#: docs/tests/adoption_served_v2_2026-10-01.md). `reference` reproduces served-v1.
+DEFAULT = "G3"
+
+
 def load():
-    """None for the served path (unset / 'reference'), else the arm."""
-    arm = os.environ.get(ENV, "reference")
+    """None for 'reference' (served-v1), else the arm; unset serves DEFAULT."""
+    arm = os.environ.get(ENV, DEFAULT)
     if not arm or arm == "reference":
         return None
     return SharedShooting(arm)

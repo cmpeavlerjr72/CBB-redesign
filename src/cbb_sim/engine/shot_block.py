@@ -26,6 +26,10 @@ ARMS = {"K2": "shot_block_K2", "K2_Ocell": "shot_block_K2_Ocell",
         # DIAGNOSTIC (section 7): K2_Ocell with both team block rates at the league level (0.0)
         "K2_Ocell_noteam": "shot_block_K2_Ocell_noteam"}
 TYPE_INDEX = {"rim": 0, "jump2": 1, "three": 2}
+#: SERVED DEFAULT, ADOPTED 2026-10-01 (Decision 11 set, PM under user delegation;
+#: docs/tests/adoption_served_v2_2026-10-01.md): `loop.py` passes this when
+#: `ENGINE_SHOT_BLOCK` is unset. `reference` reproduces served-v1 (no draw).
+DEFAULT = "K2_Ocell"
 
 _CACHE: dict = {}
 

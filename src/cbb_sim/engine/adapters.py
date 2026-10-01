@@ -101,6 +101,23 @@ ROT_FIT = Path("data/processed/models/rotation/rotation_fit.json")
 RB_DIR = Path("data/processed/models/rebound")
 FT_DIR = Path("data/processed/models/free_throw")
 
+# SERVED STACK v2, ADOPTED 2026-10-01 (PM decision under the user's delegation of
+# 2026-09-30; docs/tests/adoption_served_v2_2026-10-01.md): the defaults of
+# ENGINE_CLOCK (below, in Adapters.load) and of the four loop-level switches
+# (each module's DEFAULT) are the Decision 11 set. SERVED_V1 is the explicit env
+# that reproduces the pre-adoption served stack (S0; parity references v6/v7).
+from cbb_sim.engine import chance_time as _CT  # noqa: E402
+from cbb_sim.engine import foul_joint as _FJ  # noqa: E402
+from cbb_sim.engine import shared_shooting as _SSL  # noqa: E402
+from cbb_sim.engine import shot_block as _SBK  # noqa: E402
+
+_LOOP_SWITCHES = (("ENGINE_SHOT_BLOCK", _SBK), ("ENGINE_FOUL_JOINT", _FJ),
+                  ("ENGINE_SHARED_SHOOTING", _SSL), ("ENGINE_CHANCE_TIME", _CT))
+SERVED_V1: dict[str, str] = {
+    "ENGINE_CLOCK": "v5b_glat_pmean", "ENGINE_SHOT_BLOCK": "reference",
+    "ENGINE_FOUL_JOINT": "reference", "ENGINE_SHARED_SHOOTING": "reference",
+    "ENGINE_CHANCE_TIME": "reference"}
+
 #: rebound and free_throw both confirmed S1 as their training scheme
 #: (each model's `experiments.md` section 7). Their manifests are DATED
 #: schedules of the winning arm's own spec, so the engine stops refitting a
@@ -1053,7 +1070,10 @@ class Adapters:
         # `reference` and `v3c_srfloor_P3_s1` (the prior served default) stay
         # selectable, unchanged, and provisional, for reproduction of every
         # gate report before this date.
-        ck_mode = os.environ.get("ENGINE_CLOCK", "v5b_glat_pmean")
+        # DEFAULT, 2026-10-01 (PM decision under user delegation, Decision 11
+        # set ADOPTED as one served stack; docs/tests/adoption_served_v2_2026-10-01.md):
+        # clock round 6 arm L2. `v5b_glat_pmean` stays selectable (SERVED_V1).
+        ck_mode = os.environ.get("ENGINE_CLOCK", "v5b_r6L2_glat_pmean")
         rot_mode = os.environ.get("ENGINE_ROTATION", "reference")
         fg3 = os.environ.get("ENGINE_FG3", "decision8")
         # DEFAULT, 2026-09-10 (PM decision recorded in L29 and the change
@@ -1177,6 +1197,12 @@ class Adapters:
                                      "state-dependence gate in either round"}),
             },
         }
+        # Loop-level switches of the adopted stack (2026-10-01): recorded only when
+        # not `reference`, so a SERVED_V1 run's run_meta is byte-identical to before.
+        for _env, _mod in _LOOP_SWITCHES:
+            _arm = os.environ.get(_env, _mod.DEFAULT)
+            if _arm and _arm != "reference":
+                flags[_env] = _arm
         if lg_src is not None:
             flags["ENGINE_LATE_GAME"] = lg_mode
             flags["sources"]["late_game"] = lg_src
