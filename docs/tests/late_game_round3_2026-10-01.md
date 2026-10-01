@@ -211,3 +211,19 @@ The hold is necessary but not sufficient. The remaining tie conversion is owned 
 .venv/Scripts/python.exe scripts/grade_late_game_r3_offline_v1.py --out results/late_game/round3/offline.json
 bash scripts/box_late_game_r3_v1.sh tierA ~/cbb 90 clk_Dt clk_Dtt clk_D      # box; then grade lg3box_* with the same grader
 ```
+
+
+## 9. Box re-read, 500 x 200 (appended 10:30 EDT when `d1001_L_1.done.md` arrived)
+
+Box clone `8eca67b`, plain-default parity v9 PASS. Graded locally with the same grader
+(`results/late_game/round3/grade_box_s200.json`). The base is R9 at offset 0; the floor draws are offsets
+1000-4000, all at 200 seeds.
+
+| arm | P(0)/P(1) | floors vs R9 (floor) | OT (dP0, SE) | vetoes |
+|---|---:|---:|---|---|
+| R9 | 0.542 | -- | 0.0288 | -- |
+| `clk_Dt` | 0.679 | +6.84 (0.020) | 0.0343 (+0.0055, 0.0004) | FAIL G1 SD +2.3 floors (5.510 -> 5.543 vs 5.20; floor = draw SD only, 0.014) |
+| `clk_Dtt` | 0.750 | +6.26 (0.033) | 0.0327 | FAIL G1 SD +1.2 |
+| `clk_D` | 0.884 | +9.12 (0.038) | 0.0420 | FAIL G1 mean, G1 SD, half share, window possessions (+5 to +13 floors) |
+
+The screen verdict stands: no arm reaches 1.0, and none is a candidate. At 200 seeds `clk_Dt` also fails the G1 SD veto.

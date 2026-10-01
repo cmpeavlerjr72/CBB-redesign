@@ -1,4 +1,4 @@
-"""diag_late_game_r4_owner_v1.py -- late-game ROUND 4: who owns the end-of-period possession value?
+﻿"""diag_late_game_r4_owner_v1.py -- late-game ROUND 4: who owns the end-of-period possession value?
 
 Reported lines (the pre-registration's motivating evidence), one code path per side. Possessions that START
 at <= 35 s in period 1 or 2, by start bucket (and role in period 2), sim (round-4 tap) vs actual
@@ -57,8 +57,8 @@ def sim_frames(tag):
                       "tov": t["d_tov"], "fga3": t["d_fga3"], "fgm3": t["d_fgm3"],
                       "fga2": t["d_fga2_rim"] + t["d_fga2_jump"], "fgm2": t["d_fgm2_rim"] + t["d_fgm2_jump"],
                       "fta": t["d_fta"], "ftm": t["d_ftm"]})
-    if "noshot" in t:
-        p["noshot"] = t["noshot"].to_numpy()
+    # a round-4 no-shot possession leaves no box event at all (every served possession leaves one)
+    p["noshot"] = ((t["d_fga3"] + t["d_fga2_rim"] + t["d_fga2_jump"] + t["d_fta"] + t["d_tov"]) == 0).astype(int).to_numpy()
     s = pd.read_parquet(RES / tag / "tap_shots.parquet")
     s = s[s["chance"] == 1]
     sh = pd.DataFrame({"per": s["per"], "tl": s["sec"] - s["elapsed"],

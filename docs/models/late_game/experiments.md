@@ -1002,3 +1002,34 @@ The window arms wrap whatever the served clock adapter is, through its `_latent`
 then scaled by the new latent). A clock that conditions duration on the possession's OUTCOME would invert the
 engine's draw order (duration before event); the window laws, which are outcome-free, would then need
 re-deriving as conditional laws. This is stated now and checked against lane H's committed code at report time.
+
+---
+
+## 10. RESULTS -- round 4, RUN 2026-10-01 (lane L; status PROPOSED -> RUN; NO ARM ADOPTED, no served default changed)
+
+Full evidence: `docs/tests/late_game_round4_2026-10-01.md`. Offline guards pass on both folds:
+- `BZ3`: +18.2 floors vs `BZ0` on F2, +16.3 on F1.
+- `MK2`: +12.7 / +15.8 vs `MK0`.
+- `LGL` on leading rows: +13.1 / +13.2 vs A.
+
+Closed loop, 500 x 25 vs R9 (Decision 12 floors; the floor draws were re-run under the round-4 tap and are bit-identical to round 3's):
+
+| arm | P(0)/P(1) | floors | OT | vetoes failing |
+|---|---:|---:|---:|---|
+| Dt | 0.672 | +2.13 | 0.0341 | none |
+| Dt+a1 (BZ3) | 0.796 | +2.93 | 0.0383 | G9 total, half share, G1 SD |
+| Dt+a (BZ3+MK2) | 0.832 | +3.06 | 0.0382 | G9 total, half share, G1 SD, H1 buzzer (overshoot 0.642 vs 0.730) |
+| Dt+b (clk_DtL) | 0.701 | +1.87 | 0.0410 | G1 mean, G1 SD, half share, window possessions |
+| Dt+a+b | 0.848 | +3.02 | 0.0454 | G1 mean, G1 SD, G9 total, half share, window possessions, H1 buzzer |
+
+No candidate. No clear best: the set arms are within one floor of each other. No full-size request was filed.
+
+Owners found:
+- **No-shot at the horn.** The engine produces none against 18-29% in the data. BZ3 fixes the H1 buzzer PPP: 0.764 vs 0.730, base 0.943.
+- **Buzzer make.** MK2 overshoots, because fg_make under-rates quick shots at 1-10 s left.
+- **The first-half horn possession count.** The sim has about 35-80% too many; this is a clock defect behind the half-share veto.
+- **Trailing-offence time use.** It is behind the leading law's extra possessions.
+
+(c) pricing: fixing the leading late FT make costs -0.0014 OT rate (SE 0.0005) and adds +0.037 to P(0)/P(1) (SE 0.015).
+
+Round-3 500 x 200 box re-read: `clk_Dt` +6.84 floors, ratio 0.679, and it also fails G1 SD (+2.3); verdict unchanged.

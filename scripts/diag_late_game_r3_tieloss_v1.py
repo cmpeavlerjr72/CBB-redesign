@@ -72,6 +72,8 @@ def actual_frame() -> tuple[pd.DataFrame, pd.DataFrame]:
 
 def sim_frame(tag: str) -> tuple[pd.DataFrame, pd.DataFrame]:
     t = pd.read_parquet(RES / tag / "tap_poss.parquet")
+    if "per" in t:                       # round-4 tap logs both halves; this diagnostic reads period 2
+        t = t[t["per"] == 2].reset_index(drop=True)
     sgn = np.where(t["off"].to_numpy() == 0, 1, -1)
     hm = (t["hp"] - t["ap"]).to_numpy()
     p = pd.DataFrame({
