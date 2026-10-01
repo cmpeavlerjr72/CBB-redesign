@@ -188,3 +188,67 @@ POST-HOC relative to round 1: motivated by 2.2. One new arm.
 - **Closed loop:** same local loop (COMB, 500 x 32, paired, R-floor 100-131). Then the box read
   `COMB9 + ENGINE_CHANCE_TIME=<K or C12>` vs `COMB9` at full size with Decision 12 floors; the PM
   rules on ship. Nothing is adopted by this lane.
+
+## 4. Addendum 1b results (arm K; lane I, run 2026-10-01 00:06-00:16 EDT)
+
+The section-3 heading says 00:10 EDT. The addendum was committed at 00:05 EDT (`902c2f0`), before
+the lut_v2 build (00:06) and before any K run.
+
+Wiring: `1b9bf37` (one changed `loop.py` call, K branch in `chance_time.py`). Default-path parity
+re-checked after the edit: PASS, bit-identical (`0d4ddccc`). Graders:
+`scripts/exp_chance_time_offline_v2.py` (v1 plus K and the s3 guards) and
+`scripts/exp_chance_time_f1_parity_v2.py`.
+
+### 4.1 Offline, F2
+
+| arm | G_feed | floor | beats R by | gap pp rim (c1 / c2+) / jumper / three | calib worst decile pp rim / jump / three | slope rim / jump / three |
+|---|---:|---:|---:|---|---|---|
+| R | 1.973 | | | -1.31 (-1.02 / -2.56) / -0.48 / -0.43 | 12.51 / 8.09 / 6.69 | 1.120 / 0.903 / 0.746 |
+| **K** | **0.180** | 0.0316 | **56.7 floors** | -0.18 (-0.19 / -0.10) / +0.04 / -0.01 | 5.83 / 3.68 / 2.96 | 1.013 / 0.851 / 0.743 |
+
+K's signed points gap by month is -0.39 / -0.25 / -0.03 / +0.04 / -0.12 (Nov, Dec, Jan, Feb, Mar).
+By site it is -0.10 / -0.15 / -0.24 (away, home, neutral). R's is -1.8 to -2.1 in every cell.
+
+F1 confirmation (fed-vs-real elapsed quantile gap / chance-1 transition-share gap): **K 0.27 s /
+0.005**, against R 3.40 s / 0.055 and C12 1.03 s / 0.045. F1 confirms.
+
+**Addendum rule: K is NOT ELIGIBLE.**
+- Guard (i), the calibration decile gate: K fails it in all three classes. Every drawn or leaky
+  feed fails it (R fails it at 12.5 pp); only the true features pass.
+- Guard (ii), the symmetric slope: K fails it on the jumper by 0.002 (|0.851 - 1| = 0.149 against
+  R's 0.097 + 0.05). It passes on rim (0.013 against 0.170) and three.
+
+Recorded, NOT used to select: guard (i) is mis-specified for the same reason as round 1's log-loss
+guard. A value drawn independently of the row's true, engine-unobservable state adds spread to p
+that carries no information about the outcome. That dilutes the deciles by construction while the
+level stays right. What a sim feed can be held to is the distribution of the fed value given what
+the engine knows (class, start, chance number): F1 parity. It can also be held to the level:
+G_feed.
+
+### 4.2 POST-HOC closed loop (COMB stack, 500 verified stride games x 32 paired seeds; floor from R seeds 100-131)
+
+| line | R | K | move / floors | C12 move / floors | actual (sample) |
+|---|---:|---:|---|---|---:|
+| rim make | 0.5719 | 0.5829 | **+0.0109 / 7.7** | +0.0065 / 4.6 | 0.5901 |
+| jumper make | 0.3907 | 0.3908 | +0.0002 / 0.1 | -0.0003 / 0.3 | 0.3916 |
+| three make | 0.3361 | 0.3388 | **+0.0027 / 6.3** | +0.0001 / 0.3 | 0.3377 |
+| eFG | 0.5022 | 0.5079 | **+0.0056 / 11.3** | +0.0026 / 5.3 | 0.5107 |
+| points per game | 144.74 | 145.67 | **+0.93 / 19.6** | +0.35 / 7.4 | 146.55 |
+| total bias (sample) | -1.81 | -0.87 | +0.93 | +0.35 | |
+| possessions (count) | 69.06 | 68.95 | -0.11 / 3.1 | -0.06 / 1.7 | |
+| rim / three share | 0.3716 / 0.3893 | 0.3714 / 0.3894 | 0 | +0.0016 / -0.0008 | 0.3715 / 0.3954 |
+| OREB% | 0.2903 | 0.2896 | -0.0008 / 2.6 | -0.0004 / 1.5 | 0.2985 |
+| FTA/FGA | 0.3317 | 0.3322 | +0.0004 / 2.5 | +0.0024 / 14.7 | 0.3329 |
+
+Fed chance-1 elapsed in the sim under K: rim 4/8/15/21/26 s (real 4/7/14/21/26), three 5/9/16/22/27
+(real 5/9/16/22/27). Chance-1 transition share among attempts: rim 0.250 (real 0.219), three 0.180
+(real 0.168); K overshoots the rim transition share by 3 pp.
+
+The possession count falls 0.11. More makes mean more made-FG starts, and those have longer clock
+draws.
+
+### 4.3 Box read
+
+Requested as a POST-HOC DIAGNOSTIC (not a registered ship decision): `docs/ops/box_queue/laneI_1.md`,
+`COMB9 + ENGINE_CHANCE_TIME=K` vs `COMB9` at 5,710 x 200 with the Decision 12 floors; C12 as tier B.
+The PM rules on the guards. Nothing is adopted by this lane.
