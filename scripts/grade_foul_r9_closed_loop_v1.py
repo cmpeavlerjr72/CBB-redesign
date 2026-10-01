@@ -29,6 +29,12 @@ NB = 200
 
 def load_sim(tag: str) -> pd.DataFrame:
     d = R / tag
+    if not d.exists():   # chunked full-size taps: <tag>_off<o>_n<n>/half_agg.parquet
+        parts = sorted(R.glob(f"{tag}_off*_n*/half_agg.parquet"))
+        if not parts:
+            raise FileNotFoundError(d)
+        return pd.concat([pd.read_parquet(p) for p in parts], ignore_index=True)[
+            ["seed", "game_id", "off_side", "half"] + COLS]
     if (d / "half_agg.parquet").exists():
         a = pd.read_parquet(d / "half_agg.parquet")
     else:

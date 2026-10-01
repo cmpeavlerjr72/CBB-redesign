@@ -3810,3 +3810,14 @@ Every other G1-G9 line, G4 TOV%, and G5 by component lies within 2 floors; the t
 The G9 total failure is R8b's first-half FT excess (+0.26 FTM per game) no longer offsetting the engine's
 total under-prediction (R9's total bias equals S0's, -0.825 vs -0.822): a compensation exposed (Decision 11).
 Full size 5,710 x 200: NOT RUN at writing (queued on the box).
+
+### 28.1 PM ruling (2026-09-30 23:12 EDT, recorded by lane C)
+
+**`R9ao3` is the round-9 arm.** AO3 beats the served constant beyond the floor on its own (+1.35 floors); AO1
+fails the standing responsiveness rule on the defence side (prior-quintile slope 0.08), so the tie rule does not
+rescue AO1. Status: **VALIDATED-PENDING-SHIP-ACTION** (Decision 11); `R9ao3` SUPERSEDES `R8b` as the foul
+member of the Decision 11 set. The G9 total-bias veto reading (compensation exposed) is accepted: the full-size
+COMB read (`docs/tests/engine_gates_F2_2025_s200_v3_COMB_full_2026-09-30.md`) shows total bias -0.26 -> -1.27
+with sim eFG% 0.5009 vs 0.5086 actual; the owner is the PPP deficit (a separate lane). Next read: full-size
+COMB9 = `ENGINE_CLOCK=v5b_r6L2_glat_pmean` + `ENGINE_SHOT_BLOCK=K2_Ocell` + `ENGINE_FOUL_JOINT=R9ao3`, paired
+against S0 and against `v3full_COMB_s200_o0` (box request `docs/ops/box_queue/laneC_2.md`).

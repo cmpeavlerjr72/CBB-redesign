@@ -14,7 +14,14 @@ SAMPLE=data/processed/truth/stride500_verified_minswap_v1_F2_2025.parquet
 export ENGINE_EVENT=round2_s1 ENGINE_CLOCK=v5b_glat_pmean ENGINE_ROTATION=reference ENGINE_FG3=decision8
 export CBB_TRUTH=verified_v1
 MODE="${1:?mode}"; ARM="${2:?arm}"; W="${3:?workers}"; OFF="${4:-0}"; SEEDS="${5:-200}"
-if [ "$ARM" != "S0" ]; then export ENGINE_FOUL_JOINT="$ARM"; else unset ENGINE_FOUL_JOINT; fi
+case "$ARM" in
+  S0) unset ENGINE_FOUL_JOINT ;;
+  # Decision 11 stacks (clock round 6 L2 + drawn block K2_Ocell + foul arm); COMB = the operator's R8b stack
+  COMB)  export ENGINE_CLOCK=v5b_r6L2_glat_pmean ENGINE_SHOT_BLOCK=K2_Ocell ENGINE_FOUL_JOINT=R8b ;;
+  COMB9) export ENGINE_CLOCK=v5b_r6L2_glat_pmean ENGINE_SHOT_BLOCK=K2_Ocell ENGINE_FOUL_JOINT=R9ao3 ;;
+  *) export ENGINE_FOUL_JOINT="$ARM" ;;
+esac
+echo "[env] $ARM ENGINE_CLOCK=$ENGINE_CLOCK ENGINE_SHOT_BLOCK=${ENGINE_SHOT_BLOCK:-} ENGINE_FOUL_JOINT=${ENGINE_FOUL_JOINT:-}"
 export BOX_DOCKER_ARGS; BOX_DOCKER_ARGS="$(sed "s#\$PWD#$PWD#g" "$IN/docker_mounts.txt" | tr '\n' ' ')"
 $B scripts/ops_overlay_check_v1.py --input-dir "$IN" --root /app || { echo "OVERLAY CHECK FAILED"; exit 3; }
 case "$MODE" in
@@ -29,7 +36,23 @@ full)
     done_s=$((done_s+this))
   done
   $B scripts/concat_engine_runs.py --tag "$RT" --results-dir results/engine_v0 --overwrite && echo "[done] $RT"
-  $B scripts/eval_gates.py --results "results/engine_v0/$RT" --season 2025 --out "results/engine_v0/v3full_grade/${RT}__verified.md" ;;
+  mkdir -p results/engine_v0/v3full_grade
+  $B scripts/eval_gates.py --results "results/engine_v0/$RT" --season 2025 --out "results/engine_v0/v3full_grade/${RT}__verified.md"
+  CBB_TRUTH=legacy_v0 $B scripts/eval_gates.py --results "results/engine_v0/$RT" --season 2025 --out "results/engine_v0/v3full_grade/${RT}__current.md" ;;
+tapfull)
+  # full size, tapped, half aggregates only (no players), chunks of 25 seeds; resumable
+  RT="r9tapfull_${ARM}_s${SEEDS}_o${OFF}"; CH=25; done_s=0
+  E=(); [ -n "${ENGINE_FOUL_JOINT:-}" ] && E=(--env "ENGINE_FOUL_JOINT=$ENGINE_FOUL_JOINT")
+  [ -n "${ENGINE_SHOT_BLOCK:-}" ] && E+=(--env "ENGINE_SHOT_BLOCK=$ENGINE_SHOT_BLOCK")
+  E+=(--env "ENGINE_CLOCK=$ENGINE_CLOCK")
+  while [ "$done_s" -lt "$SEEDS" ]; do
+    this=$(( SEEDS - done_s < CH ? SEEDS - done_s : CH )); o=$(( OFF + done_s )); sub="${RT}_off${o}_n${this}"
+    if [ -f "results/engine_v0/$sub/half_agg.parquet" ]; then echo "[skip] $sub"; done_s=$((done_s+this)); continue; fi
+    echo "[chunk] $sub $(date -u +%H:%M:%SZ)"
+    $B scripts/run_foul_joint_tap_v2.py --tag "$sub" --all-games --input-dir "$IN" --seeds "$this" --seed-offset "$o" \
+        --workers "$W" --agg-halves --no-players "${E[@]}" || { echo "CHUNK FAILED $sub"; exit 4; }
+    done_s=$((done_s+this))
+  done ;;
 sample)
   $B scripts/run_po4b_closed_loop_sample_v1.py --sample-file "$SAMPLE" --arm round2_s1 --input-dir "$IN" \
       --seeds 200 --seed-offset "$OFF" --workers "$W" --tag "v3box_${ARM}_s200_o${OFF}" --results-dir results/engine_v0

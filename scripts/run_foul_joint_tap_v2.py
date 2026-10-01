@@ -257,6 +257,7 @@ def main() -> int:
     ap.add_argument("--results-dir", default="results/engine_v0")
     ap.add_argument("--input-dir", default=str(P.INPUT_DIR))
     ap.add_argument("--sample-file", default=None)
+    ap.add_argument("--all-games", action="store_true", help="every game of the input slate (full size)")
     ap.add_argument("--agg-halves", action="store_true",
                     help="write half_agg.parquet (per seed x game x offence side x half sums) "
                          "instead of the per-possession poss_tap.parquet")
@@ -276,7 +277,9 @@ def main() -> int:
     from cbb_sim.engine.inputs import EngineInputs
     in_tag = f"{args.fold}_{args.season}"
     inp = EngineInputs.load(args.input_dir, in_tag)
-    if args.sample_file:
+    if args.all_games:
+        rows = np.arange(len(inp.games), dtype=np.int64)
+    elif args.sample_file:
         ids = np.sort(pd.read_parquet(args.sample_file)["game_id"].to_numpy().astype("int64"))
         pos = {int(g): k for k, g in enumerate(inp.games["game_id"].to_numpy())}
         miss = [int(g) for g in ids if int(g) not in pos]
