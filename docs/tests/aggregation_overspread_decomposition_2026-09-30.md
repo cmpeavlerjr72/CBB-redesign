@@ -542,7 +542,9 @@ The proposed mechanism is team effects from both sides combined additively on a 
 - G1 / G3 are deprioritised. G2 was run (preliminary, fold 2): it does not help.
 - The owner of that file is lane J's `train_fg_make_v4_par_v1.py` or `team_rate_adapter`. It is a small change and it needs a parity test.
 
-**3. Audit the other Stage B arms for the same class of skew.** possession_outcome and rebound `T` have no derived team columns that we know of, and their harness effects sit inside their retrain floors. That is not a parity proof.
+**3. Audit the other Stage B arms for the same class of skew.**
+- possession_outcome `T`: checked (addendum H, `scripts/diag_aggregation_parity_po_v1.py`). The training overlay and the S1 engine team block are exact on all 16 team columns over 10,890 fold-2 (game, offence) rows.
+- rebound `T`: NOT checked. Its harness effect sits inside its retrain floor.
 
 **Local resume:**
 - Harness: `scripts/diag_aggregation_harness_v1.py --stack <S0|S1|R|R2|X_*|Z_*|X_Tfix|S1fix> [--arms ...] [--fg-first-refit] [--slot-dev-override ...]`.
