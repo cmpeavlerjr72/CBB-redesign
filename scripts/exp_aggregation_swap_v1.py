@@ -59,6 +59,8 @@ ARMS: dict[str, tuple[list[str], list[str]]] = {
     "FULL": ([], []),
     "PO": (PO_OFF + PO_DEF, []),
     "FG": (FG_OFF + FG_DEF, []),
+    "FG_OFF": (FG_OFF, []),        # addendum C
+    "FG_DEF": (FG_DEF, []),        # addendum C
     "RB": (RB_OFF + RB_DEF, []),
     "RAT": (RAT_OFFTEAM + RAT_DEFTEAM, []),
     "RAT_PO": (RAT_OFFTEAM + RAT_DEFTEAM, []),     # event block ONLY (possession_outcome's copy)

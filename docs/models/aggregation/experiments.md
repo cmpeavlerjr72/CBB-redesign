@@ -98,3 +98,7 @@ Reason: Part C and addendum A (results doc sections 3-4) name fg_make's Stage B 
 - **Test (harness, deterministic):** fg_make scored by its FIRST refit (trained only on seasons before 2024-11-01) for every game (`diag_aggregation_harness_v1.py --fg-first-refit`), all other sub-models as served in each stack; stacks S0, S1 and X_F (fg_make T only). FULL arm.
 - **Read:** Delta(1 - slope(Y on X_h)) S1 - S0 and X_F - S0 under first-refit fg_make, vs the same deltas under the served schedule (+0.043 and +0.035); the team-game make-rate calibration slopes by month.
 - **Rule:** H_mem SUPPORTED if the first-refit X_F - S0 delta is <= 50% of the served-schedule X_F - S0 delta (+0.035) and the S1 make slopes from January on recover to within 0.05 of S0's; REFUTED if the first-refit delta is >= 80% of it; otherwise PARTIAL. Confound stated in advance: the first refit also lacks the in-season drift information for both stacks; the read is the S1 - S0 (paired) difference, not either level.
+
+### 1.10 Addendum C (written 21:32 EDT, BEFORE it ran): which side of fg_make's team features
+
+Addendum B REFUTED same-season memorisation (results doc section 5). Before a fix round is written, the harness splits fg_make's team-feature response by side: arms `FG_OFF` (offence `off_make_c__*` to 0) and `FG_DEF` (defence `def_allow_c__*` to 0), stacks S0 and S1, plus the same two arms on X_F. Read: k (Y and close lens, joint regression with FULL minus the arm and the remainder) and Delta S1 - S0; descriptive only (no owner rule beyond section 1.7's thresholds).
