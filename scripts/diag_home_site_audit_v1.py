@@ -186,12 +186,132 @@ def part_audit():
         print(pd.DataFrame(v["rows"]).round(4).to_string())
 
 
+def _fe_hca(df: pd.DataFrame, ycol: str) -> tuple[float, float]:
+    """FE HCA on (game, offence) aggregates of a row-level frame with columns
+    game_id, off_team_id, def_team_id, site (+1/0/-1), ycol."""
+    import grade_home_site_v1 as GR
+    d = pd.DataFrame({"game_id": df["game_id"].to_numpy(), "off_id": df["off_team_id"].to_numpy(),
+                      "def_id": df["def_team_id"].to_numpy(), "site": df["site"].to_numpy(),
+                      "y": df[ycol].to_numpy(dtype=float), "p": df[ycol].to_numpy(dtype=float), "w": 1.0})
+    g = GR.aggregate(d)
+    fe = GR.FE(g)
+    return fe.hca(g["y"].to_numpy() / g["w"].to_numpy(), g["w"].to_numpy())
+
+
+def part_fgdiag():
+    """Step 2: why fg_make over-produces home advantage. Uses the S0 (served B1
+    spec) held-out predictions written by train_fg_make_v4_site.py, with the
+    per-row counterfactuals p_neutral (site columns zeroed) and p_flip."""
+    meta = json.loads((OUT / "audit_v1.json").read_text())
+    P_ref, dv = meta["P_ref"], meta["deriv"]
+    dkey = {"FGA_rim": "p_rim", "FGA_jump2": "p_jump", "FGA_3": "p_3"}
+    res = {}
+    for fold in ("F2", "F1"):
+        f = Path(f"results/home_site/fg/preds_S0_{fold}_s0.parquet")
+        if not f.exists():
+            continue
+        d = pd.read_parquet(f)
+        d["site"] = (d["site_home"] - d["site_away"]).astype(int)
+        d["month"] = pd.to_datetime(d["game_date"]).dt.month
+        d["eff"] = d["p"] - d["p_neutral"]          # the model's own site term, per row
+        d["resid"] = d["p"] - d["y"]
+        # game-level home-minus-away rating gap, for strength-mismatch segments
+        hg = d[d["site"] == 1].groupby("game_id")["rating_gap"].mean()
+        d["home_gap"] = d["game_id"].map(hg)
+        nn = d[d["site"] != 0]
+        q = pd.qcut(nn["home_gap"].rank(method="first"), 5, labels=False)
+        d.loc[nn.index, "gap_q"] = q
+        out = {}
+        for c, dc in d.groupby("shot_class"):
+            k = dkey[c]
+            pts = P_ref * dv[k]
+            r = {}
+            h_real, se = _fe_hca(dc, "y")
+            h_pred, _ = _fe_hca(dc, "p")
+            h_neu, _ = _fe_hca(dc, "p_neutral")
+            r["fe"] = {"hca_real": h_real, "se": se, "hca_pred": h_pred, "hca_pred_site_zeroed": h_neu,
+                       "gap_pts": pts * (h_pred - h_real), "se_pts": pts * se,
+                       "model_site_term_pts": pts * (h_pred - h_neu),
+                       "non_site_part_pts": pts * (h_neu - h_real)}
+            nnc = dc[dc["site"] != 0]
+            def seg_rows(key):
+                rows = []
+                for gk, s in nnc.groupby(key):
+                    hm = s["site"] == 1
+                    if hm.sum() < 500 or (~hm).sum() < 500:
+                        continue
+                    rows.append({"seg": str(gk), "n_home": int(hm.sum()), "n_away": int((~hm).sum()),
+                                 "real_HmA": float(s.loc[hm, "y"].mean() - s.loc[~hm, "y"].mean()),
+                                 "pred_HmA": float(s.loc[hm, "p"].mean() - s.loc[~hm, "p"].mean()),
+                                 "resid_HmA": float(s.loc[hm, "resid"].mean() - s.loc[~hm, "resid"].mean()),
+                                 "resid_HmA_se": float(np.sqrt(s.loc[hm, "y"].var() / hm.sum() + s.loc[~hm, "y"].var() / (~hm).sum())),
+                                 "model_site_term_HmA": float(s.loc[hm, "eff"].mean() - s.loc[~hm, "eff"].mean())})
+                return rows
+            r["by_conf"] = seg_rows("conf_game")
+            r["by_gap_quintile"] = seg_rows("gap_q")
+            r["by_month"] = seg_rows("month")
+            r["by_season_type"] = seg_rows("season_type")
+            # FE HCA conf vs nonconf
+            for nm, m in (("conf", dc["conf_game"].to_numpy()), ("nonconf", ~dc["conf_game"].to_numpy())):
+                sub = dc[m]
+                if len(sub) > 10000:
+                    hr, hse = _fe_hca(sub, "y"); hp, _ = _fe_hca(sub, "p"); hn, _ = _fe_hca(sub, "p_neutral")
+                    r[f"fe_{nm}"] = {"hca_real": hr, "se": hse, "hca_pred": hp, "hca_site_zeroed": hn,
+                                     "gap_pts": pts * (hp - hr), "se_pts": pts * hse,
+                                     "model_site_term_pts": pts * (hp - hn)}
+            out[c] = r
+        res[fold] = out
+    # realised FE HCA by SEASON over the full design (training-sample check)
+    import sys as _s
+    _s.path.insert(0, str(ROOT / "scripts"))
+    des = pd.read_parquet("data/processed/models/fg_make/design_v2_shotshooter.parquet",
+                          columns=["game_id", "cbbd_game_id", "season", "off_team_id", "def_team_id",
+                                   "site_home", "site_away", "shot_class", "y", "off_rating_off_c",
+                                   "off_rating_def_c", "def_rating_off_c", "def_rating_def_c"])
+    des["site"] = (des["site_home"] - des["site_away"]).astype(int)
+    cg = pd.concat([pd.read_parquet(f"data/raw/cbbd/games_{s}.parquet", columns=["id", "conferenceGame"])
+                    for s in (2022, 2023, 2024, 2025)]).drop_duplicates("id")
+    des = des.merge(cg.rename(columns={"id": "cbbd_game_id"}), on="cbbd_game_id", how="left")
+    des["conf_game"] = des["conferenceGame"].fillna(False).astype(bool)
+    by_season = []
+    for (s, c), dsc in des.groupby(["season", "shot_class"]):
+        h, se = _fe_hca(dsc, "y")
+        row = {"season": int(s), "class": c, "hca_real": h, "se": se,
+               "share_rows_nonconf_home": float(((dsc["site"] == 1) & ~dsc["conf_game"]).mean()),
+               "share_rows_nonconf": float((~dsc["conf_game"]).mean())}
+        for nm, m in (("conf", dsc["conf_game"]), ("nonconf", ~dsc["conf_game"])):
+            hh, ss = _fe_hca(dsc[m.to_numpy()], "y")
+            row[f"hca_{nm}"] = hh; row[f"se_{nm}"] = ss
+        # strength mismatch of home vs away rows: mean offence-minus-defence rating gap
+        off_net = dsc["off_rating_off_c"] - dsc["off_rating_def_c"]
+        def_net = dsc["def_rating_off_c"] - dsc["def_rating_def_c"]
+        gap = off_net - def_net
+        row["mean_gap_home_rows"] = float(gap[dsc["site"] == 1].mean())
+        row["mean_gap_home_rows_nonconf"] = float(gap[(dsc["site"] == 1) & ~dsc["conf_game"]].mean())
+        by_season.append(row)
+    res["by_season_realised"] = by_season
+    (OUT / "fgdiag_v1.json").write_text(json.dumps(res, indent=1, default=float), encoding="utf-8")
+    pd.set_option("display.width", 250)
+    for fold in ("F2", "F1"):
+        if fold not in res:
+            continue
+        for c, r in res[fold].items():
+            print(f"== {fold} {c} FE: {json.dumps({k: round(v, 5) for k, v in r['fe'].items()})}")
+            for k in ("fe_conf", "fe_nonconf"):
+                if k in r:
+                    print(f"   {k}: {json.dumps({kk: round(v, 5) for kk, v in r[k].items()})}")
+            for key in ("by_conf", "by_gap_quintile", "by_month", "by_season_type"):
+                print(f"   {key}:")
+                print(pd.DataFrame(r[key]).round(5).to_string(index=False))
+    print(pd.DataFrame(by_season).round(5).to_string(index=False))
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--part", action="append", required=True)
     a = ap.parse_args()
     for p in a.part:
-        {"audit": part_audit}[p]()
+        {"audit": part_audit, "fgdiag": part_fgdiag}[p]()
 
 
 if __name__ == "__main__":

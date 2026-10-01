@@ -2122,3 +2122,53 @@ reason that is not sufficient**: the leaked `sh_assisted_share` passed this
 same test at 0.0260 while carrying a column that was exactly 0 on a population
 with a 0.00000 make rate. A value-based leak test cannot see a missingness
 leak. A join-coverage assertion can, and the trainer now carries one.
+
+## 21. Lane G home-site round: repairs for fg_make's excess home advantage (pre-registration, written and COMMITTED 2026-09-30 BEFORE any non-reference arm ran)
+
+**Why.** `docs/tests/g9_g6_margin_slope_home_diagnostic_2026-09-30.md` section 3: in the 200-seed sim the fg_make site terms over-produce home advantage by +0.68 pts per game (rim +0.25, jump +0.20, three +0.23), which cancels under-predicted home strength elsewhere.
+
+**Reference arm already run (diagnosis input, not an arm comparison).** `S0` is the served round-4 `B1` spec reproduced exactly: features, frozen ladder params, S1 monthly. `scripts/train_fg_make_v4_site.py --arms S0`. Fold-2 log loss reproduces round 4 to 6 decimals (rim 0.667252, jump2 0.666385, three 0.637738). Its held-out predictions, with per-row counterfactuals (site columns zeroed; home/away flipped), are the step-2 evidence summarised below. No other arm had been fitted when this section was committed.
+
+**Step-2 evidence** (`scripts/diag_home_site_audit_v1.py --part fgdiag`; `results/home_site/fgdiag_v1.{json,log}`).
+
+The table is the `S0` held-out FE-adjusted HCA, in points per game per team side, as the predicted minus the realised effect (SE).
+
+| class | F2 gap | F1 gap | model's own site term (F2) | prediction with site zeroed vs realised (F2) |
+|---|---:|---:|---:|---:|
+| rim | +0.16 (0.10) | +0.33 (0.11) | +0.88 | -0.72 |
+| jump2 | +0.10 (0.08) | +0.07 (0.08) | +0.45 | -0.35 |
+| three | +0.15 (0.15) | +0.10 (0.16) | +0.69 | -0.54 |
+| **sum** | **+0.40** | **+0.50** | | |
+
+- **Only the site columns carry home advantage.** With them zeroed, the strength-adjusted predicted HCA is about 0 in every class. All of the HCA therefore comes from the site columns, and they are 20-60% larger than the realised strength-adjusted HCA.
+- **The site term is larger exactly where home teams are stronger.** It is larger in non-conference rows (rim 0.027 vs 0.019 conference, F2; 0.029 vs 0.019 F1) and in the top home-rating-gap quintile (rim 0.027 vs 0.018 bottom). It is also larger in November (0.028) than in February (0.016).
+  - Home teams are on average stronger than their opponents. Mean offence-minus-defence rating gap on home rows is +1.2 to +3.4 overall and +2.6 to +9.1 in non-conference rows, rising by season.
+- **Raw calibration by site splits the same way.** It over-predicts the home side in conference games (rim +0.55 pp, SE 0.27, F2) and under-predicts it in non-conference games (-1.09 pp, SE 0.38). The pooled site term is a compromise between a strength-confounded non-conference effect and a smaller conference effect.
+- **The realised strength-adjusted HCA has no monotone season trend** in the training seasons (rim 0.021 / 0.018 / 0.013 / 0.016 for 2022-2025). Season drift does not explain the excess.
+- **Reading.** The tree's site coefficient is not the FE-identified home effect. It is the site effect conditional on noisy as-of strength features, so it also absorbs the part of home teams' strength edge that those features under-capture (omitted-variable bias). This is the mechanism of the section-3 cancellation: fg_make's site term over-produces HCA while the sim's team part under-predicts the home side's strength.
+
+**Arms** (served B1 spec plus one change each; all S1 monthly, frozen ladder params, both folds; `scripts/train_fg_make_v4_site.py`):
+
+- `S0`: served `B1`.
+- `G1`: `B1` + `conf_game` (CBBD `conferenceGame`, pregame). It lets the tree fit a separate site effect in conference and non-conference games. This is a Decision-9 optional arm, motivated by the by-conference split above.
+- `G2`: `B1` + `site_signed x rating_gap`, with rating gap = (offence `off_rating_off_c - off_rating_def_c`) - (defence `def_rating_off_c - def_rating_def_c`). This is the brief's interaction encoding, motivated by the gap-quintile split.
+- `G4`: `B1` without the site columns, plus a site logit OFFSET (LightGBM `init_score`). The offset is `(b_home [home] + b_away [away]) / (pbar (1 - pbar))`.
+  - `b_home` and `b_away` are the team-season-FE-adjusted site effects estimated on that refit's own training rows. The aggregation unit is game x offence, weighted by attempts, with neutral as the reference.
+  - The site effect is thereby identified against team identity rather than against the noisy as-of features, so the trees cannot load strength onto site.
+  - The offset is a fitted parameter of the sub-model (training data only), not an adjustment of sim output.
+- `int` on encodings alone (`signed` without a repair) is NOT ENTERED. For a tree, `signed` and `cat` differ only in which splits are reachable, and nothing in the step-2 evidence points at the encoding.
+
+**Primary, floors, guards and decision**
+
+- **Primary metric:** `G_pts = sum_k pts_k |HCA_pred,k - HCA_real,k|` on fold 2, where k runs over rim, jump2 and three, and `pts_k` is the audit's points-per-rate derivative (rim 43.22, jump2 27.39, three 68.05 pts per unit make rate per game). Per-class `G_site` is the segment table.
+- **Floor:** the max of
+  - `|G_pts(S0 seed 0) - G_pts(S0 seed 1)|`, and
+  - 2 x sqrt(sum_k (pts_k x per-class paired game-bootstrap SE_k)^2), which treats the classes' bootstrap errors as independent; that approximation is stated here.
+- **Guards, per class:**
+  - Log loss is not worse than `S0` by more than `S0`'s own seed-1 difference for that class.
+  - The calibration decile gate does not newly fail. It is approximated by the raw calibration by site not worsening beyond 2 SE.
+  - Team responsiveness: the offence-quintile (`off_make_c`) predicted/realised slope ratio is not below `S0`'s minus 0.05.
+  - Fold 1 does not reverse.
+- **Decision:** the shared rule (`free_throw/experiments.md` section 11 has the shared text). Simplicity order `G1` < `G2` < `G4`: one flag, then one interaction column, then a two-stage fit.
+- **Outcome labels:** REFUTED, or offline winner awaiting a paired closed loop. Nothing is exported to `data/processed/models/fg_make/round4/`; a winner's closed loop would need a new dated artifact set and engine flag value (named in the results doc).
+- **Expected consequence, stated in advance.** A winner that removes the excess will EXPOSE the team-strength under-prediction it was cancelling, and the G6 non-neutral line would then fail in a closed loop. Under Decision 11 that makes it VALIDATED-PENDING-SHIP-ACTION, not refused.
