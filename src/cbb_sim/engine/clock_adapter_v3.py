@@ -709,6 +709,11 @@ SIGMA2_FLOOR: float = 1e-8
 #: from the object the offline grade scored, with no second implementation.
 V5_PARAMS = CK_DIR / "v5_bakeoff" / "v5_bakeoff_report.json"
 
+#: Which fold's fitted latent parameters a report is read at. The served value is "F2" (every engine read so far is
+#: fold 2). A fold-1 read rebinds it to "F1" through `scripts/run_engine_overlay_v2.py` (lane D, 2026-10-01); the
+#: reports already carry both folds' training-row fits. Default unchanged, so the served path is bit-identical.
+PARAMS_FOLD: str = "F2"
+
 #: The ordinal the game latent is drawn at on the `clock` stream. The
 #: possession counter advances once per possession and never approaches 2^40,
 #: so the latent's uniform can never collide with a duration draw -- and no new
@@ -788,8 +793,8 @@ class LatentClockAdapter:
         # Round 5's and round 5b's reports nest their fitted values under
         # `params`; round 5c's `v5c_params.json` is already keyed by fold. The
         # spec names the shape rather than the loader guessing it.
-        fitted = rep["F2"] if spec.get("params_root", "params") is None \
-            else rep["params"]["F2"]
+        fitted = rep[PARAMS_FOLD] if spec.get("params_root", "params") is None \
+            else rep["params"][PARAMS_FOLD]
         sigma = float(fitted[spec["param"]])
         log_c = float(fitted.get(spec.get("log_c_param", ""), 0.0)
                       ) if spec.get("log_c_param") else 0.0
