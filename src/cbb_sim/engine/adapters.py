@@ -170,7 +170,11 @@ STATE_INDEX = {c: i for i, c in enumerate(STATE_COLS)}
 
 #: fg_make / free_throw column aliases: the engine's static blocks carry the
 #: class-suffixed or model-suffixed name, the model asks for the bare one.
-FG_TEAM_ALIAS = {"off_make_c": "off_make_c__{k}", "def_allow_c": "def_allow_c__{k}"}
+FG_TEAM_ALIAS = {"off_make_c": "off_make_c__{k}", "def_allow_c": "def_allow_c__{k}",
+                 # lane A 2026-10-01, DEFAULT-OFF two-stage fg_make (fg_make experiments.md s27/s29): these
+                 # resolve only against an input dir that carries the columns (engine_v3_<arm>_laneA);
+                 # `_alias` adds a key only when the real column exists, so stock inputs are untouched.
+                 "fg_team_offset": "fg_team_offset__{k}", "lg_make_asof": "lg_make_asof__{k}"}
 FG_SLOT_ALIAS = {
     "shooter_make_c": "shooter_make_c__{k}",
     "shooter_att_c": "shooter_att_c__{k}",
@@ -486,6 +490,9 @@ _FG_DATED_ROUNDS: tuple[tuple[str, str, str], ...] = (
     # Lane G 2026-09-30, DEFAULT-OFF, NOT ADOPTED: `round4site_G4` = B1 trees without
     # site + an FE-identified site logit offset (fg_make experiments.md s21-22).
     ("round4site_", "round4_site", "scripts/train_fg_make_v4_site.py"),
+    # Lane A 2026-10-01, DEFAULT-OFF, NOT ADOPTED: `g9ts_<arm>` = two-stage fg_make (league-level logit offset,
+    # pooled team effect + rating terms; fg_make experiments.md s27/s29). Needs the arm's input-dir sibling.
+    ("g9ts_", "round_tsr_served", "scripts/train_fg_make_two_stage_v3.py"),
 )
 _FG_ROUND_NOTE = {
     "round2b": ("fg_make round 2b (experiments.md s15): the round-2 winner under "
@@ -498,6 +505,8 @@ _FG_ROUND_NOTE = {
                "from scratch on shot_shooter_id"),
     "round4_site": ("fg_make Lane G home-site arm (experiments.md s21-22): B1 without site "
                     "columns + team-FE-identified site logit offset; NOT ADOPTED, default-off"),
+    "round_tsr_served": ("fg_make lane A two-stage arm (experiments.md s27/s29): league-level offset + "
+                         "pooled team effect + rating terms; NOT ADOPTED, default-off"),
 }
 
 

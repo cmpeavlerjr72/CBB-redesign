@@ -103,7 +103,7 @@ def league_level(design: pd.DataFrame, mode: str, train_seasons: list[int]) -> t
     key["game_date"] = pd.to_datetime(key["game_date"])
     m = key.merge(day[["season", "shot_class", "game_date", "lvl"]], on=["season", "shot_class", "game_date"],
                   how="left")
-    v = m["lvl"].to_numpy(float)
+    v = m["lvl"].to_numpy(float).copy()
     served = design["lg_make_asof"].to_numpy(float)
     miss = ~np.isfinite(v)
     info["rows_fallback_served"] = int(miss.sum())

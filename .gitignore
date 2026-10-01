@@ -137,3 +137,11 @@ data/processed/models/fold1_v1/
 data/processed/models/engine_f1/
 data/processed/models/engine_v3_f1/
 data/processed/models/engine_live_f1/
+# lane A 2026-10-01: fg_make team-response / two-stage rounds (fg_make experiments.md s23-s29); > 20 MB model artifacts and the
+# TSRJ1 serving input-dir sibling; HF model_artifacts, pushed by scripts/ops_hf_push_paths_v1.py
+data/processed/models/fg_make/round_g9/
+data/processed/models/fg_make/round_ts/
+data/processed/models/fg_make/round_tsr/
+data/processed/models/fg_make/round_lj/
+data/processed/models/fg_make/round_tsr_served/
+data/processed/models/engine_v3_TSRJ1_laneA/
