@@ -4411,3 +4411,11 @@ section 5.5.
   - G9 total and margin bias and slope.
 - **Vetoes:** G5 margin SD ratio, first-half share, OT rate, and the rest of the gate.
 - **Expectation, stated in advance:** the G1 count worsens by about +0.2 possessions per team-game (the offline level shift). Team responsiveness in the sim should rise toward 1.
+
+## 34. Run R15 -- round 7 closed loop, A2 vs L2 (2026-09-30 22:43-23:35 EDT, lane H; registration section 33)
+
+Full size (box `laneH_1`, 5,705 x 200, floors from S0 draws x4 + paired bootstrap) and local sample (476 games x 100 seeds, G5 UNDERPOWERED). Full table: `docs/tests/clock_round7_pace_responsiveness_2026-09-30.md` section 3.
+- Sim team pace slope (team quintile): 0.672 -> **1.017** (+15 floors). Game-prior quintile 0.862 -> 1.167 (overshoots).
+- G1 count - v4: +0.797 -> +0.970 (+3.7 floors, worse, as forecast). Pooled possession SD 5.49 -> 5.84 vs truth 5.57 (away from truth).
+- **G9 total slope (MC-corrected) 0.976 -> 0.796 (-5.5 floors)**: the per-game predicted count is over-spread (count calibration slope 0.92 -> 0.79, SD of predicted counts 2.68 -> 3.53) and the sim's pace/efficiency correlation turns positive (+0.15 vs actual -0.09). G9 total bias improves (-2.01 -> -1.52). G9 margin slope unchanged (0.936). G5 margin/total ratios, OT rate inside floors.
+- **Outcome: REFUTED as a ship candidate in this form** (the total-slope failure is a new over-spread, not an exposed compensation). The responsiveness diagnosis and the asymmetric law stand as findings; next round re-estimates the offence elasticity against the sim's own start-type composition and adds an in-season level term for the exposed drift. Nothing adopted.
