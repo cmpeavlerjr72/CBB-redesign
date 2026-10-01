@@ -67,7 +67,7 @@ D3)
   B=data/processed/models/full_retrain_v1
   ENVS="--env ENGINE_EVENT=round2_s1 --env ENGINE_CLOCK=v5b_glat_pmean --env ENGINE_ROTATION=reference --env ENGINE_FG3=decision8 --env CBB_TRUTH=verified_v1 --env ENGINE_SHOT_BLOCK=K2_Ocell --env ENGINE_FOUL_JOINT=R8a --env ENGINE_SHARED_SHOOTING=G3 --env ENGINE_CHANCE_TIME=KD"
   for T in FR_box_v1:FRa_R8a FT_box_v2:FTa_R8a; do SRC=${T%%:*}; NAME=${T##*:}
-    $R scripts/run_with_env_v1.py $ENVS -- scripts/run_engine_overlay_v1.py --overrides $B/$SRC/inputs/set/inputs/overrides.json --runner full -- --fold F2 --season 2025 --seeds 200 --seed-offset 0 --workers $W --games-per-block 60 --seeds-per-block 25 --tag d1001D_${NAME}_s200_o0 --results-dir $RE --input-dir $B/$SRC/inputs/set/inputs || echo "[D3 $NAME] rc=$?"
+    [ -f $RE/d1001D_${NAME}_s200_o0/run_meta.json ] || $R scripts/run_with_env_v1.py $ENVS -- scripts/run_engine_overlay_v1.py --overrides $B/$SRC/inputs/set/inputs/overrides.json --runner full -- --fold F2 --season 2025 --seeds 200 --seed-offset 0 --workers $W --games-per-block 60 --seeds-per-block 25 --tag d1001D_${NAME}_s200_o0 --results-dir $RE --input-dir $B/$SRC/inputs/set/inputs || echo "[D3 $NAME] rc=$?"
     G d1001D_${NAME}_s200_o0; done
   BS --ref v3full_COMB9GCTKD_s200_o0 --floors $FL --arms d1001D_FRa_R8a_s200_o0,d1001D_FTa_R8a_s200_o0 --out-json results/d1001D/boot_R8a_vs_S2.json --out-md results/d1001D/boot_R8a_vs_S2.md ;;
 F2)
