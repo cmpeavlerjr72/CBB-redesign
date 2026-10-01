@@ -321,11 +321,11 @@ def _has_truth_data():
 
 
 @pytest.mark.skipif(not _has_truth_data(), reason="needs on-disk universe / schedules / CBBD games")
-def test_load_actual_games_verified_finals_is_opt_in():
+def test_load_actual_games_verified_finals_flag():
     from cbb_sim.eval import reference as R
     zero_ids = {401714278, 401722532, 401706691, 401700283, 401716154}
-    default = R.load_actual_games(2025)
-    assert len(default) == 5710  # default behaviour preserved exactly
+    default = R.load_actual_games(2025, verified_finals=False)
+    assert len(default) == 5710  # legacy behaviour preserved exactly
     dz = default[default["game_id"].isin(zero_ids)]
     assert len(dz) == 5 and (dz["total"] == 0).all()
     ver = R.load_actual_games(2025, verified_finals=True)
@@ -357,13 +357,19 @@ def test_cbb_truth_env_selects_verified_truth(monkeypatch):
     from pathlib import Path
     from cbb_sim.eval import reference as R
     monkeypatch.delenv("CBB_TRUTH", raising=False)
-    assert len(R.load_actual_games(2025)) == 5710
+    assert len(R.load_actual_games(2025)) == 5705  # default flipped 2026-09-30
     monkeypatch.setenv("CBB_TRUTH", "verified_v1")
     assert len(R.load_actual_games(2025)) == 5705
-    assert len(R.load_actual_games(2025, verified_finals=False)) == 5710  # explicit wins
+    monkeypatch.setenv("CBB_TRUTH", "legacy_v0")
+    assert len(R.load_actual_games(2025)) == 5710  # explicit opt-out
+    monkeypatch.setenv("CBB_TRUTH", "verified_v1")
+    assert len(R.load_actual_games(2025, verified_finals=False)) == 5710  # explicit arg wins
     if Path("data/reference/verified_v1/gate_targets_2025.parquet").exists():
         t = R.load_gate_targets(2025)
         assert abs(R.gate_target_value(t, "season", "all", "home_away_score_corr", "overall") - 0.2283) < 1e-3
-    monkeypatch.delenv("CBB_TRUTH")
+    monkeypatch.setenv("CBB_TRUTH", "legacy_v0")
     t = R.load_gate_targets(2025)
     assert abs(R.gate_target_value(t, "season", "all", "home_away_score_corr", "overall") - 0.2532) < 1e-3
+    monkeypatch.delenv("CBB_TRUTH")
+    t = R.load_gate_targets(2025)
+    assert abs(R.gate_target_value(t, "season", "all", "home_away_score_corr", "overall") - 0.2283) < 1e-3

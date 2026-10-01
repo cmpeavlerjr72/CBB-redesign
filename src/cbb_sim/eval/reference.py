@@ -74,14 +74,20 @@ def unverified_final_game_ids(season: int, hoopr_dir: Path | str = DEFAULT_HOOPR
     return bad
 
 
-TRUTH_ENV = "CBB_TRUTH"  # set to "verified_v1" to make every default-arg call use the verified truth
+TRUTH_ENV = "CBB_TRUTH"  # default (unset or "verified_v1") = verified truth; "legacy_v0" = old truth (opt-out)
 VERIFIED_TRUTH = "verified_v1"
+LEGACY_TRUTH = "legacy_v0"
 VERIFIED_REFERENCE_DIR = Path("data/reference/verified_v1")
 
 
 def truth_is_verified() -> bool:
     import os
-    return os.environ.get(TRUTH_ENV, "").strip() == VERIFIED_TRUTH
+    v = os.environ.get(TRUTH_ENV, "").strip()
+    if v in ("", VERIFIED_TRUTH):
+        return True  # default flipped 2026-09-30 (lane E)
+    if v == LEGACY_TRUTH:
+        return False
+    raise ValueError(f"{TRUTH_ENV}={v!r}: expected unset, {VERIFIED_TRUTH!r} or {LEGACY_TRUTH!r}")
 
 
 def load_actual_games(season: int, universe_path: Path | str = DEFAULT_UNIVERSE,
@@ -92,9 +98,9 @@ def load_actual_games(season: int, universe_path: Path | str = DEFAULT_UNIVERSE,
     home_team_id, away_team_id, neutral (0.0/1.0), home_score, away_score,
     margin, total, n_periods, went_ot.
 
-    `verified_finals=None` (DEFAULT) means False unless the environment sets
-    `CBB_TRUTH=verified_v1`, which selects the verified truth for every caller that
-    uses the default (graders, sweeps) with no script edits; unset = unchanged.
+    `verified_finals=None` (DEFAULT) means True (verified truth) since 2026-09-30,
+    unless the environment sets `CBB_TRUTH=legacy_v0` (explicit opt-out to the old
+    truth). `CBB_TRUTH=verified_v1` or unset both select verified.
 
     `verified_finals=False`: `home_score` /
     `away_score` not-null is the only "completed" test, so unplayed games the
