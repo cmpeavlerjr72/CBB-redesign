@@ -37,8 +37,9 @@ import numpy as np
 
 FAMILY = "chance_time"
 ENV = "ENGINE_CHANCE_TIME"
-ARMS = ("C2", "C12")
+ARMS = ("C2", "C12", "K")
 LUT = Path("data/processed/models/chance_time/{fold}/lut_v1.npz")
+LUT2 = Path("data/processed/models/chance_time/{fold}/lut_v2.npz")   # addendum 1b (arm K)
 KEY_OF_SHOT = {"FGA_rim": 0, "FGA_jump2": 1, "FGA_3": 2}
 TRANS_MAX_S = 8.0
 MAX_ELAPSED_S = 60.0
@@ -50,7 +51,8 @@ class ChanceTime:
             raise KeyError(f"unknown {ENV}={arm!r}; known: {ARMS} or 'reference'")
         from cbb_sim.engine.rng import StreamBook
         self.arm = arm
-        z = np.load(str(LUT).format(fold=fold))
+        z = np.load(str(LUT if arm != "K" else LUT2).format(fold=fold))
+        self.c1_q = z["c1_q"] if arm == "K" else None   # (2, 3, Q): start group x class
         self.cont_q = z["cont_q"]              # (2, 3, Q)
         self.r_q = z["r_q"]                    # (2, B, Q)
         self.bin_edges = z["bin_edges"]
@@ -75,8 +77,23 @@ class ChanceTime:
         return np.minimum(e1r, MAX_ELAPSED_S), tr
 
     def cont(self, xs: np.ndarray, col: int, chance: np.ndarray, shot_class: str,
-             sim_rows: np.ndarray) -> None:
-        """In place: chance >= 2 rows of the fg_make state block get a drawn elapsed."""
+             sim_rows: np.ndarray, prev_tr: np.ndarray | None = None, idx: dict | None = None) -> None:
+        """In place: chance >= 2 rows of the fg_make state block get a drawn elapsed.
+        Arm K also draws chance-1 rows' elapsed from the class x start-group table (addendum 1b)
+        and sets fg_make's transition flag from it; one draw per row, every row of the call."""
+        if self.arm == "K":
+            u = self.book.draw(FAMILY, sim_rows)
+            k = KEY_OF_SHOT[shot_class]
+            first = chance < 2
+            g = np.where(prev_tr, 0, 1)
+            qi = self._qi(u)
+            bk = np.where(chance >= 3, 1, 0)
+            el = np.where(first, self.c1_q[g, k, qi], self.cont_q[bk, k, qi])
+            lim = np.minimum(xs[:, idx["seconds_remaining"]], MAX_ELAPSED_S)
+            el = np.where(first, np.minimum(el, lim), el)
+            xs[:, col] = el
+            xs[:, idx["is_transition_f"]] = np.where(first, ((el <= TRANS_MAX_S) & prev_tr).astype(np.float64), 0.0)
+            return
         c2 = np.flatnonzero(chance >= 2)
         if not len(c2):
             return

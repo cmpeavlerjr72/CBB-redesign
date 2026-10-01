@@ -496,7 +496,8 @@ def simulate_chunk(inp: EngineInputs, ad: Adapters, game_index: np.ndarray,
                 xs = xx[sel].copy()
                 xs[:, I["blocked_f"]] = 0.0
                 if ctf is not None:
-                    ctf.cont(xs, I["chance_elapsed_s"], chance[r], SHOT_CLASSES[sc], ar)
+                    ctf.cont(xs, I["chance_elapsed_s"], chance[r], SHOT_CLASSES[sc], ar,
+                             (prev[r] == PREV["DREB"]) | (prev[r] == PREV["TOV"]), I)
                 slot_blk = inp.slot_static[gidx[r], off[r], sh]
                 p_make = ad.fg.predict(SHOT_CLASSES[sc], (inp.team_static[gidx[r], off[r]] if kk is None
                                                           else trd.team_static_k[kk[r], gidx[r], off[r]]),
