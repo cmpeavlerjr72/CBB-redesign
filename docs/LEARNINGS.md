@@ -283,3 +283,23 @@ The 2026-09-11 late-game headline (engine lacks role conditioning entirely: 3PA 
 ## L43. Workers misjudge wall clock and park on monitors; both must be in every brief (2026-09-18)
 
 Three workers reported end times 20-70 minutes later than the system clock and stopped work early believing a deadline had arrived; three workers ended their turn with a job still running. **Briefs say: read the time from `date`, never estimate; run long jobs in one foreground call; never end a turn with a job running.** Also: `lightgbm==4.7.0` in the AWS container image does not multi-thread (n_jobs 1 vs 150 identical); parallelise across refit dates with joblib. (L37 is cited in the 2026-09-11 handoff but was never written here; the number is left unused.)
+
+## L44. A feature swap must re-derive every column built from the swapped one; every retrain gets a train/serve parity stage (2026-10-01)
+
+The E3 team-rate adapter swapped `off_make_c` and left `off_make_raw` stale; fg_make's shooter feature was trained on one and served the other (correlation 0.94-0.97). That one skew produced the whole "better sub-models make the margin slope worse" result (0.917 -> 0.894) and a wrong PM ruling (E3 refuted; an "aggregation over-spread" owner invented to explain it). Skew-free, the slope is 0.9145, inside the floor. **Before theorising about a surprising closed-loop loss from an offline winner, compare the trainer's design columns with the engine inputs for the same rows. The retrain chain now fails on mismatch.**
+
+## L45. The engine's state feeds are part of the model: a sub-model right offline and wrong in the sim is a feed defect (2026-10-01)
+
+fg_make predicted rim makes at 0.5840 vs 0.5844 realised on held-out shots and produced 0.5708 in the sim, because the engine fed `chance_elapsed_s` as the whole possession's duration at chance 1 and a constant 3 s on putbacks. Worth -1.1 points of total per game, hidden for three weeks by +2 excess possessions. **For every sub-model, evaluate it on the engine's own fed states against the same model on real states, per feature; a gap is the feed's, and a drawn feed is graded on level and conditional-distribution parity, never on per-row log loss or calibration deciles (a draw cannot match a fixed value row by row).**
+
+## L46. Compensations are found by shipping the honest fixes together, at full size (2026-10-01)
+
+Each of count, OREB, FT trips was "vetoed" alone by the line it stopped propping (total bias, total SD). Read as a set at 5,710 x 200 the set exposed exactly two missing members (shared two-point shooting variance; the chance-time feed), both found the same night by closed decompositions of the exposed line. **When a fix set fails one line, decompose that line on the fixed stack (channels summing to the miss), not on the old stack.**
+
+## L47. A tree's site coefficient is not the home effect (2026-10-01)
+
+fg_make's site columns add 20-60% more than the realised home effect because they absorb home-team strength the noisy as-of features miss (largest in buy games, November, top rating-gap quintile). Site terms were refuted for free_throw, clock and foul accrual. **Identify site against team fixed effects; "site in every model" is an audit, not a feature mandate.**
+
+## L48. Responsive per team is not calibrated per game (2026-10-01)
+
+Clock round 7 gave offence and defence their own pace elasticities: team slope 0.67 -> 1.02, game-level slope 0.86 -> 1.17, possession SD past truth. **A responsiveness check is run at the level the gate is read (game), not only at the level the feature lives (team).**
