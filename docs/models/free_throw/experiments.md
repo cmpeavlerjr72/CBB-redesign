@@ -1137,3 +1137,54 @@ All arms: `FT.LgbmArm` served params, `FT.build_ft_design` rows from `attempts_v
 - Local tap (direction and parity only; Decision 12: a tap cannot decide G5). Box: 5,710 x 200 paired vs served v2 with four served-default floor draws.
 - Status: VALIDATED-PENDING-SHIP-ACTION if G5 home/away corr moves toward target beyond floor at 200 seeds and no line regresses beyond floor except through a named compensation (FT% level and G9 total bias included); REFUTED if corr does not move; UNDERPOWERED if only a tap exists.
 - Mechanism lines: the engine's FT x opponent-FG composition covariance (target about 0) and FT x own-FG within-team covariance (sim +0.92 vs actual +0.32 pts^2 for three x FT).
+
+## 15. Round 14 RESULTS (lane B, 2026-10-01 ~08:30 EDT) and round 15 pre-registration (COMMITTED BEFORE round 15's `offline` stage ran)
+
+### 15.1 Round 14 results (section 14; `results/ft_scorediff/offline_v1.json`; offline ran 07:55-08:05 after commit `1ef9a3a`)
+
+| fold | arm | abs within slope (gain, floors) | log loss (worse vs FT0) | max margin-bin cal gap | eligible |
+|---|---|---|---|---|---|
+| F1 | FT0 | 0.00231 | 0.57849 | 1.07 pp | ref |
+| F1 | FTn | 0.00392 (-0.00161, -50) | 0.58239 (+0.0039) | 3.59 pp | |
+| F1 | FTnE | 0.00389 (-0.00157, -48) | 0.58220 (+0.0037) | 3.75 pp | |
+| F2 | FT0 | 0.00234 | 0.57528 | 0.87 pp | ref |
+| F2 | FTn | 0.00384 (-0.00150, -43) | 0.57981 (+0.0045) | 3.89 pp | no |
+| F2 | FTnE | 0.00380 (-0.00146, -41) | 0.57941 (+0.0041) | 3.96 pp | no |
+
+**Status: REFUTED offline by the registered rule; FT0 stands.**
+- **The primary was MIS-SPECIFIED, stated openly.** The real within-(game, team) slope of y on own margin is +0.0040 per point (F1 0.0041, F2 0.0040). That slope is the score TRAJECTORY (leading teams' late FTs by their best shooters), not the response of FT% to a shock. So the arm that removes the response looks worse on it by construction.
+- **The guards fail because `score_diff` carries cross-sectional team strength** (log loss +0.004, margin-bin calibration 3.9 pp). FTn has no other team-strength input.
+
+**Attribution (not a selection), ablation on the engine.** `ENGINE_FT_SCORE=FTn` (flag, parity v9 PASS off), 2,000 games x 6 seeds paired with the served tap (`scripts/diag_ftfg_ablation_v1.py`):
+- FT-make composition x opponent FG falls from -3.35 to -0.05 pts^2, in every half and lead state;
+- FT x own FG falls from +3.12 to +0.10;
+- home/away points covariance rises from 24.10 to 27.79.
+
+The score-margin term IS the mechanism of the engine's negative FT x opponent-FG covariance.
+
+### 15.2 Round 15 pre-registration: keep the cross-sectional team strength, remove the in-game response
+
+**Arms** (simplicity FT0 < FTp < FTpE):
+
+| arm | features |
+|---|---|
+| `FT0` | served |
+| `FTp` | `FT_FEATURES` minus `score_diff`, plus the shooting team's PREGAME as-of team block exactly as fg_make serves it: `off_rating_off_c`, `off_rating_def_c`, `def_rating_off_c`, `def_rating_def_c`, `site_home`, `site_away` (constant within a game, so no in-game response; site is first-class) |
+| `FTpE` | `FTp` + `gt_flag`, `eg_trail`, `eg_lead` |
+
+The team block is joined per (game_id, shooting team) from `data/processed/models/fg_make/design_v2_shotshooter.parquet`. It is the served fg_make team block, whose train/serve parity the full-retrain chain checks. The engine serves the same columns from `inp.team_static` for the shooting side.
+
+**Data, calendar, floor:** as section 14 (static fit per fold, seeds 0 and 1). Attempts whose (game, team) has no fg_make design row are dropped from every arm (count reported).
+
+**Primary (selection):** held-out log loss on fold 2, lower is better. Floor = max(200-replicate game-bootstrap SD of the paired difference vs FT0; |seed-0 minus seed-1 refit difference|).
+
+**Eligible** (both conditions, fold 2; fold 1 log loss also not worse than FT0 by more than 0.0010):
+- guards against FT0: log loss no worse by more than 0.0010; max |mean(y - p)| over the 9 margin bins at most 1.0 pp; shooter responsiveness passes;
+- no in-game margin response by construction (no feature varies with the live margin except the end-game indicators of FTpE).
+
+**Winner:** the eligible arm with the lowest fold-2 log loss; arms within 1 floor tie, ties to the simpler. None eligible: FT0 stands.
+
+**Closed loop:** as section 14.3 (`ENGINE_FT_SCORE=<arm>`, S1_conf_aligned F2 artifacts under `free_throw/s1_scorediff/<arm>/`, parity v9 off, local tap for direction, box 5,710 x 200 with four floor draws).
+- The decisive lines are G5 home/away corr and total SD ratio.
+- No other line may regress beyond floor, FT% and G9 included.
+- Mechanism line: FT composition x opponent FG, about 0.

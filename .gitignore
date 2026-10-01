@@ -115,6 +115,7 @@ data/processed/models/engine_fgm4/
 # diagnosis cell tables and the v4_diag dumps. Bulk, HF-synced, never committed.
 data/processed/models/clock/v4_*
 data/processed/models/free_throw/s1_confirm/
+data/processed/models/free_throw/s1_scorediff/
 data/processed/models/rebound/s1_confirm/
 logs/
 

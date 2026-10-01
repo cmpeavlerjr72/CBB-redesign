@@ -703,6 +703,12 @@ class FreeThrowAdapter:
              mode: str | None = None) -> FreeThrowAdapter:
         mode = mode or os.environ.get("ENGINE_FREE_THROW", "s1_conf_aligned")
         if mode == "s1_conf_aligned":
+            # free_throw round 14 (lane B, experiments.md s14): ENGINE_FT_SCORE=<arm> serves that
+            # arm's S1_conf_aligned manifest (its own feature list); unset / "reference" = served.
+            ft_arm = os.environ.get("ENGINE_FT_SCORE", "reference") or "reference"
+            if ft_arm != "reference":
+                return cls._load_dated(inp, fold, mode, FT_DIR / "s1_scorediff" / ft_arm
+                                       / "S1_conf_aligned" / fold / "manifest.json")
             return cls._load_dated(inp, fold, mode, FT_S1_MANIFEST)
         if mode != "static":
             raise NotImplementedError(
@@ -1225,6 +1231,8 @@ class Adapters:
         if ev_mode == "round2_s1" and event_team_block_path(
                 ev_mode, fold, season, ENGINE_DIR / f"event_{ev_mode}_{fold}_{season}")[1] == "v3":
             flags["ENGINE_EVENT_TEAM_BLOCK"] = "v3"
+        if (os.environ.get("ENGINE_FT_SCORE", "reference") or "reference") != "reference":
+            flags["ENGINE_FT_SCORE"] = os.environ["ENGINE_FT_SCORE"]   # free_throw round 14 (lane B)
         if lg_src is not None:
             flags["ENGINE_LATE_GAME"] = lg_mode
             flags["sources"]["late_game"] = lg_src
