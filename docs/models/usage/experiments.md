@@ -2001,3 +2001,47 @@ stays `ENGINE_USAGE=reference` (U1 proportional); no change is made to
   for context, not re-run.
 - 2026 was not read; only F2 2025 (test) and the existing truth tables
   entered this round's computation.
+
+---
+
+## 13. Late-game FT-trip allocation: who is fouled when the leading team has the ball (lane I, 2026-10-01; written and COMMITTED BEFORE any fit)
+
+### 13.1 Why (measured before this section)
+
+Served stack v2, in-process tap (`scripts/diag_ft_late_leader_v1.py`, all 5,710 games x 2 seeds): FT attempts by the
+LEADING team in the last 2:00 are 9.5% of attempts in both sim and reality, but with the state held fixed the served FT
+model scores the sim's shooters 0.707 vs 0.730 for the real ones (-2.3 pp; last 1:00 -2.5 pp): reality sends better FT
+shooters to the line (shooter as-of FT% +0.028 centred vs -0.003). The engine's allocator is state-blind
+(`UsageAdapter.probs` ignores score_diff / sec_remaining). About -0.22 pp of the sim's FT% (-0.08 points per game).
+Lane L prices the late-game side: fixing leaders' late FT make costs about -0.0014 OT rate, so this arm is a SET MEMBER
+with the late-game laws, not a standalone ship candidate.
+
+### 13.2 Arms (FT_trip class only; every other class and every row outside the window is the served rule exactly)
+
+Window: offence ahead before the event (pre-outcome score_diff > 0), period >= 2, usage `sec_remaining` <= 120 (the
+engine's `GameState.usage_sec_remaining`: last two minutes of regulation, or of an overtime).
+z_i = (fta_asof * shooter_ft_asof + 30 * prior_season_ft) / (fta_asof + 30): the player's shrunk, league-centred FT ability,
+computable from the four engine FT slot columns (no new input); 30 = the FT model's fitted EB strength.
+
+| arm | rule in the window | parameters |
+|---|---|---|
+| `U0` | served: P(i) proportional to r_i (shrunk as-of FT-trip rate) | 0 |
+| `UL1` | P(i) proportional to r_i exp(beta z_i) | 1 |
+| `UL2` | as UL1 with beta_60 (<= 60 s) and beta_120 (60-120 s) | 2 |
+
+Fit: maximum conditional likelihood of the drawer among the five (deterministic, scipy), on `usage/events_v2.parquet`
+FT_trip rows with the five known (score_diff rebuilt pre-outcome as `train_usage_v3` does). No `score_diff` enters the FT
+model; the window uses the usage state only.
+
+- Folds: F2 = train 2024, test 2025 (selects). Lineup data start in 2023-24, so fold 1 (train <= 2023) CANNOT be built;
+  the stated substitute confirmation is train 2024 Nov-Jan, test 2024 Feb-Apr ("F1sub").
+- Primary: mean conditional log-likelihood of the drawer on test FT trips inside the window.
+- Floor: max(2 x paired game-bootstrap SE of the arm - U0 difference, |LL of the arm refit on a seed-1 bootstrap resample
+  of the training games - LL|) (the spec-identical retrain of a deterministic fit).
+- Responsiveness line (mandatory): mean z of the fouled player, predicted vs actual, by state (leading <= 60 s, leading
+  60-120 s, outside the window), sim allocator vs reality, both folds.
+- Decision: an arm WINS if it beats U0 on F2 by more than the floor and F1sub has the same sign without losing beyond
+  its floor, and the predicted z of the fouled player in the window moves toward the actual. Ties go to U0; UL1 before UL2.
+- If an arm wins: default-off engine flag `ENGINE_USAGE_FT_LATE=<arm>` (the off path is untouched; bit-identity with
+  parity v9 proven on a clean `src/`), local 500 x 25 tap (direction only), and a box set read (`d1001_I_3`).
+- Script: `scripts/train_usage_ft_late_v1.py` (new).
