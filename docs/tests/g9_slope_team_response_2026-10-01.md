@@ -233,3 +233,85 @@ A two-stage arm `TS-R`:
 - Primary written as |1 - slope|.
 
 The three-point result suggests the pooled term is the right tool for the noisy shot type, and the rating terms keep the strength signal the margin needs.
+
+## 8. Round 3: TS-R (PM-tasked; the last round of the series)
+
+Pre-registration: `fg_make/experiments.md` section 27, commit 5518059 (09:30 EDT), committed before any arm ran.
+
+**Run.** 09:30-09:47 EDT, local, 4 processes.
+- Trainer: `scripts/train_fg_make_two_stage_v2.py`. Served-shape object: `scripts/fg_two_stage_model_v2.py`. Runner: `scripts/run_tsr_round_v1.sh`.
+- Grading: the same grader (`--arms arms_tsr.json --out grade_tsr_v1.json`), which now reports |1 - slope| and month-level bias.
+- Artifacts: `data/processed/models/fg_make/round_tsr/`, untracked and not uploaded.
+
+**Parity: EXACT** for every injected column (`fg_team_offset` built from the ENGINE's rating columns, `lg_make_asof`) and every served team column of `aL`.
+
+**Fitted stage B for TSR** (F2, seeds 0 and 1 agree to 3 decimals):
+
+| type | tau_off / tau_def | site home / away | off-rating | def-rating |
+|---|---|---|---|---|
+| rim | 0.10 / 0.10 | +0.046 / -0.062 | +0.0165 | +0.0105 |
+| jumper | 0.08 / 0.06 | +0.041 / -0.022 | +0.0063 | +0.0122 |
+| three | 0.04 / 0.00 | +0.028 / -0.023 | +0.0064 | +0.0088 |
+
+### 8.1 Verdicts per pre-registered line
+
+| line | served aR (s0 / s1) | aL (s0 / s1) | TSR (s0 / s1) | verdict |
+|---|---|---|---|---|
+| Primary: harness abs(1 - slope), F2 | 0.0880 / 0.0970 | 0.0867 / 0.0862 | **0.0038 / 0.0019** | TSR -0.084 / -0.086. Floor = max(0.0089, seed spread 0.0019, paired bootstrap SE 0.018-0.019) = 0.019, so **4.4 floors**. aL is inside the floor |
+| Close lens abs(1 - slope) | 0.0957 / 0.1038 | 0.0968 / 0.0941 | 0.0140 / 0.0119 | TSR agrees |
+| Harness margin SD (served 9.65) | 9.65 / 9.72 | 9.65 / 9.63 | 8.87 / 8.85 | the slope is NOT reached by collapsing spread (-8%; round 2 was -28%) |
+| Team-game make slope rim / jump / three, F2 (decision line) | 0.83 / 0.79 / 0.73 | 0.82-0.83 / 0.82-0.83 / 0.73 | **0.85 / 0.97-0.98 / 0.89-0.90** | TSR: all three move toward 1. PASS |
+| Offence-quintile slope (decision line) | 0.95 / 1.16 / 1.31 | 0.94-0.95 / 1.12-1.18 / 1.30 | 0.90 / 1.04 / 1.21 | PASS |
+| Month-level calibration: every powered month within +-1.0 pp, every type (decision line) | jumper Mar +1.33 (served fails too) | jumper Mar +1.41 / +1.43 | **jumper Mar +1.52 / +1.50**; every other powered cell within +-0.6 pp; round 2's Nov drift is gone (jumper Nov +0.17) | **FAIL** (one cell, jumpers in March) |
+| Guard: log loss rim (at most 0.667952) / jumper (at most 0.666723) / three | | fallback bounds: pass | 0.667293-0.667329 / 0.666265-0.666397 / 0.637525-0.637530 (three better than served by 210e-6) | PASS |
+| Guard: D8 calibration, both seeds | | pass | pass | PASS |
+| Guard: overall level within +-0.5 pp | | jumper +0.48 | rim +0.01, **jumper +0.52 / +0.51**, three +0.20 | **FAIL** (jumpers, by 0.01-0.02 pp) |
+| Fold 1, design-level team-game slope | 0.80 / 0.65 / 0.74 | 0.80 / 0.61-0.63 / 0.69-0.74 | 0.85 / 0.78-0.79 / 0.84-0.85 | TSR: same direction in all three types. PASS |
+
+**Outcome by the pre-registered rule: NO WINNER.**
+- TSR wins the primary by 4.4 floors and passes every responsiveness, log-loss, D8, fold-1 and parity line.
+- It breaks two jumper level lines. The month line fails in one cell: March, +1.5 pp, where the served model is itself +1.33 pp and `aL` +1.4 pp. The overall-level guard fails at +0.52 against 0.50.
+- These lines were fixed before the run and are not replaced after it. So no flag, tap, HF upload or `d1001_A_1.md` was produced.
+- `aL` (served trees plus the league offset only) is NO WINNER: its primary is inside the floor and it fails the same March cell.
+
+### 8.2 Variance composition (no double counting)
+
+Team-game residual variance above binomial (x1e-4, F2 rim / jump / three):
+
+| | aR | TSR |
+|---|---|---|
+| F2 | 20.2 / 19.8 / 3.5 | 20.0 / 16.5 / 2.4 |
+| F1 three | 0.56 | -0.4 |
+
+- TSR's predictable term explains more of the jumper and three team-game variation, and what it leaves stays positive on F2.
+- On F1 three the excess is -0.4e-4, i.e. zero within noise: three-point team-game variance is almost all binomial, and aL reads 0.12.
+- Two-team shared residual covariance (G3's basis): TSR 11.4 / 13.9 / 1.3 against served 10.6 / 14.5 / 1.4. G3's Sigma basis is essentially unchanged.
+- Lane B's random form latent sits in the remaining positive excess.
+
+### 8.3 What the three rounds establish about fg_make's team signal
+
+1. **The served fg_make's team-game over-spread is not owned by any one team input** (round 1).
+   - Constraining the response to the team make-rate features (monotone, heavier leaves) calibrates that feature's beta. The excess then reappears through the correlated inputs (ratings, site), and the team-game slope and margin slope do not move.
+   - Reliability features and E3 shrinkage make it worse.
+2. **Ratings carry genuine make signal** (round 2). Removing them and keeping only a partially pooled residual history removes 28% of the margin spread and overshoots the slope to 1.16-1.24.
+3. **The excess sits in how the trees learn the team-level effect, not in how much team information there is** (round 3).
+   - The same information was given a parametric, walk-forward-fitted team stage: league-centred rating terms, a partially pooled residual effect, home/away/neutral, and the league level as a logit offset.
+   - That stage calibrates the team-game make slopes (jumper 0.79 -> 0.98, three 0.73 -> 0.89, rim 0.83 -> 0.85 on F2; the same direction on F1).
+   - It brings the deterministic harness margin slope from 0.912 to 0.996-0.998 with 8% less spread.
+   - It costs no shot-level information: log loss is within guard, and threes are better.
+   - The league-offset repair alone (`aL`) does nothing for the slope, so the gain is the two-stage team structure.
+4. **What still blocks TSR is a jumper level defect, not the team stage.**
+   - Jumpers are over-predicted by +0.5 pp overall and +1.5 pp in March.
+   - The served model shows the same March cell (+1.33), and so does `aL` (+1.4). It sits in the within-game trees' league-level handling, shared by every arm of this series.
+5. **Caution for any future closed loop.** The served sim's slope (0.948) sits above its harness slope (0.912), because the v2 loop changes pull spread back. A harness slope of about 1.0 could therefore land the sim slope slightly above 1.0. A full-size read would have to be read on |1 - slope| and margin SD, not slope alone.
+
+**The series stops here, as instructed.** Whether the two jumper level breaks (0.02 pp beyond the level guard; one month cell the served model also fails) should disqualify TSR is a ruling for the PM.
+
+If it is ruled through, step 4 needs about 1.5 h:
+- the `ENGINE_FG_MAKE` value plus builder columns `fg_team_offset__k` and `lg_make_asof__k`;
+- parity v9 on a clean `src/` tree;
+- a local tap;
+- an HF bulk key;
+- `d1001_A_1.md`.
+
+The box accepts requests until 14:30.
