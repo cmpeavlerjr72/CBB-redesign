@@ -9,7 +9,7 @@ for o in "$@"; do
   date
   .venv/Scripts/python.exe scripts/run_clk6_closed_loop_sample_v1.py --clock $MODE \
     --sample-file data/processed/truth/stride500_verified_v1_F2_2025.parquet \
-    --input-dir data/processed/models/engine_v3 --seeds 25 --seed-offset $o --workers 2 --no-players \
+    --input-dir data/processed/models/engine_v3 --seeds 25 --seed-offset $o --workers ${LOOP_WORKERS:-2} --no-players \
     --tag ${STEM}_o${o}_s25 > results/clock_r8/loop_${STEM}_o${o}.log 2>&1
   echo "${STEM}_o${o} rc=$?"
 done
