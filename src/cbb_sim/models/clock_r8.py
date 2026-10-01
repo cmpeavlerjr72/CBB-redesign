@@ -179,3 +179,149 @@ def game_elasticity(d: pd.DataFrame, e: np.ndarray) -> dict:
         b, *_ = np.linalg.lstsq(Z, np.log(1200.0 / gg[k].to_numpy()), rcond=None)
         out[k] = float(b[1])
     return {"e_law": out["e"], "e_act": out["a"], "n_games": int(len(gg))}
+
+
+# ---------------------------------------------------------------------------
+# Round 8 amendment (experiments.md section 38): outcome-conditioned possession time.
+# K1: first-chance law + per-OREB continuation law. K2: K1 + the first-chance time re-drawn
+# at the same uniform from d1 | chance-1 end class after the cascade. K2M: K2 on the M2D law.
+# ---------------------------------------------------------------------------
+#: chance-1 end classes
+END1_LEVELS = ("made_FG", "missed_FG", "TOV", "FT_trip", "other")
+ck.EMPIRICAL_DIM_SIZES["end1_code"] = len(END1_LEVELS)
+ck.EMPIRICAL_DIMS["P3e_dummy"] = (*ck.EMPIRICAL_DIMS["P3_dummy"], "end1_code")
+ck.EMPIRICAL_DIMS["P3ne_dummy"] = (*ck.EMPIRICAL_DIMS["P3n_dummy"], "end1_code")
+ck.FEATURE_SETS.setdefault("P3e_dummy", ck.FEATURE_SETS["P3_dummy"])
+ck.FEATURE_SETS.setdefault("P3ne_dummy", ck.FEATURE_SETS["P3_dummy"])
+CONT_GROUPS = 2           # chance index 2, 3+
+
+
+class EmpiricalArmEnd(c3.EmpiricalArmV3P):
+    """The P3 KM cell law with the chance-1 end class as the finest cell dimension
+    (`df["end1_code"]`; rows without it are coded 0 and must not be scored as conditional)."""
+
+    def _codes(self, df: pd.DataFrame) -> dict[str, np.ndarray]:
+        codes = super()._codes(df)
+        codes["end1_code"] = (df["end1_code"].to_numpy().astype("int64") if "end1_code" in df.columns
+                              else np.zeros(len(df), dtype="int64"))
+        return codes
+
+
+def fit_empirical_end(tr: pd.DataFrame, fs: str) -> c3.StateWrapArm:
+    """`clock_v3._fit_empirical_p` with `EmpiricalArmEnd` (same KM levels, srfloor)."""
+    sp = c3.add_p_state(tr.copy())
+    dims = ck.EMPIRICAL_DIMS[fs]
+    sizes = tuple(ck.EMPIRICAL_DIM_SIZES[d] for d in dims)
+    tempo = sp["tempo_prior_game"].to_numpy(dtype="float64")
+    arm = EmpiricalArmEnd(
+        feature_set_name=fs, dims=dims, sizes=sizes, level_pmfs=[], level_counts=[], level_events=[],
+        tempo_edges=(float(np.quantile(tempo, 1 / 3)), float(np.quantile(tempo, 2 / 3))),
+        season_map={s: i for i, s in enumerate(sorted(int(x) for x in sp["season"].unique()))},
+        sr_floor_bucket=c3.SR_FLOOR_BUCKET, features=ck.feature_set(fs), name="empirical_km3_srfloor_end_P3")
+    codes = arm._codes(sp)
+    y = sp["duration_s"].to_numpy(dtype="int64")
+    cen = sp["censored"].to_numpy(dtype=bool)
+    pooled = np.zeros((1, c3.N_GRID), dtype="float64")
+    np.add.at(pooled, (np.zeros(int((~cen).sum()), dtype="int64"), y[~cen]), 1.0)
+    pooled = ck._normalise(pooled)
+    for lv in range(len(dims) + 1):
+        n_cells = 1 if lv == 0 else int(np.prod(sizes[:lv]))
+        keys = arm._keys(codes, lv)
+        if lv == 0:
+            parent_pmf, parent_of = pooled, np.zeros(1, dtype="int64")
+        else:
+            parent_pmf = arm.level_pmfs[lv - 1]
+            parent_of = ((np.arange(n_cells, dtype="int64") // sizes[lv - 1]) if lv > 1
+                         else np.zeros(n_cells, dtype="int64"))
+        pmf, counts, events = c3.kaplan_meier_pmf_v3(keys, y, cen, n_cells, parent_pmf, parent_of)
+        arm.level_pmfs.append(ck._normalise(pmf))
+        arm.level_counts.append(counts)
+        arm.level_events.append(events)
+    arm.level_counts[0] = np.maximum(arm.level_counts[0], arm.min_cell)
+    arm.level_events[0] = np.maximum(arm.level_events[0], arm.min_events)
+    return c3.StateWrapArm(arm, "P3")
+
+
+def end1_code_from_chance(term: np.ndarray, fgm: np.ndarray) -> np.ndarray:
+    """Data side: chance-1 terminal event + made-FG count -> END1 code."""
+    term = np.asarray(term).astype(str)
+    fga = np.char.startswith(term, "FGA")
+    made = np.asarray(fgm) > 0
+    return np.select([fga & made, fga & ~made, term == "TOV", np.char.startswith(term, "FT")],
+                     [0, 1, 2, 3], 4).astype("int64")
+
+
+def cont_pmf_from(durations: np.ndarray, groups: np.ndarray) -> np.ndarray:
+    """Empirical continuation pmf (CONT_GROUPS, N_GRID): chance-2 and chance-3+ durations."""
+    out = np.zeros((CONT_GROUPS, c3.N_GRID))
+    d = np.clip(np.asarray(durations, dtype="int64"), 0, ck.DURATION_CAP)
+    for g in range(CONT_GROUPS):
+        np.add.at(out[g], d[groups == g], 1.0)
+    return ck._normalise(out)
+
+
+@dataclass
+class KChanceArm:
+    """One refit of a K arm: the marginal first-chance law (`pmf`, drawn before the cascade),
+    the end-class-conditional first-chance law (`pmf_end`, K2/K2M only) and the continuation
+    pmf. `parametrisation` is the marginal's, so the adapter's checks are unchanged."""
+
+    marginal: object
+    conditional: object | None
+    cont_pmf: np.ndarray
+    arm: str
+    cont_mode: str                 # "K1" or "K2"
+    parametrisation: str = "P3"
+    info: dict = field(default_factory=dict)
+
+    @property
+    def name(self) -> str:
+        return f"clock_r8_{self.arm}|P3"
+
+    @property
+    def needs_days_since_start(self) -> bool:
+        return bool(getattr(self.marginal, "use_t", False))
+
+    def pmf(self, df: pd.DataFrame) -> np.ndarray:
+        return self.marginal.pmf(df)
+
+    def pmf_end(self, df: pd.DataFrame) -> np.ndarray:
+        if self.conditional is None:
+            return self.marginal.pmf(df)
+        return self.conditional.pmf(df)
+
+    def mean_cont(self) -> np.ndarray:
+        g = np.arange(c3.N_GRID, dtype="float64")
+        return self.cont_pmf @ g
+
+
+def fit_base_dims(arm: str, tr: pd.DataFrame, coef: np.ndarray, use_t: bool, info: dict, fs: str):
+    """`fit_base` with a chosen cell grid (`P3ne_dummy` for K2M's conditional law)."""
+    t = add_feats(tr.copy())
+    k = np.exp(design_matrix(t, use_t) @ coef)
+    scaled = tr.copy()
+    scaled["duration_s"] = np.clip(np.rint(tr["duration_s"].to_numpy(dtype="float64") / k),
+                                   0, ck.DURATION_CAP).astype("int64")
+    base = fit_empirical_end(scaled, fs) if fs.endswith("e_dummy") else c3.StateWrapArm(
+        c3._fit_empirical_p(c3.add_p_state(scaled), fs, "P3", sr_floor_bucket=c3.SR_FLOOR_BUCKET), "P3")
+    return AFTArmR8(base=base, arm=arm, use_t=use_t, coef=np.asarray(coef, dtype="float64"),
+                    info={**info, "n_train": int(len(tr))})
+
+
+def fit_k_arm(arm: str, tr_d1: pd.DataFrame, cont_pmf: np.ndarray, seed: int = 0) -> KChanceArm:
+    """`tr_d1`: training rows with duration_s = first-chance duration, censored = first-chance
+    censoring, end1_code. K1/K2: the served L2 family (P3 cells incl. the tempo tercile).
+    K2M: the M2D law (mean-scale AFT + in-season term) for both first-chance laws."""
+    if arm in ("K1", "K2"):
+        marginal = c3.fit_arm_v3b("empirical_km3_srfloor", "P3", tr_d1, seed=seed)
+        conditional = fit_empirical_end(tr_d1, "P3e_dummy") if arm == "K2" else None
+        info = {}
+    elif arm == "K2M":
+        coef, info = fit_coef("M2D", tr_d1)
+        marginal = fit_base("M2D", tr_d1, coef, True, info)
+        conditional = fit_base_dims("M2D", tr_d1, coef, True, info, "P3ne_dummy")
+        info = {"coef": coef.tolist(), **info}
+    else:
+        raise ValueError(arm)
+    return KChanceArm(marginal=marginal, conditional=conditional, cont_pmf=cont_pmf, arm=arm,
+                      cont_mode="K1" if arm == "K1" else "K2", info=info)

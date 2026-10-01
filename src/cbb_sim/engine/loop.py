@@ -98,6 +98,30 @@ PREV_DUMMY = ("prev_end_DREB", "prev_end_TOV", "prev_end_made_FG",
 
 #: An OREB chain longer than this is a pathology, not basketball. Counted.
 MAX_CHANCES = 8
+
+
+def _end1_code(cls: np.ndarray, pts1: np.ndarray) -> np.ndarray:
+    """Clock round 8 amendment (clock experiments.md s38): chance-1 end class
+    (`clock_r8.END1_LEVELS`: made FG, missed FG, TOV, FT trip, other) from the
+    chance-1 event class and the offence's points during chance 1."""
+    fga = (cls == CLS_RIM) | (cls == CLS_JUMP) | (cls == CLS_3)
+    return np.select([fga & (pts1 >= 2), fga, cls == CLS_TOV,
+                      (cls == CLS_FT_SHOOT) | (cls == CLS_FT_BONUS)], [0, 1, 2, 3], 4).astype(np.int64)
+
+
+def _clock_cont(clock, cbook, mode, team_off, x, u_clock, gidx, act, keys, end1, chance, dur, left):
+    """Clock round 8 amendment: the possession time GIVEN its realised chances.
+    K2: the first-chance time re-drawn at the SAME uniform from d1 | chance-1 end
+    class; K1 keeps the pre-cascade draw. Every OREB continuation adds a drawn
+    continuation time (own stream family `clock_cont`). Capped at the time left."""
+    d1 = (clock.redraw_end(team_off, x, u_clock, gidx, keys, end1) if mode == "K2"
+          else np.asarray(dur, dtype=np.float64))
+    extra = np.zeros(len(act), dtype=np.float64)
+    for j in range(2, (int(chance.max()) if len(chance) else 1) + 1):
+        rj = np.flatnonzero(chance >= j)
+        u_c = cbook.draw("clock_cont", act[rj])
+        extra[rj] += clock.draw_cont(team_off[rj], gidx[rj], np.full(len(rj), 0 if j == 2 else 1), u_c, keys[rj])
+    return np.minimum(d1 + extra, left).astype(np.float64)
 #: Hard step cap. A 40-minute game at the data's mean duration is ~140
 #: possessions; the cap exists so a pathological draw cannot hang a run.
 MAX_STEPS = 700
@@ -260,6 +284,12 @@ def simulate_chunk(inp: EngineInputs, ad: Adapters, game_index: np.ndarray,
     # chance_time round 1 (chance_time/experiments.md s1): fed chance timing. SERVED DEFAULT
     # KD (adopted 2026-10-01); ENGINE_CHANCE_TIME=reference -> None, no draw (served-v1).
     ctf = CT.load(seeds, gids)
+    # clock round 8 amendment (clock experiments.md s38): outcome-conditioned possession
+    # time. None for every served / default clock mode: nothing below runs, no stream moves.
+    clk_cont = getattr(ad.clock, "cont_mode", None)
+    cbook = None
+    if clk_cont is not None:
+        cbook = StreamBook(seeds, gids, families=("clock_cont",))
     if ssl is not None:
         ssl.init_game(seeds, gids, book.keys["clock"])
     neutral_g = ((inp.games["neutral"].to_numpy() > 0)
@@ -420,6 +450,9 @@ def simulate_chunk(inp: EngineInputs, ad: Adapters, game_index: np.ndarray,
             e1, trans = ctf.first(act, used, (prev == PREV["DREB"]) | (prev == PREV["TOV"]), trans)
 
         # ---- (b)-(d) the chance cascade ----------------------------------
+        if clk_cont is not None:
+            pts0 = st.pts[act, off].copy()
+            end1 = np.full(m, 4, dtype=np.int64)
         live = np.ones(m, dtype=bool)          # rows whose possession is still open
         chance = np.ones(m, dtype=np.int64)
         end_code = np.full(m, PREV["other"], dtype=np.int8)
@@ -637,6 +670,8 @@ def simulate_chunk(inp: EngineInputs, ad: Adapters, game_index: np.ndarray,
 
             if ao_relabel and ao_list:
                 AL.relabel(end_code, np.concatenate(ao_list), cont, PREV["made_FG"])
+            if clk_cont is not None and c_iter == 0:
+                end1 = _end1_code(cls, st.pts[act, off] - pts0)
             live[:] = False
             live[cont] = True
             chance[cont] += 1
@@ -660,6 +695,11 @@ def simulate_chunk(inp: EngineInputs, ad: Adapters, game_index: np.ndarray,
         if sf.any():
             rs = np.flatnonzero(sf)
             st.team_fouls[act[rs], dfn[rs]] += 1
+
+        if clk_cont is not None:
+            used = _clock_cont(ad.clock, cbook, clk_cont, team_off, x, u_clock, gidx, act,
+                               book.keys["clock"][act], end1, chance, dur, left)
+            st.poss_duration[act] = used.astype(np.int16)
 
         # ---- possession bookkeeping and the clock ------------------------
         st.poss_count[act, off] += 1

@@ -125,3 +125,7 @@ data/processed/models/full_retrain_v1/
 # per-cell prediction / PMF dumps are model artifacts well over the 20 MB bar,
 # so they are gitignored and go to the HF dataset, per CLAUDE.md data rules.
 data/processed/models/late_game/
+# clock round 8 arm K2 (49 MB per fold; scripts/train_clock_r8_chance_v1.py, 75 s to rebuild); HF: `model_artifacts` key
+data/processed/models/clock/r8_K2/F1/
+data/processed/models/clock/r8_K2/F2/
+data/processed/models/clock/r8_K2/F2_seed*/

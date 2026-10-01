@@ -1,0 +1,122 @@
+{
+  "base_arm": "clock_r8_K1",
+  "parametrisation": "P3",
+  "tag": "r8K1",
+  "scheme": "S1",
+  "season": 2025,
+  "fold": "F2",
+  "round": "8 amendment (section 38)",
+  "seed": 0,
+  "arm_adopted": false,
+  "note": "clock round 8 amendment, outcome-conditioned possession time; NOT adopted, NOT a default",
+  "months": [
+    {
+      "refit_date": "2024-11-01",
+      "valid_from": "2024-11-01",
+      "valid_to": "2024-11-30",
+      "n_train": 1757006,
+      "n_train_from_test_season": 0,
+      "n_cont_rows": 252515,
+      "mean_cont": [
+        5.851,
+        5.472
+      ],
+      "n_scored": 150256,
+      "max_train_date": "2024-04-08",
+      "season": 2025,
+      "month": "2024-11",
+      "model_file": "r8_K1/F2/r8K1_S1_2025_2024-11.pkl",
+      "fit_seconds": 2.3
+    },
+    {
+      "refit_date": "2024-12-01",
+      "valid_from": "2024-12-01",
+      "valid_to": "2024-12-31",
+      "n_train": 1907262,
+      "n_train_from_test_season": 150256,
+      "n_cont_rows": 275443,
+      "mean_cont": [
+        5.829,
+        5.469
+      ],
+      "n_scored": 115549,
+      "max_train_date": "2024-11-30",
+      "season": 2025,
+      "month": "2024-12",
+      "model_file": "r8_K1/F2/r8K1_S1_2025_2024-12.pkl",
+      "fit_seconds": 2.8
+    },
+    {
+      "refit_date": "2025-01-01",
+      "valid_from": "2025-01-01",
+      "valid_to": "2025-01-31",
+      "n_train": 2022811,
+      "n_train_from_test_season": 265805,
+      "n_cont_rows": 292698,
+      "mean_cont": [
+        5.821,
+        5.456
+      ],
+      "n_scored": 176257,
+      "max_train_date": "2024-12-31",
+      "season": 2025,
+      "month": "2025-01",
+      "model_file": "r8_K1/F2/r8K1_S1_2025_2025-01.pkl",
+      "fit_seconds": 3.0
+    },
+    {
+      "refit_date": "2025-02-01",
+      "valid_from": "2025-02-01",
+      "valid_to": "2025-02-28",
+      "n_train": 2199068,
+      "n_train_from_test_season": 442062,
+      "n_cont_rows": 319565,
+      "mean_cont": [
+        5.812,
+        5.453
+      ],
+      "n_scored": 155359,
+      "max_train_date": "2025-01-31",
+      "season": 2025,
+      "month": "2025-02",
+      "model_file": "r8_K1/F2/r8K1_S1_2025_2025-02.pkl",
+      "fit_seconds": 3.0
+    },
+    {
+      "refit_date": "2025-03-01",
+      "valid_from": "2025-03-01",
+      "valid_to": "2025-03-31",
+      "n_train": 2354427,
+      "n_train_from_test_season": 597421,
+      "n_cont_rows": 342189,
+      "mean_cont": [
+        5.809,
+        5.445
+      ],
+      "n_scored": 96469,
+      "max_train_date": "2025-02-28",
+      "season": 2025,
+      "month": "2025-03",
+      "model_file": "r8_K1/F2/r8K1_S1_2025_2025-03.pkl",
+      "fit_seconds": 3.5
+    },
+    {
+      "refit_date": "2025-04-01",
+      "valid_from": "2025-04-01",
+      "valid_to": null,
+      "n_train": 2450896,
+      "n_train_from_test_season": 693890,
+      "n_cont_rows": 356359,
+      "mean_cont": [
+        5.804,
+        5.43
+      ],
+      "n_scored": 2224,
+      "max_train_date": "2025-03-31",
+      "season": 2025,
+      "month": "2025-04",
+      "model_file": "r8_K1/F2/r8K1_S1_2025_2025-04.pkl",
+      "fit_seconds": 3.8
+    }
+  ]
+}

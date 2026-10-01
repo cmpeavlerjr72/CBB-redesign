@@ -4540,3 +4540,47 @@ Vetoes (any one refuses the arm): F2 |implied count gap| worse than C0's by > 0.
 - **Gate to the closed loop:** an arm goes to the loop if line 1 moves toward the actual by more than its floor, line 2 does not fire, and fold 1 keeps the sign. Simplest passing arm first; K2M also goes as the "together" read if it passes.
 
 **Closed-loop lines (local tap = direction only, Decision 12; full size on the box decides):** within-game possessions on (OREB, FGM, TOV, FTA) vs the actual (target OREB < 0, about -0.02 to -0.035); lane B's pace x makes and pace x OREB covariance rows (`scripts/diag_g5_channels_v1.py` on the full-size runs); G1 count - v4 and the G1 gate; pooled possession SD and the possession SD ratio; sim team pace slope and game elasticity ratio; G5 corr and total SD ratio; G9 total / margin bias and slope; OT rate. Each K arm is read alone (vs the served default) and K2M together; M2D alone is section 37.
+
+## 39. Round 8 amendment OFFLINE result, a mis-specified gate line, and the closed-loop registration of K2 / K2M (2026-10-01 ~07:15 EDT, lane H; written BEFORE any closed loop of a K arm)
+
+**Run.** `scripts/train_clock_r8_chance_v1.py` (K2 F2 06:47; K1, K2M, all F1 06:50-06:56; every refit 2-24 s), `scripts/grade_clock_r8_chance_offline_v1.py` (06:57-06:59) -> `results/clock_r8/chance_offline_grade.json`. 2,453,120 of 2,453,120 design rows join their chance 1. Continuation means 5.80-5.85 s (chance 2) and 5.43-5.47 s (3+).
+
+| fold | arm | first-chance deviance (marginal / conditional) | possessions on OREB (actual -0.035 F2, -0.048 F1) | on FGM (actual +0.394 / +0.381) | count cal. slope | count gap | offence-q slope | elasticity ratio |
+|---|---|---|---:|---:|---:|---:|---:|---:|
+| F2 | C0 | | +0.039 | +0.029 | 0.913 | +0.527 | 0.401 | 0.743 |
+| F2 | M2D | | +0.063 | +0.071 | 0.933 | +0.615 | 0.899 | 0.986 |
+| F2 | K1 | 6.821 / -- | -0.125 | +0.044 | 0.949 | +0.441 | 0.396 | 0.721 |
+| F2 | K2 | 6.821 / **6.708** | -0.188 | +0.083 | 0.952 | +0.452 | 0.405 | 0.724 |
+| F2 | K2M | 6.800 / **6.656** | -0.166 | +0.127 | 0.951 | +0.518 | 0.888 | 0.980 |
+| F1 | C0 | | +0.041 | +0.018 | 0.855 | +0.369 | 0.474 | 0.839 |
+| F1 | K1 | 6.821 / -- | -0.126 | +0.032 | 0.893 | +0.285 | 0.464 | 0.811 |
+| F1 | K2 | 6.821 / 6.722 | -0.184 | +0.069 | 0.936 | +0.219 | 0.472 | 0.808 |
+| F1 | K2M | 6.796 / 6.660 | -0.161 | +0.112 | 0.916 | -0.145 | 1.011 | 1.091 |
+
+**Reading under the section-38 gate, by the letter.**
+- Line 1 (|OREB slope - actual| smaller than C0's by more than the floor): K1 +0.016 (floor 0.052), K2 +0.079 (0.054), K2M +0.057 (0.055): **no K arm passes; K2 and K2M are worse by the letter** (they overshoot to -0.17 / -0.19 against -0.035).
+- Line 2 (count veto): every K arm IMPROVES the count gap (K1 -0.086, K2 -0.075, K2M -0.009 vs C0) and the count calibration slope (+0.036 to +0.039, 1.0-1.5 floors). Fold 1 keeps every sign.
+- **By the pre-registered gate, no K arm goes to the closed loop.**
+
+**Why line 1 is mis-specified (found after reading it; disclosed as such).** The model-implied count is built from the realised outcomes only. The actual count also carries a reverse arrow: a game that is fast for any unmodelled reason has more possessions and therefore more OREB, FGM, TOV and FTA, which pushes every actual slope on COUNTS upward. The actual OREB slope (-0.035) is therefore not the time cost of an OREB, and C0's +0.039 is not "closer to reality" than K2's -0.188. In the closed loop the comparison is like for like (the sim's game latent produces the same reverse arrow), which is where lane B read it; offline it is not.
+
+**POST-HOC line (labelled; `scripts/diag_clock_r8_chance_resid_v1.py` -> `results/clock_r8/chance_resid_posthoc.json`):** per game, (actual mean possession time - the arm's mean implied time) regressed on per-possession RATES; target 0 (the clock prices the realised outcomes and leaves no residual dependence on them). Seconds per unit rate, SE about 0.6:
+
+| fold | arm | OREB rate | FGM rate | TOV rate | FTA rate |
+|---|---|---:|---:|---:|---:|
+| F2 | C0 | +6.95 | -4.72 | -3.74 | -2.98 |
+| F2 | M2D | +7.17 | -4.47 | -3.21 | -3.06 |
+| F2 | K1 | +1.31 | -4.77 | -3.79 | -3.01 |
+| F2 | **K2** | **-0.98** | **-1.63** | **+0.21** | **-0.58** |
+| F2 | **K2M** | **-0.91** | **-1.31** | **+0.83** | **-0.50** |
+| F1 | C0 | +7.54 | -6.03 | -5.16 | -4.57 |
+| F1 | K2 | -0.40 | -3.21 | -1.32 | -2.46 |
+| F1 | K2M | -0.29 | -2.66 | -0.45 | -1.63 |
+
+K1 removes the OREB dependence only; K2 and K2M remove most of all four (|residual| down 2.4-6.0 s per unit rate vs C0, 1.2 to 26 floors by rate). This line was not pre-registered; it cannot pass anything.
+
+**Decision taken here.** By the letter the K arms do not reach the loop. The PM's ruling of 06:42 asks for the combined candidate on the box by 14:30 regardless, so K2M (together) goes to the box and K2 (alone) to a local tap as **PM-directed reads, not gate passes**; the PM rules on the gate. Nothing is adopted.
+
+**Wiring.** `ENGINE_CLOCK=v5b_r8{K1,K2,K2M}_glat_pmean` (`clock_adapter_v3`: `cont_mode`, `redraw_end`, `draw_cont` on both adapter classes, mode keys). `loop.py`, behind `cont_mode` (None for every other mode): the chance-1 end class is read after chance 1 (event class + offence points in chance 1), and after the cascade `_clock_cont` replaces the consumed time with min(d1' + continuations, time left), d1' = the K2 re-draw at the same uniform (K1: the pre-cascade draw); continuations draw from their own stream family `clock_cont` (a new StreamBook), so the `clock` stream stays aligned with the control. The game latent scales d1' and every continuation. KD is unchanged (section 38). Flag-off parity 60 x 5 vs v9: **PASS bit-identical** (after the edit). Smokes 30 x 2: K2 67.7 possessions, K2M 65.8, K1 68.2. Latent (first-chance law): K1/K2 sigma 0.04710, K2M 0.04220. Artifacts: K1 F2 9.1 MB and K2M F2 16 MB tracked; **K2 F2 49 MB is gitignored** (HF bulk key `model_artifacts`; not pushed; rebuild: `train_clock_r8_chance_v1.py --arm K2 --fold F2`, 75 s).
+
+**Closed-loop lines (as section 38), arm vs the served default:** within-game possessions on (OREB, FGM, TOV, FTA) vs the actual; pace x makes and pace x OREB rows (`diag_g5_channels_v1.py`, full size); G1 count - v4; pooled possession SD and the possession SD ratio; sim team slope and game elasticity ratio; G5 corr and total SD ratio; G9 total / margin bias and slope; OT rate. Local taps (500 x 25, direction only): K2 and K2M. Box: K2M 5,710 x 200 (`docs/ops/box_queue/d1001_H_2.md`).

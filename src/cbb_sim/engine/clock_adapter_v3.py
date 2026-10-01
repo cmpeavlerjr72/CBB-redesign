@@ -454,6 +454,39 @@ class ClockAdapterV3:
                            dur.astype(np.float64))
         return dur
 
+    # -- clock round 8 amendment (experiments.md section 38) -------------
+    @property
+    def cont_mode(self) -> str | None:
+        """"K1"/"K2" for an outcome-conditioned possession-time arm; None for
+        every other arm, which keeps loop.py on its unchanged path."""
+        return getattr(self.arms[0], "cont_mode", None) if self.arms else None
+
+    def _route(self, gidx: np.ndarray | None, n: int) -> np.ndarray:
+        if self.segment is not None or len(self.arms) == 1:
+            return np.zeros(n, dtype=np.int64)
+        return np.asarray(self.manifests["clock"].segments(np.asarray(gidx)), dtype=np.int64)
+
+    def redraw_end(self, team: np.ndarray, state: np.ndarray, u: np.ndarray,
+                   gidx: np.ndarray | None, end1: np.ndarray) -> np.ndarray:
+        """K2: the first-chance time at the SAME uniform from d1 | chance-1 end class."""
+        df = self._frame(team, state, gidx)
+        df["end1_code"] = np.asarray(end1, dtype=np.int64)
+        segs = self._route(gidx, len(df))
+        out = np.empty((len(df), CK.DURATION_CAP + 1), dtype=np.float64)
+        for k in np.unique(segs):
+            r = np.flatnonzero(segs == k)
+            out[r] = self.arms[int(k)].pmf_end(df.iloc[r].reset_index(drop=True))
+        return CK.sample_from_pmf(out, u).astype(np.float64)
+
+    def draw_cont(self, gidx: np.ndarray | None, grp: np.ndarray, u: np.ndarray) -> np.ndarray:
+        """One continuation-chance time per row (group 0 = chance 2, 1 = chance 3+)."""
+        segs = self._route(gidx, len(u))
+        out = np.empty(len(u), dtype=np.float64)
+        for k in np.unique(segs):
+            r = np.flatnonzero(segs == k)
+            out[r] = CK.sample_from_pmf(self.arms[int(k)].cont_pmf[np.asarray(grp)[r]], u[r])
+        return out
+
     def _cell_codes(self, df: pd.DataFrame) -> np.ndarray:
         """Round-2 cell index per row, from the frame the model itself saw."""
         prev = df["prev_end"].map(CK.PREV_END_INDEX).to_numpy().astype(np.int64)
@@ -924,8 +957,34 @@ class LatentClockAdapter:
         self.eoh.add(state[:, self.inner.state_idx["period"]], left, d)
         return d
 
+    # -- clock round 8 amendment (experiments.md section 38): the SAME game latent
+    # scales the outcome-conditioned first-chance time and every continuation time.
+    @property
+    def cont_mode(self) -> str | None:
+        return self.inner.cont_mode
+
+    def redraw_end(self, team, state, u, gidx, keys, end1) -> np.ndarray:
+        t = self.inner.redraw_end(team, state, u, gidx, end1)
+        return np.clip(np.rint(self._latent(keys, team) * t), 0.0, float(CK.DURATION_CAP))
+
+    def draw_cont(self, team, gidx, grp, u, keys) -> np.ndarray:
+        t = self.inner.draw_cont(gidx, grp, u)
+        return np.clip(np.rint(self._latent(keys, team) * t), 0.0, float(CK.DURATION_CAP))
+
     def eoh_snapshot(self) -> dict:
         return self.eoh.snapshot()
 
     def eoh_drain(self) -> dict:
         return self.eoh.drain()
+# Clock round 8 amendment (experiments.md section 38; lane H 2026-10-01): outcome-conditioned
+# possession time. K1 = first-chance law (served L2 family) + per-OREB continuation time; K2 = K1
+# + first-chance time re-drawn from d1 | chance-1 end class after the cascade; K2M = K2 on the M2D
+# law (`cbb_sim.models.clock_r8.KChanceArm`; loop.py reads `cont_mode`). DEFAULT-OFF: new keys only.
+for _k, _dss in (("K1", False), ("K2", False), ("K2M", True)):
+    V3C_MODES[f"v3c_r8{_k}_P3_s1"] = {
+        "manifest": f"r8_{_k}/F2/manifest.json", "base_arm": f"clock_r8_{_k}", "parametrisation": "P3",
+        **({"needs_days_since_start": True} if _dss else {})}
+    V5_MODES[f"v5b_r8{_k}_glat_pmean"] = {
+        "base_mode": f"v3c_r8{_k}_P3_s1", "unit": "game", "param": "B1_sigma", "loc": "plus_half",
+        "params_file": f"r8_{_k}/v5b_bakeoff/v5b_bakeoff_report.json"}
+del _k, _dss
