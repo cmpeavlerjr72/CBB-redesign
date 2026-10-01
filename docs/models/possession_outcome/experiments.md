@@ -3752,3 +3752,32 @@ of arm - R8b). Available locally: S0 offsets 0/1000/2000 at 200 seeds (three dra
 not arrive, the floor uses three draws and is labelled so. Lines a 500-game read cannot decide (G5
 ratios, G7, G8 at < 4 draws) are written UNDERPOWERED, not pass or fail.
 Hard constraint: no constant tuned toward any aggregate; every LUT is a fold-2 TRAIN fit.
+
+## 27. Lane G home-site round: RESULTS for the foul-accrual site term (run 2026-09-30 20:57 EDT; pre-registration section 25, commit e5dd38c; section 26 above is lane C round 9)
+
+**Run.** `scripts/exp_foul_accrual_site_v1.py`, graded by `scripts/grade_home_site_v1.py`. Full tables are in `docs/tests/home_site_terms_2026-09-30.md` section 4.3.
+
+**There is no realised site effect in silent-foul accrual:**
+
+| fold | realised HCA (silent-foul rate per possession) |
+|---|---|
+| F2 | -0.00006 ± 0.00054 |
+| F1 | +0.00019 ± 0.00054 |
+
+Train-season rates are 0.0771 for home offence, 0.0768 for away and 0.0789 for neutral. The A2 logit slope is +0.002.
+
+**Arms.** A1 and A2 change `G_site` by at most 0.0003, inside floors of about 0.0005. Log loss changes by ±0.000003.
+
+**Outcome: REFUTED.** The served constant stays.
+
+**Related finding: the PO model's own site terms are calibrated.** The served `round2_s1` artifacts were predicted at real fold-2 states (`scripts/diag_home_site_audit_v1.py --part po_realstate`). Their site terms are within 0.07 pts per game of realised:
+
+| channel | gap (pts per game) |
+|---|---:|
+| TOV | -0.05 |
+| FT-trip class | +0.04 |
+| shot mix | +0.07 |
+
+Continuations over-predict the trip and rim-share site effects, but those cells are underpowered.
+
+The sim's -0.40 on the PO channels (diag section 3) is therefore a simulated-state/cascade residual, not a site-feature or accrual defect. Its owner is open.

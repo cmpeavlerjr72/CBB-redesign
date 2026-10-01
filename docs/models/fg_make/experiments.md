@@ -2172,3 +2172,28 @@ The table is the `S0` held-out FE-adjusted HCA, in points per game per team side
 - **Decision:** the shared rule (`free_throw/experiments.md` section 11 has the shared text). Simplicity order `G1` < `G2` < `G4`: one flag, then one interaction column, then a two-stage fit.
 - **Outcome labels:** REFUTED, or offline winner awaiting a paired closed loop. Nothing is exported to `data/processed/models/fg_make/round4/`; a winner's closed loop would need a new dated artifact set and engine flag value (named in the results doc).
 - **Expected consequence, stated in advance.** A winner that removes the excess will EXPOSE the team-strength under-prediction it was cancelling, and the G6 non-neutral line would then fail in a closed loop. Under Decision 11 that makes it VALIDATED-PENDING-SHIP-ACTION, not refused.
+
+## 22. Lane G home-site round: RESULTS (run 2026-09-30 21:04-22:19 EDT; pre-registration section 21, commit ed640e4)
+
+**Run.** `scripts/train_fg_make_v4_site.py` (1 thread), graded by `scripts/grade_home_site_v1.py --by-class` plus `scripts/diag_home_site_audit_v1.py --part fgarms`. Full tables are in `docs/tests/home_site_terms_2026-09-30.md` section 4.4.
+
+**Primary `G_pts`** (summed per-class FE HCA gap, points per game):
+
+| fold | S0 | G1 dG (floor) | G2 dG (floor) | G4 dG (floor) |
+|---|---:|---|---|---|
+| F2 | 0.402 | -0.110 (0.113) | -0.038 (0.073) | **-0.347 (0.331): beats, 1.05 floors** |
+| F1 | 0.506 | -0.080 (0.088) | -0.047 (0.091) | -0.176 (0.377): same sign, not beyond |
+
+**G4 guards on F2 all hold:**
+
+- Log loss per class: rim -0.000004; jumper +0.000063 against a seed floor of 0.000112; three -0.000060.
+- Offence-quintile responsiveness: 1.019 / 0.871 / 0.745 against S0's 1.033 / 0.878 / 0.741.
+- Raw site calibration worsens within 2 SE in rim and jumper, by -0.37 and -0.40 pp. This is the expected exposure of the strength under-capture.
+
+**Caveat.** F1 jumper log loss is worse by +0.000214 against a seed floor of 0.000132. The guard is registered on F2.
+
+**Outcome:**
+
+- **G4 is the offline winner, awaiting a paired closed loop.** The win is marginal and F1 is underpowered.
+- **G1 and G2 are REFUTED.** G1 improves log loss beyond the floor in rim and three, but not the primary.
+- **Closed-loop needs** (artifact export, a default-off `ENGINE_FG_MAKE=round4site_G4` adapter path, the expected G6 exposure under Decision 11) are listed in `docs/tests/home_site_terms_2026-09-30.md` section 5. Nothing was exported or wired tonight.

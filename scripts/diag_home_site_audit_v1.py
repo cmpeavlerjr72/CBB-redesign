@@ -306,12 +306,178 @@ def part_fgdiag():
     print(pd.DataFrame(by_season).round(5).to_string(index=False))
 
 
+def part_po_realstate():
+    """Served possession_outcome round2_s1 artifacts (first: lgbm, cont:
+    cascade; 6 monthly refits each) predicted at REAL states on every fold-2
+    chance of the round-2 design, each game scored by its own refit (latest
+    refit_date <= game_date, the engine.manifest rule). FE HCA of predicted vs
+    realised class rates, per population and pooled."""
+    import joblib
+    sys.path.insert(0, str(ROOT / "src"))
+    from cbb_sim.models import possession_outcome as POM
+    meta = json.loads((OUT / "audit_v1.json").read_text())
+    P_ref, dv, ref = meta["P_ref"], meta["deriv"], meta["ref_rates"]
+    d_dir = Path("data/processed/models/engine/event_round2_s1_F2_2025")
+    idx = json.loads((d_dir / "index.json").read_text())
+    des = pd.read_parquet("data/processed/models/possession_outcome/round2/design.parquet")
+    des = des[des["season"] == 2025].reset_index(drop=True)
+    des["game_date"] = pd.to_datetime(des["game_date"])
+    P = np.zeros((len(des), len(POM.CLASSES)))
+    for pop in ("first", "cont"):
+        info = idx["populations"][pop]
+        feats = info["features"]
+        segs = sorted(info["segments"], key=lambda s: s["refit_date"])
+        cuts = np.array([np.datetime64(s["refit_date"]) for s in segs])
+        m = (des["population"] == pop).to_numpy()
+        k = np.searchsorted(cuts, des.loc[m, "game_date"].to_numpy(), side="right") - 1
+        rows = np.flatnonzero(m)
+        for j, sg in enumerate(segs):
+            r = rows[k == j]
+            if not len(r):
+                continue
+            w = joblib.load(d_dir / sg["file"])
+            mdl = w["model"]
+            try:
+                mdl.clf_.set_params(n_jobs=1)
+            except Exception:  # noqa: BLE001
+                pass
+            X = np.ascontiguousarray(des.loc[r, feats].to_numpy(dtype="float32"))
+            P[r] = mdl.predict_proba(X)
+        if (k < 0).any():
+            raise AssertionError("a chance predates the first refit")
+    y = des["y"].to_numpy().astype(int)
+    Y = np.zeros_like(P); Y[np.arange(len(y)), y] = 1.0
+    site = (des["site_home"] - des["site_away"]).to_numpy().astype(int)
+    base = pd.DataFrame({"game_id": des["game_id"].to_numpy(), "off_team_id": des["offense_team_id"].to_numpy(),
+                         "def_team_id": des["defense_team_id"].to_numpy(), "site": site,
+                         "population": des["population"].to_numpy()})
+    import grade_home_site_v1 as GR
+    out = {}
+    targets = {"tov": [0], "trip": [4, 5], "rim": [1], "jump2": [2], "three": [3]}
+    for popname, pm in (("pooled", np.ones(len(des), bool)), ("first", base["population"].eq("first").to_numpy()),
+                        ("cont", base["population"].eq("cont").to_numpy())):
+        res = {}
+        for t, cls in targets.items():
+            yy = Y[:, cls].sum(axis=1); pp = P[:, cls].sum(axis=1); ww = np.ones(len(des))
+            if t in ("rim", "three", "jump2"):      # share of shots: weight = shot chances
+                ww = Y[:, [1, 2, 3]].sum(axis=1)
+                pp = P[:, cls].sum(axis=1) / np.maximum(P[:, [1, 2, 3]].sum(axis=1), 1e-12)
+            f = base.assign(y=yy, p=pp, w=ww)[pm]
+            f = f.rename(columns={"off_team_id": "off_id", "def_team_id": "def_id"})
+            f = f[f["w"] > 0] if t in ("rim", "three", "jump2") else f
+            g = GR.aggregate(f)
+            fe = GR.FE(g)
+            m = GR.site_metrics(g, fe)
+            res[t] = {**m, "mean_real": float((f["y"] * f["w"]).sum() / f["w"].sum()),
+                      "mean_pred": float((f["p"] * f["w"]).sum() / f["w"].sum()),
+                      "raw": GR.raw_site_calib(f)}
+        out[popname] = res
+    # points (pooled): per-chance -> per-possession by the realised ratio of means
+    pts = {}
+    n_poss = des.groupby(["game_id", "offense_team_id"])["poss_index"].nunique().sum()
+    cpp = len(des) / n_poss
+    pr = out["pooled"]
+    pts["tov"] = P_ref * dv["t"] * cpp * pr["tov"]["gap"]
+    pts["trip"] = P_ref * dv["rp"] * (ref["rp"] / (pr["trip"]["mean_real"] * cpp)) * cpp * pr["trip"]["gap"]
+    pts["mix_rim"] = P_ref * dv["s_rim"] * pr["rim"]["gap"]
+    pts["mix_3"] = P_ref * dv["s_3"] * pr["three"]["gap"]
+    for k2, (t, key) in {"tov": ("tov", "t"), "trip": ("trip", "rp")}.items():
+        pass
+    out["points_gap_pooled"] = pts
+    out["chances_per_possession"] = cpp
+    out["act_pts_pooled"] = {"tov": P_ref * dv["t"] * cpp * pr["tov"]["hca_real"],
+                             "trip": P_ref * dv["rp"] * (ref["rp"] / pr["trip"]["mean_real"]) * pr["trip"]["hca_real"],
+                             "mix_rim": P_ref * dv["s_rim"] * pr["rim"]["hca_real"],
+                             "mix_3": P_ref * dv["s_3"] * pr["three"]["hca_real"]}
+    (OUT / "po_realstate_v1.json").write_text(json.dumps(out, indent=1, default=float), encoding="utf-8")
+    for popname in ("pooled", "first", "cont"):
+        print(popname)
+        print(pd.DataFrame({t: {k: v for k, v in r.items() if k != "raw"} for t, r in out[popname].items()}).T.round(5).to_string())
+    print("points gap pooled:", json.dumps({k: round(v, 3) for k, v in pts.items()}), "cpp", round(cpp, 4))
+    print("act pts:", json.dumps({k: round(v, 3) for k, v in out["act_pts_pooled"].items()}))
+
+
+def part_fgarms():
+    """Multi-level evidence for the fg_make arms: G_pts with its floor (from
+    grade_v1.json), FE HCA by conference split, raw site residual by
+    conference and month, and the per-game site term."""
+    meta = json.loads((OUT / "audit_v1.json").read_text())
+    P_ref, dv = meta["P_ref"], meta["deriv"]
+    pts = {"FGA_rim": P_ref * dv["p_rim"], "FGA_jump2": P_ref * dv["p_jump"], "FGA_3": P_ref * dv["p_3"]}
+    gr = json.loads((OUT / "fg" / "grade_v1.json").read_text())
+    res = {"G_pts": {}}
+    for fold in ("F2", "F1"):
+        rows = {}
+        for arm in ("S0", "G1", "G2", "G4"):
+            g = sum(pts[c] * gr[f"{fold}|{c}"][arm]["G_site"] for c in pts)
+            signed = sum(pts[c] * gr[f"{fold}|{c}"][arm]["gap"] for c in pts)
+            r = {"G_pts": g, "signed_gap_pts": signed}
+            if arm != "S0":
+                se = np.sqrt(sum((pts[c] * gr[f"{fold}|{c}"][arm]["dG_boot_se"]) ** 2 for c in pts))
+                s1 = {c: gr[f"{fold}|{c}"].get("_seed1_ref", {}) for c in pts}
+                g_s1 = sum(pts[c] * s1[c]["G_site"] for c in pts) if all(s1.values()) else None
+                seed_floor = abs(g_s1 - rows["S0"]["G_pts"]) if g_s1 is not None else None
+                r.update({"dG_pts": g - rows["S0"]["G_pts"], "boot_se_pts": float(se),
+                          "seed_floor_pts": seed_floor,
+                          "floor_pts": max(2 * float(se), seed_floor or 0.0)})
+                r["beats"] = bool(r["dG_pts"] < -r["floor_pts"])
+                r["ll_guard"] = {c: {"dll": gr[f"{fold}|{c}"][arm]["log_loss"] - gr[f"{fold}|{c}"]["S0"]["log_loss"],
+                                     "seed_ll_floor": gr[f"{fold}|{c}"].get("_seed1_ref", {}).get("ll_floor")}
+                                 for c in pts}
+                r["resp"] = {c: (gr[f"{fold}|{c}"][arm]["responsiveness"]["slope_ratio"],
+                                 gr[f"{fold}|{c}"]["S0"]["responsiveness"]["slope_ratio"]) for c in pts}
+            rows[arm] = r
+        res["G_pts"][fold] = rows
+    seg = {}
+    for fold in ("F2", "F1"):
+        for arm in ("S0", "G1", "G2", "G4"):
+            d = pd.read_parquet(f"results/home_site/fg/preds_{arm}_{fold}_s0.parquet")
+            d["site"] = (d["site_home"] - d["site_away"]).astype(int)
+            d["month"] = pd.to_datetime(d["game_date"]).dt.month
+            d["eff"] = d["p"] - d["p_neutral"]
+            out = {}
+            tot = {"conf": 0.0, "nonconf": 0.0}
+            for c, dc in d.groupby("shot_class"):
+                r = {}
+                for nm, m in (("conf", dc["conf_game"].to_numpy()), ("nonconf", ~dc["conf_game"].to_numpy())):
+                    hr, hse = _fe_hca(dc[m], "y"); hp, _ = _fe_hca(dc[m], "p")
+                    r[f"fe_{nm}_gap_pts"] = pts[c] * (hp - hr); r[f"fe_{nm}_se_pts"] = pts[c] * hse
+                    tot[nm] += pts[c] * (hp - hr)
+                nn = dc[dc["site"] != 0]
+                r["raw_resid_HmA_by_month"] = {int(mm): float(s.loc[s["site"] == 1, "p"].mean() - s.loc[s["site"] == 1, "y"].mean()
+                                                            - (s.loc[s["site"] == -1, "p"].mean() - s.loc[s["site"] == -1, "y"].mean()))
+                                               for mm, s in nn.groupby("month")}
+                # per game: site term contribution (home rows minus away rows), points
+                gh = nn[nn["site"] == 1].groupby("game_id")["eff"].mean()
+                ga = nn[nn["site"] == -1].groupby("game_id")["eff"].mean()
+                gg = (gh - ga).dropna() * pts[c]
+                r["per_game_site_term_pts"] = {"mean": float(gg.mean()), "sd": float(gg.std()), "n_games": int(len(gg))}
+                out[c] = r
+            out["sum_fe_conf_gap_pts"] = tot["conf"]; out["sum_fe_nonconf_gap_pts"] = tot["nonconf"]
+            seg[f"{fold}|{arm}"] = out
+    res["segments"] = seg
+    (OUT / "fgarms_v1.json").write_text(json.dumps(res, indent=1, default=float), encoding="utf-8")
+    for fold, rows in res["G_pts"].items():
+        print(fold)
+        for arm, r in rows.items():
+            print("  ", arm, json.dumps({k: (round(v, 4) if isinstance(v, float) else v) for k, v in r.items()
+                                        if k not in ("ll_guard", "resp")}))
+            if "ll_guard" in r:
+                print("      ll", json.dumps({c: {k: (round(v, 6) if v is not None else None) for k, v in x.items()}
+                                              for c, x in r["ll_guard"].items()}))
+                print("      resp(arm,S0)", json.dumps({c: [round(v, 3) for v in x] for c, x in r["resp"].items()}))
+    for k, v in seg.items():
+        print(k, "conf", round(v["sum_fe_conf_gap_pts"], 3), "nonconf", round(v["sum_fe_nonconf_gap_pts"], 3),
+              {c: v[c]["per_game_site_term_pts"] for c in pts})
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--part", action="append", required=True)
     a = ap.parse_args()
     for p in a.part:
-        {"audit": part_audit, "fgdiag": part_fgdiag}[p]()
+        {"audit": part_audit, "fgdiag": part_fgdiag, "po_realstate": part_po_realstate,
+         "fgarms": part_fgarms}[p]()
 
 
 if __name__ == "__main__":

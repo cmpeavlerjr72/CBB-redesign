@@ -4329,3 +4329,23 @@ section 5.5.
   - Responsiveness by offence tempo quintile (`tempo_prior_game`): the predicted-vs-realised quintile slope ratio not below `C0`'s minus 0.02.
 - **Floors:** both arms are deterministic given the data, so the seed-retrain floor is exactly 0 (reported). The game-block bootstrap component is the binding floor.
 - **Script:** `scripts/train_clock_v3c_site.py` (new sibling). Outputs `results/home_site/clock/`.
+
+## 31. Lane G home-site round: RESULTS (run 2026-09-30 21:20-21:38 EDT; pre-registration section 30, commit e5dd38c)
+
+**Run.** `scripts/train_clock_v3c_site.py`, graded by `scripts/grade_home_site_v1.py`. Full tables are in `docs/tests/home_site_terms_2026-09-30.md` section 4.2.
+
+**Realised home-offence duration effect** (FE-adjusted):
+
+| fold | realised (s per possession) | C0 predicted |
+|---|---|---:|
+| F2 | -0.026 (SE 0.031) | -0.078 |
+| F1 | -0.139 (SE 0.033) | -0.063 |
+
+**Arms:**
+
+- **C1 (site cell dimension)** predicts about -0.35 s and worsens `G_site` on both folds: F2 +0.278 against a floor of 0.018; F1 +0.128 against 0.131. Its CRPS_trunc gain (F2 -0.0003, F1 -0.0024) is inside the carried 0.00684 floor.
+- **C2 is degenerate.** `round(T*exp(beta))` is the identity on the 0-90 s integer grid for |beta| < 0.0056. The censored log-likelihood is flat there and the arm equals C0. This is recorded as a design flaw of the registered arm and is not repaired post hoc.
+
+**Responsiveness.** The tempo-quintile ratio is unchanged (0.765 / 0.784).
+
+**Outcome: REFUTED.** The served clock has no site dimension, and the evidence does not support adding one. The realised effect is below 0.01 pts per game.

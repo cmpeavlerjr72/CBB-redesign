@@ -1003,3 +1003,21 @@ scripts).
 - **Floors:** `FT0` seed 1 (spec-identical) for `G_site` and for log loss; game-block bootstrap as in the shared definitions.
 - **Responsiveness guard:** `FT.score`'s `resp_pass`, and the `shooter_ft_asof -> MAKE` quintile slope ratio not below `FT0`'s minus the seed spread.
 - **Script:** `scripts/train_free_throw_v2_site.py` (new sibling; `train_free_throw_v2_s1.py` is not edited). Outputs `results/home_site/ft/`.
+
+## 12. Lane G home-site round: RESULTS (run 2026-09-30 20:58-21:38 EDT; pre-registration section 11, commit e5dd38c)
+
+**Run.** `scripts/train_free_throw_v2_site.py`, graded by `scripts/grade_home_site_v1.py`. Full tables are in `docs/tests/home_site_terms_2026-09-30.md` section 4.1.
+
+**Primary `G_site`** (FE-adjusted home-minus-away FT% gap):
+
+| fold | FT0 | FT1 (dG, floor) | FT2 (dG, floor) | realised HCA | FT0 predicted HCA |
+|---|---:|---|---|---|---:|
+| F2 | 0.0026 | +0.0023, 0.0083 (worse) | +0.0022, 0.0083 (worse) | +0.58 pp (SE 0.24) | +0.83 pp |
+| F1 | 0.0020 | -0.0019, 0.0033 | -0.0015, 0.0039 | +0.63 pp | +0.83 pp |
+
+- Nothing is beyond its floor, and the folds disagree in sign.
+- FT0 has no site feature, yet its state and shooter features already predict +0.83 pp. The site term then learns a negative conditional home effect.
+
+**Guards hold for all arms.** Log loss: FT1 -0.000094 on F2, about 1 bootstrap SE; seed floor 0.000004. Shooter-quintile slope ratios: 0.955-0.984.
+
+**Outcome: REFUTED** (tie, so the served spec stays). The CLAUDE.md site gap for FT% is closed by evidence: an explicit site term does not improve calibration by site.
