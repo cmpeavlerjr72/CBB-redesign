@@ -347,3 +347,39 @@ Rim chance-1 elapsed under KD: 4/7/14/21/26 s (real 4/7/14/21/26). Rim chance-1 
 
 KD keeps K's level repair and removes K's G5 loss in the local loop. A full-size read was requested
 as a POST-HOC diagnostic (`laneI_2`).
+
+## 8. Full-size box read of KD (POST-HOC diagnostic, laneI_2, operator 05:20-05:39Z, clone at `6edbe94`)
+
+The flag reached the engine: 66.2% of rows differ from COMB9, and total points per game moved
++1.141. Moves are KD minus COMB9. Floors are the S0-draw Decision 12 floors.
+
+| line | COMB9 | COMB9+K | **COMB9+KD** | KD move | floor | reading |
+|---|---:|---:|---:|---:|---:|---|
+| **G9 total bias** | -1.486 FAIL | -0.557 PASS | **-0.345 PASS** | **+1.141** | 0.029 | toward, 39 floors |
+| G9 calibration slope | 0.9462 | 0.9477 | 0.9452 | -0.0010 | 0.0030 | inside |
+| G9 margin bias | -0.246 | -0.262 | -0.251 | -0.005 | 0.042 | inside |
+| G9 cells outside: month / tier / pred-total | 7/10, 4/6, 2/6 | 4/10, 3/6, 0/6 | **4/10, 3/6, 0/6** | | | toward |
+| eFG pooled (actual 0.5086) | 0.5009 | 0.5068 | **0.5081** | +0.0072 | 0.0001 | toward |
+| G1 possessions (actual 67.875) | 68.953 | 68.837 | 68.821 | -0.131 | 0.010 | toward |
+| G5 total SD ratio | 0.9094 | 0.8933 | **0.9068** | -0.0026 | 0.0016 | away, 1.6 floors (K: 10) |
+| G5 h/a corr (actual 0.2283) | 0.1125 | 0.0915 | **0.1088** | -0.0037 | 0.0015 | away, 2.5 floors (K: 14) |
+| G5 margin SD ratio | 1.0408 | 1.0436 | 1.0412 | +0.0004 | 0.0035 | inside |
+| G7 OT rate | 0.0306 | 0.0300 | 0.0303 | -0.0003 | 0.0003 | inside |
+| OREB% / TOV% | 0.2894 / 0.1754 | 0.2888 / 0.1751 | 0.2887 / 0.1751 | -0.0007 / -0.0003 | | small, away |
+
+Decomposition of COMB9+KD (`scripts/diag_ppp_decomp_v1.py`, 5,700 games): total -0.336, residual 6e-14.
+- The make channels are closed: rim -0.095, jumper +0.167, three +0.009.
+- Remaining: OREB% -0.745 (live boards +0.481), FT% -0.343, shot mix -0.207, TOV -0.180,
+  FT rate -0.066, possessions +0.647.
+
+Recorded for the PM (this lane adopts nothing):
+- KD is the strongest arm on every level line.
+- KD keeps most of the G5 internals that K lost, but its total SD ratio and h/a corr still sit
+  1.6 and 2.5 S0 floors below COMB9.
+- By the registered rules no arm of this round is eligible. The guards that fail are
+  per-row log-loss / calibration-decile lines, which any drawn feed fails by construction
+  (s2.1, s4.1).
+- If the PM rules those guards mis-specified, KD is the arm the evidence selects.
+- Under Decision 11 the KD read would be VALIDATED-PENDING-SHIP-ACTION. It shows the
+  small G5 cost and leaves OREB% (rebound level, `TO`) and FT% (FT-trip allocation and
+  foul state) as the remaining PPP owners.
