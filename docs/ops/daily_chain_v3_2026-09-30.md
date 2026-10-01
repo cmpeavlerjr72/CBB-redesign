@@ -97,3 +97,26 @@ sim BLOCKED with the census (118 mapped, 38 unmapped non-D-I, 118 would simulate
 - **Live finals path** is exercised by tests only (the replay used the harness truth): `finals_verified_{season}` does not exist until the first ingested game day. Per-stat truth comes from `team_game_shots_v2`, which the ingestion rebuilds.
 - Seed count for live publishing (`--seeds`, chain default 200) is not set by a seed-count study; ROI numbers must not be read before that study (CLAUDE.md).
 - Rebounds, turnovers and assists per-stat bias need a per-game truth table in the ledger join (none exists in this stage).
+
+## 7. Pre-registration: minimum seeds per game before any probability-based edge or ROI is read (lane F, 2026-10-01; PM-requested)
+
+Registered BEFORE any ROI number from the daily chain is read. Evidence: `docs/ops/day1_readiness_2027_2026-10-01.md` section 3 (adopted served stack, 5,710 games x 200 seeds, close lines, 5,383 games with a spread; `scripts/diag_daily_seedcount_v1.py`). Run-to-run movement of a published probability equals the binomial standard error (empirical SD across independent seed blocks within 3% of it at every k measured, 10 to 100).
+
+| quantity | RMS SE at 200 seeds | seeds for RMS SE < 1 pp | seeds for < 0.5 pp | any game incl. p = 0.5, < 1 pp |
+|---|--:|--:|--:|--:|
+| P(home win) | 3.0 pp | 1,823 | 7,292 | 2,500 |
+| P(home covers close spread) | 3.5 pp | 2,382 | 9,527 | 2,500 |
+| P(total over close total) | 3.4 pp | 2,327 | 9,307 | 2,500 |
+| mean margin (points) | 0.86 pt | < 0.5 pt at 597 | < 0.25 pt at 2,388 | |
+| mean total (points) | 1.12 pt | < 0.5 pt at 1,007 | < 0.25 pt at 4,026 | |
+
+Measured consequence of too few seeds (cover, two independent 100-seed runs): 22% of games change lean, 26% change "edge >= 3 pp" status, 95th percentile of the difference 14 pp; selecting on a large edge then selects positive noise.
+
+RULES (decision rule, in force until superseded by an appended section):
+1. No probability-based edge (win, cover or over probability against a line, edge buckets on probabilities, probability-based ROI, CLV of a probability lean) is read or reported as evidence below 2,500 seeds per game.
+2. No mean-based disagreement bucket (sim mean margin or total minus the line) is read below 1,000 seeds per game.
+3. Chain output below those counts (the chain default is 200) is plumbing and bias monitoring only and is labelled "NOT FOR ROI" in its reports.
+4. 0.5 pp (about 10,000 seeds) is a reference level, not a requirement.
+5. The count is per game per pass; both passes of a day must meet it for their own rows to be read.
+6. The rule applies to any new estimator only after its own bake-off; a smoother estimator of the same probabilities does not inherit a lower minimum.
+Cost (measured 0.15 s per game-seed on one core): 2,500 x 118 games = 12.3 core-hours; this needs the box exclusively or AWS and is a scheduling decision, not a reason to lower the minimum.

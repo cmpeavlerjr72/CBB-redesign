@@ -33,6 +33,22 @@ ARMS = {
 }
 
 
+def missing_season_message(missing, table, have) -> str:
+    seal = (" Season 2027 rows hold 2025-26 and-one rates, which need the SEALED 2025-26 events: BLOCKED ON THE 2025-26 SEAL "
+            "(user decision, holds until the Oct 10-17 audit window). Build a versioned sibling table "
+            "(docs/ops/day1_readiness_2027_2026-10-01.md section 4a); there is no silent fallback to a zero prior term.") if 2027 in missing else ""
+    return f"R9ao3 team-prior table {table} has no rows for season(s) {missing} (has {have}).{seal}"
+
+
+def table_seasons(arm: str = "R9ao3") -> list[int] | None:
+    """Seasons present in the arm's team-prior table (None when the arm has no team part). Used by the daily chain's prerequisites."""
+    import pandas as pd
+    z = np.load(LUT_DIR / f"{ARMS[arm][1]}.npz")
+    if "team_b" not in z.files:
+        return None
+    return sorted(set(pd.read_parquet(LUT_DIR / str(z["team_table"]), columns=["season"])["season"].astype(int)))
+
+
 def _logit(p):
     p = np.clip(p, 1e-9, 1.0 - 1e-9)
     return np.log(p / (1.0 - p))
@@ -59,6 +75,9 @@ class FoulR9(FJ.FoulJoint):
                                zip(tab["ao_off_prior_c"].astype(float), tab["ao_def_prior_c"].astype(float))))
                 b_off, b_def = (float(x) for x in self.ao["team_b"])
                 seas = g["season"].to_numpy().astype(int)
+                missing = sorted(set(seas.tolist()) - set(tab["season"].astype(int).tolist()))
+                if missing:     # hard stop, never a silent zero prior term (lane F, 2026-10-01, PM ruling)
+                    raise RuntimeError(missing_season_message(missing, str(self.ao["team_table"]), sorted(set(tab["season"].astype(int)))))
                 home = g["home_team_id"].to_numpy().astype(int)
                 away = g["away_team_id"].to_numpy().astype(int)
                 for i in range(n):

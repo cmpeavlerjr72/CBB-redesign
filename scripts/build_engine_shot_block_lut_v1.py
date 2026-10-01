@@ -78,6 +78,8 @@ def asof_by_date(keys: pd.DataFrame, events: pd.DataFrame, key: str, num: str, d
 
 def league_before(dates: np.ndarray, events: pd.DataFrame, num: str, den: str) -> np.ndarray:
     day = events.groupby("game_date")[[num, den]].sum().sort_index()
+    if len(day) == 0:       # first day of a season: no event strictly before any date -> NaN (callers fall back to the season prior)
+        return np.full(len(dates), np.nan)
     cn, cd = day[num].cumsum().to_numpy(), day[den].cumsum().to_numpy()
     j = np.searchsorted(day.index.to_numpy(), dates, side="left") - 1
     with np.errstate(invalid="ignore", divide="ignore"):

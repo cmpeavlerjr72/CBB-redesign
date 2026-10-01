@@ -48,7 +48,9 @@ def season_events(season: int) -> pd.DataFrame:
         raise RuntimeError(
             f"shot_block live LUT: season {season} has no anchor prior / design events (only {SEASON}). "
             "Build them (scripts/build_engine_shot_block_lut_v1.py + the shot_block design for that season) "
-            "before serving ENGINE_SHOT_BLOCK=K2_Ocell; ENGINE_SHOT_BLOCK=reference is served-v1, an ungated mix.")
+            "before serving ENGINE_SHOT_BLOCK=K2_Ocell; ENGINE_SHOT_BLOCK=reference is served-v1, an ungated mix. "
+            "For 2027 the anchor prior is the 2025-26 end-of-season block rate by miss type, which needs the SEALED 2025-26 events: "
+            "BLOCKED ON THE 2025-26 SEAL (user decision, holds until the Oct 10-17 audit window). There is no silent fallback to zero.")
     if season not in _EV:
         import train_shot_block_v1 as SB
         full, _ = SB.build_design()

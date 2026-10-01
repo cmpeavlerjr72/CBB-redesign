@@ -77,6 +77,14 @@ def sim_prereqs(season: int, fold: str, slate_date, ratings_dir, require_rosters
         miss.append(f"names / rule constants template names_{fold}_{season}_v2.json (rules: bonus era, dead-ball share, and-one, foul accrual for {season})")
     if not ratings_dir:
         miss.append("own ratings as of the slate date (ratings stage blocked on data/overrides/ratings_day1_choices.json)")
+    import os
+    from cbb_sim.engine import foul_joint as FJ
+    from cbb_sim.engine import foul_r9 as FR9
+    arm = os.environ.get("ENGINE_FOUL_JOINT", FJ.DEFAULT)
+    if arm in FR9.ARMS:          # served R9ao3: a season missing from its team-prior table is a hard stop, never a zero prior term
+        have = FR9.table_seasons(arm)
+        if have is not None and int(season) not in have:
+            miss.append(FR9.missing_season_message([int(season)], arm, have))
     if require_rosters:
         miss += sim_warnings(season)
     return miss
@@ -207,6 +215,9 @@ def main(argv=None) -> int:
     if a.replay_season:
         if not a.slate_date:
             raise SystemExit("--slate-date required for a replay")
+        if a.root == str(D.DAILY_ROOT):
+            raise SystemExit("--replay-season requires --root <dir other than the live root> (a replay writes sim / publish / grade ledger rows; "
+                             "into the live root it would pollute live grading). e.g. --root results/daily_replay_f2")
         if a.seeds == 200:
             a.seeds = 16
         return run_replay(a)
