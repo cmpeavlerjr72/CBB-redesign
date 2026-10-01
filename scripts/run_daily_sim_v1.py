@@ -80,6 +80,18 @@ def load_slate(slate_date: str, season: int, source: str, schedule_path: str | N
         slate.loc[has, "tipoff_utc"] = slate.loc[has, "_hoopr_tip"]
         slate.loc[has, "tip_source"] = "hoopr_schedule"
         slate = slate.drop(columns="_hoopr_tip")
+    if tips == "table":                       # tip-time refresh table (pull_tip_times_v1): source + placeholder flag per game
+        tt = pd.read_parquet(REPO / f"data/processed/ingest/tip_times_{int(season)}.parquet",
+                             columns=["game_id", "tipoff_utc", "tip_source", "tip_time_is_placeholder"])
+        tt = tt.rename(columns={"tipoff_utc": "_t", "tip_source": "_s", "tip_time_is_placeholder": "_p"}).drop_duplicates("game_id", keep="last")
+        slate = slate.merge(tt, on="game_id", how="left")
+        has = slate["_t"].notna()                 # a game missing from the table keeps CBBD's own time, flagged by startTimeTbd
+        slate.loc[has, "tipoff_utc"] = slate.loc[has, "_t"]
+        slate.loc[has, "tip_source"] = slate.loc[has, "_s"]
+        slate["tip_time_is_placeholder"] = np.where(has, slate["_p"].fillna(True).astype(bool), slate["startTimeTbd"].fillna(True).astype(bool))
+        slate = slate.drop(columns=["_t", "_s", "_p"])
+    else:
+        slate["tip_time_is_placeholder"] = slate["startTimeTbd"].fillna(True).astype(bool) & (slate["tip_source"] != "hoopr_schedule")
     slate["tipoff_utc"] = pd.to_datetime(slate["tipoff_utc"], utc=True)
     slate.attrs["unmapped"] = unmapped
     return slate.drop(columns=["startTimeTbd"])
@@ -102,14 +114,18 @@ def run_sim_stage(slate_date: str, season: int, fold: str = "F2", seeds: int = 2
                   root: Path = D.DAILY_ROOT, run_id: str | None = None, schedule_source: str = "universe",
                   schedule_path: str | None = None, crosswalk: str | None = None, tips: str | None = None,
                   strict: bool = False, force: bool = False, replay: bool = False, players: bool = False,
-                  max_games: int = 0) -> dict:
+                  max_games: int = 0, pass_name: str | None = None, ratings_dir: str | None = None) -> dict:
     t0 = time.time()
     now = D.utc(now) if now is not None else pd.Timestamp.now("UTC")
-    run_id = run_id or D.default_run_id(seeds, seed_offset)
+    run_id = run_id or D.default_run_id(seeds, seed_offset) + (f"_{pass_name}" if pass_name == "morning" else "")
     out = D.sim_dir(root, slate_date, run_id)
     cfg = {"slate_date": slate_date, "season": season, "fold": fold, "seeds": seeds, "seed_offset": seed_offset,
            "schedule_source": schedule_source, "schedule_path": schedule_path, "tips": tips, "players": players,
            "max_games": max_games, "replay": replay}
+    if pass_name:                                  # absent for the replay path, so its config hashes are unchanged
+        cfg["pass"] = pass_name
+    if ratings_dir:
+        cfg["ratings_dir"] = str(ratings_dir)
     h = config_hash(cfg)
     done = out / "_DONE.json"
     if done.exists() and not force:
@@ -126,11 +142,16 @@ def run_sim_stage(slate_date: str, season: int, fold: str = "F2", seeds: int = 2
         slate = slate.iloc[:max_games].reset_index(drop=True)
     if strict:                                     # the assertion itself: raises LeakGuardError on any tipped game
         G.assert_created_before_tipoff(slate.assign(created_at=now))
-    ok, late = D.split_tipped(slate, now)
+    if pass_name:                                   # evening / morning pass (tip-time refresh table); guard rules unchanged
+        from cbb_sim.live import tips as TP
+        ok, late = TP.select_for_pass(slate, now, pass_name)
+    else:
+        ok, late = D.split_tipped(slate, now)
+        late = late.assign(refuse_reason="tipoff <= created_at (or no tip time): refused, not simulated")
     out.mkdir(parents=True, exist_ok=True)
-    skipped = {"clock": str(now), "already_tipped": [
+    skipped = {"clock": str(now), "pass": pass_name, "already_tipped": [
         {"game_id": int(r.game_id), "tipoff_utc": str(r.tipoff_utc), "tip_source": r.tip_source,
-         "reason": "tipoff <= created_at (or no tip time): refused, not simulated"} for r in late.itertuples()],
+         "reason": r.refuse_reason} for r in late.itertuples()],
         "unmapped_non_d1": unmapped}
     (out / "skipped.json").write_text(json.dumps(skipped, indent=2, default=str), encoding="utf-8")
     for r in skipped["already_tipped"]:
@@ -144,7 +165,7 @@ def run_sim_stage(slate_date: str, season: int, fold: str = "F2", seeds: int = 2
     slate_cols = ["game_id", "cbbd_game_id", "season", "game_date", "tipoff_utc", "home_team_id", "away_team_id", "neutral"]
     inp, diag = BL.build_live(ok[slate_cols], now, season, fold, created_at=now,
                               season_start=season_start_of(season, schedule_source, schedule_path), t0=t0,
-                              strict_finish=not replay)
+                              strict_finish=not replay, ratings_dir=ratings_dir)
     import run_engine as RE
     prov = RE.engine_provenance()
     adir = RL.prepare_adapter_dir(inp.event_block, fold, season, out / "_adapter")
@@ -182,15 +203,19 @@ def main(argv=None) -> int:
     ap.add_argument("--schedule-source", choices=("universe", "cbbd"), default="universe")
     ap.add_argument("--schedule-path", default=None)
     ap.add_argument("--crosswalk", default=None)
-    ap.add_argument("--tips", choices=("hoopr",), default=None, help="override tip times from the hoopR schedule where time_valid")
+    ap.add_argument("--tips", choices=("hoopr", "table"), default=None,
+                    help="hoopr: override tip times from the hoopR schedule where time_valid; table: data/processed/ingest/tip_times_{season}.parquet")
+    ap.add_argument("--pass", dest="pass_name", choices=("evening", "morning"), default=None,
+                    help="evening: every game tipping after the clock; morning: only games with a REAL tip still in the future")
     ap.add_argument("--strict", action="store_true", help="raise LeakGuardError on any already-tipped game instead of skipping it")
     ap.add_argument("--force", action="store_true")
     ap.add_argument("--replay", action="store_true", help="past slate with a pretend clock (strict_finish off, recorded)")
     ap.add_argument("--players", action="store_true")
     ap.add_argument("--max-games", type=int, default=0)
+    ap.add_argument("--ratings-dir", default=None, help="dir holding own_ratings_{season}.parquet with the as-of row (default: the stored batch ratings)")
     a = ap.parse_args(argv)
     r = run_sim_stage(a.slate_date, a.season, a.fold, a.seeds, a.seed_offset, a.now, Path(a.root), a.run_id, a.schedule_source,
-                      a.schedule_path, a.crosswalk, a.tips, a.strict, a.force, a.replay, a.players, a.max_games)
+                      a.schedule_path, a.crosswalk, a.tips, a.strict, a.force, a.replay, a.players, a.max_games, a.pass_name, a.ratings_dir)
     print(json.dumps(r, default=str))
     return 0
 

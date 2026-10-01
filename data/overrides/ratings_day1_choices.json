@@ -1,0 +1,53 @@
+{
+ "seal_lift_approved": false,
+ "teams_source": "cbbd",
+ "prior_weight_policy": "manifest_uniform",
+ "new_team_prior": "league_mean",
+ "fixed_term_prior": "previous_final",
+ "early_season_d1_rule": "provisional_union",
+ "_written_by": "lane F2, 2026-09-30 (worker, unattended). Values are SERVED DEFAULTS except where marked PROPOSED. The PM rules on every PROPOSED line; nothing here adopts anything.",
+ "_status": {
+  "seal_lift_approved": {
+   "status": "PROPOSED",
+   "value_written": false,
+   "to_proceed": true,
+   "meaning": "true lets the ratings chain (and the live inputs' prior-season tables) read the sealed 2025-26 season (CBB_UNSEAL=1 is then set only inside the chain's unsealed() context). No served default exists: until true the ratings, inputs and sim stages stay BLOCKED on this flag.",
+   "evidence": "docs/ops/own_ratings_daily_2026-09-30.md section 4 item 1; PROJECT_STATUS.md re-plan table (unseal 2025-26 Oct 10-17); docs/ops/worker_rules_overnight_2026-09-30.md (2025-26 stays SEALED overnight)"
+  },
+  "teams_source": {
+   "status": "PROPOSED",
+   "value_written": "cbbd",
+   "options": ["cbbd", "schedule", "tg"],
+   "meaning": "team set used for re-centring. The code default is tg (teams that have played), impossible on day 1 (no games); schedule (hoopR) gives only 319 D-I teams because the hoopR 2027 schedule is thin; cbbd (CBBD games + team_crosswalk_v2) gives 365.",
+   "evidence": "docs/ops/own_ratings_daily_2026-09-30.md section 4 item 3 and modelling choice 6; docs/ops/readiness_2026-27_2026-09-30.md section 2 (gap 5); for 2025 schedule and game-based sets give 364 teams and identical ratings (parity json)"
+  },
+  "prior_weight_policy": {
+   "status": "SERVED DEFAULT",
+   "value_written": "manifest_uniform",
+   "options": ["manifest_uniform", "arm_C_conference"],
+   "meaning": "manifest_uniform = w 0.8 (eff and tempo) uniform carry of last season's final fit (build_own_ratings_asof_v1.py). arm_C_conference = cm + 0.6419 (c_prev - cm), carry toward the team's current-conference mean (build_own_ratings_asof_C_v1.py); selected offline, PENDING as a retrain-set dimension, NOT adopted. Switching is a one-word edit; the chain then writes to ratings_asof_C/.",
+   "evidence": "docs/models/own_ratings/experiments.md sections 1-3 (winner C on fold-2 pooled MAE, interval excludes F and K); docs/ops/own_ratings_C_asof_parity_2026-09-30.json (entry point parity)"
+  },
+  "new_team_prior": {
+   "status": "SERVED DEFAULT",
+   "value_written": "league_mean",
+   "options": ["league_mean"],
+   "meaning": "a team with no previous rating (West Florida) gets 0 = league mean by rule; a conference-level prior is a candidate, not implemented.",
+   "evidence": "docs/ops/own_ratings_daily_2026-09-30.md section 4 modelling choice 3"
+  },
+  "fixed_term_prior": {
+   "status": "SERVED DEFAULT",
+   "value_written": "previous_final",
+   "options": ["previous_final"],
+   "meaning": "intercept, home, away and neutral-tempo priors are last season's final values (league scoring level and pace carry through).",
+   "evidence": "docs/ops/own_ratings_daily_2026-09-30.md section 4 modelling choice 4; docs/models/own_ratings/experiments.md (held at R, 1.8)"
+  },
+  "early_season_d1_rule": {
+   "status": "SERVED DEFAULT",
+   "value_written": "provisional_union",
+   "options": ["provisional_union"],
+   "meaning": "is_d1_game = at least 5 conference games UNION prior-season D-I teams (the daily ingestion's provisional rule); exhibitions vs non-D-I never enter a fit.",
+   "evidence": "docs/ops/daily_ingestion_2026-09-30.md; docs/ops/own_ratings_daily_2026-09-30.md section 4 modelling choice 7"
+  }
+ }
+}

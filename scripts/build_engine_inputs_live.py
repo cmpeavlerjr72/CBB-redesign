@@ -112,7 +112,8 @@ def load_slate_from_cbbd(path: str, slate_date: str, crosswalk_path: str) -> pd.
 # ---------------------------------------------------------------------------
 def build_live(slate: pd.DataFrame, as_of, season: int, fold: str, created_at=None,
                season_start=None, template_tag: str | None = None, families: str = "all",
-               t0: float | None = None, strict_finish: bool = True) -> tuple[EngineInputs, dict]:
+               t0: float | None = None, strict_finish: bool = True,
+               ratings_dir: str | None = None) -> tuple[EngineInputs, dict]:
     t0 = t0 or time.time()
     template_tag = template_tag or f"{fold}_{season}_v2"
     names_t = json.loads((ENGINE_DIR / f"names_{template_tag}.json").read_text(encoding="utf-8"))
@@ -120,7 +121,8 @@ def build_live(slate: pd.DataFrame, as_of, season: int, fold: str, created_at=No
     slot_names = {k: int(v) for k, v in names_t["slot_names"].items()}
     rules = dict(names_t["rules"])
     u = pd.read_parquet(UNIVERSE)
-    ctx = LF.build_ctx(slate, as_of, season, u, season_start=season_start, strict_finish=strict_finish)
+    ctx = LF.build_ctx(slate, as_of, season, u, season_start=season_start, strict_finish=strict_finish,
+                       **({"ratings_dir": str(ratings_dir)} if ratings_dir else {}))   # None = the stored batch ratings (unchanged)
     from cbb_sim.data.seal import assert_not_sealed
     assert_not_sealed(ctx.seasons, context="live inputs (prior-season carry reads season-1 tables)")
     created_at = pd.Timestamp(created_at) if created_at is not None else pd.Timestamp.now("UTC")

@@ -25,6 +25,11 @@
    "bonus_prior_fouls": 6,
    "double_bonus_prior_fouls": 9,
    "derived_from": "one-attempt-trip miss share by prior foul count"
+  },
+  "2027": {
+   "bonus_prior_fouls": 6,
+   "double_bonus_prior_fouls": 9,
+   "derived_from": "CARRIED FORWARD from 2026 (no 2027 data yet); NCAA 2026-27 men's rules change set equals 2025-26; UNVERIFIED by data"
   }
  },
  "n_distinct_threshold_pairs": 1,

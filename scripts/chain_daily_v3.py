@@ -48,6 +48,7 @@ import run_daily_publish_v1 as PUB  # noqa: E402
 import run_daily_sim_v1 as SIM  # noqa: E402
 import diag_daily_bias_clv_v1 as MON  # noqa: E402
 from cbb_sim.live import daily as D  # noqa: E402
+from cbb_sim.live import tips as TP  # noqa: E402
 
 log = logging.getLogger("chain_daily_v3")
 SCHED_2027 = REPO / "data/raw/preseason/2027_v2_20260930/games_2027.parquet"
@@ -56,7 +57,18 @@ ENGINE_DIR = REPO / "data/processed/models/engine"
 GRADE_RETRY_DAYS = 14
 
 
-def sim_prereqs(season: int, fold: str, slate_date, ratings_dir) -> list[str]:
+def sim_warnings(season: int) -> list[str]:
+    """Non-blocking degradations (the game-level sim runs; the player layer is degraded)."""
+    ros = REPO / "data/raw/preseason/2027_v2_20260930/roster_players_2027.parquet"
+    if season >= 2027 and (not ros.exists() or len(pd.read_parquet(ros)) == 0):
+        return ["2027 rosters empty (CBBD /teams/roster). build_live reads no roster file: on an opening day it finds NO rotation prior for any team-game "
+                "(0 of 222 on 2024-11-04, even though the prior season exists), so every team-game takes the anonymous league-mean rotation and no named "
+                "candidates exist: the PLAYER layer is degraded on day 1 with or without rosters (game-level outputs do not depend on it). "
+                "Pass --require-rosters to block instead."]
+    return []
+
+
+def sim_prereqs(season: int, fold: str, slate_date, ratings_dir, require_rosters: bool = False) -> list[str]:
     """What the live sim needs that does not exist yet (day-1 list; docs/ops/daily_chain_v3_2026-09-30.md section 6)."""
     miss = []
     if not (ENGINE_DIR / f"event_round2_s1_{fold}_{season}").exists():
@@ -65,27 +77,52 @@ def sim_prereqs(season: int, fold: str, slate_date, ratings_dir) -> list[str]:
         miss.append(f"names / rule constants template names_{fold}_{season}_v2.json (rules: bonus era, dead-ball share, and-one, foul accrual for {season})")
     if not ratings_dir:
         miss.append("own ratings as of the slate date (ratings stage blocked on data/overrides/ratings_day1_choices.json)")
-    ros = REPO / "data/raw/preseason/2027_v2_20260930/roster_players_2027.parquet"
-    if season >= 2027 and (not ros.exists() or len(pd.read_parquet(ros)) == 0):
-        miss.append("2027 rosters (CBBD /teams/roster empty)")
+    if require_rosters:
+        miss += sim_warnings(season)
     return miss
 
 
 def stage_sim(ctx, a, CD) -> dict:
     season = CD.current_season(ctx.slate_date)
-    slate = SIM.load_slate(str(ctx.slate_date), season, "cbbd", str(SCHED_2027), str(CROSSWALK), "hoopr")
-    ok, late = D.split_tipped(slate, ctx.now)
-    census = {"slate_date": str(ctx.slate_date), "clock": str(ctx.now), "slate_games_mapped": int(len(slate)),
+    pass_name = getattr(a, "pass_name", None)
+    tips = "table" if pass_name else "hoopr"
+    if pass_name and not (REPO / f"data/processed/ingest/tip_times_{season}.parquet").exists():
+        return {"_status": "blocked", "blocked_on": [f"tip-time table tip_times_{season}.parquet missing (run the tips stage / pull_tip_times_v1.py)"]}
+    slate = SIM.load_slate(str(ctx.slate_date), season, "cbbd", str(SCHED_2027), str(CROSSWALK), tips)
+    if pass_name:
+        ok, late = TP.select_for_pass(slate, ctx.now, pass_name)
+    else:
+        ok, late = D.split_tipped(slate, ctx.now)
+    census = {"slate_date": str(ctx.slate_date), "pass": pass_name, "clock": str(ctx.now), "slate_games_mapped": int(len(slate)),
               "slate_games_unmapped_non_d1": len(slate.attrs.get("unmapped", [])), "would_simulate": int(len(ok)),
               "would_refuse_already_tipped": int(len(late)),
-              "tip_sources": slate["tip_source"].value_counts().to_dict() if len(slate) else {}}
-    miss = sim_prereqs(season, a.fold, ctx.slate_date, ctx.state.get("ratings_dir"))
-    if ctx.dry_run or miss:
+              "tip_sources": slate["tip_source"].value_counts().to_dict() if len(slate) else {},
+              "placeholder_tips": int(slate["tip_time_is_placeholder"].sum()) if len(slate) else 0}
+    miss = sim_prereqs(season, a.fold, ctx.slate_date, ctx.state.get("ratings_dir"), getattr(a, "require_rosters", False))
+    warn = sim_warnings(season)
+    if warn:
+        census["warnings"] = warn
+    dry_sim = ctx.dry_run and getattr(a, "dry_run_sim", False)
+    if (ctx.dry_run and not dry_sim) or miss:
         return {**census, "_status": "blocked", "blocked_on": miss or ["dry run"], "engine_run": False}
-    r = SIM.run_sim_stage(str(ctx.slate_date), season, a.fold, a.seeds, 0, ctx.now, ctx.root, None, "cbbd", str(SCHED_2027),
-                          str(CROSSWALK), "hoopr", strict=False)
-    ctx.state["sim_run_id"] = D.default_run_id(a.seeds, 0)
+    import contextlib
+    root = (REPO / "results/daily_dry") if dry_sim else ctx.root
+    cm = V2.unsealed() if season >= 2027 else contextlib.nullcontext()   # the 2026 prior tables; the ratings stage already required seal_lift_approved
+    with cm:
+        r = SIM.run_sim_stage(str(ctx.slate_date), season, a.fold, a.seeds, 0, ctx.now, root, None, "cbbd", str(SCHED_2027),
+                              str(CROSSWALK), tips, strict=False, pass_name=pass_name, ratings_dir=ctx.state.get("ratings_dir"))
+    ctx.state["sim_run_id"] = D.default_run_id(a.seeds, 0) + ("_morning" if pass_name == "morning" else "")
     return {**census, **r}
+
+
+def stage_tips(ctx, a, CD, cctx) -> dict:
+    """Tip-time refresh (hoopR schedule + CBBD /games, 1 CBBD call); records source and tip_time_is_placeholder per game. Dry run writes nothing."""
+    import pull_tip_times_v1 as PT
+    season = CD.current_season(ctx.slate_date)
+    cg = PT.fetch_cbbd_games(cctx.session, cctx.tracker, season, ctx.slate_date, ctx.slate_date)
+    hs = PT.fetch_hoopr_schedule(season)
+    _, summ = PT.refresh_tip_times(season, ctx.slate_date, ctx.slate_date, cg, hs, pd.Timestamp.now("UTC"), write=not ctx.dry_run)
+    return summ
 
 
 def stage_publish(ctx, a, CD) -> dict:
@@ -157,6 +194,12 @@ def main(argv=None) -> int:
     ap.add_argument("--with-kenpom", action="store_true")
     ap.add_argument("--no-probe-hoopr", dest="probe_hoopr", action="store_false")
     ap.add_argument("--max-calls", type=int, default=60)
+    ap.add_argument("--pass", dest="pass_name", choices=("evening", "morning"), default="evening",
+                    help="evening (DEFAULT): run the evening before the slate, every game tipping after the clock. morning: same-day re-publish, "
+                         "only games with a REAL tip time still in the future. Dry run without --now uses the pass's documented clock "
+                         "(evening 20:00 ET the day before, morning 09:00 ET the slate date).")
+    ap.add_argument("--require-rosters", action="store_true", help="block the sim on empty 2027 rosters instead of warning")
+    ap.add_argument("--dry-run-sim", action="store_true", help="in a dry run, still run the (tiny) sim into results/daily_dry when nothing blocks")
     a = ap.parse_args(argv)
     if a.replay_season:
         if not a.slate_date:
@@ -172,23 +215,27 @@ def main(argv=None) -> int:
     else:
         g = pd.read_parquet(SCHED_2027, columns=["startDate"])
         dd = pd.to_datetime(g["startDate"], utc=True).dt.tz_convert("America/New_York").dt.date
-        later = [x for x in dd if x >= today]
+        later = [x for x in dd if (x > today if a.pass_name == "evening" else x >= today)]   # evening pass = the NEXT game day
         slate_date = min(later)
-    now = D.utc(a.now) if a.now else pd.Timestamp.now("UTC")
+    now = D.utc(a.now) if a.now else (TP.default_clock(slate_date, a.pass_name) if a.dry_run else pd.Timestamp.now("UTC"))
     v2ctx = V2.Ctx(today, today - timedelta(days=1), slate_date, a.dry_run)
     cctx.state = v2ctx.state
     ctx = Ctx(today, slate_date, now, a.dry_run, a.root, cctx.session, cctx.tracker)
     ctx.state = v2ctx.state
     results: list = []
+    day1 = CD.current_season(slate_date) >= 2027                       # the season switch: replay / past seasons never take the 2027 branches
+    if day1:
+        import chain_day1_2027_v1 as DAY1
     stages = [
         ("schedule", lambda: CD.step_schedule(cctx)),
+        ("tips", lambda: stage_tips(ctx, a, CD, cctx)),
         ("lines", lambda: CD.step_lines(cctx)),
         ("ingest", lambda: V2.stage_ingest(v2ctx, CD, a)),
-        ("ratings", lambda: V2.stage_ratings(v2ctx, CD, a)),
+        ("ratings", (lambda: DAY1.stage_ratings(ctx, CD, a)) if day1 else (lambda: V2.stage_ratings(v2ctx, CD, a))),
         ("kenpom", (lambda: CD.step_kenpom(cctx)) if a.with_kenpom else (lambda: {"_status": "skipped", "why": "audit gap 10: PM decision"})),
         ("injuries", lambda: CD.step_injuries(cctx)),
         ("overrides", lambda: CD.step_overrides(cctx)),
-        ("inputs", lambda: V2.stage_inputs(v2ctx, CD, a)),
+        ("inputs", (lambda: DAY1.stage_inputs(ctx, CD, a, SIM, pass_name=a.pass_name)) if day1 else (lambda: V2.stage_inputs(v2ctx, CD, a))),
         ("grade", lambda: stage_grade(ctx, a, CD)),
         ("bias_clv", lambda: stage_bias(ctx, a, CD)),
         ("sim", lambda: stage_sim(ctx, a, CD)),

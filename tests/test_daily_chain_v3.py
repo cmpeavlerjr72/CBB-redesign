@@ -175,4 +175,7 @@ def test_sim_stage_strict_raises_on_tipped_game_before_any_engine_work(tmp_path)
 def test_chain_v3_prereqs_list_day1_gaps():
     import chain_daily_v3 as C3
     miss = C3.sim_prereqs(2027, "F2", "2026-11-02", None)
-    assert any("adapter" in m for m in miss) and any("ratings" in m for m in miss)
+    assert any("ratings" in m for m in miss)
+    # the 2027 adapter / names keys exist after scripts/build_season_2027_artifacts_v1.py (lane F2); before it they are listed
+    have = (C3.ENGINE_DIR / "event_round2_s1_F2_2027").exists() and (C3.ENGINE_DIR / "names_F2_2027_v2.json").exists()
+    assert have != any("adapter" in m for m in miss)
