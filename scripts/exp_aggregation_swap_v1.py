@@ -75,6 +75,10 @@ ARMS: dict[str, tuple[list[str], list[str]]] = {
 _W: dict = {}
 
 
+def stack_dir(stack: str) -> str:
+    return STACK_DIRS.get(stack, f"data/processed/models/engine_v3_{stack}_laneA")
+
+
 def neutral_value(col: str, rules: dict) -> float:
     if col in ("off_tempo_rel", "def_tempo_rel"):
         return 1.0
@@ -124,7 +128,7 @@ def _load(stack: str, arm: str, adir: str, over: dict):
     from cbb_sim.engine.inputs import EngineInputs
     for k, v in over.items():
         setattr(AD, k, Path(v))
-    inp = EngineInputs.load(ROOT / STACK_DIRS[stack], "F2_2025")
+    inp = EngineInputs.load(ROOT / stack_dir(stack), "F2_2025")
     sw_in = apply_swap_inputs(inp, arm)
     ad = Adapters.load(inp, "F2", 2025)
     idx = json.loads((Path(over["ENGINE_DIR"]) / "event_round2_s1_F2_2025" / "index.json")
@@ -149,7 +153,8 @@ def _run(job):
 
 def main() -> int:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--stack", choices=sorted(STACK_DIRS), required=True)
+    ap.add_argument("--stack", required=True,
+                    help="S0 / S1 / R2, or any tag whose inputs are data/processed/models/engine_v3_<tag>_laneA (e.g. X_F)")
     ap.add_argument("--arm", choices=sorted(ARMS), required=True)
     ap.add_argument("--games-file", default=None, help="one game_id per line")
     ap.add_argument("--all-games", action="store_true", help="every row of the stack's inputs (5,710)")
@@ -166,7 +171,7 @@ def main() -> int:
     from run_engine_live import prepare_from_overlay
     from cbb_sim.engine.inputs import EngineInputs
     prov = engine_provenance()
-    sdir = ROOT / STACK_DIRS[args.stack]
+    sdir = ROOT / stack_dir(args.stack)
     adir = OUT_ROOT / "_adapter_dirs" / f"{args.stack}_{args.arm}_{args.seed_offset}{args.tag_suffix}"
     over = {k: str(v) for k, v in prepare_from_overlay(sdir / "overlay", "F2", 2025, adir).items()}
     inp = EngineInputs.load(sdir, "F2_2025")
@@ -197,7 +202,7 @@ def main() -> int:
     _, _, swap = _load(args.stack, args.arm, str(adir), over)   # record what was swapped (parent copy)
     games = pd.concat(frames, ignore_index=True).sort_values(["game_id", "seed"]).reset_index(drop=True)
     games.to_parquet(out / "games.parquet", index=False)
-    meta = {"tag": tag, "stack": args.stack, "arm": args.arm, "stack_dir": STACK_DIRS[args.stack],
+    meta = {"tag": tag, "stack": args.stack, "arm": args.arm, "stack_dir": stack_dir(args.stack),
             "swap": swap, "neutral_rule": "centred _c -> 0; tempo_rel -> 1.0; tempo_prior_game -> rules fallback",
             "n_games": int(len(rows)), "seeds": seeds.tolist(), "workers": args.workers,
             "possessions": int(n_poss), "runtime_s": round(time.time() - t0, 1),
