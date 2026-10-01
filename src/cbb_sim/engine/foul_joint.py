@@ -180,6 +180,9 @@ def load(arm: str | None):
     """None for the served path (unset / 'reference'), else the arm's tables."""
     if not arm or arm == "reference":
         return None
+    if arm.startswith("R9"):     # foul round 9 (PO experiments.md s26), default off
+        from cbb_sim.engine import foul_r9
+        return foul_r9.load(arm)
     if arm not in ARMS:
         raise KeyError(f"unknown ENGINE_FOUL_JOINT={arm!r}; known: {sorted(ARMS)} or 'reference'")
     return FoulJoint(arm)

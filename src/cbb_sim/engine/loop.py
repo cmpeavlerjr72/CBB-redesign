@@ -505,7 +505,12 @@ def simulate_chunk(inp: EngineInputs, ad: Adapters, game_index: np.ndarray,
                     end_code[mr] = PREV["made_FG"]
                     # and-one: a shooting foul on a made basket, one attempt,
                     # at the measured rate per shot class
-                    ao = book.draw("and_one", act[mr]) < and_one_rate[sc]
+                    # foul round 9 (PO experiments.md s26): an R9 arm of ENGINE_FOUL_JOINT serves a
+                    # fitted and-one rate; every other value keeps the scalar (same uniform).
+                    ao = book.draw("and_one", act[mr]) < (
+                        and_one_rate[sc] if getattr(fj, "ao", None) is None else fj.and_one_p(
+                            SHOT_CLASSES[sc], inp, gidx[mr], off[mr], st.period[act[mr]],
+                            st.seconds_remaining[act[mr]]))
                     if ao.any():
                         a2 = mr[ao]                       # step-space rows
                         st.team_fouls[act[a2], dfn[a2]] += 1
