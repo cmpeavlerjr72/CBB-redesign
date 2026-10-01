@@ -72,7 +72,8 @@ How it came together: the 09-30 pending set (L2 + K2_Ocell + R8b) at full size f
 7. G7 OT rate: late-game round 3 is pre-registered on the corrected foul state.
 8. Team FT slope 0.617 on v3 inputs; K2_Ocell team responsiveness; fg_make site arm G4 box read (`laneG_1.done.md`).
 9. Ops: 2026-27 tables for the adopted flags (R9ao3 team priors, shot-block season guard; both need the seal decision), 2027 rule constants audit, tip-time refresh schedule (20:00 ET evening pass + 09:00 ET morning pass), player-layer day-1 priors (none exist on an opening day), lines re-probe Oct 26 / Nov 2, seed-count study for the chain.
-10. Rotation stays PARKED; props the stretch goal.
+10. FOLD-1 CLOSED-LOOP CONFIRMATION OF THE ADOPTED SET: every full-size read tonight is fold 2 (2024-25). The five members have fold-1 OFFLINE confirmations where registered, but the set has no fold-1 sim read; it needs 2023-24 engine inputs (v3 replay) and fold-1 artifacts, which do not exist yet. Build them with the retrain chain and read adopted vs `SERVED_V1` before the Oct 10 freeze.
+11. Rotation stays PARKED; props the stretch goal.
 
 ## Worker incidents (disclosed)
 
