@@ -336,3 +336,28 @@ The A2 logit slope is b = +0.002.
 **Grader smoke test.** On local reads (ref K2O, one floor draw L2, arm COMB, 20 resamples) the grader reproduces the diagnostic's numbers: `hca_fe` 3.40 (actual 3.06), `team_part_ha_bias` -0.35.
 
 **Status.** PM ruling: G4 is NOT on tonight's adoption list. The loop exists to test the exposure hypothesis in section 5, item 4.
+
+
+## 2026-10-01 lane G read: fg_make site arm `round4site_G4` vs the OLD served stack S0 (read-only summary)
+
+Source: `results/engine_v0/laneG_grade/pair_site.md`, `pair_vetoes.md`, `v3full_G4_s200_o0__verified.md`. Arm `v3full_G4_s200_o0` vs ref `v3full_S0_s200_o0`, 5,710 games x 200 seeds (5,700 common games for the site lines, 5,705 for the veto lines). Floor = max(2 x draw SD, paired bootstrap 95% half-width), four floor draws (S0f1..S0f4). Each move is stated against its floor; no interpretation.
+
+| line | actual / target | S0 | G4 | move | floor | move / floor | flag |
+|---|---|---|---|---|---|---|---|
+| G6 margin, non-neutral (n 4969) | +5.743 | +5.8455 | +5.4945 | -0.3510 | 0.0376 | -9.34 | BEYOND |
+| G6 margin, neutral (n 736) | +3.288 | +2.1508 | +2.1669 | +0.0161 | 0.0952 | +0.17 | inside |
+| real home advantage (FE, actual) | 3.0601 | HCA_FE 3.4851 | 3.1428 | -0.3423 | 0.0327 | -10.47 | BEYOND |
+| HCA_FE bias (sim - actual) | 0 | +0.4250 | +0.0827 | -0.3423 | 0.0327 | -10.47 | BEYOND |
+| neutral FE | n/a | 0.1117 | 0.1041 | -0.0075 | 0.1006 | -0.07 | inside |
+| G9 margin bias (sim - actual) | 0 | -0.0515 | -0.3550 | -0.3034 | 0.0418 | -7.25 | BEYOND |
+| G9 total bias (sim - actual) | 0 | -0.2576 | -0.3025 | -0.0449 | 0.0291 | -1.54 | BEYOND |
+| G9 calibration slope | 1.0 | 0.9169 | 0.9142 | -0.0027 | 0.0050 | -0.54 | inside |
+| eFG% home | n/a | 0.5178 | 0.5162 | -0.0016 | 0.0002 | -7.98 | BEYOND |
+| eFG% away | n/a | 0.4859 | 0.4880 | +0.0021 | 0.0002 | +11.24 | BEYOND |
+| eFG% neutral | n/a | 0.4981 | 0.4943 | -0.0038 | 0.0003 | -12.78 | BEYOND |
+| eFG% home minus away | n/a | 0.0319 | 0.0282 | -0.0037 | 0.0003 | -11.38 | BEYOND |
+| eFG% pooled (G4 gate; actual 0.5086) | 0.5086 | 0.5014 | 0.5012 | -0.0003 | 0.0001 | -2.42 | BEYOND |
+
+Other veto-table lines: G1 possessions mean +0.0070 (floor 0.0097, inside); G1 possession within-game SD +0.0074 (floor 0.0072, BEYOND, move/floor +1.03); G5 margin SD ratio -0.0009 (floor 0.0035, inside); G5 total SD ratio +0.0009 (floor 0.0017, inside); G5 total within-game sim SD +0.0179 (floor 0.0179, BEYOND at +1.00); G7 OT rate +0.0003 (floor 0.0004, inside); G4 TOV%, TOV count, OREB%, FTA/FGA inside.
+
+Gate verdict lines (57 PASS/FAIL lines compared, S0 verified report vs G4 verified report): none changed. G6 non-neutral stays PASS (delta vs actual -0.2415, tolerance +/-1.0), G6 neutral stays FAIL (-1.1211), G9 margin bias stays PASS (-0.3550, tolerance +/-0.5) and slope stays FAIL (0.9142 vs 0.95-1.05). G4, G5, G6, G9 overall remain FAIL.
