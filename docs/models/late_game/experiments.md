@@ -887,3 +887,118 @@ pass the veto); the corrected foul state does not move the tie rate. Where the t
 not holding (fixed by Dt), end-of-clock possessions scoring ~1.0 PPP vs ~0.6 actual (NOT fixed; tied final
 possessions score 0 in 50% vs 64%), and the trailing team fouling late (leading offence 10 s vs 4 s inside 30 s).
 Box 500 x 200 re-read requested (`docs/ops/box_queue/d1001_L_1.md`), PENDING at writing.
+
+---
+
+## 9. PROPOSED -- Round 4 pre-registration: end-of-period possession value and the leading team's clock, composed on `clk_Dt` (written 2026-10-01 09:20-09:45 EDT by lane L, BEFORE any round-4 arm was fitted, wired or run; NOT RUN, NOT ADOPTED)
+
+**Nothing below has been fitted or simulated. No served default changes; every arm is a new default-off flag.**
+PM brief 2026-10-01 after round 3 (section 8): (a) last-second possession value, (b) the trailing team's late
+fouling / leading team's time use inside 30 s without extra possessions, (c) price the leading-team late FT
+make defect, do not fix it.
+
+### 9.1 Motivating evidence (diagnostic only; no arm involved)
+
+`scripts/diag_late_game_r4_owner_v1.py` on `lg4_R9_s25` (served v2, round-4 tap: both halves, made shots,
+a per-shot log; its games are bit-identical to round 3's `lg3_R9_s25`) vs `possessions_v4` 2025. Output
+`results/late_game/round4/owner_R9.json`. Possessions STARTING at <= 35 s:
+
+- **No-shot at the horn.** The data end 18-29% of first-half possessions starting inside 10 s with no
+  terminal event (`end_period`), and 21-29% of tied / 20-25% of trailing period-2 ones inside 6 s. The engine
+  produces 0%: `possession_outcome` drops `end_period` chances as "the clock model's job" and the engine
+  never draws one -- every possession ends in a TOV, shot or trip however little time is left.
+- **Make rate of the shot at the horn.** First-chance shots with <= 1 s left at the shot: sim (mean fg_make
+  probability) three 0.267 / jumper 0.364 / rim 0.558 in H1 (0.223 / 0.370 / 0.638 in H2) against actual
+  0.163 / 0.213 / 0.369 (0.133 / 0.169 / 0.441). fg_make carries `seconds_remaining` and `chance_elapsed_s`
+  but does not reproduce the buzzer effect in the closed loop. Above 1 s the sim is not too high.
+- **PPP shift-share** (sim - season actual): H1 (-1,3] +0.18, (3,6] +0.22, (6,10] +0.21; tied P2 +0.28 to
+  +0.39; trailing P2 (-1,3] +0.34. The volume term (no-shot + TOV + mix) and the make term carry it.
+- Leading offence inside 35 s (period 2): TOV 0.21-0.29 per possession vs 0.07-0.18, FTA 0.97-1.09 vs
+  1.30-1.71: the trailing team does not foul it, which is (b).
+
+### 9.2 Arms, offline (one grader per family, both folds, fold 2 selects)
+
+Folds: F1 trains 2022-2023 and tests 2023-24; F2 trains 2022-2024 and tests 2024-25. 2025-26 sealed. All
+laws are deterministic cell laws: the reseed floor is zero (section 2.5.3) and the floor is the game-block
+bootstrap SE of the PAIRED per-row delta. Hierarchical cells shrink to their parent with m = 50 pseudo-rows.
+Periods 1-2 only; overtime keeps the served behaviour (OT-period foul-state rows are not trustworthy, PM note).
+
+**(a1) No-shot law `BZ`** (`scripts/train_late_game_r4_buzzer_v1.py`): P(possession ends `end_period` |
+start state), possessions starting at <= 35 s. Start buckets (0,1] (1,3] (3,6] (6,10] (10,15] (15,20] (20,35].
+`BZ0` period; `BZ1` period x bucket; `BZ2` x role3; `BZ3` x start type (made / DREB / TOV / other).
+Metric: log loss on test-fold rows. Selection: the simplest arm within one floor of the best on F2; it must
+beat `BZ0` by > 1 floor on F2 with the same sign on F1 (the time term is real), else (a1) is NOT RUN.
+
+**(a2) Buzzer make law `MK`** (`scripts/train_late_game_r4_make_v1.py`): first-chance FGA whose time left AT
+THE SHOT is <= 1 s (data: chance end clock; engine: possession-start clock minus the fed
+`chance_elapsed_s`). `MK0` = make rate by class x period over ALL first-chance shots (no buzzer term);
+`MK1` = class x period on the <= 1 s rows; `MK2` = class x period x {0 s, 1 s}. Metric: log loss on test-fold
+<= 1 s rows. Same selection rule against `MK0`. Stated limit: the served fg_make's own offline prediction on
+these rows is not produced (its inputs are per-game engine arrays); the closed loop is the comparison with
+the served model, and the 9.1 table is the motivating one. Responsiveness: the realised <= 1 s make rate by
+offence prior make-quintile is reported; if it slopes in the data and the cell law is flat, that is recorded
+as a known limitation, not hidden.
+
+**(b) Leading-team clock law `LGL`** (`scripts/train_late_game_r4_clock_v1.py`): `clk_D`'s Kaplan-Meier cell
+family with role3 refined to round 1's five bands (`eg_role6`: trail >= 4, trail 1-3, tied, lead 1-3, lead
+>= 4) x fine bucket x bonus x prev_end, window rows, no floor. The trainer first reproduces round 1's D PMF
+exactly (else stop). Served on LEADING offence rows only, with `clk_D` on tied rows (`clk_Dt`). Offline:
+section 7.5's grader extended with the composite `Dt+LGL` (tied: D, leading: LGL, trailing: A), CRPS and
+censored log-likelihood per role and per role x bucket. Guard: on leading rows, `LGL` must not be worse than
+A by > 1 floor on F2.
+
+### 9.3 Closed-loop arms (500 verified games x 25 paired seeds, fold 2, served v2 base)
+
+Flags (default off; unset = served, parity v9 bit-identical): `ENGINE_LATE_GAME=clk_Dt` (round 3),
+`ENGINE_LATE_GAME=clk_DtL` (tied: D law, leading: LGL law; window as section 4.1), `ENGINE_LG_BUZZER=<BZ arm>`
+(no-shot draw on its own stream (seed, game_id, "lg_buzzer"); a no-shot possession runs to the horn, scores
+nothing, records no box event), `ENGINE_LG_MAKE=<MK arm>` (replaces fg_make's probability on first-chance
+shots with <= 1 s left at the shot, periods 1-2).
+
+| arm | flags | role |
+|---|---|---|
+| R9, R9_f1..f4 | none | reference + floor draws: round 3's runs, reused (their games are bit-identical under the round-4 tap; parity v9 is re-checked at the round-4 HEAD before any arm runs) |
+| Dt | `clk_Dt` | round 3's `lg3_Dt9_s25`, reused |
+| Dt+a1 | `clk_Dt` + BZ | |
+| Dt+a | `clk_Dt` + BZ + MK | the (a) set |
+| Dt+b | `clk_DtL` | the (b) set |
+| Dt+a+b | `clk_DtL` + BZ + MK | the full set |
+
+If (a1) or (a2) is NOT RUN under 9.2, the arms containing it are dropped and the rest run.
+
+### 9.4 Primary, floors, vetoes, decision rule
+
+- **Primary and qualification: section 1.3 unchanged.** P(0)/P(1) in floors vs R9; a candidate needs > 1
+  floor toward 1.546, P(0)/P(1) >= 1.0, and every veto passing. The OT band 0.046-0.055 is reported.
+- **Floor:** Decision 12, as section 7.4 (draw SD over R9 + four offsets, 2 x paired game-bootstrap SE).
+- **Vetoes:** section 7.4's (G1 mean and SD, G5 margin and total SD ratios, G9 margin and total bias, half
+  share, window possessions by k with 7.4.1's reading) **except the first-half bit-identity veto**, which
+  (a) arms cannot satisfy by design (they act at the first-half horn). It is replaced by the **first-half
+  buzzer test**: H1 points per possession for possessions starting at <= 10 s must move TOWARD the actual
+  (season 2024-25) and must not overshoot it by more than one floor (floor = max(draw SD over the five R9
+  runs, 2 x paired bootstrap SE)). The first half outside the final 35 s is reported.
+- **Decision.** Among candidates, the simplest in the order Dt+a1 < Dt+a < Dt+b < Dt+a+b. If none qualifies,
+  the **clear best** is the arm that passes every veto and whose primary exceeds every other arm's by > 1
+  floor; the PM's brief then applies (default-off flags, parity v9 on a clean `src/`, box request
+  `d1001_L_2.md` for the full-size paired read). If no arm is a candidate or a clear best: NO ARM ADOPTED.
+- **Multi-level reported lines:** by time bucket, score state (role bands), half, site (home / away / neutral
+  offence), per game (paired), per team (UNDERPOWERED below 200 sims), the 7.6 tie-loss diagnostic and the
+  9.1 owner table on every arm.
+
+### 9.5 Pricing the leading-team FT make defect (c): reported, not an arm
+
+The FT model is not touched. The expected tie-rate cost of fixing it is estimated on the R9 possession log by a
+first-order re-scoring, stated as such: for each period-2 possession in the final 2:00 whose offence leads,
+by role band x clock bucket where the sim's FT make is below the actual (round 3 section 2.2), each missed
+FT is converted to a make with probability (act - sim) / (1 - sim) on a fixed seeded stream; the margin
+change is carried to the end of regulation with no behavioural response, and the change in P(0) and
+P(0)/P(1) is reported with a game-bootstrap SE. It is an estimate for Decision 11 bookkeeping, never applied
+to any sim output.
+
+### 9.6 Lane H's clock change
+
+The window arms wrap whatever the served clock adapter is, through its `_latent` and `inner._frame`
+(section 4.2.2). They survive a lane-H refit that keeps the `LatentClockAdapter` interface (the window law is
+then scaled by the new latent). A clock that conditions duration on the possession's OUTCOME would invert the
+engine's draw order (duration before event); the window laws, which are outcome-free, would then need
+re-deriving as conditional laws. This is stated now and checked against lane H's committed code at report time.

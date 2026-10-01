@@ -36,6 +36,9 @@ ck.EMPIRICAL_DIMS["LGD_dummy"] = (
     "role3", "r2_bucket_code", "bonus_code", "prev_end_code")
 ck.FEATURE_SETS["P3R_dummy"] = ck.FEATURE_SETS["P3_dummy"]
 ck.FEATURE_SETS["LGD_dummy"] = ck.FEATURE_SETS["P3_dummy"]
+# round 4 (experiments.md section 9): D's cell with role3 refined to round 1's five bands.
+ck.EMPIRICAL_DIMS["LGL_dummy"] = ("eg_role6", "r2_bucket_code", "bonus_code", "prev_end_code")
+ck.FEATURE_SETS["LGL_dummy"] = ck.FEATURE_SETS["P3_dummy"]
 
 
 def in_window(period, seconds_remaining, score_diff) -> np.ndarray:
