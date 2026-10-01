@@ -324,6 +324,54 @@ def part_identity(d: pd.DataFrame) -> dict:
     return res
 
 
+# --------------------------------------------------------------------------- addendum A: replacement factorial
+def part_factorial(d: pd.DataFrame, P_ref: float) -> dict:
+    stacks = {"": "S0", "P": "X_P", "F": "X_F", "R": "X_R", "PF": "X_PF", "PR": "X_PR", "FR": "X_FR", "PFR": "S1"}
+    seeds = {"P": "Z_P", "F": "Z_F", "R": "Z_R"}
+    Y = d["margin"].to_numpy(float)
+    lined = d["close"].notna().to_numpy()
+    C = d["close"].to_numpy(float)
+    X = {}
+    for lab, st in list(stacks.items()) + [("z" + k, v) for k, v in seeds.items()]:
+        p = OUT / f"harness_{st}.parquet"
+        if not p.exists():
+            print("missing", p)
+            continue
+        h = pd.read_parquet(p)
+        h = h[h["arm"] == "FULL"]
+        w = h.pivot_table(index="game_id", columns="side", values="ppp")
+        X[lab] = (P_ref * (w[0] - w[1])).reindex(d["game_id"]).to_numpy(float)
+
+    def stats(idx):
+        o = {}
+        for lab, x in X.items():
+            o[f"oms_Y_{lab}"] = 1 - slope(Y[idx], x[idx])
+            li = idx[lined[idx]]
+            o[f"oms_C_{lab}"] = 1 - slope(C[li], x[li])
+            o[f"sd_{lab}"] = float(np.std(x[idx], ddof=1))
+        for ref in ("Y", "C"):
+            f = lambda lab: o[f"oms_{ref}_{lab}"]  # noqa: E731
+            if all(k in X for k in stacks):
+                for m in "PFR":
+                    others = [c for c in "PFR" if c != m]
+                    states = ["", others[0], others[1], others[0] + others[1]]
+                    key = lambda base, add: "".join(sorted(base + add, key="PFR".index))  # noqa: E731
+                    o[f"main_{ref}_{m}"] = float(np.mean([f(key(sb, m)) - f(key(sb, "")) for sb in states]))
+                    o[f"alone_{ref}_{m}"] = f(m) - f("")
+                tot = f("PFR") - f("")
+                o[f"total_{ref}"] = tot
+                o[f"interaction_{ref}"] = tot - sum(f(m) - f("") for m in "PFR")
+            for m in "PFR":
+                if "z" + m in X:
+                    o[f"seedfloor_{ref}_{m}"] = f("z" + m) - f("")
+        return o
+    full = stats(np.arange(len(Y)))
+    se = boot(stats, len(Y), 200)
+    print("[factorial] " + ", ".join(f"{k} {v:+.4f}({se.get(k, 0):.4f})" for k, v in full.items()
+                                      if k.startswith(("main_Y", "alone_Y", "total_Y", "interaction_Y", "seedfloor_Y"))), flush=True)
+    return {"est": full, "se": se}
+
+
 # --------------------------------------------------------------------------- per-rate game-level calibration
 RATE_DEF = {  # name: (predicted fn of harness row frame, realised key, weight key, rate-feature arm)
     "tov": (lambda f: f["p_tov"], "t", "P", "PO"),
@@ -490,7 +538,7 @@ def part_loop(d: pd.DataFrame, nseeds: int, suffix: str) -> dict:
 
 def main() -> int:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--part", action="append", choices=["identity", "harness", "rates", "loop"])
+    ap.add_argument("--part", action="append", choices=["identity", "harness", "rates", "factorial", "loop"])
     ap.add_argument("--loop-seeds", type=int, default=48)
     ap.add_argument("--loop-suffix", default="")
     args = ap.parse_args()
@@ -509,6 +557,8 @@ def main() -> int:
             r = part_harness(d, P_ref)
         elif part == "rates":
             r = part_rates(d)
+        elif part == "factorial":
+            r = part_factorial(d, P_ref)
         else:
             r = part_loop(d, args.loop_seeds, args.loop_suffix)
         allres[part] = r

@@ -73,6 +73,8 @@ def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--stack", required=True)
     ap.add_argument("--arms", default=",".join(HARNESS_ARMS))
+    ap.add_argument("--fg-first-refit", action="store_true",
+                    help="addendum B: score every game's fg_make by its FIRST refit (trained before the season)")
     args = ap.parse_args()
     t0 = time.time()
     from run_engine_live import prepare_from_overlay
@@ -105,6 +107,8 @@ def main() -> int:
 
     seg_po = ev.manifests["first"].segments(gidx)
     seg_fg = {k: fg.manifests[FGCLS[k]].segments(gidx) for k in SHOT}
+    if args.fg_first_refit:
+        seg_fg = {k: np.zeros_like(v) for k, v in seg_fg.items()}
     seg_ft = ft.manifest.segments(gidx)
     seg_rb = rb.manifest.segments(gidx)
 
@@ -192,7 +196,7 @@ def main() -> int:
     out = pd.concat(frames, ignore_index=True)
     out["game_id"] = inp.games["game_id"].to_numpy()[out["game_idx"].to_numpy()]
     OUT.mkdir(parents=True, exist_ok=True)
-    path = OUT / f"harness_{args.stack}.parquet"
+    path = OUT / f"harness_{args.stack}{'_fgfirst' if args.fg_first_refit else ''}.parquet"
     out.to_parquet(path, index=False)
     print(f"wrote {path} {out.shape} in {time.time() - t0:.0f}s", flush=True)
     return 0
