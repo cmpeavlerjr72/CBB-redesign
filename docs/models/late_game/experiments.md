@@ -1033,3 +1033,49 @@ Owners found:
 (c) pricing: fixing the leading late FT make costs -0.0014 OT rate (SE 0.0005) and adds +0.037 to P(0)/P(1) (SE 0.015).
 
 Round-3 500 x 200 box re-read: `clk_Dt` +6.84 floors, ratio 0.679, and it also fails G1 SD (+2.3); verdict unchanged.
+
+---
+
+## 11. PROPOSED -- Round 5 pre-registration: BZ3 + a five-band window law on trailing AND leading rows, `clk_D` on tied rows (written 2026-10-01 ~10:30 EDT by lane L, BEFORE any round-5 arm was wired or run; NOT RUN, NOT ADOPTED)
+
+**No served default changes.** PM ruling after round 4: BZ3 is VALIDATED-PENDING-SHIP-ACTION (its total-bias
+veto is a Decision 11 exposure). The make law (MK2) is held out. The trailing-role use of the five-band law
+(`LGL`, round-4 artifact, unchanged; offline +10 floors on trailing rows in round 4's grade) is REGISTERED
+here, before any closed loop uses it.
+
+### 11.1 Arms
+
+New flag value `ENGINE_LATE_GAME=clk_DtLL`: window rows (section 4.1) with a TIED offence get `clk_D`, rows with
+a trailing or leading offence get `LGL`; no refit, same per-game latent and uniform as rounds 2-4.
+
+| arm | flags | role |
+|---|---|---|
+| R9, R9_f1..f4 | none | reference + floors: round 4's `lg4_R9_*` (round-4 tap), reused |
+| Dt | `clk_Dt` | round 3's run, reused (comparison) |
+| Dt+a1 | `clk_Dt` + `ENGINE_LG_BUZZER=BZ3` | round 4's run, reused (comparison) |
+| Dt+LL | `clk_DtLL` | does the trailing law remove the leading law's extra possessions? |
+| **Dt+LL+a1 (the set)** | `clk_DtLL` + `ENGINE_LG_BUZZER=BZ3` | candidate |
+
+### 11.2 Offline line (both folds, fold 2 selects; guard)
+
+Round 4's clock grader extended with the composite `DtLL` (tied: D, trailing and leading: LGL) on round 1's
+window test rows. Guard: on trailing rows and on leading rows separately, `LGL` must not be worse than A by > 1
+floor on F2 (block-bootstrap SE of the paired delta). BZ3's offline evidence is round 4's (unchanged artifact).
+
+### 11.3 Primary, vetoes, one registered change of framing
+
+- **Primary and qualification: section 1.3 unchanged** (P(0)/P(1) > 1 floor toward 1.546 and >= 1.0; OT band
+  reported). Floors as 9.4.
+- **HARD vetoes:** G1 possession mean and SD, half share, window possessions by k (7.4.1 reading), first-half
+  buzzer test (9.4), G5 margin and total SD ratios, G9 margin bias.
+- **Changed framing (registered now, before any run):** G9 TOTAL bias is NOT a disqualifier for the set. It
+  is reported as a priced exposure: the set's change in points per game vs R9, split by half (H1 / H2), with
+  paired SE. Rationale: PM ruling that BZ3 removes points the stack was already short of (Decision 11).
+- **Reported separately (the remaining gap):** the share of simulations reaching a tie at 1:00 / 0:30 / 0:10
+  (arrival) and the one-point-finish rate P(1), each vs R9 and the actual, with the tie-loss shift-share.
+- **Decision.** The set is a candidate if it qualifies under 1.3 and passes every hard veto. If not, it is the
+  **clear best** if it passes every hard veto and its primary exceeds that of every other arm in 11.1 that
+  also passes every hard veto by more than one floor (an arm failing a hard veto is not a competitor). If
+  the set is a candidate or the clear best: flags stay default-off, parity v9 on a clean `src/`, and a box
+  request `d1001_L_2.md` for the full-size paired read (5,710 x 200, four floor draws vs the plain default on
+  lane D's S2 floors `d1001D_S2f{1..4}`). Otherwise NO ARM ADOPTED.
