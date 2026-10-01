@@ -64,7 +64,7 @@ RB_DESIGN = "data/processed/models/rebound/round3/design_round3.parquet"
 SAMPLE500 = "data/processed/truth/stride500_verified_v1_F2_2025.parquet"
 SEASONS = [2022, 2023, 2024, 2025]
 STAGES = ["possessions_v4", "rotation", "po_design", "foul_state", "po_train", "clock", "fg_design", "fg_train",
-          "rb_design", "rb_train", "inputs_base", "inputs", "gate"]
+          "rb_design", "rb_train", "inputs_base", "inputs", "parity", "gate"]
 CHECKPOINTED = {"po_train", "fg_train", "rb_train"}          # resume in place
 #: stages whose output does not depend on --variant (F_T can --reuse-from an F_R tag's finished ones)
 SHARED = {"rotation", "po_design", "foul_state", "clock", "fg_design", "rb_design", "inputs_base"}
@@ -273,7 +273,7 @@ class Chain:
     def st_fg_train(self):
         design = json.loads((self.d("fg_design") / ".done.json").read_text())["design"] if not self.a.dry_run \
             else self.s(self.d("fg_design") / "design_v2_shotshooter_r.parquet")
-        cmd = [PY, "scripts/train_fg_make_v4_par_v1.py", "--mode", "run", "--arms", "B1", "--no-floor",
+        cmd = [PY, "scripts/train_fg_make_v4_par_v2.py", "--mode", "run", "--arms", "B1", "--no-floor",
                "--n-jobs", str(self.n('fg_train')), "--out-dir", self.s(self.o("fg_train")), "--design", design]
         if self.e3:
             cache = self.o("fg_train") / f"design_v4_extra_{self.stem}.parquet"
@@ -385,6 +385,16 @@ class Chain:
                                 "--families", "po,rb", "--po-design", po_design, "--rb-design", rb_design])
             info["anchor_offsets"] = info["input_dir"] + "/anchor_offsets_F2_2025.npz"
         return info
+
+    def st_parity(self):
+        """train/serve parity of the team-rate-derived fg_make shooter feature + the rebound arm audit (2026-10-01).
+        FAILS the run on a mismatch (thresholds: docs/ops/full_retrain_chain_2026-09-30.md section 3)."""
+        inp = json.loads((self.d("inputs") / ".done.json").read_text()) if not self.a.dry_run else {"input_dir": "<inputs>"}
+        out = self.d("parity") / "parity_fg_rb.json"
+        self.run("parity", [PY, "scripts/diag_train_serve_parity_fg_v1.py", "--fg-out", self.s(self.fg_dir()),
+                            "--inputs", inp["input_dir"], "--rb-arm", "A0B0C0",   # anchor O = the same features plus an init_score offset
+                            "--out", self.s(out)])
+        return {"report": self.s(out)}
 
     def st_gate(self):
         inp = json.loads((self.d("inputs") / ".done.json").read_text()) if not self.a.dry_run else {
@@ -572,7 +582,7 @@ class Chain:
             if errs:
                 self.join_rotation()
                 raise SystemExit(f"{len(errs)} branch(es) failed: {[str(e) for e in errs]}")
-            for st in [s for s in stages if s in ("inputs_base", "inputs", "gate")]:
+            for st in [s for s in stages if s in ("inputs_base", "inputs", "parity", "gate")]:
                 self.one(st)
         else:
             for st in stages:
