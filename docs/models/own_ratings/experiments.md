@@ -275,3 +275,10 @@ CBB_TRUTH=verified_v1 .venv/Scripts/python.exe scripts/run_po4b_closed_loop_samp
   --seeds 25 --seed-offset <0|1000|2000|3000|4000> --workers 4 --games-per-block 20 --tag laneN_<R|C>_s25_o<off> --results-dir results/engine_v0
 CBB_TRUTH=verified_v1 .venv/Scripts/python.exe scripts/grade_own_ratings_closed_loop_v1.py
 ```
+
+
+---
+
+## 5. Pointer: the full-retrain read under served stack v2 (lane D, registered 2026-10-01 about 06:40 EDT, COMMITTED BEFORE ANY RUN)
+
+Section 4.3's honest test (retrain the rating consumers on ratings C, then repeat the paired loop) is `docs/models/engine/experiments.md` section 1, line L-R (FRa = chain tag FR_box_v1, ratings C, vs served stack v2, 5,710 x 200). Its primary is the full-sample G9 slope; this file's weeks 0-7 cell is co-reported there, not deciding.

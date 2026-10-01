@@ -70,6 +70,18 @@ CHECKPOINTED = {"po_train", "fg_train", "rb_train"}          # resume in place
 SHARED = {"rotation", "po_design", "foul_state", "clock", "fg_design", "rb_design", "inputs_base"}
 #: independent training branches (--parallel runs them at once)
 BRANCHES = [["po_design", "foul_state", "po_train"], ["clock"], ["fg_design", "fg_train"], ["rb_design", "rb_train"]]
+#: --gate-stack (lane D, 2026-10-01): the loop-level switches the gate serves on top of the chain's artifacts, set
+#: EXPLICITLY so the read does not depend on the caller's environment. `adopted` = served stack v2's four loop-level
+#: members (the fifth, clock L2, is the chain's own clock stage; the event team block is the chain's own inputs
+#: block through the private ENGINE_DIR). `served_v1` = the switches of last night's laneD_2 / laneD_3 reads
+#: (made before the 02:06 adoption). Gate tags carry a suffix so the two never share a results dir.
+GATE_STACKS = {
+    "adopted": {"ENGINE_SHOT_BLOCK": "K2_Ocell", "ENGINE_FOUL_JOINT": "R9ao3", "ENGINE_SHARED_SHOOTING": "G3",
+                "ENGINE_CHANCE_TIME": "KD"},
+    "served_v1": {"ENGINE_SHOT_BLOCK": "reference", "ENGINE_FOUL_JOINT": "reference",
+                  "ENGINE_SHARED_SHOOTING": "reference", "ENGINE_CHANCE_TIME": "reference"},
+}
+GATE_STACK_SUFFIX = {"adopted": "_sv2", "served_v1": ""}
 THREAD_VARS = ("OMP_NUM_THREADS", "MKL_NUM_THREADS", "OPENBLAS_NUM_THREADS", "NUMEXPR_NUM_THREADS",
                "LIGHTGBM_NUM_THREADS", "VECLIB_MAXIMUM_THREADS")
 
@@ -399,8 +411,12 @@ class Chain:
     def st_gate(self):
         inp = json.loads((self.d("inputs") / ".done.json").read_text()) if not self.a.dry_run else {
             "input_dir": "<inputs>", "overrides": "<overrides>"}
+        # ENGINE_CLOCK stays the v5b_glat_pmean KEY: the chain's clock root has the base layout, and with CK_DIR /
+        # V5_PARAMS rebound to it that key serves the chain's v4 refit, which IS the adopted L2 clock (six S1 pickles
+        # byte-equal to clock/r6_L2, same B1 sigma; scripts/diag_chain_clock_vs_L2_v1.py). The L2 KEY would resolve
+        # <chain root>/r6_L2/... and fail: there is no second clock layer to double-apply.
         env = {"ENGINE_EVENT": "round2_s1", "ENGINE_CLOCK": "v5b_glat_pmean", "ENGINE_ROTATION": "reference",
-               "ENGINE_FG3": "decision8", "CBB_TRUTH": "verified_v1"}
+               "ENGINE_FG3": "decision8", "CBB_TRUTH": "verified_v1", **GATE_STACKS[self.a.gate_stack]}
         if self.a.anchor:
             env["ENGINE_SEASON_ANCHOR"] = inp.get("anchor_offsets", "<offsets>")
         sample = self.a.gate_sample
@@ -413,7 +429,7 @@ class Chain:
         runs = []
         for off in [int(x) for x in self.a.gate_offsets.split(",") if x]:
             tag = f"fr1_{self.a.tag}_{self.a.gate_mode}_s{self.a.gate_seeds}_o{off}" + \
-                ("_ev4" if self.a.inputs_event_layer == "v4" else "")
+                ("_ev4" if self.a.inputs_event_layer == "v4" else "") + GATE_STACK_SUFFIX[self.a.gate_stack]
             if (ROOT / "results/engine_v0" / tag / "run_meta.json").exists():
                 print(f"[{now()}] gate: {tag} exists, skipped", flush=True)
             else:
@@ -630,6 +646,9 @@ def main() -> int:
     ap.add_argument("--gate-workers", type=int, default=0, help="default --cores")
     ap.add_argument("--gate-ref", default="", help="reference eval_gates .md to pair against (optional)")
     ap.add_argument("--gate-noise", default="", help="comma list of the reference's floor-draw .md reports")
+    ap.add_argument("--gate-stack", choices=sorted(GATE_STACKS), default="adopted",
+                    help="loop-level switches served at the gate: adopted (served stack v2, tag suffix _sv2) or "
+                         "served_v1 (last night's reads, no suffix)")
     ap.add_argument("--smoke", action="store_true", help="tiny slice of every stage (proof the chain runs)")
     ap.add_argument("--inputs-event-layer", choices=["v2", "v4"], default="v4",
                     help="event layer of the PO round-2 event block in the engine inputs (v4 = matches the retrained "

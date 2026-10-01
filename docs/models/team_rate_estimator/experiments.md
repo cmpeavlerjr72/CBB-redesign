@@ -1141,3 +1141,10 @@ unset BOX_DOCKER_ARGS
 ```
 
 Estimated cost: the PO TO retrain is the T retrain plus an init_score (lane C smoke: 720 s for one full-size `first` refit on one core); rebound TO is T's cost (smoke 68-193 s per weekly cut). Offsets build: seconds. The TO sim costs what S1 costs (one extra raw-score add per `first`/rebound predict batch).
+
+
+---
+
+## 8. Pointer: the full-retrain read under served stack v2 (lane D, registered 2026-10-01 about 06:40 EDT, COMMITTED BEFORE ANY RUN)
+
+Stage C's honest version is now one engine-level read: `docs/models/engine/experiments.md` section 1, line L-E3 (FTa = chain tag FT_box_v2, E3 v4 table through `team_rate_adapter_v2`, vs FRa = FR_box_v1, both with the four adopted loop-level switches on, 5,710 x 200, Decision 12 floors from served-v2 draws). Primary G9 slope; E3 advances only on a WIN there. Nothing in this file's earlier sections is changed.
