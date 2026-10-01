@@ -338,6 +338,7 @@ def main() -> int:
             "served_stack_drift": drift, **prov, "possessions_simulated": int(n_poss),
             "runtime_s": round(time.time() - t0, 1), "workers": args.workers,
             "diagnostics": diag, "sample_file": args.sample_file,
+            "fold": args.fold, "season": int(args.season), "backtest": True,
             "input_dir": args.input_dir,
             "env_CBB_TRUTH": os.environ.get("CBB_TRUTH")}
     (out / "run_meta.json").write_text(json.dumps(meta, indent=2, default=str), encoding="utf-8")
