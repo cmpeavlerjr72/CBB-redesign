@@ -1,6 +1,6 @@
 # Shared (game-level) shooting latent: measurement, bake-off and closed loop (lane B, 2026-09-30)
 
-Lane B, overnight 2026-09-30, wall clock 20:40 -> 23:20 EDT. **NOTHING IS ADOPTED AND NO DEFAULT IS CHANGED.** The engine hook is default-off and its off path is proved bit-identical.
+Lane B, overnight 2026-09-30, wall clock 20:40 -> 23:10 EDT. **NOTHING IS ADOPTED AND NO DEFAULT IS CHANGED.** The engine hook is default-off and its off path is proved bit-identical.
 
 - Pre-registration: `docs/models/shared_shooting/experiments.md` section 1, commit `86e3d0f` (20:49 EDT). The bake-off ran at 20:50, after that commit.
 - Ledger row: `docs/models/change_ledger.md` section A.

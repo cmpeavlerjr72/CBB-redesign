@@ -137,7 +137,7 @@ neutral, month, as-of tempo tercile; per team (UNDERPOWERED, about 30 games each
 
 ---
 
-## 2. Results, round 1 (appended 2026-09-30 23:20 EDT; full evidence in `docs/tests/shared_shooting_latent_2026-09-30.md`)
+## 2. Results, round 1 (appended 2026-09-30 23:09 EDT; full evidence in `docs/tests/shared_shooting_latent_2026-09-30.md`)
 
 **Offline (rule 1.6).** Bake-off at 20:50 EDT, after commit `86e3d0f`.
 
