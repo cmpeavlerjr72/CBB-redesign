@@ -41,7 +41,7 @@ CLS_KEY = {"FGA_rim": "rim", "FGA_jump2": "jump2", "FGA_3": "three"}
 E3_PREFIX = {"rim": "make_rim", "jump2": "make_jump", "three": "make3"}
 
 
-def extra_columns(inp, needed: list[str], e3_table: Path | None, design_preds: Path | None) -> dict:
+def extra_columns(inp, needed: list[str], e3_table: Path | None, arm_dir: Path | None) -> dict:
     """values per (game, side, class) of each extra team feature, from the same source the trainer used."""
     gid = inp.games["game_id"].to_numpy()
     G = len(gid)
@@ -75,6 +75,19 @@ def extra_columns(inp, needed: list[str], e3_table: Path | None, design_preds: P
                     team = (home if side == 0 else away) if own else (away if side == 0 else home)
                     arr[:, side] = ser.reindex(pd.MultiIndex.from_arrays([gid, team])).to_numpy(float)
                 out[f"{name}__{k}"] = arr
+    if {"fg_team_offset", "lg_make_asof"} & set(needed):
+        # two-stage arms (fg_make experiments.md s25): the trainer's own per-game offsets table
+        op = sorted(arm_dir.parent.glob("offsets_F2_s*.parquet"))[0]
+        o = pd.read_parquet(op)
+        gpos = pd.Series(np.arange(G), index=gid)
+        for name in ("fg_team_offset", "lg_make_asof"):
+            if name not in needed:
+                continue
+            for k in ("rim", "jump2", "three"):
+                arr = np.full((G, 2), np.nan)
+                ok = o[o["key"] == k]
+                arr[gpos.reindex(ok["game_id"]).to_numpy(), ok["side"].to_numpy()] = ok[name].to_numpy(float)
+                out[f"{name}__{k}"] = arr
     return out
 
 
@@ -100,7 +113,7 @@ def main() -> int:
     needed = [f for f in feats if f not in known]
     report = {"name": a.name, "arm_dir": str(a.arm_dir), "base": a.base, "features": feats, "extra": needed}
     if needed:
-        ex = extra_columns(inp, needed, a.e3_table, None)
+        ex = extra_columns(inp, needed, a.e3_table, a.arm_dir)
         missing = {k: int(np.isnan(v).sum()) for k, v in ex.items()}
         report["extra_missing_cells"] = missing
         ts = inp.team_static

@@ -44,8 +44,9 @@ def wls(y, X, w):
 
 
 def team_games(pr: pd.DataFrame) -> pd.DataFrame:
+    pr = pr.assign(_bv=pr["p"] * (1 - pr["p"]))
     g = pr.groupby(["game_id", "off_team_id", "shot_class"]).agg(
-        n=("y", "size"), y=("y", "mean"), p=("p", "mean"), pz=("p_zero", "mean"),
+        n=("y", "size"), y=("y", "mean"), p=("p", "mean"), pz=("p_zero", "mean"), bv=("_bv", "sum"),
         oc=("off_make_c", "first"), date=("game_date", "first")).reset_index()
     return g
 
@@ -65,6 +66,17 @@ def design_metrics(pr: pd.DataFrame, rating_q: pd.DataFrame | None) -> dict:
         b = wls(s["y"].to_numpy(), np.column_stack([s["pz"], s["p"] - s["pz"]]), w)
         e["b_norate"], e["b_rate"] = float(b[1]), float(b[2])
         e["sd_rate_part"] = float(np.sqrt(np.cov(s["p"] - s["pz"], aweights=w)))
+        # variance composition (round 2, s25): team-game residual variance vs its binomial expectation, and
+        # the two-team shared residual covariance (G3's fitting basis)
+        res_ = s["y"] - s["p"]
+        e["resid_var"] = float(np.mean(res_ ** 2))
+        e["binom_var"] = float(np.mean(s["bv"] / s["n"] ** 2))
+        e["excess_var"] = e["resid_var"] - e["binom_var"]
+        pr2 = s.assign(res=res_).sort_values(["game_id", "off_team_id"])
+        cnt = pr2.groupby("game_id")["res"].transform("size")
+        pr2 = pr2[cnt == 2]
+        a_ = pr2.groupby("game_id")["res"].first().to_numpy(); b_ = pr2.groupby("game_id")["res"].last().to_numpy()
+        e["shared_cov"] = float(np.mean((a_ - a_.mean()) * (b_ - b_.mean())))
         e["by_month"] = {}
         for m, sm in s.groupby("mon"):
             if len(sm) < 300:
