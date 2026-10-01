@@ -62,7 +62,7 @@ The offline column is each model's own site error at real states. **Residual = s
 | possession_outcome: FT-trip class | same | +1.07 pp per chance (0.09); 0.48 pts | +1.16 pp (first +1.14; cont +1.21 vs real +0.71, underpowered: SE 0.23) | +0.04 | -0.09 | -0.13 |
 | possession_outcome: shot mix | same | rim share +0.10 pp (0.19), 3PA share +0.35 pp (0.16) | +0.34 / +0.46 pp | +0.07 | -0.09 | -0.16 |
 | fg_make `round4_B1` (3 classes) | same one-hots | rim +1.62 pp (0.24), jumper +1.20 (0.30), three +0.85 (0.22); 1.60 pts | +1.98 / +1.55 / +1.07 pp | **+0.40** (rim +0.16, jumper +0.10, three +0.15) | **+0.68** | +0.28 (of which about +0.16 is the margin-channel vs rate-level linearisation: rate-level sim gap is +0.52) |
-| rebound `s1_weekly` | same one-hots | OREB% +0.87 pp (0.17); 0.31 pts | real-state NOT RUN (reference-state harness +1.68 pp, not trusted, section 1) | not run (carried at 0) | +0.04 | +0.04 |
+| rebound `s1_weekly` | same one-hots | OREB% +0.87 pp (0.17); 0.31 pts | +0.86 pp at real states (served `s1_weekly`, 23 refits, `--part rb_realstate`); the reference-state harness had +1.68 pp | -0.00 | +0.04 | +0.04 |
 | derived rebound chances (misses) | no model | - | - | - | -0.12 | -0.12 |
 | free_throw `s1_conf_aligned` | **none** | FT% +0.58 pp (0.24); 0.11 pts | +0.83 pp WITHOUT any site feature (state and shooter features carry it) | +0.05 | +0.03 | -0.02 |
 | clock `v5b_glat_pmean` | carried in `TEAM_COLS`, **not consumed** | home-offence duration -0.03 s per possession (SE 0.03; F1 -0.14, SE 0.03) | -0.08 s (tempo features) | < 0.01 (bound: 0.05 s x 70 possessions = 3.5 s per team-game) | +0.12 (pace +0.05, parity +0.07) | +0.12 |
@@ -70,14 +70,14 @@ The offline column is each model's own site error at real states. **Residual = s
 | usage U1 | none | not measured (no team-level scoring rate) | - | - | - | - |
 | rotation (R2 S1, reference) | none | not measured | - | - | - | - |
 | late_game | not served (`ENGINE_LATE_GAME=off`); its model carries `site_neutral` | - | - | - | - | - |
-| **total** | | **3.06 (close 3.07)** | | **+0.51** (rebound counted as 0) | **+0.35** | **-0.16** |
+| **total** | | **3.06 (close 3.07)** | | **+0.51** | **+0.35** | **-0.16** |
 
-**Closure.** Offline gaps (+0.51) plus residual (-0.16) equal the sim's +0.35 exactly. The residual is stated per channel above. The rebound offline cell is NOT RUN and is carried at 0. The sim says rebound's own gap is +0.04, so the most it can move the closure is that amount.
+**Closure.** Offline gaps (+0.51) plus residual (-0.16) equal the sim's +0.35 exactly. The residual is stated per channel above. The rebound offline cell was run after the first draft of this table: real-state gap -0.001 pts (realised +0.86 pp, SE 0.17; predicted +0.86 pp), so its carried 0 was exact to the stated precision.
 
 **What the audit shows:**
 
 1. **fg_make is the only model whose own site term is materially wrong:** +0.40 pts offline (+0.50 on F1), the same sign as the sim's +0.68.
-2. **possession_outcome's site terms are right at real states** (-0.05 to +0.07 per channel). The sim's -0.40 on the PO channels is therefore NOT a site-feature defect. It is produced by the simulated state and cascade, and its owner is unidentified tonight. Candidates: in-sim score/bonus/transition state, which differ by site in the sim.
+2. **possession_outcome's and rebound's site terms are right at real states** (PO -0.05 to +0.07 per channel; rebound -0.00). The sim's -0.40 on the PO channels is therefore NOT a site-feature defect. It is produced by the simulated state and cascade, and its owner is unidentified tonight. Candidates: in-sim score/bonus/transition state, which differ by site in the sim.
 3. **free_throw has no site feature, yet already over-predicts home FT% by +0.25 pp (+0.05 pts) through state and shooter features.** Adding a site term does not help (section 4.1).
 4. **Clock and foul accrual have no realised site effect worth modelling.** Clock: -0.03 ± 0.03 s per possession, inconsistent across folds. Silent fouls: zero.
 
@@ -257,10 +257,14 @@ The A2 logit slope is b = +0.002.
 
 **G1 and G2.** G1 improves log loss beyond the seed floor in rim (-0.000136) and three (-0.000080); jumper (-0.000104) is inside its 0.000112 floor. It does not improve `G_pts` beyond its floor. It moves the excess from conference to non-conference games: F2 conference +0.21 vs non-conference +0.69. G2 adds per-game site variance (rim SD 0.75) without reducing the gap.
 
-## 5. What a paired closed loop for fg_make G4 needs (not built tonight)
+## 5. What a paired closed loop for fg_make G4 needs (artifacts exported tonight; engine flag and loop NOT built)
 
-1. **Artifacts.** The G4 S1 schedule for fold 2: 3 classes x 6 refits, each LightGBM booster plus its `(b_home, b_away, pbar)` offset. Export these with a new `--export` option on `scripts/train_fg_make_v4_site.py` (not written tonight) into a NEW directory, `data/processed/models/fg_make/round4_site/G4/`, with manifests in the round-4 format plus an `offset` block per artifact. Cost measured tonight: about 8 min per fold at 1 thread.
-2. **Engine.** A default-off `ENGINE_FG_MAKE=round4site_G4` path in `FgMakeAdapter`, whose predict is `sigmoid(raw_score + offset(site_home, site_away))` per segment. The off path must be bit-identical, proved with the parity reference. Site columns are already in the fg team block. This is an engine edit for the PM to assign.
+1. **Artifacts: DONE.** `scripts/train_fg_make_v4_site.py --arms G4 --folds F2 --seeds 0 --export` wrote the fold-2 G4 S1 schedule to `data/processed/models/fg_make/round4_site/G4/`: 3 classes x 6 refits plus `manifest_FGA_*.json` in the round-4 format, with `max_train_date` and an `offset` block per artifact. The directory is 25 MB and gitignored (`round*/`); sync it with `scripts/hf_sync_data.py` before an AWS run.
+   - Each artifact's model is `cbb_sim.models.fg_make_site_offset.SiteOffsetModel`, a new module that edits no existing file. Its `predict_proba` takes the declared features (B1 without site, then `site_home`, `site_away`) and adds the logit offset.
+   - Export parity with the graded predictions is exact: max abs 0, asserted per refit. The re-run reproduced the graded G4 predictions bit for bit.
+2. **Engine: one registry line, not written.** Add `("round4site_", "round4_site", "scripts/train_fg_make_v4_site.py")` to `_FG_DATED_ROUNDS` and a `"round4_site"` entry to `_FG_ROUND_NOTE` in `src/cbb_sim/engine/adapters.py`. `ENGINE_FG_MAKE=round4site_G4` then loads through the existing `_load_dated` path; no predict code changes.
+   - Smoke test (`round4_B1` stays the default, so the off path is untouched by construction): with the registry patched in-process only, `FgMakeAdapter.load(inp_v3, "F2", "decision8", "round4site_G4")` loads all 18 artifacts, passes the manifest leak checks and predicts.
+   - The parity reference must still be run when the line is added.
 3. **Run.** A paired closed loop on v3 inputs with `CBB_TRUTH=verified_v1` under Decision 12 floors. Read the per-channel site table (`scripts/diag_g9_g6_margin_v1.py --part extra` on the new run) plus G6 and G9.
 4. **Expected result, stated in advance.**
    - The fg site channels fall by about 0.35-0.5 pts.
@@ -271,7 +275,6 @@ The A2 logit slope is b = +0.002.
 
 **NOT RUN:**
 
-- **Rebound offline audit at real states.** The events design carries no features; the rebound feature builder was not rebuilt tonight. Resume: predict the served `s1_weekly` manifest on the rebound S1 design rebuilt by `scripts/train_rebound_v2_s1.py`'s builder.
 - **Usage and rotation realised site effects.** They have no team-level scoring rate. Their only route to points is the shooter weighting, which the g9ws Pw freeze priced at k = 0.0002.
 - The site x rating-gap (`int`) arms for free_throw, clock and foul accrual: no rating in those models (registered as NOT ENTERED).
 - **FT on the served conf-aligned calendar** (registered cost deviation).
@@ -300,6 +303,9 @@ The A2 logit slope is b = +0.002.
 | 21:45 | fg arms done (about 8 min per F2 cell, about 5 min per F1 cell) |
 | 21:58 | fg S0 seed 1 done |
 | 22:19 | fg graded |
+| 22:23 | results commit f191f1e |
+| 22:23 | rebound real-state audit (1 min) |
+| 22:24-22:30 | G4 export run (323 s, 1 thread), determinism and parity verified, adapter smoke test |
 
 ## 8. Proposed text for PM-owned docs (not edited)
 

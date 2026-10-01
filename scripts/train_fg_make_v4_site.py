@@ -140,7 +140,10 @@ def attach_conf(d: pd.DataFrame) -> pd.DataFrame:
     return d
 
 
-def fit_s1(tr_all, te_all, feats, params, seed, offset_arm=False, log=None):
+EXPORT_DIR = FG_DIR / "round4_site"
+
+
+def fit_s1(tr_all, te_all, feats, params, seed, offset_arm=False, log=None, export_arm=None):
     out = {}
     for c in FG.SHOT_CLASSES:
         tr, te = FG.class_slice(tr_all, c), FG.class_slice(te_all, c)
@@ -173,6 +176,9 @@ def fit_s1(tr_all, te_all, feats, params, seed, offset_arm=False, log=None):
                 p[seg] = _sig(raw + _offset(ts, bh, ba, pbar))
                 p0[seg] = _sig(raw)
                 pf[seg] = _sig(raw + _offset(ts, bh, ba, pbar, flip=True))
+                if export_arm is not None:
+                    _export(export_arm, c, cut, clf, feats, bh, ba, pbar, rows, tr, te_dates, before,
+                            ts, p[seg])
                 continue
             mdl = FG.LgbmArm(seed=seed, params=params[c]).fit(
                 FG.design_matrix(rows, feats), rows["y"].to_numpy())
@@ -196,6 +202,43 @@ def fit_s1(tr_all, te_all, feats, params, seed, offset_arm=False, log=None):
     return out
 
 
+def _export(arm, c, cut, clf, feats, bh, ba, pbar, rows, tr, te_dates, before, ts, p_seg):
+    """One dated G4 artifact in the round-4 joblib/manifest format, wrapped so
+    `predict_proba` adds the site offset from the two trailing site columns.
+    Written to a NEW directory (round4_site/<arm>/); parity with the fit-path
+    prediction is asserted before anything is written."""
+    import joblib
+    from cbb_sim.models.fg_make_site_offset import SiteOffsetModel
+    d = EXPORT_DIR / arm
+    d.mkdir(parents=True, exist_ok=True)
+    ext = list(feats) + ["site_home", "site_away"]
+    w = SiteOffsetModel(clf, len(feats), bh, ba, pbar)
+    chk = w.predict_proba(FG.design_matrix(ts, ext))[:, 1]
+    gap = float(np.max(np.abs(chk - p_seg)))
+    if gap > 1e-9:
+        raise AssertionError(f"export parity failed: {gap}")
+    tr_dates = pd.to_datetime(tr["game_date"])
+    mx = tr_dates.max() if not before.any() else max(tr_dates.max(), te_dates[before].max())
+    fname = f"{c}_{pd.Timestamp(cut).date()}.joblib"
+    joblib.dump({"arm": "lgbm", "round4_arm": arm, "scheme": "S1", "shooter_key": "shot_shooter_id",
+                 "feature_set": f"R4_B1_site_{arm}", "features": ext, "model": w, "fold": "F2",
+                 "shot_class": c, "adopted": False, "refit_date": str(pd.Timestamp(cut).date()),
+                 "max_train_date": str(pd.Timestamp(mx).date()), "possessions_version": "v2",
+                 "servable": True, "offset": {"b_home": bh, "b_away": ba, "pbar": pbar},
+                 "note": "Lane G home-site round arm G4 (fg_make experiments.md s21-22); NOT ADOPTED"},
+                d / fname)
+    man_p = d / f"manifest_{c}.json"
+    man = json.loads(man_p.read_text()) if man_p.exists() else {
+        "model": "fg_make", "scheme": "S1", "fold": "F2", "season": 2025, "key": c, "arm": arm,
+        "feature_set": f"R4_B1_site_{arm}", "features": ext, "shooter_key": "shot_shooter_id",
+        "servable": True, "adopted": False, "artifacts": []}
+    man["artifacts"] = [x for x in man["artifacts"] if x["refit_date"] != str(pd.Timestamp(cut).date())]
+    man["artifacts"].append({"refit_date": str(pd.Timestamp(cut).date()), "path": fname,
+                             "max_train_date": str(pd.Timestamp(mx).date()), "n_train": int(len(rows)),
+                             "parity_max_abs": gap})
+    man_p.write_text(json.dumps(man, indent=2), encoding="utf-8")
+
+
 KEEP = ["game_id", "cbbd_game_id", "season", "game_date", "off_team_id", "def_team_id",
         "offense_is_home", "neutral_site", "site_home", "site_away", "shot_class", "y",
         "rating_gap", "conf_game", "season_type", "off_make_c", "def_allow_c",
@@ -207,6 +250,8 @@ def main() -> int:
     ap.add_argument("--arms", default="S0")
     ap.add_argument("--folds", default="F2")
     ap.add_argument("--seeds", default="0")
+    ap.add_argument("--export", action="store_true",
+                    help="write the offset arm's dated artifacts to round4_site/<arm>/ (F2 only)")
     a = ap.parse_args()
     t0 = time.time()
     from cbb_sim.data.seal import assert_not_sealed
@@ -228,7 +273,9 @@ def main() -> int:
                 t1 = time.time()
                 offs = []
                 res = fit_s1(tr_all, te_all, feats, params, seed,
-                             offset_arm=arm in OFFSET_ARMS, log=offs)
+                             offset_arm=arm in OFFSET_ARMS, log=offs,
+                             export_arm=(arm if (a.export and fold == "F2" and seed == 0
+                                                 and arm in OFFSET_ARMS) else None))
                 if offs:
                     (OUT / f"offsets_{arm}_{fold}_s{seed}.json").write_text(json.dumps(offs, indent=1))
                 frames = []

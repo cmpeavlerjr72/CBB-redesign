@@ -471,13 +471,70 @@ def part_fgarms():
               {c: v[c]["per_game_site_term_pts"] for c in pts})
 
 
+def part_rb_realstate():
+    """Served rebound `s1_weekly` artifacts predicted at REAL states on every
+    fold-2 rebound opportunity (design rebuilt exactly as
+    scripts/train_rebound_v2_s1.py builds it), each game scored by its own
+    refit (latest refit_date <= game_date). FE HCA of OREB share of live
+    rebounds, predicted vs realised."""
+    import joblib
+    sys.path.insert(0, str(ROOT / "src"))
+    from cbb_sim.models import event_stream as ES
+    from cbb_sim.models import rebound as RB
+    import grade_home_site_v1 as GR
+    meta = json.loads((OUT / "audit_v1.json").read_text())
+    P_ref, dv = meta["P_ref"], meta["deriv"]
+    universe = ES.load_universe()
+    ev = pd.read_parquet("data/processed/models/rebound/events_v1.parquet")
+    ev.attrs["rim_override_max_ft"] = ES.rim_override_for_version("v1")
+    ev.attrs["possessions_version"] = "v1"
+    design = RB.build_design([2022, 2023, 2024, 2025], universe=universe, version="v1", events=ev)
+    te = design[design["season"] == 2025].reset_index(drop=True)
+    mpath = Path("data/processed/models/rebound/s1_confirm/S1_weekly/F2/manifest.json")
+    man = json.loads(mpath.read_text())
+    arts = sorted(man["artifacts"], key=lambda a: a["refit_date"])
+    cuts = np.array([np.datetime64(a["refit_date"]) for a in arts])
+    k = np.searchsorted(cuts, pd.to_datetime(te["game_date"]).to_numpy(), side="right") - 1
+    if (k < 0).any():
+        raise AssertionError("a rebound predates the first refit")
+    P = np.zeros((len(te), len(RB.CLASSES)))
+    for j, a in enumerate(arts):
+        r = np.flatnonzero(k == j)
+        if not len(r):
+            continue
+        w = joblib.load(mpath.parent / a["path"])
+        if pd.Timestamp(w.get("max_train_date", a["max_train_date"])) >= pd.to_datetime(te.loc[r, "game_date"]).min():
+            raise AssertionError("leak: artifact trained through a scored date")
+        mdl = w["model"]
+        try:
+            mdl.clf_.set_params(n_jobs=1)
+        except Exception:  # noqa: BLE001
+            pass
+        P[r] = mdl.predict_proba(np.ascontiguousarray(te.loc[r, w["features"]].to_numpy(dtype="float32")))
+    oc = te["outcome"].to_numpy()
+    live = np.isin(oc, ["OREB", "DREB"])
+    p_share = P[:, 0] / np.maximum(P[:, 0] + P[:, 1], 1e-12)
+    site = (te["site_home"] - te["site_away"]).to_numpy().astype(int)
+    f = pd.DataFrame({"game_id": te["game_id"].to_numpy(), "off_id": te["off_team_id"].to_numpy(),
+                      "def_id": te["def_team_id"].to_numpy(), "site": site,
+                      "y": (oc == "OREB").astype(float), "p": p_share, "w": 1.0})[live]
+    g = GR.aggregate(f)
+    m = GR.site_metrics(g, GR.FE(g))
+    pts = P_ref * dv["rho"]
+    out = {**m, "n_live": int(live.sum()), "gap_pts": pts * m["gap"], "act_pts": pts * m["hca_real"],
+           "se_pts": pts * m["hca_real_se"], "raw": GR.raw_site_calib(f),
+           "mean_real": float(f["y"].mean()), "mean_pred": float(f["p"].mean())}
+    (OUT / "rb_realstate_v1.json").write_text(json.dumps(out, indent=1, default=float), encoding="utf-8")
+    print(json.dumps({k2: v for k2, v in out.items() if k2 != "raw"}, indent=1, default=float))
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--part", action="append", required=True)
     a = ap.parse_args()
     for p in a.part:
         {"audit": part_audit, "fgdiag": part_fgdiag, "po_realstate": part_po_realstate,
-         "fgarms": part_fgarms}[p]()
+         "fgarms": part_fgarms, "rb_realstate": part_rb_realstate}[p]()
 
 
 if __name__ == "__main__":
