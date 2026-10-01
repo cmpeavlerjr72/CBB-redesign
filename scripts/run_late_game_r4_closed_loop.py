@@ -1,4 +1,4 @@
-"""run_late_game_r4_closed_loop.py -- late-game ROUND 4 tapped closed loop (experiments.md section 9).
+﻿"""run_late_game_r4_closed_loop.py -- late-game ROUND 4 tapped closed loop (experiments.md section 9).
 
 Round 3's runner (`run_late_game_r3_closed_loop.py`) with three read-only additions:
 
@@ -114,6 +114,8 @@ def _init_worker(tag, fold, season, input_dir, flags):
     for k, v in flags.items():
         os.environ[k] = str(v)
     os.environ["CBB_TRUTH"] = "verified_v1"
+    if os.environ.get("LG_LOG_SEC"):
+        R3.LOG_SEC = int(os.environ["LG_LOG_SEC"])
     from cbb_sim.engine import loop as L
     from cbb_sim.engine.adapters import Adapters
     from cbb_sim.engine.inputs import EngineInputs
@@ -172,11 +174,15 @@ def main() -> int:
     ap.add_argument("--games-per-block", type=int, default=25)
     ap.add_argument("--seeds-per-block", type=int, default=25)
     ap.add_argument("--max-games", type=int, default=None)
+    ap.add_argument("--log-sec", type=int, default=None, help="possession-log window (default 180 s)")
     ap.add_argument("--sample-file", default=str(R3.SAMPLE_FILE))
     ap.add_argument("--tag", required=True)
     ap.add_argument("--results-dir", default=str(R3.DEFAULT_RESULTS))
     ap.add_argument("--input-dir", default=str(R3.INPUT_DIR))
     args = ap.parse_args()
+    if args.log_sec:
+        R3.LOG_SEC = int(args.log_sec)
+        os.environ["LG_LOG_SEC"] = str(args.log_sec)
     if int(args.season) >= 2026:
         raise SystemExit(f"season {args.season} is SEALED")
     from cbb_sim.data.seal import assert_not_sealed

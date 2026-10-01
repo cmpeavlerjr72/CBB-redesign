@@ -3828,3 +3828,86 @@ The Decision 11 set (clock L2 + shot_block K2_Ocell + foul R9ao3 + shared_shooti
 
 - `foul_joint.DEFAULT = "R9ao3"`; `loop.py` passes it when `ENGINE_FOUL_JOINT` is unset. `reference` = served-v1 (no tables).
 - Artifacts: `round9/lut_ao_AO3_F2.npz` and `round9/ao_team_prior_v1.parquet` (tracked), plus the R8b base tables `round7/lut_acc_A2_F2.npz` and `round7/lut_trip_T2c_F2.npz` (gitignored, on HF under `model_artifacts`).
+
+## 29. Late foul accrual pre-registration -- the trailing defence below the bonus in the final 2:00 (lane L, 2026-10-01 ~11:15 EDT; written and COMMITTED BEFORE any arm was fitted or run)
+
+**Nothing is adopted; no served default changes.** The served joint is `ENGINE_FOUL_JOINT=R9ao3` (R8b's accrual
+LUT `lut_acc_A2_F2` + trip offsets T2c + the AO3 and-one model). Round 9 found the FIRST half reaches the bonus
+too early, so this round leaves the first half untouched by construction.
+
+### 29.1 Motivating evidence (diagnostic only)
+
+`scripts/diag_late_foul_accrual_v1.py` on `lg7_R9_s25` (served v2, round-4 tap with a 300 s possession log) vs
+`round6/foul_accrual_poss_v2.parquet` (engine-definition counts), 2024 and 2025:
+
+1. **The served accrual table was never fitted on the final 2:00.** `train_foul_joint_v1.possession_design`
+   sets `in_fit_window = period <= 2 and start_clock > 120`; every final-2:00 cell of `lut_acc_A2_F2` is the
+   GBM's extrapolation (share of these rows in its fit window: 0.00).
+2. **It draws at most ONE non-trip foul per possession** (a Bernoulli on the possession's `foul_accrual` uniform).
+3. **Where it matters, it is far too low.** A trailing DEFENCE below the bonus (4-5 team fouls, the
+   engine-definition count; the opponent shoots from 6) in the final 60 s, period 2:
+
+   | time left, opponent's lead | actual 2025 (P(>=1) / P(>=2)) | actual 2024 | served LUT, P(>=1) | sim (P(>=2) = 0 by construction) |
+   |---|---|---|---|---|
+   | (0,30], 1-3 | **1.00** per possession (0.83 / 0.17) | 1.14 | 0.18 | 0.20 |
+   | (0,30], 4-6 | 1.11 | 0.88 | -- | 0.29 |
+   | (30,60], 1-3 | 0.55 | 0.60 | 0.19 | 0.12 |
+   | (30,60], 4-6 | 0.82 | 0.77 | -- | 0.23 |
+   | (30,60], 7+ | 0.73 | 0.68 | -- | 0.25 |
+
+   Real trailing teams burn fouls to reach the bonus, often more than one per possession.
+4. **Where it does not matter, it is too high.** Once the defence is in the bonus (6+), the data's non-trip rate in
+   the final 2:00 is 0.001-0.005 per possession; the LUT serves 0.025-0.030 and the sim realises 0.026-0.042.
+   (The LUT's target `y_nt` also counts OFFENSIVE non-trip fouls and the engine charges them to the defence.)
+5. **Consequence.** The trailing team's MEAN foul count late matches the data (e.g. at 0:30, margin 1-3: 9.29 sim
+   vs 8.85 actual), but too many trailing teams sit below the bonus. The leader is in the bonus at 0:30 in
+   0.907 / 0.925 of games (margin 4-6 / 7-10) against 0.968 / 0.980.
+
+### 29.2 Arms (one grader, both folds, fold 2 selects)
+
+The window is period 2, possession start <= 120 s, regulation only. Overtime and the first half keep the served
+accrual. Target K = the DEFENCE's non-trip fouls in the possession (`def_silent`), clipped at 3. Cell law:
+defence role (trailing by 1-3 / 4-6 / 7+, tied, leading) x start clock ((0,30], (30,60], (60,120]) x defence
+team fouls (0-3, 4-5, 6-8, 9+). Hierarchical: each level is shrunk to its parent with m = 50 pseudo-rows
+(clock -> clock x fouls -> full cell). Trained on 2022-2023 (F1) / 2022-2024 (F2).
+
+| arm | law in the window |
+|---|---|
+| `LF0` | served: Bernoulli with the LUT's p (P(K=0) = 1-p, P(K=1) = p) |
+| `LF1` | window refit, binary: P(K >= 1) by cell, K in {0, 1} |
+| `LF2` | window refit, count: P(K = 0, 1, 2, 3) by cell |
+
+- **Metric:** multinomial log loss of min(K, 3) on test-season window rows, every arm's class probabilities floored at
+  1e-4 (stated, so the binary arms are scorable). Also reported: the binary (K >= 1) log loss, and expected K by cell.
+- **Floor:** game-block bootstrap SE of the paired per-row delta (deterministic cell laws; the reseed floor is 0).
+- **Selection:** the simplest arm that beats `LF0` by > 1 floor on F2 with the same sign on F1; `LF2` over `LF1`
+  only if `LF2` beats `LF1` by > 1 floor.
+- **Responsiveness (reported):** leading-offence bonus occupancy by role x time-left in the closed loop vs the data;
+  expected K by defence foul count (it must fall from 4-5 to 6+, as the data do).
+
+### 29.3 Engine form and closed loop
+
+**Flag.** `ENGINE_LATE_FOUL=<arm>`, default off. In `loop.py`, after the served accrual draw, window rows
+replace the served Bernoulli by the selected law's inverse CDF on THE SAME `foul_accrual` uniform, and add K
+fouls to the defence. No new RNG stream; first half and overtime untouched; the offence foul draw (none in
+R9ao3) unchanged.
+
+**Taps.** 500 verified games x 25 paired seeds, served v2 base:
+- `LF` alone, vs R9 (round 4's five draws as floors);
+- `LF` + `clk_Dt`, vs R9 and vs `clk_Dt`.
+
+**Hard guards / vetoes:**
+- FIRST-HALF FTA/FGA (0.2408 served vs 0.2383 actual) must not move away; expected bit-identical first halves.
+- G1 possession mean and SD.
+- Pooled FTA/FGA (box, target 0.3295).
+- Half share, window possessions by k.
+- G5 margin and total SD ratios, G9 margin bias.
+- G9 total bias is reported as priced exposure (round 5's framing).
+
+**Reported:**
+- leading-offence foul-trip rate inside 30 s (event tap) and bonus occupancy by role x time-left;
+- one-point finishes P(1), ties at 0:10, P(0)/P(1), OT rate (section 1.3 is the qualification line for the late-game set).
+
+**Ship path.** An offline winner whose taps pass every hard guard / veto gets parity v9 on a clean `src/` and
+`d1001_L_2.md` (full-size 5,710 x 200 paired read vs the plain default on lane D's S2 floors `d1001D_S2f{1..4}`),
+if it can be filed by 14:30 EDT; otherwise it is reported NOT RUN with the command.
