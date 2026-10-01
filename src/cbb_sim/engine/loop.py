@@ -55,6 +55,7 @@ import pandas as pd
 from cbb_sim.engine import andone_label as AL
 from cbb_sim.engine import foul_joint as FJ
 from cbb_sim.engine import rotation_adapter as RA
+from cbb_sim.engine import shared_shooting as SSL
 from cbb_sim.engine import shot_block as SBK
 from cbb_sim.engine import state as S
 from cbb_sim.engine import team_rate_draw as TRD
@@ -252,6 +253,11 @@ def simulate_chunk(inp: EngineInputs, ad: Adapters, game_index: np.ndarray,
     sb_type = np.array([SBK.TYPE_INDEX.get(m, -1) for m in RB.MISS_TYPES], dtype=np.int64)
     if fj is not None:
         fj.init_whistle(seeds, gids)     # round 8; a no-whistle arm draws nothing
+    # shared_shooting round 1: per-game shared fg_make logit effect. DEFAULT OFF
+    # (ENGINE_SHARED_SHOOTING unset -> None, no draw, no stream touched).
+    ssl = SSL.load()
+    if ssl is not None:
+        ssl.init_game(seeds, gids, book.keys["clock"])
     neutral_g = ((inp.games["neutral"].to_numpy() > 0)
                  if (foul_tab is not None or fj is not None) else None)
     ce_med = {int(k): float(v) for k, v in rules["chance_elapsed_median_by_chance"].items()}
@@ -486,6 +492,8 @@ def simulate_chunk(inp: EngineInputs, ad: Adapters, game_index: np.ndarray,
                 p_make = ad.fg.predict(SHOT_CLASSES[sc], (inp.team_static[gidx[r], off[r]] if kk is None
                                                           else trd.team_static_k[kk[r], gidx[r], off[r]]),
                                        slot_blk, xs, gidx[r])
+                if ssl is not None:
+                    p_make = ssl.shift(p_make, ar, off[r], {CLS_RIM: 0, CLS_JUMP: 1, CLS_3: 2}[sc])
                 made = book.draw("fg_make", ar) < p_make
                 pv = SHOT_POINTS[sc]
                 if made.any():

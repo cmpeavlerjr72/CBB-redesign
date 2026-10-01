@@ -1,0 +1,36 @@
+{
+  "source": "scripts/exp_shared_shooting_v1.py bakeoff, fold F2 TRAIN fit (residual seasons 2023+2024, served fg_make spec B1 S1 held-out predictions, week-centred, verified finals); docs/models/shared_shooting/experiments.md section 1",
+  "created_at": "2026-10-01T00:50:21.127150+00:00",
+  "type_order": [
+    "rim",
+    "jump2",
+    "three"
+  ],
+  "G3_Sigma": [
+    [
+      0.01993980437968352,
+      -0.0036079094096421512,
+      0.0017542685222097197
+    ],
+    [
+      -0.0036079094096421504,
+      0.02366953104551923,
+      0.004458916890946005
+    ],
+    [
+      0.0017542685222097193,
+      0.004458916890946005,
+      0.0042698996026426985
+    ]
+  ],
+  "G1_s2": 0.0057641317006154975,
+  "GP_s2": 0.0057641317006154975,
+  "GP_c_cov_u_lnN": -0.00032242178044861424,
+  "GP_sigma_clk": 0.04702809866171037,
+  "GP_rho": 0.09030254779202497,
+  "U1_s2": 0.0057641317006154975,
+  "offline_winner": "G3",
+  "eligible": [
+    "G3"
+  ]
+}
