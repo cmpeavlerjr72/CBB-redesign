@@ -63,13 +63,16 @@ FG_DESIGN = "data/processed/models/fg_make/design_v2_shotshooter.parquet"
 RB_DESIGN = "data/processed/models/rebound/round3/design_round3.parquet"
 SAMPLE500 = "data/processed/truth/stride500_verified_v1_F2_2025.parquet"
 SEASONS = [2022, 2023, 2024, 2025]
-STAGES = ["possessions_v4", "rotation", "po_design", "foul_state", "po_train", "clock", "fg_design", "fg_train",
-          "rb_design", "rb_train", "inputs_base", "inputs", "parity", "gate"]
+STAGES = ["possessions_v4", "rotation", "po_design", "foul_state", "po_train", "clock", "otc_designs", "fg_design", "fg_train",
+          "rb_design", "rb_train", "ft_train", "inputs_base", "inputs", "parity", "gate"]
+#: stages that exist only under --ot-foul-carry (lane F, 2026-10-01): the carried fg / rebound / FT tables and the FT S1 retrain
+#: (free_throw is otherwise served unchanged). Without the flag they are not in the plan, so the default plan is unchanged.
+CARRY_ONLY = {"otc_designs", "ft_train"}
 CHECKPOINTED = {"po_train", "fg_train", "rb_train"}          # resume in place
 #: stages whose output does not depend on --variant (F_T can --reuse-from an F_R tag's finished ones)
-SHARED = {"rotation", "po_design", "foul_state", "clock", "fg_design", "rb_design", "inputs_base"}
+SHARED = {"rotation", "po_design", "foul_state", "clock", "fg_design", "rb_design", "inputs_base", "otc_designs", "ft_train"}
 #: independent training branches (--parallel runs them at once)
-BRANCHES = [["po_design", "foul_state", "po_train"], ["clock"], ["fg_design", "fg_train"], ["rb_design", "rb_train"]]
+BRANCHES = [["po_design", "foul_state", "po_train"], ["clock"], ["fg_design", "fg_train"], ["rb_design", "rb_train"], ["ft_train"]]
 #: --gate-stack (lane D, 2026-10-01): the loop-level switches the gate serves on top of the chain's artifacts, set
 #: EXPLICITLY so the read does not depend on the caller's environment. `adopted` = served stack v2's four loop-level
 #: members (the fifth, clock L2, is the chain's own clock stage; the event team block is the chain's own inputs
@@ -116,9 +119,12 @@ class Chain:
             self.share = {"po_train": min(12, self.cores), "fg_train": min(18, self.cores),
                           "rb_train": min(23, self.cores), "clock": 1}
             need = self.rot_procs + self.share["po_train"] + self.share["fg_train"] + self.share["rb_train"] + 1
+            if getattr(a, "ot_foul_carry", False):
+                need += 1                                        # the FT S1 retrain is one serial process
             if need > a.cores:
                 raise SystemExit(f"--parallel needs {need} cores (rotation {self.rot_procs} + PO 12 + fg 18 + rb 23 + "
-                                 f"clock 1); --cores is {a.cores}. Drop --parallel or raise --cores")
+                                 f"clock 1 + FT {int(getattr(a, 'ot_foul_carry', False))}); --cores is {a.cores}. "
+                                 f"Drop --parallel or raise --cores")
         else:
             self.share = {}
         self.log = []
@@ -284,11 +290,38 @@ class Chain:
                            "--poss-version", self.pv, "--ratings-dir", self.ratings])
         return {"root": self.s(self.d("clock") / "root")}
 
+    def otc_dir(self) -> Path:
+        return self.d("otc_designs") / "out"
+
+    def fg_src(self) -> str:
+        """the fg_make design the ratings swap starts from: the served prebuilt one, or the OT-carry sibling"""
+        return self.s(self.otc_dir() / "fg_make/design_v2_shotshooter.parquet") if getattr(self.a, "ot_foul_carry", False) else FG_DESIGN
+
+    def rb_src(self) -> str:
+        return self.s(self.otc_dir() / "rebound/round3/design_round3.parquet") if getattr(self.a, "ot_foul_carry", False) else RB_DESIGN
+
+    def st_otc_designs(self):
+        """OVERTIME TEAM-FOUL CARRY (--ot-foul-carry): the fg_make, rebound and free-throw training tables rebuilt with
+        CBB_OT_FOUL_CARRY=1 (scripts/build_ot_carry_designs_v1.py; the identity of the default path vs the stored files and
+        the regulation-row identity of the carried tables are written to its build_report.json)."""
+        self.run("otc_designs", [PY, "scripts/build_ot_carry_designs_v1.py", "--out-root", self.s(self.otc_dir())])
+        return {"out": self.s(self.otc_dir()), "report": self.s(self.otc_dir() / "build_report.json")}
+
+    def ft_art(self) -> Path:
+        return self.o("ft_train") / "S1_conf_aligned/F2/manifest.json"
+
+    def st_ft_train(self):
+        """free_throw S1 retrain on the carried attempts table (otherwise served unchanged); one serial process"""
+        cmd = [PY, "scripts/train_free_throw_s1_fold_v1.py", "--fold", "F2", "--out-root", self.s(self.o("ft_train")),
+               "--attempts", self.s(self.otc_dir() / "free_throw/attempts_v1_era.parquet")]
+        self.run("ft_train", cmd)
+        return {"manifest": self.s(self.ft_art())}
+
     def st_fg_design(self):
         out = self.d("fg_design") / "design_v2_shotshooter_r.parquet"
         if self.ratings == SERVED_RATINGS:
-            return {"design": FG_DESIGN, "note": "served ratings: served design"}
-        self.run("fg_design", [PY, "scripts/build_design_ratings_swap_v1.py", "--design", FG_DESIGN,
+            return {"design": self.fg_src(), "note": "served ratings: " + ("OT-carry design" if self.fg_src() != FG_DESIGN else "served design")}
+        self.run("fg_design", [PY, "scripts/build_design_ratings_swap_v1.py", "--design", self.fg_src(),
                                "--ratings-dir", self.ratings, "--out", self.s(out)])
         return {"design": self.s(out)}
 
@@ -309,8 +342,8 @@ class Chain:
     def st_rb_design(self):
         out = self.d("rb_design") / "design_round3_r.parquet"
         if self.ratings == SERVED_RATINGS:
-            return {"design": RB_DESIGN, "note": "served ratings: served design"}
-        self.run("rb_design", [PY, "scripts/build_design_ratings_swap_v1.py", "--design", RB_DESIGN,
+            return {"design": self.rb_src(), "note": "served ratings: " + ("OT-carry design" if self.rb_src() != RB_DESIGN else "served design")}
+        self.run("rb_design", [PY, "scripts/build_design_ratings_swap_v1.py", "--design", self.rb_src(),
                                "--ratings-dir", self.ratings, "--out", self.s(out)])
         return {"design": self.s(out)}
 
@@ -398,6 +431,8 @@ class Chain:
                "--rotation-dir", self.s(self.d("rotation") / "fits")]
         if self.e3:
             cmd += ["--team-rate-table", self.e3, "--team-rate-missing", self.a.team_rate_missing]
+        if getattr(self.a, "ot_foul_carry", False):
+            cmd += ["--ft-manifest", self.s(self.ft_art())]
         self.run("inputs", cmd)
         info = {"input_dir": self.s(out / "inputs"), "overrides": self.s(out / "inputs/overrides.json")}
         if self.a.anchor:
@@ -416,6 +451,13 @@ class Chain:
         self.run("parity", [PY, "scripts/diag_train_serve_parity_fg_v1.py", "--fg-out", self.s(self.fg_dir()),
                             "--inputs", inp["input_dir"], "--rb-arm", "A0B0C0",   # anchor O = the same features plus an init_score offset
                             "--out", self.s(out)])
+        if getattr(self.a, "ot_foul_carry", False):
+            # OT rows (lane F, 2026-10-01): the carried foul state of every consumer's table vs an independent recount from the
+            # plays, on regulation AND overtime rows; FAILS the run on a mismatch
+            ot_out = self.d("parity") / "parity_ot_carry.json"
+            self.run("parity", [PY, "scripts/diag_ot_carry_parity_v1.py", "--otc-root", self.s(self.otc_dir()),
+                                "--possessions-version", self.pv, "--out", self.s(ot_out)])
+            return {"report": self.s(out), "report_ot": self.s(ot_out)}
         return {"report": self.s(out)}
 
     def st_gate(self):
@@ -512,6 +554,12 @@ class Chain:
         ]
         if self.e3:
             req.append((self.e3, "HF team_rate_tables"))
+        if getattr(self.a, "ot_foul_carry", False):          # the carried fg / rebound / FT tables and the FT S1 retrain (lane F)
+            req += [("data/processed/models/rebound/events_v1.parquet", "HF model_artifacts (OT-carry identity check)"),
+                    ("data/processed/models/free_throw/attempts_v1_era.parquet", "HF model_artifacts (OT-carry identity check)"),
+                    ("data/raw/cbbd/rosters", "HF raw (free_throw design)"),
+                    ("data/processed/player_crosswalk.parquet", "HF engine_inputs / git (free_throw design)"),
+                    ("data/raw/hoopr/schedules", "HF raw (free_throw conference flags)")]
         if self.a.gate_ref:
             req.append((self.a.gate_ref, "git"))
         req += [(x, "git") for x in self.a.gate_noise.split(",") if x]
@@ -524,7 +572,8 @@ class Chain:
     # -------------------------------------------------------------------- run
     def plan(self) -> list[str]:
         only = [s for s in self.a.stages.split(",") if s] if self.a.stages else STAGES
-        return [s for s in STAGES if s in only]
+        carry = getattr(self.a, "ot_foul_carry", False)
+        return [s for s in STAGES if s in only and (carry or s not in CARRY_ONLY)]
 
     def go(self) -> int:
         try:
@@ -591,7 +640,7 @@ class Chain:
         if self.a.parallel and not self.a.dry_run:
             # possessions_v4 and rotation first (rotation goes to the background), then the four independent
             # training branches at once, then inputs and gate
-            pre = [s for s in stages if s in ("possessions_v4", "rotation")]
+            pre = [s for s in stages if s in ("possessions_v4", "rotation", "otc_designs")]
             for st in pre:
                 self.one(st)
             branches = [[s for s in b if s in stages] for b in BRANCHES]

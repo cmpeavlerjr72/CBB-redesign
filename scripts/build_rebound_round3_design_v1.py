@@ -80,8 +80,9 @@ from cbb_sim.models import prob_metrics as PM  # noqa: E402
 from cbb_sim.models import rebound as RB  # noqa: E402
 
 SEASONS = [2022, 2023, 2024, 2025]
-IN_EVENTS = _ROOT / "data/processed/models/rebound/events_v1.parquet"
-OUT_DIR = _ROOT / "data/processed/models/rebound/round3"
+# env overrides (lane F, 2026-10-01; default unset = unchanged): the OT-carry chain reads/writes sibling files
+IN_EVENTS = Path(os.environ.get("CBB_RB_R3_IN_EVENTS") or _ROOT / "data/processed/models/rebound/events_v1.parquet")
+OUT_DIR = Path(os.environ.get("CBB_RB_R3_OUT_DIR") or _ROOT / "data/processed/models/rebound/round3")
 OUT_DESIGN = OUT_DIR / "design_round3.parquet"
 OUT_META = OUT_DIR / "design_round3.meta.json"
 CONTINUITY = _ROOT / "data/processed/roster_continuity_2027.parquet"

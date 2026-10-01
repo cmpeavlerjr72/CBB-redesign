@@ -80,6 +80,7 @@ def main() -> int:
     ap.add_argument("--fg-artifacts", type=Path, default=None)
     ap.add_argument("--fg-m", type=Path, default=None)
     ap.add_argument("--rb-artifacts", type=Path, default=None)
+    ap.add_argument("--ft-manifest", type=Path, default=None, help="default off: serve this free_throw S1 manifest (OT-carry retrain)")
     ap.add_argument("--clock-root", type=Path, default=None)
     ap.add_argument("--rotation-dir", type=Path, default=None)
     ap.add_argument("--tag", default="chain")
@@ -130,6 +131,10 @@ def main() -> int:
         over["clock_adapter_v3.CK_DIR"] = rel(cr)
         over["adapters.CK_DIR"] = rel(cr)
         over["clock_adapter_v3.V5_PARAMS"] = rel(cr / "v5_bakeoff/v5_bakeoff_report.json")
+    if a.ft_manifest:
+        if not a.ft_manifest.exists():
+            raise SystemExit(f"--ft-manifest {a.ft_manifest} missing")
+        over["adapters.FT_S1_MANIFEST"] = rel(a.ft_manifest.resolve())
     if a.rotation_dir:
         mp = a.rotation_dir.resolve() / "rotation_r2_s1_F2_2025.json"
         if not mp.exists():

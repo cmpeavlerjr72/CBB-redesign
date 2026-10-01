@@ -33,11 +33,13 @@ def main() -> int:
     ap.add_argument("--fold", choices=["F1", "F2"], required=True)
     ap.add_argument("--scheme", default="S1_conf_aligned")
     ap.add_argument("--out-root", type=Path, required=True)
+    ap.add_argument("--attempts", type=Path, default=None,
+                    help="default off: an attempts_v1_era-format parquet (the OT-carry sibling) instead of the stored one")
     a = ap.parse_args()
     T.S1_DIR = a.out_root if a.out_root.is_absolute() else ROOT / a.out_root
     t0 = time.time()
     T.ES.load_universe()
-    att_all = pd.read_parquet(T.OUT_DIR / "attempts_v1_era.parquet")
+    att_all = pd.read_parquet(a.attempts if a.attempts else T.OUT_DIR / "attempts_v1_era.parquet")
     attempts = att_all[att_all["season"].isin(T.SEASONS)]
     design = T.FT.build_ft_design(attempts)
     conf_all = T.CF.build_conference_flags(T.SEASONS)

@@ -230,6 +230,22 @@ def _state_block(st: S.GameState, act: np.ndarray, n_state: int,
 # ---------------------------------------------------------------------------
 # the chunk simulator
 # ---------------------------------------------------------------------------
+def _ot_snap_init(n: int) -> dict:
+    """ENGINE_OT_STATS=1 (DEFAULT OFF; lane F, 2026-10-01): end-of-regulation snapshot per simulation, so overtime-period points,
+    free throws, field goals and possessions can be written as extra game columns. Not read by any gate."""
+    return {"pts": np.zeros((n, 2), np.int16), "fta": np.zeros((n, 2), np.int16), "fga": np.zeros((n, 2), np.int16),
+            "poss": np.zeros((n, 2), np.int16)}
+
+
+def _ot_snap_take(snap: dict, st: S.GameState, rows: np.ndarray) -> None:
+    if len(rows) == 0:
+        return
+    snap["pts"][rows] = st.pts[rows]
+    snap["fta"][rows] = st.box["fta"][rows]
+    snap["fga"][rows] = st.box["fga3"][rows] + st.box["fga2_rim"][rows] + st.box["fga2_jump"][rows]
+    snap["poss"][rows] = st.poss_count[rows]
+
+
 def simulate_chunk(inp: EngineInputs, ad: Adapters, game_index: np.ndarray,
                    seeds: np.ndarray, keep_players: bool = True,
                    progress: int = 0) -> ChunkResult:
@@ -258,6 +274,7 @@ def simulate_chunk(inp: EngineInputs, ad: Adapters, game_index: np.ndarray,
 
     st = S.new_state(game_index, seeds, seasons, inp.n_slots,
                      S.load_bonus_era(), first_off)
+    ot_snap = _ot_snap_init(n) if os.environ.get("ENGINE_OT_STATS") == "1" else None
     rules = inp.rules
     dead_share = np.array([rules["dead_share"][m] for m in RB.MISS_TYPES], dtype=np.float64)
     miss_type_index = {m: i for i, m in enumerate(RB.MISS_TYPES)}
@@ -744,6 +761,8 @@ def simulate_chunk(inp: EngineInputs, ad: Adapters, game_index: np.ndarray,
                 if len(ot):
                     st.period[ot] += 1
                     st.n_ot[ot] += 1
+                    if ot_snap is not None:
+                        _ot_snap_take(ot_snap, st, ot[st.n_ot[ot] == 1])      # first overtime: freeze the regulation totals
                     st.seconds_remaining[ot] = S.OT_SECONDS
                     # NCAA: an extra period is an extension of the second half,
                     # so team fouls CARRY OVER; only halftime resets them.
@@ -778,7 +797,7 @@ def simulate_chunk(inp: EngineInputs, ad: Adapters, game_index: np.ndarray,
     st.player_fouls[:, 1, :] = fouls2[n:]
     diag.update(rot.diag)
 
-    games, players = _finalise(inp, st, gids, seeds, keep_players)
+    games, players = _finalise(inp, st, gids, seeds, keep_players, ot_snap)
     n_poss = int(st.poss_count.sum())
     return ChunkResult(games, players, diag, n_poss, time.time() - t_start)
 
@@ -842,7 +861,7 @@ def _credit_rebound(st: S.GameState, inp: EngineInputs, book: StreamBook,
 # end-of-game bookkeeping (deliverable 2g)
 # ---------------------------------------------------------------------------
 def _finalise(inp: EngineInputs, st: S.GameState, gids: np.ndarray, seeds: np.ndarray,
-              keep_players: bool) -> tuple[pd.DataFrame, pd.DataFrame]:
+              keep_players: bool, ot_snap: dict | None = None) -> tuple[pd.DataFrame, pd.DataFrame]:
     g = pd.DataFrame({
         "game_id": gids.astype("int64"),
         "seed": seeds.astype("int32"),
@@ -854,6 +873,14 @@ def _finalise(inp: EngineInputs, st: S.GameState, gids: np.ndarray, seeds: np.nd
     for stat in S.BOX_STATS:
         g[f"home_{stat}"] = st.box[stat][:, 0].astype("int16")
         g[f"away_{stat}"] = st.box[stat][:, 1].astype("int16")
+    if ot_snap is not None:                         # ENGINE_OT_STATS=1: overtime-period totals (0 in regulation games)
+        ot = (st.n_ot > 0)[:, None]
+        fga_now = st.box["fga3"] + st.box["fga2_rim"] + st.box["fga2_jump"]
+        for side, nm in ((0, "home"), (1, "away")):
+            g[f"{nm}_ot_pts"] = np.where(ot[:, 0], st.pts[:, side] - ot_snap["pts"][:, side], 0).astype("int16")
+            g[f"{nm}_ot_fta"] = np.where(ot[:, 0], st.box["fta"][:, side] - ot_snap["fta"][:, side], 0).astype("int16")
+            g[f"{nm}_ot_fga"] = np.where(ot[:, 0], fga_now[:, side] - ot_snap["fga"][:, side], 0).astype("int16")
+            g[f"{nm}_ot_poss"] = np.where(ot[:, 0], st.poss_count[:, side] - ot_snap["poss"][:, side], 0).astype("int16")
     if not keep_players:
         return g, pd.DataFrame()
 

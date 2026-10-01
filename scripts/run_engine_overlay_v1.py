@@ -79,7 +79,8 @@ def check_sources(meta: dict, ov: dict) -> list[str]:
     src = (meta.get("adapter_flags") or {}).get("sources") or {}
     bad = []
     want = {"event": "adapters.ENGINE_DIR", "fg_make": "adapters.FG_DIR", "rebound": "adapters.RB_S1_MANIFEST",
-            "clock": "clock_adapter_v3.CK_DIR", "rotation": "rotation_adapter.R2_S1_MANIFEST"}
+            "clock": "clock_adapter_v3.CK_DIR", "rotation": "rotation_adapter.R2_S1_MANIFEST",
+            "free_throw": "adapters.FT_S1_MANIFEST"}
     blob = json.dumps(src, default=str).replace("\\\\", "/").replace("\\", "/")
     for fam, key in want.items():
         if key not in ov:
