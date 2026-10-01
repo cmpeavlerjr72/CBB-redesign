@@ -116,7 +116,26 @@ _LOOP_SWITCHES = (("ENGINE_SHOT_BLOCK", _SBK), ("ENGINE_FOUL_JOINT", _FJ),
 SERVED_V1: dict[str, str] = {
     "ENGINE_CLOCK": "v5b_glat_pmean", "ENGINE_SHOT_BLOCK": "reference",
     "ENGINE_FOUL_JOINT": "reference", "ENGINE_SHARED_SHOOTING": "reference",
-    "ENGINE_CHANCE_TIME": "reference"}
+    "ENGINE_CHANCE_TIME": "reference", "ENGINE_EVENT_TEAM_BLOCK": "v1"}
+
+# EVENT TEAM BLOCK, 2026-10-01 (PM ruling; docs/tests/adoption_served_v2_2026-10-01.md):
+# the inputs-v3 replay block (sha 228794fc, what the box's S0 overlay served and what the
+# adoption evidence was read on) is the served block for round2_s1 F2 2025. It lives as a
+# tracked versioned sibling; the 09-10 block (`event_.../team_block.npz`) stays untouched
+# and is selected with ENGINE_EVENT_TEAM_BLOCK=v1. A private ENGINE_DIR (live runner,
+# overlay harness) has no sibling file, so its own team_block.npz is served as before.
+EVENT_TEAM_BLOCK_V3 = {("round2_s1", "F2", 2025): "event_team_block_v3_F2_2025.npz"}
+
+
+def event_team_block_path(mode: str, fold: str, season: int, d: Path) -> tuple[Path, str]:
+    """(path, tag) of the event team block served for this event dir; tag is 'v3' or 'v1'."""
+    want = os.environ.get("ENGINE_EVENT_TEAM_BLOCK", "v3") or "v3"
+    if want not in ("v1", "v3"):
+        raise ValueError(f"ENGINE_EVENT_TEAM_BLOCK={want!r}; known: v3 (default), v1")
+    name = EVENT_TEAM_BLOCK_V3.get((mode, fold, int(season)))
+    if want == "v3" and name and (ENGINE_DIR / name).exists():
+        return ENGINE_DIR / name, "v3"
+    return d / "team_block.npz", "v1"
 
 #: rebound and free_throw both confirmed S1 as their training scheme
 #: (each model's `experiments.md` section 7). Their manifests are DATED
@@ -274,7 +293,7 @@ class EventAdapter:
                 f"{d} missing; run {builder} --fold {fold} "
                 f"--season {season}, or pass ENGINE_EVENT=reference")
         idx = json.loads((d / "index.json").read_text(encoding="utf-8"))
-        z = np.load(d / "team_block.npz")
+        z = np.load(event_team_block_path(mode, fold, season, d)[0])
         team_block = z["team_block"]
         if len(team_block) != inp.n_games:
             raise ValueError(
@@ -1203,6 +1222,9 @@ class Adapters:
             _arm = os.environ.get(_env, _mod.DEFAULT)
             if _arm and _arm != "reference":
                 flags[_env] = _arm
+        if ev_mode == "round2_s1" and event_team_block_path(
+                ev_mode, fold, season, ENGINE_DIR / f"event_{ev_mode}_{fold}_{season}")[1] == "v3":
+            flags["ENGINE_EVENT_TEAM_BLOCK"] = "v3"
         if lg_src is not None:
             flags["ENGINE_LATE_GAME"] = lg_mode
             flags["sources"]["late_game"] = lg_src

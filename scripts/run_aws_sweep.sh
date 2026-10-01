@@ -90,7 +90,8 @@ Usage: run_aws_sweep.sh --tag TAG [options]
                          --emit)
   --parity-input-dir DIR  parity smoke only: run_engine.py --input-dir DIR (default: the
                          default inputs). The adopted-stack reference
-                         parity_reference_windows_v8.json is on data/processed/models/engine_v3;
+                         parity_reference_windows_v9.json (v8 = same with
+                         ENGINE_EVENT_TEAM_BLOCK=v1) is on data/processed/models/engine_v3;
                          v6 (default inputs) and v7 (engine_v3) need the SERVED_V1 env
                          (docs/tests/adoption_served_v2_2026-10-01.md).
   --parity-games N        smoke game count (default 60)

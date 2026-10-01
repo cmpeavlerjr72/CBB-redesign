@@ -144,3 +144,27 @@ python scripts/hf_sync_data.py pull --dirs engine_inputs engine_inputs_v3
 - G3 and KD: no per-slate artifact. They use (seed, game_id) streams and fold LUTs.
 - R9ao3 reads `round9/ao_team_prior_v1.parquet`, keyed by (season, team_id), with seasons 2023-2026 only. A 2026-27 game would silently get a zero prior term. Before live 2026-27 serving, this needs a season-2027 row built from 2025-26 finals (that season is sealed; the PM must authorise it).
 - Also open for 2026-27: the shot-block live builder covers season 2025 only. For any other season it refuses loudly, because the anchor prior and the design events for the new season are not built.
+
+## Follow-up 2026-10-01 02:35-02:45 EDT: event team block (job 2, PM ruling)
+
+**Ruling (PM):** the inputs-v3 replay event team block (sha `228794fc`) is the served block. It is what the box's S0 overlay served and what the adoption evidence was read on. The 2026-09-10 block (`event_round2_s1_F2_2025/team_block.npz`, sha `1fe68771`) is stale. The 09-10 file is NOT overwritten.
+
+**Changes:**
+- New tracked versioned sibling `data/processed/models/engine/event_team_block_v3_F2_2025.npz` (454 KB). It is a byte copy of `engine_v3/event_block_F2_2025.npz`.
+- `adapters.event_team_block_path` serves the sibling for round2_s1 F2 2025 by default. `ENGINE_EVENT_TEAM_BLOCK=v1` selects the 09-10 block.
+- A private `ENGINE_DIR` has no sibling file, so it keeps serving its own block. This covers the live runner and the overlay harness.
+- run_meta records `ENGINE_EVENT_TEAM_BLOCK=v3` only when the sibling is served.
+- SERVED_V1 gains `ENGINE_EVENT_TEAM_BLOCK=v1`.
+
+**Proofs (no in-process substitution, plain `run_engine.py`, no ENGINE_* variables set):**
+- Default run on `engine_v3`, 600 games x seeds 0-4, vs box `v3full_COMB9GCTKD_s200_o0`: games 3,000/3,000 and players 51,134/51,134 BIT-IDENTICAL. That covers all sampled games, including the 4 that differed before.
+- SERVED_V1 (now 6 values) vs v7: PASS. vs v6: PASS.
+- Adopted stack with `ENGINE_EVENT_TEAM_BLOCK=v1` vs v8: PASS.
+- New reference `docs/ops/parity_reference_windows_v9.json`: same generator, default env, sha `e0a4235338f347a70be47117447395d9e595664c27345649d10f8ef36dcd65ea`. v9 is the current reference for the served default. The box gate is `--parity-ref docs/ops/parity_reference_windows_v9.json --parity-input-dir data/processed/models/engine_v3`.
+- Full test suite: 674 passed, 1 skipped.
+
+**SERVED_V1 env line (updated):**
+
+```
+ENGINE_CLOCK=v5b_glat_pmean ENGINE_SHOT_BLOCK=reference ENGINE_FOUL_JOINT=reference ENGINE_SHARED_SHOOTING=reference ENGINE_CHANCE_TIME=reference ENGINE_EVENT_TEAM_BLOCK=v1
+```

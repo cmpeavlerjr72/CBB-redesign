@@ -30,7 +30,7 @@ def test_served_v1_switches_everything_off(monkeypatch):
     assert AD.SERVED_V1 == {
         "ENGINE_CLOCK": "v5b_glat_pmean", "ENGINE_SHOT_BLOCK": "reference",
         "ENGINE_FOUL_JOINT": "reference", "ENGINE_SHARED_SHOOTING": "reference",
-        "ENGINE_CHANCE_TIME": "reference"}
+        "ENGINE_CHANCE_TIME": "reference", "ENGINE_EVENT_TEAM_BLOCK": "v1"}
     for k, v in AD.SERVED_V1.items():
         monkeypatch.setenv(k, v)
     assert SBK.load(AD.SERVED_V1["ENGINE_SHOT_BLOCK"], None) is None
