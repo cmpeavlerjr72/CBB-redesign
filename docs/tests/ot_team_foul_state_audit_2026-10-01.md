@@ -109,3 +109,40 @@ NOT wired (stated, not hidden): (1) the fg_make / rebound / free-throw / shot-bl
 ## Files
 
 `src/cbb_sim/pbp/possessions.py` (switch + version registry), `src/cbb_sim/models/event_stream.py` (env switch), `scripts/build_possessions_v4otc_v1.py`, `scripts/diag_ot_carry_event_stream_v1.py`, `scripts/chain_full_retrain_v1.py` (+ three `choices` edits), `tests/test_ot_foul_carry.py`, `.gitignore` (one line for the 68 MB sibling dir).
+
+---
+
+# Part 3 (same day, task 4): every foul-state consumer wired to `--ot-foul-carry`, OT parity stage, OT columns
+
+Code at commit `8080bda` and later. Nothing existing was overwritten; the default chain plan is byte-identical to the committed one (56 lines, F_R and F_T).
+
+## What the switch now does (`scripts/chain_full_retrain_v1.py --ot-foul-carry`, default off)
+
+| consumer | before (part 2) | now |
+|---|---|---|
+| possession outcome, clock, foul-state overlay | `possessions_v4otc`, machine `v4otc` | unchanged |
+| fg_make | prebuilt `design_v2_shotshooter.parquet` (reset counts), NOT rebuilt | new stage `otc_designs` rebuilds the fg events (`FG.build_fg_events`) and design with `CBB_OT_FOUL_CARRY=1`; `fg_design` starts from the carried design (the ratings swap runs on top as before) |
+| rebound | prebuilt `design_round3.parquet`, NOT rebuilt | same stage rebuilds `rebound/events_v1.parquet` and the round-3 design (`build_rebound_round3_design_v1.py`, env-redirected input and output dirs, default unchanged) |
+| free throw | served S1 schedule, not retrained by the chain | new stage `ft_train`: `train_free_throw_s1_fold_v1.py --fold F2 --attempts <carried attempts>` (new default-off `--attempts`), one serial process; `build_engine_inputs_chain_v1.py --ft-manifest` writes the override `adapters.FT_S1_MANIFEST` so the gate serves it |
+| shot block | design shares the event layer | not retrained by the chain (the K2_Ocell table is a served lookup, not trained here); its `in_bonus` feature reads the carried count only if its design is rebuilt: NOT wired |
+
+New files: `scripts/build_ot_carry_designs_v1.py` (builds the carried events / designs / attempts and writes `build_report.json` with the default-path identity vs the stored tables and the regulation / OT diffs), `scripts/diag_ot_carry_parity_v1.py` (the parity stage extension), `scripts/diag_ot_carry_read_v1.py` (OT block of the paired read), `tests/test_ot_carry_chain.py`.
+
+## Parity stage now compares OT rows
+
+With the switch, `st_parity` additionally runs `diag_ot_carry_parity_v1.py`. It recounts each team's carried prior fouls from the plays independently of the stream's own switch (a groupby / cumsum with the segment rule period 1 | periods >= 2) and compares, on regulation AND overtime rows, the carried `off_in_bonus` / `off_in_double_bonus` of the fg and rebound event tables, joined on (cbbd_game_id, period, seconds_remaining, offence side) with repeated keys dropped. FAIL rule: mismatch rate <= 0.5% in regulation and in overtime, and at least 5,000 joined OT rows per table (so the sample always contains the OT rows). Result on the built tables (`results/ot_carry_parity.json`): fg events 0 of 2,008,625 regulation and 0 of 15,327 OT rows mismatch (trained OT bonus share 0.9755 = expected 0.9755); rebound events 0 of 1,313,437 and 0 of 10,794 (0.9753 = 0.9753). NEGATIVE control, the stored (reset) fg table: 14,952 of 15,327 OT rows mismatch (97.6%), regulation 0: the check fails it. The chances tables' OT rows are reported informationally (OT `off_in_bonus` share 0.971-0.985, double-bonus 0.73-0.77 by season).
+
+## Builder identity and regulation proof (`results/` / `data/processed/models/otc_designs/build_report.json`)
+
+Default path (flag unset) rebuilt from raw vs the stored tables, 2022-2025: fg events 2,241,195 rows, rebound events 1,549,406, FT attempts 809,294: every column equal (`DataFrame.equals` is False only through dtype round trips; `differing_columns` is empty, `value_identical`). Carried vs default rebuild: regulation rows differing 0 in all three and in both designs; OT rows differing: fg events 17,253 of 17,660 (`off_in_bonus` 17,235, `off_in_double_bonus` 12,687), rebound events 13,511 of 13,801, FT attempts 14,322 of 14,521 (`trip_prior_fouls`, `foul_class` 13,551). Designs (carried vs stored): fg 17,243 of 17,650 OT rows (regulation 0 of 2,222,028), rebound 13,243 of 13,528 (regulation 0 of 1,523,042).
+
+## Local runs
+
+- Dry run: default plan identical to HEAD~ for F_R and F_T; the carry plan shows `build_possessions_v4otc_v1.py`, `--poss-version v4otc`, `--machine v4otc`, `otc_designs`, the carried design paths in `fg_design` / `rb_design`, `ft_train`, `--ft-manifest`, and the OT parity command. Preflight with the switch: 29 of 29 inputs present.
+- Timed slices (1 core): `build_possessions_v4otc_v1.py` 218 s (4 seasons), foul-state replay 73 s on 2 workers, `otc_designs` 440 s, the `ft_train` stage end to end 452 s (29 S1 segments, same refit dates as the served manifest; fold-2 log loss 0.5752, calibration and responsiveness checks pass; manifest served through the override: FreeThrowAdapter loads it, and `build_engine_inputs_chain_v1.py --ft-manifest` writes `adapters.FT_S1_MANIFEST` into overrides.json).
+- Carried smoke through the chain (`--smoke --ot-foul-carry --stages fg_design,fg_train,rb_design,rb_train`, carried tables copied in): fg_design 13 s, fg_train and rb_train smoke PASS.
+- ENGINE_OT_STATS (default off) for the paired OT read: `loop.py` snapshots points, FTA, FGA and possessions at the first OT and writes `{home,away}_ot_{pts,fta,fga,poss}` as extra game columns. Off path: parity v9 PASS bit-identical (60 x 5) with the edit in place; on: the shared columns equal the off run exactly (300 games x 10 seeds), OT columns are 0 in regulation sims, 87 OT sims of 3,000 (2.9%), about 8-9 possessions per team per 5-minute period.
+
+## Not done
+
+The retrain itself (box request `docs/ops/box_queue/d1001_F_2.md`); the shot-block design on carried columns; sizing the effect on served models.

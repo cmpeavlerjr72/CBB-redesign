@@ -1,0 +1,218 @@
+{
+ "2024-11-04": {
+  "games": 111,
+  "affected_games": 0,
+  "team_max_abs": 0.0,
+  "anchor_max_abs": 0.0,
+  "shooter_max_abs": 0.0,
+  "known_max_abs": 0.0,
+  "roster_equals_v3": true
+ },
+ "2024-11-05": {
+  "games": 8,
+  "affected_games": 0,
+  "team_max_abs": 0.0,
+  "anchor_max_abs": 0.0,
+  "shooter_max_abs": 0.0,
+  "known_max_abs": 0.0,
+  "roster_equals_v3": true
+ },
+ "2024-11-07": {
+  "games": 23,
+  "affected_games": 1,
+  "team_max_abs": 0.0,
+  "anchor_max_abs": 0.0,
+  "shooter_max_abs": 0.0,
+  "known_max_abs": 0.0,
+  "roster_equals_v3": true
+ },
+ "2024-11-10": {
+  "games": 21,
+  "affected_games": 0,
+  "team_max_abs": 0.0,
+  "anchor_max_abs": 0.0,
+  "shooter_max_abs": 0.0,
+  "known_max_abs": 0.0,
+  "roster_equals_v3": true
+ },
+ "2024-11-11": {
+  "games": 30,
+  "affected_games": 0,
+  "team_max_abs": 0.0,
+  "anchor_max_abs": 0.0,
+  "shooter_max_abs": 0.0,
+  "known_max_abs": 0.0,
+  "roster_equals_v3": true
+ },
+ "2024-11-17": {
+  "games": 34,
+  "affected_games": 3,
+  "team_max_abs": 0.0,
+  "anchor_max_abs": 0.0,
+  "shooter_max_abs": 0.0,
+  "known_max_abs": 0.0,
+  "roster_equals_v3": true
+ },
+ "2024-11-27": {
+  "games": 62,
+  "affected_games": 9,
+  "team_max_abs": 0.0,
+  "anchor_max_abs": 0.0,
+  "shooter_max_abs": 0.0,
+  "known_max_abs": 0.0,
+  "roster_equals_v3": true
+ },
+ "2024-11-29": {
+  "games": 53,
+  "affected_games": 3,
+  "team_max_abs": 0.0,
+  "anchor_max_abs": 0.0,
+  "shooter_max_abs": 0.0,
+  "known_max_abs": 0.0,
+  "roster_equals_v3": true
+ },
+ "2024-12-14": {
+  "games": 81,
+  "affected_games": 7,
+  "team_max_abs": 0.0,
+  "anchor_max_abs": 0.0,
+  "shooter_max_abs": 0.0,
+  "known_max_abs": 0.0,
+  "roster_equals_v3": true
+ },
+ "2024-12-21": {
+  "games": 104,
+  "affected_games": 7,
+  "team_max_abs": 0.0,
+  "anchor_max_abs": 0.0,
+  "shooter_max_abs": 0.0,
+  "known_max_abs": 0.0,
+  "roster_equals_v3": true
+ },
+ "2025-01-02": {
+  "games": 64,
+  "affected_games": 15,
+  "team_max_abs": 0.0,
+  "anchor_max_abs": 0.0,
+  "shooter_max_abs": 0.0,
+  "known_max_abs": 0.0,
+  "roster_equals_v3": true
+ },
+ "2025-01-04": {
+  "games": 133,
+  "affected_games": 9,
+  "team_max_abs": 0.0,
+  "anchor_max_abs": 0.0,
+  "shooter_max_abs": 0.0,
+  "known_max_abs": 0.0,
+  "roster_equals_v3": true
+ },
+ "2025-01-10": {
+  "games": 14,
+  "affected_games": 1,
+  "team_max_abs": 0.0,
+  "anchor_max_abs": 0.0,
+  "shooter_max_abs": 0.0,
+  "known_max_abs": 0.0,
+  "roster_equals_v3": true
+ },
+ "2025-01-11": {
+  "games": 142,
+  "affected_games": 7,
+  "team_max_abs": 0.0,
+  "anchor_max_abs": 0.0,
+  "shooter_max_abs": 0.0,
+  "known_max_abs": 0.0,
+  "roster_equals_v3": true
+ },
+ "2025-01-12": {
+  "games": 21,
+  "affected_games": 4,
+  "team_max_abs": 0.0,
+  "anchor_max_abs": 0.0,
+  "shooter_max_abs": 0.0,
+  "known_max_abs": 0.0,
+  "roster_equals_v3": true
+ },
+ "2025-01-13": {
+  "games": 22,
+  "affected_games": 1,
+  "team_max_abs": 0.0,
+  "anchor_max_abs": 0.0,
+  "shooter_max_abs": 0.0,
+  "known_max_abs": 0.0,
+  "roster_equals_v3": true
+ },
+ "2025-01-15": {
+  "games": 47,
+  "affected_games": 2,
+  "team_max_abs": 0.0,
+  "anchor_max_abs": 0.0,
+  "shooter_max_abs": 0.0,
+  "known_max_abs": 0.0,
+  "roster_equals_v3": true
+ },
+ "2025-01-18": {
+  "games": 143,
+  "affected_games": 9,
+  "team_max_abs": 0.0,
+  "anchor_max_abs": 0.0,
+  "shooter_max_abs": 0.0,
+  "known_max_abs": 0.0,
+  "roster_equals_v3": true
+ },
+ "2025-01-25": {
+  "games": 149,
+  "affected_games": 7,
+  "team_max_abs": 0.0,
+  "anchor_max_abs": 0.0,
+  "shooter_max_abs": 0.0,
+  "known_max_abs": 0.0,
+  "roster_equals_v3": true
+ },
+ "2025-01-26": {
+  "games": 13,
+  "affected_games": 1,
+  "team_max_abs": 0.0,
+  "anchor_max_abs": 0.0,
+  "shooter_max_abs": 0.0,
+  "known_max_abs": 0.0,
+  "roster_equals_v3": true
+ },
+ "2025-01-28": {
+  "games": 29,
+  "affected_games": 2,
+  "team_max_abs": 0.0,
+  "anchor_max_abs": 0.0,
+  "shooter_max_abs": 0.0,
+  "known_max_abs": 0.0,
+  "roster_equals_v3": true
+ },
+ "2025-01-29": {
+  "games": 49,
+  "affected_games": 1,
+  "team_max_abs": 0.0,
+  "anchor_max_abs": 0.0,
+  "shooter_max_abs": 0.0,
+  "known_max_abs": 0.0,
+  "roster_equals_v3": true
+ },
+ "2025-02-15": {
+  "games": 145,
+  "affected_games": 18,
+  "team_max_abs": 0.0,
+  "anchor_max_abs": 0.0,
+  "shooter_max_abs": 0.0,
+  "known_max_abs": 0.0,
+  "roster_equals_v3": true
+ },
+ "2025-02-16": {
+  "games": 25,
+  "affected_games": 2,
+  "team_max_abs": 0.0,
+  "anchor_max_abs": 0.0,
+  "shooter_max_abs": 0.0,
+  "known_max_abs": 0.0,
+  "roster_equals_v3": true
+ }
+}

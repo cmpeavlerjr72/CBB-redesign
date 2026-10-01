@@ -38,3 +38,13 @@ To make the adopted read and the chain agree, the engine must read the sibling w
 ## Not done
 
 No full-size sim of the sibling (box). The block-rate level behind the +0.003 figure is an order-of-magnitude value, not recomputed from the design.
+
+---
+
+# Update (same day, task 4): engine flag, tap, and the live-vs-v3in check over many dates
+
+**Engine flag (default off).** `ENGINE_SHOT_BLOCK=K2_Ocell_v3in` serves `data/processed/models/engine/shot_block_K2_Ocell_v3in_F2_2025.npz` (tracked, 0.7 MB; built by `scripts/build_shot_block_lut_v3in_v1.py`). The off path is bit-identical to parity v9: 60 games x 5 seeds, plain default, digest compare PASS on this tree with the flag code in place (and again after the `ENGINE_OT_STATS` loop edit). Registered in `shot_block.ARMS`; `DEFAULT` stays `K2_Ocell`; `tests/test_shot_block_v3in.py`.
+
+**Local tap, direction only** (`scripts/run_laneF_v3in_tap_v1.sh`: default vs the flag, 400 games x 5 seeds, 2 workers, v3 inputs, fold 2): the 393 unaffected games (1,965 rows) are bit-identical between arms; the 7 affected games (35 rows) differ in 1 row; mean total points on the affected rows +0.17 (sd of the home-points difference 0.68). UNDERPOWERED: 7 affected games cannot decide anything (Decision 12); the full-size paired read is `docs/ops/box_queue/d1001_F_1.md`.
+
+**Live chain table = v3in table, many dates** (`scripts/diag_shot_block_live_vs_v3in_dates_v1.py --auto 24`, `results/shot_block_live_vs_v3in_dates.json`): the live-built `K2_Ocell` table (`build_live` inputs + `build_table` as of the evening clock) vs the v3in sibling over 24 fold-2 dates: the 8 dates with the most affected games, 12 random other dates that have affected games, and 4 dates with none; 1,523 games (27% of the 5,710), 109 of the 334 affected games. On every date the roster slots equal the v3 inputs and `team`, `anchor`, `shooter`, `known` differ by max abs 0.0 (no date with any difference). 24 of the 151 fold-2 dates were checked (about 24 min of one core); the other 127 were not run (about 2.5 core-hours for all 151); resume command: `.venv/Scripts/python.exe scripts/diag_shot_block_live_vs_v3in_dates_v1.py <date> [<date> ...]`.

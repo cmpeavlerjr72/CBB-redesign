@@ -1,0 +1,120 @@
+{
+ "seasons": [
+  2022,
+  2023,
+  2024,
+  2025
+ ],
+ "built_at": "2026-10-01 07:58",
+ "identity_default_path_vs_stored": {
+  "fg_events": {
+   "rows_stored": 2241195,
+   "rows_new": 2241195,
+   "columns_equal": true,
+   "bit_identical": false,
+   "differing_columns": {},
+   "regulation_rows": 2223535,
+   "regulation_rows_differing": 0,
+   "ot_rows": 17660,
+   "ot_rows_differing": 0
+  },
+  "rb_events": {
+   "rows_stored": 1549406,
+   "rows_new": 1549406,
+   "columns_equal": true,
+   "bit_identical": false,
+   "differing_columns": {},
+   "regulation_rows": 1535605,
+   "regulation_rows_differing": 0,
+   "ot_rows": 13801,
+   "ot_rows_differing": 0
+  },
+  "ft_attempts": {
+   "rows_stored": 809294,
+   "rows_new": 809294,
+   "columns_equal": true,
+   "bit_identical": false,
+   "differing_columns": {},
+   "regulation_rows": 794773,
+   "regulation_rows_differing": 0,
+   "ot_rows": 14521,
+   "ot_rows_differing": 0
+  }
+ },
+ "carry_vs_default_rebuild": {
+  "fg_events": {
+   "rows_stored": 2241195,
+   "rows_new": 2241195,
+   "columns_equal": true,
+   "bit_identical": false,
+   "differing_columns": {
+    "off_in_bonus": 17235,
+    "off_in_double_bonus": 12687
+   },
+   "regulation_rows": 2223535,
+   "regulation_rows_differing": 0,
+   "ot_rows": 17660,
+   "ot_rows_differing": 17253
+  },
+  "rb_events": {
+   "rows_stored": 1549406,
+   "rows_new": 1549406,
+   "columns_equal": true,
+   "bit_identical": false,
+   "differing_columns": {
+    "off_in_bonus": 13420,
+    "off_in_double_bonus": 10043
+   },
+   "regulation_rows": 1535605,
+   "regulation_rows_differing": 0,
+   "ot_rows": 13801,
+   "ot_rows_differing": 13511
+  },
+  "ft_attempts": {
+   "rows_stored": 809294,
+   "rows_new": 809294,
+   "columns_equal": true,
+   "bit_identical": false,
+   "differing_columns": {
+    "trip_prior_fouls": 14322,
+    "foul_class": 13551
+   },
+   "regulation_rows": 794773,
+   "regulation_rows_differing": 0,
+   "ot_rows": 14521,
+   "ot_rows_differing": 14322
+  }
+ },
+ "carry_design_vs_stored": {
+  "fg_design": {
+   "rows_stored": 2239678,
+   "rows_new": 2239678,
+   "columns_equal": true,
+   "bit_identical": false,
+   "differing_columns": {
+    "off_in_bonus": 17225,
+    "off_in_double_bonus": 12678,
+    "in_bonus": 17225
+   },
+   "regulation_rows": 2222028,
+   "regulation_rows_differing": 0,
+   "ot_rows": 17650,
+   "ot_rows_differing": 17243
+  },
+  "rb_design": {
+   "rows_stored": 1536570,
+   "rows_new": 1536570,
+   "columns_equal": true,
+   "bit_identical": false,
+   "differing_columns": {
+    "off_in_bonus": 13157,
+    "off_in_double_bonus": 9837,
+    "in_bonus": 13157
+   },
+   "regulation_rows": 1523042,
+   "regulation_rows_differing": 0,
+   "ot_rows": 13528,
+   "ot_rows_differing": 13243
+  }
+ }
+}
