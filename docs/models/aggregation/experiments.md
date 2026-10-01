@@ -102,3 +102,20 @@ Reason: Part C and addendum A (results doc sections 3-4) name fg_make's Stage B 
 ### 1.10 Addendum C (written 21:32 EDT, BEFORE it ran): which side of fg_make's team features
 
 Addendum B REFUTED same-season memorisation (results doc section 5). Before a fix round is written, the harness splits fg_make's team-feature response by side: arms `FG_OFF` (offence `off_make_c__*` to 0) and `FG_DEF` (defence `def_allow_c__*` to 0), stacks S0 and S1, plus the same two arms on X_F. Read: k (Y and close lens, joint regression with FULL minus the arm and the remainder) and Delta S1 - S0; descriptive only (no owner rule beyond section 1.7's thresholds).
+
+---
+
+## 2. Pre-registration (written 21:50 EDT; NOT RUN tonight): fg_make team-response round on E3 features
+
+Owner found by section 1 (results: `docs/tests/aggregation_overspread_decomposition_2026-09-30.md`): the S1 deterioration of the G9 slope is fg_make's Stage B `T` retrain (factorial main effect +0.035 of +0.043 on the harness 1 - slope, 4.0 x its retrain-seed floor; close lens +0.032 of +0.037; interaction of the three sub-models +0.002), and inside fg_make it is the response to the OFFENCE make-rate features `off_make_c__*` (Delta k +0.037 Y / +0.030 close; their margin share doubles 0.034 -> 0.074 while the realised response per unit falls 0.62 -> 0.32). Same-season memorisation through the monthly refits is REFUTED (addendum B). This is a SUB-MODEL round; nothing is done to sim output.
+
+- **Candidates (all fg_make B1 spec, S1 schedule, E3 v4 table, `train_fg_make_v4_par_v1.py`; box):**
+  - `G0` = Stage B `T` (reference); `R` = served features (second reference).
+  - `G1` = `T` plus the E3 posterior variances of the six make-rate features (`make_{rim,jump,3}_{off,def}_v` from `team_rate_features_E3_v4`) as features, so the response can depend on the estimate's reliability.
+  - `G2` = `T` without the three offence make-rate features (ratings, defence allow rates, shooter block kept).
+  - `G3` = `T` with monotone constraints (+ on `off_make_c__k`, + on `def_allow_c__k`) and `min_data_in_leaf` chosen by team-season-grouped CV on the training seasons.
+- **Primary:** the harness margin 1 - slope(Y on X_h) on fold 2 with fg_make replaced and PO / rebound served (the `X_F` construction of addendum A), and the team-game make-rate calibration slope per class (realised on predicted, attempt-weighted), overall and per month.
+- **Guards:** shot-level deviance (Stage B's primary) not worse than `R` beyond its floor; team-game slopes in [0.90, 1.10] for every class in every month band with n >= 300 team-games; quintile responsiveness slopes with actuals; fold 1 same sign.
+- **Floors:** each arm retrained under a second seed (the `Z_F` construction: fg_make's own seed moves harness 1 - slope by 0.009); game bootstrap.
+- **Decision rule:** an arm wins if it beats `G0` and `R` on the primary beyond 2 floors with no guard broken; ties go to the simpler (`G2`, then `G1`, then `G3`). The winner then needs the paired 200-seed closed loop (G9 slope primary, all gates) before any ship decision; under Decision 11 it ships with whatever it uncovers.
+- **Standing-rule proposal for the PM (not a change made here):** a scoring-stage sub-model's Stage B must report the team-game calibration slope by month and the harness margin slope beside its shot-level deviance; Stage B's T wins on deviance coexisted with a make-rate slope of 0.75 (rim) against 0.84 served.
