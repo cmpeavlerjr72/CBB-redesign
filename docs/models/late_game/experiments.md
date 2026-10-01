@@ -1158,3 +1158,27 @@ vs 2024-25:
 
 The FT_trip_bonus gap (sim vs offline prediction) is split by bonus occupancy: the offline model's P(trip | in
 bonus) and P(trip | not in bonus), mixed by the sim's occupancy vs the actual's (both orders averaged).
+
+---
+
+## 14. RESULTS -- round 6, RUN 2026-10-01 (lane L; status PROPOSED -> RUN; NO ARM ADOPTED, no served default changed)
+
+Full evidence: `docs/tests/late_game_round6_2026-10-01.md`.
+
+**One-point finishes.** P(1) is 0.0525 vs 0.0366 (gap +0.0158). The last scoring sequence closes it:
+- trailer down 3 scores 2: +0.0086;
+- trailer down 1 scores 2: +0.0085.
+After these, the sim's game stops scoring; in the data the leader is fouled. Leading turnovers are not the source (close leads: 0.08-0.11 vs 0.05-0.13).
+
+**Who owns the missing fouls.** The leading offence's FT-trip rate inside 30 s is 0.75-0.76 in the sim against 0.85-0.88 actual. Of that gap:
+- -0.02 to -0.04 is possession_outcome's own offline error;
+- -0.07 is the state fed: bonus occupancy is 0.917 in the sim vs 0.995 actual, which by itself is worth -0.066. That is foul accrual, not possession_outcome.
+
+**Offline arm.** BL3 (round 1 L3_gates) beats A on the intentional-foul cells by +5.0 floors on F2 (floor = block SE 0.0030; reseed floor 0.00003) and +3.6 on F1 (block SE only). The all-window guard passes. Both arms are flat on responsiveness, and so are the data.
+
+**Closed loop** (`clk_Dt+ev_BL3`, 500 x 25):
+- P(0)/P(1) 0.738 (+2.04 floors vs R9; about +1 floor over `clk_Dt`);
+- P(1) unchanged at 0.0512;
+- FAILS the G1 mean and SD hard vetoes.
+
+No candidate, no clear best, no box request.
