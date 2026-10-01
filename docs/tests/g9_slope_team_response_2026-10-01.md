@@ -315,3 +315,81 @@ If it is ruled through, step 4 needs about 1.5 h:
 - `d1001_A_1.md`.
 
 The box accepts requests until 14:30.
+
+## 9. Round 4: jumper league-level round (PM-tasked; pre-registration `fg_make/experiments.md` section 29, commit 069ce71, 09:52 EDT, before the diagnosis or any arm ran)
+
+**Run.** 09:52-10:24 EDT, local, 4 processes.
+- Trainer: `scripts/train_fg_make_two_stage_v3.py` (a wrapper of v2).
+- Diagnosis: `scripts/diag_jumper_level_v1.py` (`diag_jumper_level_v1.json`).
+- Runner: `scripts/run_lj_round_v1.sh`. Grade: `grade_lj_v1.json`.
+- Artifacts: `data/processed/models/fg_make/round_lj/` (gitignored).
+
+### 9.1 Owner diagnosis (verdicts by the registered rule)
+
+| test | number | rule | verdict |
+|---|---|---|---|
+| T1, league as-of lag / within-season seasonality | 2024-25 jumpers, as-of minus realised: Mar +1.38 pp, Nov +0.22 pp. Training seasons Mar +0.59 / +1.12 / -0.01; Nov -0.36 / -0.21 / -0.69 | Mar >= +0.75 AND Nov <= -0.4 in 2024-25, with the same signs in 2 of 3 training seasons | **NOT owner by the letter**: the March half holds, the November half does not. The offset alone reproduces the March cell: aL's offset-only bias is +1.38 of its +1.41 |
+| T2, trees re-learning level from month-correlated state | tree part's Mar-minus-Nov swing as a share of the prediction's: TS-R stage A 36%; served aR 48%; aL about 0 | >= 50% | **NOT owner** |
+| T3, mix inside "jumper" (long two vs short mid-range) | UNTESTABLE: no shot location in the design. Proxies: March transition share of jumpers 0.065-0.079 against 0.09-0.10 in the other months, every season; putback and late-clock shares flat | | not tested |
+
+What the data show:
+- **League jumper make rate has a within-season shape.** It rises from November to February and falls in March (tournament games). A season-to-date as-of rate lags both moves.
+- **TS-R's overall +0.5 pp jumper level is the trees compensating for that lag.** TS-R's stage-A trees add about +0.6 pp from December to March on top of the league offset. That is roughly the training-season Jan/Feb lag (as-of 0.7-1.5 pp below realised), which 2024-25 did not repeat.
+
+### 9.2 Arms
+
+Primary |1 - slope|. The floor is the paired bootstrap SE (0.018-0.019) where that exceeds 0.0089.
+
+| arm | abs(1 - slope) s0 / s1 | vs served (floors) | close abs | margin SD | team-game slope rim / jump / three | jumper month cells, F2 (pp) | level rim / jump / three | D8 s0 / s1 | verdict |
+|---|---|---|---|---|---|---|---|---|---|
+| aR (served) | 0.0880 / 0.0970 | | 0.096 | 9.65 | 0.83 / 0.79 / 0.73 | Mar +1.33 FAIL | | pass | |
+| aLJ1 (served + roll28 offset) | 0.0888 / 0.0881 | +0.0008 / +0.0000 (non-inferior) | 0.097 | 9.66 | 0.82 / 0.82 / 0.70-0.72 | max +0.95: PASS | 0.03 / 0.26 / 0.08 | jumper FAIL / pass | **FAIL** (D8 seed 0 jumper; fold-1 jumper Nov -1.15 / -1.08 against aR's -0.56) |
+| aLJ2 (served + seasonal) | 0.0780 / 0.0859 | -0.0100 / -0.0021 | 0.087-0.096 | 9.54-9.64 | 0.83 / 0.80 / 0.69 | Jan +1.23 FAIL | 0.01 / 0.40 / 0.02 | pass | **FAIL** (month line) |
+| TSR (round 3) | 0.0038 / 0.0019 | | 0.013 | 8.86 | 0.85 / 0.98 / 0.89 | Mar +1.52 FAIL | +0.52 FAIL | pass | NO WINNER (s28) |
+| **TSRJ1 (TS-R + roll28)** | **0.0033 / 0.0028** | **-0.0847 / -0.0852 (4.7 floors)** | **0.013-0.014** | **8.86** | **0.85 / 0.95-0.96 / 0.86** | **max +0.97 / +0.95: PASS** | **0.03 / 0.16 / 0.19: PASS** | **pass / pass** | **WINNER: every section-27 line passes** |
+| TSRJ2 (TS-R + seasonal) | 0.0032 / 0.0015 | -0.0848 / -0.0865 | 0.012-0.014 | 8.86 | 0.85 / 0.93 / 0.87 | Jan +1.01 / +1.00 FAIL | 0.03 / 0.33 / 0.12 | pass | **FAIL** (month line, by 0.01 pp) |
+
+**TSRJ1, the remaining lines:**
+- Log loss rim 0.667311 / 0.667348 (bound 0.667956), jumper 0.666334 / 0.666204 (bound 0.666695), three 0.637527 / 0.637545 (better than served).
+- Offence-quintile slopes 0.90 / 1.04 / 1.20.
+- Fold 1 team-game slopes 0.85 / 0.76-0.77 / 0.81, all toward 1.
+- Parity exact: 0 of the harness rows off on `fg_team_offset` / `lg_make_asof`.
+- Every other powered month cell is within +-0.75 pp.
+
+**Outcome:**
+- **TSRJ1 is an OFFLINE WINNER by the rule.**
+- **No served-structure arm passes.** aLJ1 fixes the month line but breaks D8 on seed 0 and fold-1 November. aLJ2 over-corrects January.
+- So the jumper repair works inside the two-stage structure but not on the served trees. No served-structure request was filed.
+
+### 9.3 Wiring (step 4)
+
+**Engine change** (commit 7b35024, default-off):
+- `ENGINE_FG_MAKE=g9ts_<arm>` is one registry line in `adapters._FG_DATED_ROUNDS` plus a note.
+- Two aliases in `FG_TEAM_ALIAS` (`fg_team_offset`, `lg_make_asof`). `_alias` adds a key only when the input dir carries the column, so stock inputs are untouched.
+- New `src/cbb_sim/engine/fg_two_stage.py` (`TwoStageModelR`).
+- Serving builder `scripts/build_fg_two_stage_serving_v1.py`:
+  - re-exports the 18 TSRJ1 seed-0 joblibs with the src class to `fg_make/round_tsr_served/TSRJ1/`;
+  - builds `engine_v3_TSRJ1_laneA` = engine_v3 + `fg_team_offset__k`, `lg_make_asof__k` (0 missing cells).
+
+**Parity v9:** plain default (60 x 5, 4 workers, `engine_v3`, `src/` clean except these edits) is BIT-IDENTICAL, digest `e0a42353...65ea`. Flag smoke 60 x 5 runs and records `ENGINE_FG_MAKE=g9ts_TSRJ1`.
+
+**HF:** `model_artifacts/fg_make/round_tsr_served/TSRJ1` and `model_artifacts/engine_v3_TSRJ1_laneA`, pushed with `scripts/ops_hf_push_paths_v1.py` 10:26 EDT.
+
+**Local tap** (direction only, UNDERPOWERED by Decision 12):
+- Setup: paired, 500 games x 25 seeds. `--max-games 500` selects the 500 LATEST games (2025-03-06 to 04-07, tournament-heavy), so this is a late-season slice.
+- Slope 0.772 -> 0.829 (+0.057, bootstrap floor 0.067, inside).
+- SD of the sim mean margin 7.15 -> 6.66 (-0.49, beyond its bootstrap floor).
+- Margin bias -0.72 -> -0.65.
+- Make levels against realised on these games:
+
+  | type | realised | default | TSRJ1 |
+  |---|---|---|---|
+  | rim | 0.5846 | 0.5867 | 0.5925 |
+  | jump | 0.3785 | 0.3946 | 0.3889 |
+  | three | 0.3349 | 0.3372 | 0.3450 |
+
+  The jumper over-prediction shrinks, from +1.6 pp to +1.0 pp. Rim and three rise above realised in this slice, by +0.8 and +1.0 pp.
+- Home/away corr 0.230 -> 0.255.
+- Direction: the slope moves toward 1 with less spread, as offline. **New risk:** in the late-season slice the sim raises rim and three make levels, about +1 point per game. The full read's G9 total bias line must be read.
+
+**Box request:** `docs/ops/box_queue/d1001_A_1.md` (filed about 10:30 EDT, not committed per the rules). The full-size paired read is TSRJ1 vs `v3full_COMB9GCTKD_s200_o0`, with lane D's four served-v2 draws as floors, read on |1 - slope| and margin SD (`scripts/grade_d1001A_v1.py`) plus the standard pair table. Its result is in section 9.4 if it returned before the report.
