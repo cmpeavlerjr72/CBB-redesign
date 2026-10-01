@@ -57,12 +57,17 @@ def own_team(games, X, t):
 
 
 def main():
+    """argv: optional extra arms as name=tapdir (default: FTn only); served restricted to the FTn games."""
     b = RP.base_rates()
     tF, gF = load(ROOT / "results/g5_channels/ftfg_tap_FTn")
     gids = set(gF["game_id"])
     tS, gS = load(ROOT / "results/g5_channels/ftfg_tap", gids)
     rep = {"n_games": len(gids)}
-    for nm, (t, g) in {"served": (tS, gS), "FTn": (tF, gF)}.items():
+    arms = {"served": (tS, gS), "FTn": (tF, gF)}
+    for a in sys.argv[1:]:
+        nm, d = a.split("=", 1)
+        arms[nm] = load(ROOT / d, gids)
+    for nm, (t, g) in arms.items():
         games, X, tt = prep(t, g, b)
         st = RP.sim_tables(games, X, tt, b)
         allr = st[st["dims"] == "all"].set_index("part")["total"].to_dict()
@@ -70,11 +75,16 @@ def main():
         lead = st[st["dims"] == "lead"][["cell", "part", "total"]].values.tolist()
         gid = games["game_id"].to_numpy()
         cov_pts = RP.wcov_pooled(games["home_pts"].to_numpy(float), games["away_pts"].to_numpy(float), gid)
+        hp, ap_ = games["home_pts"].to_numpy(float), games["away_pts"].to_numpy(float)
+        var_t = RP.wcov_pooled(hp + ap_, hp + ap_, gid)
+        var_m = RP.wcov_pooled(hp - ap_, hp - ap_, gid)
         ftp = float((games["home_ftm"].sum() + games["away_ftm"].sum()) / (games["home_fta"].sum() + games["away_fta"].sum()))
         rep[nm] = {"opp_FG_x_FT": allr, "by_half": half, "by_lead": lead,
-                   "own_FG_x_FT": own_team(games, X, tt), "cov_home_away_pts": cov_pts, "ft_pct": ftp,
+                   "own_FG_x_FT": own_team(games, X, tt), "cov_home_away_pts": cov_pts,
+                   "within_var_total": var_t, "within_var_margin": var_m, "ft_pct": ftp,
                    "mean_total": float((games["home_pts"] + games["away_pts"]).mean())}
-    out = ROOT / "results/g5_channels/ftfg_ablation_v1.json"
+    out = ROOT / ("results/g5_channels/ftfg_ablation_v1.json" if len(sys.argv) == 1
+                  else "results/g5_channels/ftfg_ablation_r16_v1.json")
     out.write_text(json.dumps(rep, indent=1, default=float), encoding="utf-8")
     print(json.dumps(rep, indent=1, default=float))
 
