@@ -64,10 +64,10 @@ RB_DESIGN = "data/processed/models/rebound/round3/design_round3.parquet"
 SAMPLE500 = "data/processed/truth/stride500_verified_v1_F2_2025.parquet"
 SEASONS = [2022, 2023, 2024, 2025]
 STAGES = ["possessions_v4", "rotation", "po_design", "foul_state", "po_train", "clock", "fg_design", "fg_train",
-          "rb_design", "rb_train", "inputs", "gate"]
+          "rb_design", "rb_train", "inputs_base", "inputs", "gate"]
 CHECKPOINTED = {"po_train", "fg_train", "rb_train"}          # resume in place
 #: stages whose output does not depend on --variant (F_T can --reuse-from an F_R tag's finished ones)
-SHARED = {"rotation", "po_design", "foul_state", "clock", "fg_design", "rb_design"}
+SHARED = {"rotation", "po_design", "foul_state", "clock", "fg_design", "rb_design", "inputs_base"}
 #: independent training branches (--parallel runs them at once)
 BRANCHES = [["po_design", "foul_state", "po_train"], ["clock"], ["fg_design", "fg_train"], ["rb_design", "rb_train"]]
 THREAD_VARS = ("OMP_NUM_THREADS", "MKL_NUM_THREADS", "OPENBLAS_NUM_THREADS", "NUMEXPR_NUM_THREADS",
@@ -114,9 +114,10 @@ class Chain:
 
     # ----------------------------------------------------------------- helpers
     def d(self, stage: str) -> Path:
-        if self.a.reuse_from and stage in SHARED:
+        if self.a.reuse_from and stage in SHARED and \
+                (CHAIN / self.a.reuse_from / stage / ".done.json").exists():
             return CHAIN / self.a.reuse_from / stage
-        return self.root / stage
+        return self.root / stage          # not finished in the reuse tag: built under this tag
 
     def o(self, stage: str) -> Path:
         """a trainer / builder output dir: a fresh subdir, never the stage dir that holds stage.log"""
@@ -337,9 +338,38 @@ class Chain:
                                "scope": "S1 windows refit on v4; first window = served static fit (v1); "
                                         "engine-input priors unchanged"})
 
+    def base_dir(self) -> str:
+        if self.a.inputs_event_layer == "v2":
+            return "data/processed/models/engine_v3"
+        return self.s(self.d("inputs_base") / "out" / "engine_v3_ev4")
+
+    def st_inputs_base(self):
+        """engine_v3 with the PO round-2 event block replayed on the v4 chance tables (lane D 2nd job, 2026-09-30)."""
+        if self.a.inputs_event_layer == "v2":
+            return {"base": self.base_dir(), "note": "engine_v3 as built (event block on possessions v2)"}
+        work = self.d("inputs_base") / "out" / "work"
+        n = max(1, min(self.cores, 16))      # rotation may still hold its cores
+        procs = []
+        for k in range(n):
+            procs.append(self.run("inputs_base", [PY, "scripts/build_engine_inputs_v3_replay_evlayer_v1.py", "shard",
+                                                  "--event-layer", "v4", "--work", self.s(work), "--shard", str(k),
+                                                  "--n-shards", str(n)], background=True, key=f"evshard_{k}"))
+        if not self.a.dry_run:
+            for k in range(n):
+                p = self.bg.pop(f"evshard_{k}")
+                if p.wait() != 0:
+                    raise SystemExit(f"inputs_base shard {k} failed; see {self.d('inputs_base') / 'stage.log'}")
+        out = self.d("inputs_base") / "out" / "engine_v3_ev4"
+        if out.exists() and not self.a.dry_run:
+            shutil.rmtree(out)                     # a partial assemble from a cut-off run (the shards are kept)
+        self.run("inputs_base", [PY, "scripts/build_engine_inputs_v3_replay_evlayer_v1.py", "assemble",
+                                 "--event-layer", "v4", "--work", self.s(work), "--out", self.s(out)])
+        return {"base": self.base_dir(), "census": self.s(out / "census.json")}
+
     def st_inputs(self):
         out = self.d("inputs") / "set"
         cmd = [PY, "scripts/build_engine_inputs_chain_v1.py", "--out", self.s(out), "--tag", self.a.tag,
+               "--base-dir", self.base_dir(),
                "--ratings-dir", self.ratings, "--po-artifacts", self.s(self.po_art()),
                "--fg-artifacts", self.s(self.fg_dir() / "B1"), "--fg-m", self.s(self.fg_dir() / "m_fitted.json"),
                "--rb-artifacts", self.s(self.rb_art()), "--clock-root", self.s(self.d("clock") / "root"),
@@ -372,7 +402,8 @@ class Chain:
                 pd.read_parquet(SAMPLE500).iloc[::17].head(30).to_parquet(ROOT / sample, index=False)
         runs = []
         for off in [int(x) for x in self.a.gate_offsets.split(",") if x]:
-            tag = f"fr1_{self.a.tag}_{self.a.gate_mode}_s{self.a.gate_seeds}_o{off}"
+            tag = f"fr1_{self.a.tag}_{self.a.gate_mode}_s{self.a.gate_seeds}_o{off}" + \
+                ("_ev4" if self.a.inputs_event_layer == "v4" else "")
             if (ROOT / "results/engine_v0" / tag / "run_meta.json").exists():
                 print(f"[{now()}] gate: {tag} exists, skipped", flush=True)
             else:
@@ -503,10 +534,20 @@ class Chain:
                                            indent=1, default=str))
             else:
                 old = json.loads(meta.read_text())["args"]
-                for k in ("variant", "anchor", "ratings_dir", "team_rate_table", "smoke"):
+                for k in ("variant", "anchor", "ratings_dir", "team_rate_table", "smoke", "inputs_event_layer"):
+                    if k not in old and k == "inputs_event_layer":
+                        continue          # a run started before this switch existed (laneD_1): --redo covers it
                     if old.get(k) != getattr(self.a, k):
                         raise SystemExit(f"tag {self.a.tag} was started with {k}={old.get(k)!r}; refusing to "
                                          f"resume it with {getattr(self.a, k)!r} (use a new --tag)")
+        for st in [x for x in self.a.redo.split(",") if x]:
+            if st not in STAGES:
+                raise SystemExit(f"--redo {st}: unknown stage")
+            own = self.root / st
+            if own.exists() and not self.a.dry_run:
+                arch = self.root / f"{st}.prev_{time.strftime('%Y%m%d_%H%M%S')}"
+                own.rename(arch)
+                print(f"[{now()}] --redo {st}: archived the previous output to {self.s(arch)}", flush=True)
         if self.a.parallel and not self.a.dry_run:
             # possessions_v4 and rotation first (rotation goes to the background), then the four independent
             # training branches at once, then inputs and gate
@@ -531,7 +572,7 @@ class Chain:
             if errs:
                 self.join_rotation()
                 raise SystemExit(f"{len(errs)} branch(es) failed: {[str(e) for e in errs]}")
-            for st in [s for s in stages if s in ("inputs", "gate")]:
+            for st in [s for s in stages if s in ("inputs_base", "inputs", "gate")]:
                 self.one(st)
         else:
             for st in stages:
@@ -546,11 +587,9 @@ class Chain:
         if st in ("inputs", "gate"):
             self.join_rotation()
         if self.done(st):
-            print(f"[{now()}] {st}: done (skipped){' [reused from ' + self.a.reuse_from + ']' if self.a.reuse_from and st in SHARED else ''}",
+            print(f"[{now()}] {st}: done (skipped){' [reused from ' + self.a.reuse_from + ']' if self.d(st).parent != self.root else ''}",
                   flush=True)
             return
-        if self.a.reuse_from and st in SHARED and not self.a.dry_run:
-            raise SystemExit(f"--reuse-from {self.a.reuse_from}: its stage {st} is not finished; run that tag first")
         self.clear_partial(st)
         t = time.time()
         info = getattr(self, f"st_{st}")()
@@ -582,6 +621,12 @@ def main() -> int:
     ap.add_argument("--gate-ref", default="", help="reference eval_gates .md to pair against (optional)")
     ap.add_argument("--gate-noise", default="", help="comma list of the reference's floor-draw .md reports")
     ap.add_argument("--smoke", action="store_true", help="tiny slice of every stage (proof the chain runs)")
+    ap.add_argument("--inputs-event-layer", choices=["v2", "v4"], default="v4",
+                    help="event layer of the PO round-2 event block in the engine inputs (v4 = matches the retrained "
+                         "PO; v2 = engine_v3 as built)")
+    ap.add_argument("--redo", default="",
+                    help="comma list of THIS tag's stages to rebuild (the old output is archived, not deleted), "
+                         "e.g. inputs,gate after the inputs switch")
     ap.add_argument("--reuse-from", default="",
                     help="tag of a finished run with the same ratings / smoke setting whose variant-independent stages "
                          f"({', '.join(sorted(SHARED))}) this run reads instead of rebuilding")
