@@ -88,3 +88,15 @@ before the date's first tip), as versioned siblings; nothing fold-2 is overwritt
   and any line in (ii) is within its floor.
 - Not confirming does not un-adopt anything; it goes to the PM.
 - A local tap (500 games x 25 seeds, stride sample of 2024 verified games) is DIRECTION ONLY and decides nothing.
+
+### 1.4 Addendum (registered 2026-10-01 about 08:55 EDT, BEFORE the full-size read; post hoc to the local tap, decides nothing)
+
+The local 500 x 25 tap (direction only) found FTA/FGA 0.365 for FRa and FTa vs 0.327 for S2 (target 0.3295) and total
+bias +0.8. Diagnostics on the same sample (FRa artifacts, only `ENGINE_FOUL_JOINT` varied): `reference` 0.3286, `R8a`
+(accrual table only) 0.3273, `R8b` (accrual + T2c trip offsets) 0.3683, `R9ao3` 0.3654. The T2c trip offsets were
+fitted to repair the SERVED possession_outcome, which trains on the labelled bonus state; the retrained PO trains on
+the corrected state, so the chain + R9ao3 applies the trip correction twice. Section 1.2's rule is unchanged and
+still decides L-R and L-E3 as registered. Added, as a LABELLED DIAGNOSTIC only: FRa and FTa with
+`ENGINE_FOUL_JOINT=R8a` at full size (5,710 x 200, same seeds), each paired against S2 and FTa_R8a against FRa_R8a with
+the S2 floors. It prices the retrained stacks without the double-applied table; it cannot adopt anything, and an
+honest pairing (the trip table refit against the retrained PO) would need its own registration.
