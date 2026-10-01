@@ -3602,3 +3602,50 @@ fitted on training seasons: c = cov(r_home, r_away) = 0.00422 (SE 0.00078) on F2
 Shared vs unshared: the shared latent adds +0.034 / +0.041 to the FT-rate correlation (paired SE
 0.011 / 0.009); the unshared control, same marginal variance, +0.010. Score correlation and all
 other V3 lines within their floor limits. Parity: default path and R8a vs CL2a bit-identical; v6 digest PASS.
+
+## 25. Lane G home-site round: a site term for the foul-accrual channel (pre-registration, written and COMMITTED 2026-09-30 ~21:10 EDT BEFORE any arm ran)
+
+**Why.** `CLAUDE.md` site rule.
+
+- In the sim every FT trip is a possession-outcome class draw, which already carries `site_home`/`site_away`.
+- The served foul ACCRUAL is a scalar (`rules["silent_foul_per_possession"]` = 0.123346, `loop.py:242`) with no site. It sets the team-foul counts and so the bonus state the PO model reads.
+- The site-indexed LUTs (`ENGINE_FOUL_ACCRUAL=round6_F5|F5e`) are default-off. Round 6 judged them on overall log loss with site entangled with period, clock, score and foul counts; its H1 site-interaction arm moved less than 0.1 floor.
+- Fold-2 diag section 3: FT-trips channel HCA sim 0.38 vs actual 0.47 (SE 0.04) pts. The offline PO first-chance trip class alone reproduces the realised trip-rate HCA (audit: 0.469 vs 0.480 pts), so the sim's missing -0.09 is not the trip class's own site term.
+
+This round isolates the SITE term of the accrual target.
+
+**Shared definitions for the Lane G home-site round (identical text in the free_throw, clock and possession_outcome pre-registrations of 2026-09-30).**
+
+- **Site** is the OFFENCE's site: `s = +1` offence at home, `-1` offence away, `0` neutral (CBBD/hoopR neutral flag). The defence's site is the mirror, so one fit over both sides of every game handles the offence and the defence perspective together.
+- **Encodings (pre-registered):**
+  - `cat`: three-level categorical, the project's existing convention: one-hots `site_home`, `site_away`, neutral = reference.
+  - `signed`: one column `site_signed = site_home - site_away`, i.e. +1 / 0 / -1. This is the reading taken of the brief's "home indicator with neutral as zero": neutral sits at zero and the away side is the mirror of home, so it is one parameter in a linear or cell-scale model.
+  - `int` (optional third): `site_signed x rating_gap`. Entered only where the model already carries a team rating; otherwise NOT ENTERED with the reason stated.
+- **Primary metric (this round): the site calibration gap `G_site`.**
+  - Aggregate held-out rows to one row per (game, offence team), with the realised rate and the predicted rate, weighted by the model's denominator.
+  - Fit `rate = mu + off_FE + def_FE + b_home*[offence home] + b_away*[offence away]` (non-neutral site terms; neutral games enter through the FEs only) on the realised rate and, separately, on the predicted rate.
+  - HCA = `b_home - b_away`. `G_site = |HCA_pred - HCA_realised|`, in the target's own units, on fold 2. This is the quantity the audit converts to points.
+  - Raw calibration by site (mean realised minus mean predicted for home, away and neutral rows) is reported as the primary SEGMENT.
+- **Noise floor.** Two components, the floor is their max:
+  - the spec-identical retrain under another seed (`|G_site(seed 0) - G_site(seed 1)|` of the reference arm); for a deterministic estimator this is exactly 0 and is reported as such;
+  - 2 x the game-block bootstrap SE (200 reps, resampling games, seed 20260930) of the paired difference `G_site(arm) - G_site(reference)`.
+- **Guards (all must hold for a win):**
+  - the model's own log loss (or the clock's CRPS_trunc) is not worse than the reference beyond the reference's seed floor (or the carried floor named in the model section);
+  - responsiveness by team (or shooter) prior quintile does not flatten: the predicted-vs-realised quintile slope ratio is not below the reference's minus its seed spread;
+  - fold 1 does not reverse the sign of the fold-2 improvement (fold 1 is reported, fold 2 selects).
+- **Decision rule.** An arm wins if it reduces `G_site` on fold 2 by more than the floor with every guard holding. Among winners, the simplest (`signed` < `cat` < `int`) within one floor of the best. If no arm wins: REFUTED, the served spec stays. An offline winner is NOT adopted here: it becomes "offline winner awaiting a paired closed loop", with the exact flag/artifact listed in the results doc.
+- **Sealed:** 2025-26 is not touched (`assert_not_sealed`). No served default, no `src/cbb_sim/` file and no engine artifact directory is changed. Results go to `docs/tests/home_site_terms_2026-09-30.md` and an appended results section here.
+- **Compute:** home box, core cap 2 (Lane G), `n_jobs`/thread env pinned to 2. NOT RUN cells at the 02:30 EDT stop are reported as NOT RUN with the resume command.
+
+**Foul-accrual specifics.**
+
+- **Data and target:** `data/processed/models/possession_outcome/round6/foul_accrual_poss_v1.parquet`, target `y_def = def_silent >= 1` per possession, fit mask `in_fit_window == 1`, test = all test-season possessions. Identical to round 6 (`scripts/train_foul_accrual_v1.py`). Static fit on the fold's train seasons, as the served scalar is static.
+- **Arms:**
+  - `A0` = served spec: one constant, the pooled train rate. The served scalar's own construction differs in source, but it is a constant either way.
+  - `A1` = three site cell means (`cat`), Laplace-smoothed toward the pooled rate with round 6's fixed 200-row pseudo-count.
+  - `A2` = logistic `a + b * site_signed` by maximum likelihood (`signed`).
+  - `int`: NOT ENTERED. The accrual design carries no team rating, and the brief makes this optional.
+- **Primary:** `G_site` on the per-possession silent-foul rate (aggregation unit game x offence, weight = possessions). Realised home-minus-away here is "home offence draws minus away offence draws", which is the defence-at-home effect seen from the offence.
+- **Guard:** Bernoulli log loss not worse than `A0` by more than the game-block bootstrap floor of the log-loss difference. The arms are deterministic, so the seed floor is 0.
+- **Points:** the accrual changes bonus timing only, so its points value is not identified offline. The results report the realised and predicted effect in fouls per team-game and leave the points to a closed loop.
+- **Script:** `scripts/exp_foul_accrual_site_v1.py` (new). Outputs `results/home_site/foul/`.

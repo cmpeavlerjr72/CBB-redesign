@@ -962,3 +962,44 @@ rate arm to pair with this round, since none was adopted.
 No served default changed; no `src/cbb_sim/` file was read for editing;
 2025-26 stayed sealed throughout (`assert_not_sealed` on every load in both
 scripts).
+
+## 11. Lane G home-site round: a site term for FT% (pre-registration, written and COMMITTED 2026-09-30 ~21:10 EDT BEFORE any arm ran)
+
+**Why.** `CLAUDE.md`: "Home/away/neutral is a first-class feature in every scoring-stage model". The served `s1_conf_aligned` FT% model (`FT_FEATURES`) has no site feature (`docs/tests/g9_g6_margin_slope_home_diagnostic_2026-09-30.md` section 3 feature audit). Fold-2 team-level audit (`scripts/diag_home_site_audit_v1.py --part audit`, offence FE + defence FE): realised FT% home-minus-away +0.61 pp (SE 0.24); served offline prediction at the harness reference state -0.03 pp; 200-seed sim +0.81 pp (the sim gets a site difference through state and shooter mix, not through a site feature). This round asks whether an explicit site term improves calibration by site on real attempt rows.
+
+**Shared definitions for the Lane G home-site round (identical text in the free_throw, clock and possession_outcome pre-registrations of 2026-09-30).**
+
+- **Site** is the OFFENCE's site: `s = +1` offence at home, `-1` offence away, `0` neutral (CBBD/hoopR neutral flag). The defence's site is the mirror, so one fit over both sides of every game handles the offence and the defence perspective together.
+- **Encodings (pre-registered):**
+  - `cat`: three-level categorical, the project's existing convention: one-hots `site_home`, `site_away`, neutral = reference.
+  - `signed`: one column `site_signed = site_home - site_away`, i.e. +1 / 0 / -1. This is the reading taken of the brief's "home indicator with neutral as zero": neutral sits at zero and the away side is the mirror of home, so it is one parameter in a linear or cell-scale model.
+  - `int` (optional third): `site_signed x rating_gap`. Entered only where the model already carries a team rating; otherwise NOT ENTERED with the reason stated.
+- **Primary metric (this round): the site calibration gap `G_site`.**
+  - Aggregate held-out rows to one row per (game, offence team), with the realised rate and the predicted rate, weighted by the model's denominator.
+  - Fit `rate = mu + off_FE + def_FE + b_home*[offence home] + b_away*[offence away]` (non-neutral site terms; neutral games enter through the FEs only) on the realised rate and, separately, on the predicted rate.
+  - HCA = `b_home - b_away`. `G_site = |HCA_pred - HCA_realised|`, in the target's own units, on fold 2. This is the quantity the audit converts to points.
+  - Raw calibration by site (mean realised minus mean predicted for home, away and neutral rows) is reported as the primary SEGMENT.
+- **Noise floor.** Two components, the floor is their max:
+  - the spec-identical retrain under another seed (`|G_site(seed 0) - G_site(seed 1)|` of the reference arm); for a deterministic estimator this is exactly 0 and is reported as such;
+  - 2 x the game-block bootstrap SE (200 reps, resampling games, seed 20260930) of the paired difference `G_site(arm) - G_site(reference)`.
+- **Guards (all must hold for a win):**
+  - the model's own log loss (or the clock's CRPS_trunc) is not worse than the reference beyond the reference's seed floor (or the carried floor named in the model section);
+  - responsiveness by team (or shooter) prior quintile does not flatten: the predicted-vs-realised quintile slope ratio is not below the reference's minus its seed spread;
+  - fold 1 does not reverse the sign of the fold-2 improvement (fold 1 is reported, fold 2 selects).
+- **Decision rule.** An arm wins if it reduces `G_site` on fold 2 by more than the floor with every guard holding. Among winners, the simplest (`signed` < `cat` < `int`) within one floor of the best. If no arm wins: REFUTED, the served spec stays. An offline winner is NOT adopted here: it becomes "offline winner awaiting a paired closed loop", with the exact flag/artifact listed in the results doc.
+- **Sealed:** 2025-26 is not touched (`assert_not_sealed`). No served default, no `src/cbb_sim/` file and no engine artifact directory is changed. Results go to `docs/tests/home_site_terms_2026-09-30.md` and an appended results section here.
+- **Compute:** home box, core cap 2 (Lane G), `n_jobs`/thread env pinned to 2. NOT RUN cells at the 02:30 EDT stop are reported as NOT RUN with the resume command.
+
+**Free-throw specifics.**
+
+- **Data and features:** the served training file `data/processed/models/free_throw/attempts_v1_era.parquet` through `FT.build_ft_design` (technical FTs excluded, as served). Site from `neutral_site` and `shooter_is_home` (the shooter's team is the offence).
+- **Arms:**
+  - `FT0` = served spec: `lgbm` (`FT.LgbmArm`, unchanged params) on `FT_FEATURES`.
+  - `FT1` = `FT0` + `site_home`, `site_away` (encoding `cat`).
+  - `FT2` = `FT0` + `site_signed` (encoding `signed`).
+  - `int`: NOT ENTERED. The FT% model carries no team rating, so a site x rating-gap term would add a non-site feature; out of scope for a site round.
+- **Refit calendar (stated deviation, cost):** every arm on BOTH folds uses `S1_monthly` (6 refits per fold), not the served `S1_conf_aligned` (29 refits, measured 892.9 s per fold-arm at 3 threads; eight cells would not fit tonight's window at 2 threads). Arms are paired on one calendar; the served calendar is used again only for the closed-loop artifact of a winner.
+- **Primary:** `G_site` on FT% (aggregation unit: game x shooting team, weight = attempts).
+- **Floors:** `FT0` seed 1 (spec-identical) for `G_site` and for log loss; game-block bootstrap as in the shared definitions.
+- **Responsiveness guard:** `FT.score`'s `resp_pass`, and the `shooter_ft_asof -> MAKE` quintile slope ratio not below `FT0`'s minus the seed spread.
+- **Script:** `scripts/train_free_throw_v2_site.py` (new sibling; `train_free_throw_v2_s1.py` is not edited). Outputs `results/home_site/ft/`.

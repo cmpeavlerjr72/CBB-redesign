@@ -4287,3 +4287,45 @@ section-28 like-for-like truth:
 
 Full tables: `docs/tests/g1_g5_possessions_corr_diagnostic_2026-09-30.md`
 section 5.5.
+
+## 30. Lane G home-site round: a site term for possession duration (pre-registration, written and COMMITTED 2026-09-30 ~21:10 EDT BEFORE any arm ran)
+
+**Why.** `CLAUDE.md` site rule. The served clock (`v5b_glat_pmean` = the `empirical_km3_srfloor | P3` S1 cell grid wrapped in a per-game duration latent) carries `site_home`/`site_away` in `TEAM_COLS`, but no cell dimension consumes them (`clock_adapter_v3.py:120-124`, `clock_v3.py:1045-1049`). Fold-2 sim vs actual (diag section 3): pace channel HCA sim +0.07 vs actual +0.02 (SE 0.02) pts; possession parity -0.07 vs -0.14 (SE 0.03).
+
+**Shared definitions for the Lane G home-site round (identical text in the free_throw, clock and possession_outcome pre-registrations of 2026-09-30).**
+
+- **Site** is the OFFENCE's site: `s = +1` offence at home, `-1` offence away, `0` neutral (CBBD/hoopR neutral flag). The defence's site is the mirror, so one fit over both sides of every game handles the offence and the defence perspective together.
+- **Encodings (pre-registered):**
+  - `cat`: three-level categorical, the project's existing convention: one-hots `site_home`, `site_away`, neutral = reference.
+  - `signed`: one column `site_signed = site_home - site_away`, i.e. +1 / 0 / -1. This is the reading taken of the brief's "home indicator with neutral as zero": neutral sits at zero and the away side is the mirror of home, so it is one parameter in a linear or cell-scale model.
+  - `int` (optional third): `site_signed x rating_gap`. Entered only where the model already carries a team rating; otherwise NOT ENTERED with the reason stated.
+- **Primary metric (this round): the site calibration gap `G_site`.**
+  - Aggregate held-out rows to one row per (game, offence team), with the realised rate and the predicted rate, weighted by the model's denominator.
+  - Fit `rate = mu + off_FE + def_FE + b_home*[offence home] + b_away*[offence away]` (non-neutral site terms; neutral games enter through the FEs only) on the realised rate and, separately, on the predicted rate.
+  - HCA = `b_home - b_away`. `G_site = |HCA_pred - HCA_realised|`, in the target's own units, on fold 2. This is the quantity the audit converts to points.
+  - Raw calibration by site (mean realised minus mean predicted for home, away and neutral rows) is reported as the primary SEGMENT.
+- **Noise floor.** Two components, the floor is their max:
+  - the spec-identical retrain under another seed (`|G_site(seed 0) - G_site(seed 1)|` of the reference arm); for a deterministic estimator this is exactly 0 and is reported as such;
+  - 2 x the game-block bootstrap SE (200 reps, resampling games, seed 20260930) of the paired difference `G_site(arm) - G_site(reference)`.
+- **Guards (all must hold for a win):**
+  - the model's own log loss (or the clock's CRPS_trunc) is not worse than the reference beyond the reference's seed floor (or the carried floor named in the model section);
+  - responsiveness by team (or shooter) prior quintile does not flatten: the predicted-vs-realised quintile slope ratio is not below the reference's minus its seed spread;
+  - fold 1 does not reverse the sign of the fold-2 improvement (fold 1 is reported, fold 2 selects).
+- **Decision rule.** An arm wins if it reduces `G_site` on fold 2 by more than the floor with every guard holding. Among winners, the simplest (`signed` < `cat` < `int`) within one floor of the best. If no arm wins: REFUTED, the served spec stays. An offline winner is NOT adopted here: it becomes "offline winner awaiting a paired closed loop", with the exact flag/artifact listed in the results doc.
+- **Sealed:** 2025-26 is not touched (`assert_not_sealed`). No served default, no `src/cbb_sim/` file and no engine artifact directory is changed. Results go to `docs/tests/home_site_terms_2026-09-30.md` and an appended results section here.
+- **Compute:** home box, core cap 2 (Lane G), `n_jobs`/thread env pinned to 2. NOT RUN cells at the 02:30 EDT stop are reported as NOT RUN with the resume command.
+
+**Clock specifics.**
+
+- **Data:** `data/processed/models/clock/design_v2.parquet` with `clock_v3.attach_horn_censoring` and `set_flag_inplace(design, "horn")`, exactly as `scripts/train_clock_v3c_s1.py`. Site from `site_home`/`site_away` of the OFFENCE (neutral = both 0).
+- **Arms.** All are S1 monthly on both folds, the served scheme. The v5b per-game latent is a game-level multiplier with no site and is unchanged by every arm, so the offline comparison is on the base pmf.
+  - `C0` = served base: `fit_arm_v3b("empirical_km3_srfloor", "P3", ...)`.
+  - `C1` = `C0`'s cell grid with the offence site (`cat`, 3 levels) appended as the LAST dimension, so the existing hierarchical fallback drops site first in thin cells.
+  - `C2` = `C0` pmf with a signed-site time scale. A row's duration law is the `C0` law of `T` mapped to `round(T * exp(beta * site_signed))`, with one `beta` per refit fitted on that refit's own training rows by maximising the censored log-likelihood over the grid beta in {-0.050, -0.0475, ..., +0.050}.
+  - `int`: NOT ENTERED. The cell grid carries no rating dimension, and the brief makes this third encoding optional.
+- **Primary:** `G_site` on the mean intended duration in seconds per possession, uncensored rows. The predicted mean is the mean of the pmf truncated below the row's seconds remaining, which is what an uncensored outcome can show. Aggregation unit: game x offence, weight = possessions.
+- **Guards:**
+  - `clock_v3.score_arm_v3` CRPS_trunc not worse than `C0` by more than the carried round-5 floor (0.00684).
+  - Responsiveness by offence tempo quintile (`tempo_prior_game`): the predicted-vs-realised quintile slope ratio not below `C0`'s minus 0.02.
+- **Floors:** both arms are deterministic given the data, so the seed-retrain floor is exactly 0 (reported). The game-block bootstrap component is the binding floor.
+- **Script:** `scripts/train_clock_v3c_site.py` (new sibling). Outputs `results/home_site/clock/`.
