@@ -2,6 +2,20 @@
 
 Last updated: 2026-09-30 15:40 EDT (hard stop 17:00; box operator finishing). Season tips Nov 1-3, 2026.
 
+## Overnight 2026-09-30 20:39 EDT -> 2026-10-01 04:00 EDT (user away; wall clock only)
+
+Seven lanes launched 20:45 EDT on the home box. NO AWS (approval is per session, not given). Compute stops 02:30, reports due 02:45, PM wrap-up 03:00-04:00. Rules: `docs/ops/worker_rules_overnight_2026-09-30.md`. Core caps sum to 20.
+
+| lane | worker | object | cores | output |
+|---|---|---|---|---|
+| A | Opus | Aggregation over-spread: closed decomposition of sim margin spread by channel (owns G9 slope after E3's Stage C refutation) | 4 | `docs/models/aggregation/experiments.md`; `docs/tests/aggregation_overspread_decomposition_2026-09-30.md` |
+| B | Opus | G5 shared variance: per-game shared shooting latent + pace x efficiency; measure, bake-off, default-off flag, paired loop | 4 | `docs/tests/shared_shooting_latent_2026-09-30.md` |
+| C | Opus | Foul round 9: first-half trip production on the corrected foul state; late-game round 3 pre-registration if time | 3 | `docs/tests/foul_round9_first_half_2026-09-30.md` |
+| D | Opus | Full retrain on the clean foundation: sibling trainers, one-command chain, smoke, as much of the real run as measured timing allows | 3 | `docs/ops/full_retrain_chain_2026-09-30.md`; `scripts/chain_full_retrain_v1.py` |
+| E | Sonnet | Truth default flip, parity reference v7, verified sample default, re-reads of earlier paired rounds on v3 | 2 | `docs/tests/truth_flip_and_v3_rereads_2026-09-30.md` |
+| F | Sonnet | Daily chain v3: sim / publish / grade / bias-CLV stages, replay-verified on fold-2 dates | 1 | `docs/ops/daily_chain_v3_2026-09-30.md`; `scripts/chain_daily_v3.py` |
+| G | Opus | Home/away/neutral site terms: audit, fg_make +0.68, offline bake-offs for free_throw / clock / foul channel | 2 | `docs/tests/home_site_terms_2026-09-30.md` |
+
 ## Session 2026-09-30 (started 10:50 EDT): restart after a 12-day gap; 33 days to tip-off
 
 Six lanes launched 11:00 EDT, reports due 15:30 (E at 14:00). Core caps sum to 20.
