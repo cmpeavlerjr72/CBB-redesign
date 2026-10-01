@@ -3781,3 +3781,32 @@ Train-season rates are 0.0771 for home offence, 0.0768 for away and 0.0789 for n
 Continuations over-predict the trip and rim-share site effects, but those cells are underpowered.
 
 The sim's -0.40 on the PO channels (diag section 3) is therefore a simulated-state/cascade residual, not a site-feature or accrual defect. Its owner is open.
+
+## 28. Round 9 RESULTS (lane C, 2026-09-30 21:35-23:20 EDT; pre-registration section 26, commit 265e6fd)
+
+**Nothing adopted, no default changed.** Report: `docs/tests/foul_round9_first_half_2026-09-30.md`.
+
+Offline (`scripts/train_foul_r9_v1.py`, grader `scripts/grade_foul_r9_v1.py`, `round9/grade_round9.json`;
+applied floor 0.000804; deterministic arms; AO2 reseed floor 2.5e-5):
+
+| block | arm | F2 floors vs ref | F1 | note |
+|---|---|---:|---:|---|
+| AO | `AO1` cells | +1.28 (> 2 boot SE) | +1.40 | tie-rule winner; defence prior-quintile slope 0.08 = NOT RESPONSIVE |
+| AO | `AO3` cells + prior-season team terms | +1.35 | +1.49 | slope 1.22 / 1.27 (responsive); tie with AO1 (+0.06 floors) |
+| AO | `AO2` GBM | +2.26 | +2.24 | tie with AO1 (+0.98 floors) |
+| T | `T3t` / `T3s` | -3.17 / -4.20 | -3.00 / -3.65 | REFUTED; `T2c` stands |
+
+Closed loop (500 verified games x 200 seeds on the box, v3 inputs, verified truth; local runs bit-identical
+to the box on shared rows; floors = 5 S0 seed-offset draws and the paired game bootstrap):
+
+| line | R8b | `R9ao1` | `R9ao3` | floors toward |
+|---|---:|---:|---:|---|
+| H1 FTA/FGA (0.2383) | 0.2503 | 0.2408 | 0.2409 | +24.5 / +24.3 |
+| H2 FTA/FGA (0.4186) | 0.4159 | 0.4185 | 0.4186 | +1.6 / +1.5 |
+| G3 FTA/FGA box (0.3295) | 0.3338 | 0.3304 | 0.3305 | +10.9 / +10.5 |
+| G9 total bias (0) | -0.634 | -0.825 | -0.816 | **-3.1 / -3.0 (AWAY: veto)** |
+
+Every other G1-G9 line, G4 TOV%, and G5 by component lies within 2 floors; the team FT slope does not fall.
+The G9 total failure is R8b's first-half FT excess (+0.26 FTM per game) no longer offsetting the engine's
+total under-prediction (R9's total bias equals S0's, -0.825 vs -0.822): a compensation exposed (Decision 11).
+Full size 5,710 x 200: NOT RUN at writing (queued on the box).

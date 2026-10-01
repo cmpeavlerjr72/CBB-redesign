@@ -167,7 +167,8 @@ def main() -> None:
                 bs.append(abs(sa["fta"].to_numpy()[i].sum() / sa["fga"].to_numpy()[i].sum() - ak)
                           - abs(sr["fta"].to_numpy()[i].sum() / sr["fga"].to_numpy()[i].sum() - ak))
             se = float(np.std(bs))
-            draws = [res["arms"][a.ref][k]["value"]] + [res["arms"][f][k]["value"] for f in floors]
+            # floor draws = the --floors tags only (spec-identical reruns of ONE stack on other seeds; Decision 12)
+            draws = [res["arms"][f][k]["value"] for f in floors]
             sd = float(np.std(draws, ddof=1)) if len(draws) > 1 else float("nan")
             fl = float(np.nanmax([sd, se]))
             pt[k] = {"delta_abs_gap": d0, "boot_se": se, "draw_sd": sd, "n_draws": len(draws), "floor": fl,
