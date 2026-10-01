@@ -61,7 +61,7 @@ DIAGNOSTIC ONLY. Nothing is adopted, served or re-defaulted. No engine module wa
 | Addendum F: train/serve parity | Team rates exact in both stacks. **S1's served `shooter_shrunk_dev_c` is NOT what `T` was trained on** (corr 0.94-0.97); S0 exact | **skew found** |
 | Addendum F2: does the skew carry the gap? | Serving `T` its training shooter devs closes 62% (SE 7%) of the X_F - S0 harness gap (close 63%) | **carrier** (>= 50%) |
 | Addendum G: skew-free retrain `Tfix` | X_Tfix - S0 harness +0.012 / +0.004 (seeds 0 / 1; floor 0.007), against X_F's +0.035. Shot-level log loss still beats R | **the skew explains the fg_make owner** (inside 2 floors) |
-| Closed loop of Tfix (laneA_4) | see section 8.3 | see section 8.3 |
+| Closed loop of Tfix (laneA_4, 5,710 x 200) | X_Tfix -0.0013, S1fix -0.0024 vs S0 (floor 0.0057); S1 -0.0232. No gate verdict changes | **CONFIRMED: the skew owns all of S1's G9 loss; S1fix is G9-neutral** (section 8.3) |
 
 ## 1. Method
 
@@ -485,7 +485,28 @@ The sim-level retrain-seed floor comes from laneA_2 (`R2`, the served features r
 
 ### 8.3 Closed loop of the skew-free fg_make (laneA_4)
 
-Requested at 23:19 EDT: `docs/ops/box_queue/laneA_4.md` (X_Tfix, S1fix, X_Tfix1; 5,710 x 200). It had not returned when this section was committed; the result is appended here when it lands.
+laneA_4 ran on the box 23:57-00:19 EDT (5,710 x 200, paired seeds 0-199, verified truth). Box rows reproduce locally (20 rows each, 0 differences). Floors follow Decision 12: four seed draws of 50, a game bootstrap, and the laneA_2 retrain-seed floor.
+
+| stack | slope Y | MC-corrected | slope C | SD(X) | Delta slope vs S0 (floor) | close Delta |
+|---|---:|---:|---:|---:|---:|---:|
+| S0 (served) | 0.9169 | 0.9245 | 0.9106 | 9.61 | | |
+| S1 (Stage B `T` x3) | 0.8937 | 0.9007 | 0.8887 | 9.83 | -0.0232 (0.0054): 4.1 retrain floors | -0.0219 |
+| **X_Tfix (S0 + fg_make Tfix, seed 0)** | 0.9156 | 0.9232 | 0.9114 | 9.60 | **-0.0013 (0.0046)** | +0.0008 |
+| X_Tfix1 (seed 1) | 0.9154 | 0.9230 | 0.9116 | 9.60 | -0.0015 (0.0044) | +0.0010 |
+| **S1fix (PO T + RB T + fg_make Tfix)** | 0.9145 | 0.9221 | 0.9096 | 9.60 | **-0.0024 (0.0057)** | -0.0010 |
+
+**In the sim, removing the skew removes S1's G9 loss entirely.**
+- S1fix's slope is S0's within one floor: -0.0024 against a seed / bootstrap floor of 0.0057 and a retrain floor of 0.0057.
+- Its margin SD is S0's.
+- E3 for all three sub-models is G9-NEUTRAL, not G9-negative. It also does not improve the slope, which was its Stage C primary.
+
+**Full gate table, paired against S0 with the five-draw floor:** `docs/tests/aggregation_S1fix_gate_pairs_2026-10-01.md` (`scripts/eval_gates.py` plus `ops_v3_pair_table_v1.py`; the local grader reproduces the box's S0 and S1 reports line for line).
+- No gate verdict changes for S1fix or X_Tfix.
+- S1fix lines beyond the floor:
+  - Toward target: G5 home/away score correlation 0.1174 -> 0.1216 (+5.7 floor-SD); G3/G4 pooled rim share +0.0018 and OREB% +0.0005; eFG% +0.0002.
+  - Away from target: TOV% +0.0004; FTA/FGA -0.0008; 3PA share -0.0011; G9 total bias -0.258 -> -0.296 (-2.7 SD).
+- These are possession_outcome / rebound `T` effects. X_Tfix (fg_make Tfix only) moves none of the G3/G4 pooled lines.
+- G8 is not graded for these reads: the runner keeps no player rows.
 
 ## 9. What this changes
 
@@ -536,7 +557,7 @@ The proposed mechanism is team effects from both sides combined additively on a 
 
 ## 10. Next step and resume
 
-**1. Decide on laneA_4 (section 8.3).** If S1fix's sim slope is within the retrain floor of S0, E3 is back on the table as a set (Decision 11). The Stage B `T` wins for possession_outcome and rebound, and Tfix's own log-loss win, become the candidate set.
+**1. laneA_4 is in (section 8.3).** S1fix's sim slope is within one retrain floor of S0, and no gate verdict changes. E3 is back on the table as a set under Decision 11: the Stage B `T` wins for possession_outcome and rebound plus Tfix's own log-loss win. It is G9-neutral, not G9-positive. The ruling "E3 REFUTED at Stage C" should be re-read on S1fix.
 
 **2. Fix the trainer path**, then rerun fg_make `T` (as `Tfix`) at fold 1 as well, under the experiments.md section 2 round.
 - G1 / G3 are deprioritised. G2 was run (preliminary, fold 2): it does not help.
