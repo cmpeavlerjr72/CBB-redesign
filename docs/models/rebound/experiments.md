@@ -997,3 +997,72 @@ stage 1, `A0B0C0` on F2 (actual live OREB 0.299232)
 | B3e_model | 8.3292 | 0.667026 |
 | B3_draw | -1.137 | 0.648339 |
 | B_true | -1.137 | 0.645565 |
+
+---
+
+## 12. Rebound `TO` inside served stack v2: fold-1 confirmation and the closed loop (lane I, 2026-10-01; written and COMMITTED BEFORE any run below)
+
+### 12.1 Why, and what is already known (measured before this section was written)
+
+- PPP decomposition (`docs/tests/ppp_deficit_decomposition_2026-09-30.md` section 5.1): after `KD` the OREB% channel is
+  -0.75 points per game. Served v2 pooled OREB% 0.2887 vs 0.2984. Owner: the rebound model's own level (offline, on
+  real states, 0.2898 vs 0.2992).
+- Full-size team responsiveness (`scripts/diag_team_oreb_resp_v1.py` on the box runs, 5,710 x 200, all games, floors =
+  the four `v3full_S0f*` draws): offence slope S0 0.684, `K2O` 0.653, served v2 0.651 (floor 0.0055); defence 0.647,
+  0.619, 0.615 (floor 0.0052). Gap by 2024-prior quintile, served v2, offence: +0.25 / -0.37 / -0.82 / -1.62 / -1.90 pp.
+  The sim under-spreads teams, and K2_Ocell lowers both slopes by about 0.03 (5-6 floors) while raising the level.
+- Stage B fold 2 (box, 2026-09-30, `docs/tests/team_rate_stageb_offline_2026-09-30.md`): `TO` (E3 v4 features + anchor
+  `O`) beats `R` by 12.7 floors and `T` by 4.1 floors on log loss; held-out level -0.043 pp (`R` -0.942); team-quintile
+  slope ratio 1.0545 (`R` 0.684); calibration worst gap 1.817 pp (passes the 2.0 pp gate). NOT RUN: fold 1, closed loop.
+- `TO` is registered in `team_rate_estimator/experiments.md` section 7a.2 under the section 7.1 rule ("fold 2 selects and
+  fold 1 confirms"). This section executes that rule and adds the closed-loop read inside the NEW served stack, where only
+  the rebound sub-model changes (possession_outcome and fg_make keep their served features).
+
+### 12.2 Fold-1 confirmation (offline; no new arm)
+
+| cell | trainer | arm | features |
+|---|---|---|---|
+| `R` | `train_rebound_v3_par_v1.py --stage 2 --folds F1 --arms A0B0C0 --seed 0` | served spec | served |
+| `R2` | same, `--seed 1` | noise floor | served |
+| `T` | same, `--team-rate-table team_rate_features_E3_v4.parquet` | served spec | E3 v4 |
+| `TO` | `train_rebound_v3_par_anchor_v1.py --anchor O --stage 2 --folds F1 --arms O --team-rate-table ...E3_v4` | anchor `O` | E3 v4 |
+
+- Primary: three-class log loss on F1 (test 2024), S1_weekly, as section 11.
+- Floor: max(6.7e-05 registered, |R2 - R| on F1, the F2 R2 spread 1.2e-04).
+- Rule (team_rate_estimator 7.1 / 7a.2): fold 1 CONFIRMS if `TO - R` and `TO - T` have the same sign as on fold 2 and
+  `TO` loses to neither beyond the floor. Gates read per fold, unchanged: worst-decile calibration <= 2.0 pp, held-out
+  level, quintile responsiveness; plus the team-quintile slope ratio and per-game MAE (the cell JSON's own lines).
+- `--feeds` is omitted (it only adds block-feed side predictions; the primary reads `p_true`).
+
+### 12.3 Closed loop: arm `RBTO` = served stack v2 with only the rebound sub-model replaced by `TO`
+
+- Inputs: `build_engine_inputs_v3_tag_v1.py --tag I_RBTO --team-rate-table data/processed/team_rate_features_E3_v4.parquet
+  --no-table-for po,fg --rb-artifacts data/processed/models/rebound/round_stageb/TO/team_rate_features_E3_v4/artifacts/s2_F2_O_seed0
+  --team-rate-missing raise`, then `build_engine_anchor_offsets_v1.py --input-dir data/processed/models/engine_v3_I_RBTO
+  --families rb`. Served through `scripts/run_engine_overlay_v1.py` (`adapters.RB_S1_MANIFEST` -> the TO manifest) with
+  `ENGINE_SEASON_ANCHOR=<engine_v3_I_RBTO/anchor_offsets_F2_2025.npz>`. No engine code changes; every switch is default
+  off, so the plain default stays bit-identical to parity v9 (checked before the local runs).
+- Train/serve parity (must pass before any read): the served `off_oreb_c` / `opp_def_dreb_c` of `engine_v3_I_RBTO`
+  equal `team_rate_adapter.apply(design, E3_v4, 'rebound', fold='F2')` on the matching (game, offence) rows of the
+  rebound design to 1e-6 on >= 99.9% of rows; the engine's anchor offsets equal the trainer's `_a5_off` per game.
+- Reference: served v2, plain default (no `ENGINE_*`), same inputs, sample and seeds.
+- Reads:
+  1. local, 500 verified stride games x 25 seeds: direction and parity only (Decision 12: no line is decided here);
+  2. full size on the box, 5,710 x 200 at offset 0, against `v3full_COMB9GCTKD_s200_o0`; floors = lane D's four served-v2
+     draws `d1001D_S2f{1..4}_s200_o{k}000` (max |draw - reference|) and the paired game bootstrap
+     (`scripts/ops_pair_bootstrap_v1.py`); if those draws are missing, the four `v3full_S0f*` draws as the stated fallback.
+- Primary: G4 OREB% (pooled), floors toward 0.2984.
+- Responsiveness lines (mandatory, full size, `diag_team_oreb_resp_v1.py`): team OREB% slope, offence and defence, by
+  2024-prior quintile, and the per-quintile gap; neither slope may fall by more than 1 floor.
+- Vetoes (full size): any gate verdict PASS -> FAIL; G9 total bias, margin bias, calibration slope, G5 total and margin
+  SD ratios, home/away corr, G1 mean and SD, G4 eFG / TOV / FT rate moving away from target by more than 2 floors.
+- Decision: `RBTO` is PUT FORWARD to the PM (nothing is adopted by this lane) if the primary moves toward target by more
+  than 2 floors, fold 1 confirms (12.2), no veto fires and neither responsiveness slope falls. Otherwise reported as is.
+- Multi-level evidence reported: by month, site, offence tier, per game, per team (underpowered cells labelled).
+
+### 12.4 K2_Ocell team responsiveness (DESCRIPTIVE line the PM asked for; not an arm, decides nothing)
+
+From an in-process tap of the served v2 stack (`scripts/diag_oreb_ft_tap_v1.py`, all 5,710 games x 2 seeds): each team's
+expected block rate on its missed FGAs (sum of K2_Ocell P(blocked | miss)), defence (blocking) and offence (blocked),
+by 2024-prior quintile, against the real 2025 box rate (blocks / opponent missed FGA). Reported with the team OREB% slopes
+of 12.1.

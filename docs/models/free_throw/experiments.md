@@ -1021,3 +1021,78 @@ scripts).
 **Guards hold for all arms.** Log loss: FT1 -0.000094 on F2, about 1 bootstrap SE; seed floor 0.000004. Shooter-quintile slope ratios: 0.955-0.984.
 
 **Outcome: REFUTED** (tie, so the served spec stays). The CLAUDE.md site gap for FT% is closed by evidence: an explicit site term does not improve calibration by site.
+
+---
+
+## 13. Newcomer and unknown-shooter priors (lane I, 2026-10-01; written and COMMITTED BEFORE any arm below ran)
+
+The served model, its feature list for the reference arm and its adopted `S1_conf_aligned` scheme are not reopened. The
+arms change only the PLAYER PRIOR: what the model knows about a shooter with little or no history.
+
+### 13.1 Evidence measured before this section (served stack v2, v3 inputs, verified truth)
+
+- Sim FT% 0.7123 vs 0.7213 actual (full size, `v3full_COMB9GCTKD_s200_o0`), -0.34 points per game.
+- No train/serve skew in the shooter block: for 202,415 real 2024-25 attempts whose shooter is on the engine roster, the
+  served slot values equal the design values (has_prior exact on 100%, as-of FT% on 99.96%; p difference -0.0004 pp)
+  (`scripts/diag_ft_slot_skew_v1.py`).
+- Offline, the served model under-predicts newcomers: has_prior_season = 0 (25.7% of attempts) p 0.7006 vs realised
+  0.7040 (-0.34 pp); at 0 as-of attempts -1.22 pp, at 1-10 -0.72 pp. Returners -0.04 pp.
+- Unknown shooters: 4.4% of real attempts (19.5% in November, under 1% in every later month) are taken by players who
+  are NOT on the engine's candidate roster for that game. Their real FT% is 0.695; 73% of them have a prior season; 89%
+  have 0 as-of attempts. In the sim these attempts go to anonymous tail slots (5.5% of sim FTA), whose FT shooter block
+  is all zero (= no prior season, 0 attempts): sim FT% on them 0.648 (`scripts/diag_ft_offroster_v1.py`,
+  `scripts/diag_ft_who_shoots_v1.py`). About -0.27 pp of FT%.
+- Who goes to the line among named players (usage FT-trip allocation), valued at the served model with the states held
+  fixed: -0.26 pp. The rest (about -0.37 pp) is the foul state and is measured by the served-v2 tap, not by these arms.
+
+### 13.2 Model arms (offline, both folds; fold 2 selects)
+
+All arms: `FT.LgbmArm` with the served params, `FT.build_ft_design` rows (technicals excluded), fit by
+`scripts/train_free_throw_v3_newcomer.py` (new sibling; no trainer is edited). Refit calendar: `S1_monthly` on both folds
+for every arm, a stated cost deviation exactly as section 11 (the served `S1_conf_aligned` calendar is used again only
+to build a winner's serving artifacts). Arms are paired on one calendar.
+
+| arm | features | complexity |
+|---|---|---|
+| `N0` | served `FT_FEATURES` | reference |
+| `N0s1` | `N0`, seed 1 | noise floor |
+| `N2` | `N0` + `shooter_make_c__three`, `shooter_att_c__three`, `prior_season_make_c__three`: the shooter's as-of three-point make rate (league-centred, shrunk as fg_make round 4 builds it), as-of attempts and prior-season make rate, from `data/processed/models/fg_make/design_v2_shotshooter.parquet` (`FGA_3` rows), joined backward on game_date within (season, shooter) (the same-game row is allowed: its values are strictly-before as-of); no row -> 0 | +3 |
+| `N1` | `N0` + `height_c` (roster height minus that season's mean roster height), `pos_G` / `pos_F` / `pos_C` (CBBD roster position; unknown = all 0), `d1_years` = clip(season - start_season, 0, 4) (CBBD roster) | +5 |
+| `N3` | `N1` + `N2` | +8 |
+
+- Data: CBBD rosters (`data/raw/cbbd/rosters/roster_<season>.parquet`, static player attributes, no outcome) and the
+  fg_make design (pbp-derived, hoopR). Nothing from the 2025-26 season.
+- Primary: attempt-level log loss on F2 (test 2025).
+- Floor: max(|N0s1 - N0| on F2, the registered 0.000147).
+- Gates (each fold, unchanged): `FT.score` calibration (worst decile <= 2.0 pp) and responsiveness; Decision 8
+  `shooter_ft_asof -> MAKE` slope in [0.8, 1.2].
+- Segments (both folds): has_prior 0 / 1; has_prior 0 with as-of attempts 0, 1-10, 11-30, 31+; November; per shooter
+  as-of FT% quintile; by 2024 / 2023 prior-season FT% quintile (responsiveness). Segment calibration gap = mean p - mean y.
+- Guard: the newcomer (has_prior 0) calibration gap must not grow by more than 0.25 pp in absolute value.
+- Decision: an arm WINS if it beats `N0` on F2 by more than the floor, fold 1 has the same sign and does not lose beyond
+  the floor, all gates pass and the guard holds. Among winners, the simplest whose F2 log loss is within the floor of the
+  best wins (order `N2` < `N1` < `N3`). No winner: `N0` stands.
+- If an arm wins: its serving needs the engine to read its extra features. `N2`'s three columns already exist as engine
+  slot columns (`shooter_make_c__three`, `shooter_att_c__three`, `prior_season_make_c__three`); `N1`/`N3` need new slot
+  columns (an inputs change). A winner is served behind a default-off `ENGINE_FREE_THROW=<arm>` mode, its slot values
+  checked against the design rows (the 13.1 skew check), the off path proven bit-identical to parity v9, then a local
+  500 x 25 tap (direction only) and a box request for the full-size read.
+
+### 13.3 Input arm `A1`: a prior for the anonymous (unknown-shooter) slots (closed loop; no fitting)
+
+- `A1`: in each team-game, the anonymous slots, in slot order, receive the FT shooter block of the team's season roster
+  players (CBBD roster) who are not among the game's named candidates, ordered by prior-season minutes (descending;
+  no prior season last). Their block is the FT design's as-of definition on that date: has_prior_season and
+  prior_season_ft from the completed prior season, shooter_ft_asof / shooter_fta_asof from in-season attempts strictly
+  before the date (0 if none). Only the four FT shooter-block slot columns of anonymous slots change; every other input,
+  the served model and the engine code are untouched. Tagged inputs `engine_v3_I_A1`; the switch is the input dir.
+- Caveat (stated now): a season roster lists players who join mid-season; membership is not an outcome, but it is not
+  strictly preseason knowledge. Reported with the share of A1-filled players who first appear after the game date.
+- Offline check (2025 only; fold 1 has no engine inputs, so it cannot be confirmed on fold 1): for real off-roster
+  attempts, coverage (share whose shooter is among the game's A1-filled players) and served-model log loss / mean p with
+  the all-zero block vs the shooter's A1 block.
+- Closed loop: local 500 verified games x 25 seeds vs the plain default (direction only), then a box request for the full
+  size (5,710 x 200; floors as section 12.3 of the rebound file: lane D's served-v2 draws). Primary: FT% (G4 FT% line if
+  present, else pooled FTM/FTA) toward the verified actual, in floors. Vetoes as rebound 12.3. A1 is put forward to the
+  PM only with a primary move beyond 2 floors and no veto.
+- Priority: `A1` runs only after 13.2 and the rebound section 12 work; if time runs out it is reported NOT RUN.
