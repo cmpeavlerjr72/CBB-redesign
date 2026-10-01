@@ -1079,3 +1079,27 @@ floor on F2 (block-bootstrap SE of the paired delta). BZ3's offline evidence is 
   the set is a candidate or the clear best: flags stay default-off, parity v9 on a clean `src/`, and a box
   request `d1001_L_2.md` for the full-size paired read (5,710 x 200, four floor draws vs the plain default on
   lane D's S2 floors `d1001D_S2f{1..4}`). Otherwise NO ARM ADOPTED.
+
+---
+
+## 12. RESULTS -- round 5, RUN 2026-10-01 (lane L; status PROPOSED -> RUN; NO ARM ADOPTED, no served default changed)
+
+Full evidence: \docs/tests/late_game_round5_2026-10-01.md\.
+
+Offline guards pass on both folds: LGL on trailing rows +10.0 floors (F1 +7.2), on leading rows +13.1 (F1 +13.2).
+
+Closed loop, 500 x 25 vs R9:
+- **The set (clk_DtLL + BZ3):** P(0)/P(1) 0.845, +2.90 floors, OT 0.0450. It FAILS four hard vetoes: G1 mean +5.1 floors, G1 SD +2.9, half share +6.0, window possessions.
+- **clk_DtLL alone:** 0.779, +2.45 floors. It fails the same four.
+- **Decision:** no candidate. The set fails hard vetoes, so it cannot be the clear best. No full-size request.
+- **The trailing law does NOT remove the leading law's extra possessions; it adds more.** G1 possessions per game: 69.13 with the leading law only, 69.22 with both laws.
+
+Closed-loop durations now match the actual in every role x bucket cell. So the count excess is not owned by the window durations:
+- R9 already starts about 65% too many possessions in the last 10 s of regulation (1.02 vs 0.62 per game).
+- Late leading possessions end in TOV 0.21-0.29 of the time vs 0.07-0.18 actual (hypothesis: the event mix, not the clock).
+
+G9 total bias, priced (not a disqualifier for the set): +0.12 points per game, made of -0.29 in H1 (BZ3) and +0.41 in H2 + OT.
+
+Remaining gap, reported separately:
+- Arrival at a tie at 0:10: 0.031 -> 0.044 (actual 0.055).
+- One-point finishes: 0.053, unchanged (actual 0.036). This is now the larger half of the ratio gap.
