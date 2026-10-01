@@ -1066,3 +1066,20 @@ From an in-process tap of the served v2 stack (`scripts/diag_oreb_ft_tap_v1.py`,
 expected block rate on its missed FGAs (sum of K2_Ocell P(blocked | miss)), defence (blocking) and offence (blocked),
 by 2024-prior quintile, against the real 2025 box rate (blocks / opponent missed FGA). Reported with the team OREB% slopes
 of 12.1.
+
+### 12.5 RESULTS (lane I, 2026-10-01; status OPEN -> RUN; NOTHING ADOPTED, no served default changed)
+
+Full evidence: `docs/tests/oreb_ft_channels_2026-10-01.md` section 1.
+
+- 12.2 fold 1 (local): R 0.619556, R2 0.619601, T 0.618813, TO 0.618732; floor 1.2e-4. TO - R -6.9 floors, TO - T -0.7
+  floors (tie, same sign). **Fold 1 CONFIRMS** (7.1 / 7a.2 rule). TO held-out level -0.06 pp (R -0.49), team-quintile slope
+  ratio 1.023 (R 0.635), calibration 1.79 pp (gate 2.0). Same pattern as F2 (level -0.04 vs -0.94; slope 1.055 vs 0.684).
+- 12.3 closed loop, full size (box `d1001_I_1`, 5,710 x 200, ref served v2, floors = lane D's four served-v2 draws,
+  max |draw - ref|): G4 OREB% 0.2887 -> 0.2977 (**+45 floors toward 0.2984**); team OREB slope offence 0.651 -> 1.054,
+  defence 0.615 -> 1.141 (floors 0.0026 / 0.0052); G9 total bias -0.337 -> +0.270 (toward, +3.0 floors); G5 home/away corr
+  +3.0 floors toward; G1 mean toward (+6.8). **VETO FIRES: G4 TOV% 0.1751 -> 0.1757, 6 floors AWAY from 0.1739** (TOV count
+  per team-game +0.029). G9 slope -1.0 and G5 total ratio -1.3 floors (inside the 2-floor veto). By the registered rule
+  `RBTO` is NOT put forward. Reading (for the PM; Decision 11): the extra second chances carry possession_outcome's own
+  TOV over-production (the PPP decomposition's TOV channel, PO level), which RBTO exposes rather than causes.
+- 12.4 K2_Ocell block-rate responsiveness (descriptive): defence slope 0.61, offence 0.46, pooled level 0.1019 vs 0.1029.
+  Full-size K2_Ocell team OREB slope cost: -0.031 (5.6 / 5.4 floors), much smaller than the 500 x 25 read.

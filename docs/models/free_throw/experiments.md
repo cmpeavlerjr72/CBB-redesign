@@ -1208,3 +1208,23 @@ The team block is joined per (game_id, shooting team) from `data/processed/model
 ## 17. Round 16 pointer (lane B, 2026-10-01 ~08:45 EDT)
 
 Round 16 (`score_diff` dropped from free_throw (arm FTn, served `S1_conf_aligned` calendar kept) plus a per-team-game form latent shared by a team's FG and FT makes) is pre-registered in `docs/models/shared_shooting/experiments.md` section 5. Its primary is CLOSED-LOOP by registered choice (section 5.2 there). Its offline guards on the FTn model are in section 5.3 there.
+
+### 13.4 RESULTS (lane I, 2026-10-01; status OPEN -> RUN; NOTHING ADOPTED, no served default changed)
+
+Full evidence: `docs/tests/oreb_ft_channels_2026-10-01.md` section 2. Grader `scripts/grade_free_throw_newcomer_v1.py`.
+
+- 13.2 offline (S1_monthly, paired): N0 reproduces the registered numbers (F2 0.575237, F1 0.578044); seed spread 4e-6,
+  floor 0.000147. N2 -10.5 / -9.9 floors (F2 / F1) but FAILS the F1 calibration gate (2.16 pp) and the newcomer guard
+  (F1 gap +0.67 pp vs +0.01). N3 -14.2 / -13.5 floors but FAILS the newcomer guard on F1 (+0.63 pp). **N1 WINS**
+  (-9.9 / -8.8 floors, gates pass, guard holds). N1 on the served S1_conf_aligned calendar: F2 0.573735 vs served 0.575210;
+  train/serve parity PASS.
+- N1 closed loop, full size (box `d1001_I_1`, floors = lane D's served-v2 draws): FT% 0.71230 -> 0.71402 (+26 floors toward
+  0.7213); no gate veto (G9 total bias toward +2.3; G5 corr -1.6). NOT A REGISTERED LINE, reported: team FT% slope by
+  2024-prior quintile 0.883 -> 0.801 (floor 0.010, -8 floors): the arm worsens team FT% responsiveness in the sim.
+- 13.3 A1, full size (box `d1001_I_2`): FT% 0.71230 -> 0.71376 (+22 floors toward); no veto by the registered floor
+  (G5 home/away corr -1.96 floors unrounded; the Decision 12 bootstrap tool reads -2.03: AT the threshold); G9 total bias
+  toward (+2.1); team FT% slope 0.883 -> 0.927 (+4 floors toward 1). November FT% 0.6873 -> 0.6939 (actual 0.7108).
+  Fold 1 cannot be read (no fold-1 engine inputs). A1 is PUT FORWARD to the PM under 13.3, with the h/a corr line flagged.
+- Both arms are small in points (FT% +0.15 to +0.17 pp, about +0.06 points per game each). The larger FT channels are
+  not FT-model channels: usage FT-trip attribution (late-game leading-team trips go to worse shooters: fixed-state p 0.707
+  vs 0.730) and the foul/score state fed to the model.
