@@ -3649,3 +3649,106 @@ This round isolates the SITE term of the accrual target.
 - **Guard:** Bernoulli log loss not worse than `A0` by more than the game-block bootstrap floor of the log-loss difference. The arms are deterministic, so the seed floor is 0.
 - **Points:** the accrual changes bonus timing only, so its points value is not identified offline. The results report the realised and predicted effect in fouls per team-game and leave the points to a closed loop.
 - **Script:** `scripts/exp_foul_accrual_site_v1.py` (new). Outputs `results/home_site/foul/`.
+
+## 26. Round 9 pre-registration -- first-half FT-trip production: the and-one rate as a fitted sub-model (lane C, 2026-09-30; written and COMMITTED BEFORE any round-9 fit or arm run)
+
+Owner: lane C (worker, overnight 2026-09-30). **Nothing here is adopted; no default changes; the
+PM decides.** Section 25 (lane G, home-site) is a different round; this is round 9 of the foul
+rounds (sections 20-24). Report: `docs/tests/foul_round9_first_half_2026-09-30.md`.
+
+### 26.1 Step-1 evidence (decomposition, run before this section was written)
+
+Instrument: `scripts/run_foul_joint_tap_v2.py` (v1 + `--sample-file`, possession start type,
+`--agg-halves`; in-process tap, `src/cbb_sim/` untouched). Local v3-input runs reproduce the box:
+`r9tapB_S0_smoke` and `r9tapB_R8b_smoke` (60 games x 3 seeds) are BIT-IDENTICAL to
+`v3box_S0_s200_o0` / `v3box_R8b_s200_o0` on all 26 game columns (`scripts/diag_foul_r9_parity_v1.py`;
+the box's docker mount of the S0 event block is reproduced in-process by `R9_ENGINE_DIR`,
+`scripts/ops_r9_engine_dir_v1.py`). Decomposition `scripts/diag_foul_r9_h1_decomp_v1.py` ->
+`results/foul_r9/decomp_h1_v1.{json,txt}`: S0 and R8b, 500 verified games x 25 seeds, against the
+2025 event layer on the CORRECTED (v2, engine-definition) state, sample and full season.
+
+E1. **H1 FTA/FGA: actual (sample) 0.2383, S0 0.2537, R8b 0.2502 (+0.0119).** Closed shift-share
+    over (rule state x H1 minute bucket), mean of the two orders: occupancy +0.0061, and-one FTA
+    +0.0052, shooting-trip FTA +0.0067, bonus-trip FTA -0.0059, other FTA -0.0004, FGA +0.0002
+    (sum = gap exactly). Trip production PER STATE nets to +0.0008: in the bonus R8b draws slightly
+    too many shooting trips and too few bonus trips, total trips per state are right
+    (1-and-1: 0.178 vs 0.181). **Not the reset:** open counts at the first H2 possession are 0 in
+    the engine and in the data.
+E2. **The and-one rate is a per-shot-class constant (`rules.and_one_rate_given_made`, flagged
+    `provisional_and_one`, never bake-offed); the data's is not.** And-ones per made FG, by game
+    minute 0-4 ... 38-40, are in 2025 0.034 / 0.047 / 0.052 / 0.053 / 0.058 / 0.070 / 0.068 / 0.071 /
+    0.067 (2022-2024 each within +-0.006 per bucket), H1 0.045-0.048 vs H2 0.065-0.069 in each of 2022, 2023,
+    2024, 2025; rim 0.058 -> 0.110 from minute 0-4 to 35-37. Engine H1 and-ones 0.0214/poss vs
+    actual 0.0169 (+27%); H2 0.0229 vs 0.0246 (-7%).
+E3. **Accrual (occupancy).** Team fouls per team-half H1, R8b vs actual: +0.36 = pace +0.06 (34.23 vs
+    33.94 defensive possessions) + per-possession +0.30, of which and-ones +0.15, non-trip
+    (defence + offence lumped) +0.09, bonus trips +0.08 (a consequence of the early bonus), shooting
+    +0.00. Median minute of the first bonus possession 14.2 vs 15.0; P(bonus by minute 10) 10.3% vs
+    6.3%. Non-trip pre-bonus excess sits in minutes 0-9 (+0.010 / +0.005 per poss) and is the A2
+    2025 level drift (+0.6 pp uniform, section 21), reported, not targeted.
+E4. Segments (reported, R8b vs sample actual H1 FTA/FGA): away offence 0.237 vs 0.209, home 0.264 vs
+    0.258 (the home whistle; lane G's round); defence prior-season foul-rate quintile Q1->Q5 0.241 ->
+    0.270 vs actual (full season) 0.210 -> 0.274 (compressed); start type DREB 0.275 vs 0.242.
+
+Reading: about half of the H1 overshoot is the and-one constant directly (FTA) and most of the rest
+is the and-one constant again through accrual (earlier bonus), plus the A2 level drift and pace
+(upstream, G1 owner). Round 9 therefore tests the and-one rate as a fitted sub-model, and (second
+block) whether the bonus-state trip MIX needs a clock dimension.
+
+### 26.2 Offline objects and arms (fold 2 selects, fold 1 confirms, 2025-26 SEALED)
+
+Trainer `scripts/train_foul_r9_v1.py`, ONE blind grader `scripts/grade_foul_r9_v1.py`, outputs
+`data/processed/models/possession_outcome/round9/`.
+
+Block AO -- P(and-one | made FG). Rows: every made-FG chance of `possessions_v2` chances 2022-2025
+(all periods; the engine serves every state), state = the corrected v2 count at the chance (open
+count minus pre-open fouls, plus the defence's trip fouls on earlier chances).
+  - `AO0` per-shot-class constant (the served definition, refit on these rows) -- reference.
+  - `AO1` cells: class x period index (H1/H2/OT) x clock bucket (`seconds_remaining` cuts
+    120/300/600/900), Laplace k=200 toward the class rate.
+  - `AO2` GBM (round-7 `GBM_KW`, n_jobs=1) on class one-hots + round-7 `STATE_T` (true state).
+  - `AO3` `AO1` + two logit terms from PRIOR-season team rates (offence and-ones drawn per made FG,
+    defence conceded per made FG allowed; shrunk k=200 made FGs; each centred on its own season's
+    league mean; season s uses season s-1; first season 0), coefficients by maximum likelihood on train.
+Block T -- FT-trip classes as logit offsets on the round-7 proxy `T0` (round-7 machinery imported):
+  - `T2c` (the R8b trip term) -- reference.
+  - `T3t` `T2c` cells x clock bucket.  - `T3s` half x clock bucket x rule state x differential.
+
+Primary: fold-2 test log loss per block (AO: `y_ao`; T: `y_bonus` + `y_shoot`). Floor: applied
+floor = max(|seed 0 - seed 7| measured per arm, 0.000804) (sections 17/20 rule); the paired
+game-bootstrap SE (200) of the delta is reported. An arm beats its reference only by > 1 applied floor
+AND > 2 bootstrap SE; fold 1 must reproduce the sign, else NOT CONFIRMED. Ties go to the simpler arm:
+AO0 < AO1 < AO3 < AO2; T2c < T3s < T3t. Segments (fold 2, calibration gap pp): half, minute bucket,
+class, site, live count; trip block: site, rule state x half. **Responsiveness:** team SD ratio
+(team-mean prediction SD / realised SD, >= 300 rows) and the prior-quintile slope ratio by offence
+and by defence; an AO winner whose quintile slope ratio is ~0 is reported as NOT RESPONSIVE (the
+served constant is flat too); `AO3` is the responsive candidate.
+
+### 26.3 Closed-loop arms (v3 inputs, verified sample, verified truth)
+
+Wired behind NEW default-off values of `ENGINE_FOUL_JOINT` (`R9ao1`, `R9ao3`, ...; new module
+`src/cbb_sim/engine/foul_r9.py`; `foul_joint.load` delegates `R9*` names; one minimal `loop.py` hook at
+the and-one draw: unset / non-R9 values take the scalar line, same uniform). Each R9 arm = `R8b`
+(A2 + T2c, unchanged) + the Block-AO winner's fold-2 TRAIN LUT. If Block T has a confirmed winner, a
+second arm `R9*t` adds it; otherwise none. Parity before any arm is read: (i) unset flag vs
+`v3box_S0_s200_o0` rows, (ii) `ENGINE_FOUL_JOINT=R8b` vs `v3box_R8b_s200_o0` rows (bit-identical,
+every game column), (iii) `docs/ops/parity_reference_windows_v6.json` digest.
+
+Runs (sized from the measured local timing: 500 games x 25 seeds = 881-907 s at 3 workers on the
+shared box): local `R9` tapped 500 x 25 (`--agg-halves`), paired with the existing `r9tapB_S0_s25`,
+`r9tapB_R8b_s25`; local 500 x N untapped up to the 02:00 budget, paired with the box
+`v3box_{S0,R8b}_s200_o0` rows on the same seeds. Box request (operator queue): full-size 5,710 x 200
+for the winner paired against the operator's full-size R8b and S0, plus S0 floor draws f3/f4 on the
+500 sample.
+
+Primary: H1 and H2 FTA/FGA (event layer per offence-half; actual on the sample 0.2383 / 0.4186):
+|sim - actual| change vs R8b, in floors. Secondary: pooled FTA/FGA (G3/G4 line; box 0.3295).
+Vetoes (any = not eligible): every G1-G9 line of the gate table (`eval_gates.py`, verified truth)
+must not move AWAY from target by > 2 floors vs R8b; TOV on the count (G4 tov_pct); G5 by component
+(margin SD ratio, total SD ratio, home/away score correlation, PIT, margin and total SD); team
+FT-rate slope (prior-season quintiles) must not fall by > max(0.05, 2 x paired bootstrap SE).
+Floors (Decision 12): per line, max(SD over >= 4 S0 seed-offset draws, 2 x paired game-bootstrap SE
+of arm - R8b). Available locally: S0 offsets 0/1000/2000 at 200 seeds (three draws) -- if f3/f4 do
+not arrive, the floor uses three draws and is labelled so. Lines a 500-game read cannot decide (G5
+ratios, G7, G8 at < 4 draws) are written UNDERPOWERED, not pass or fail.
+Hard constraint: no constant tuned toward any aggregate; every LUT is a fold-2 TRAIN fit.
