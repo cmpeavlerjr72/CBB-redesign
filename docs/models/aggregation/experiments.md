@@ -127,3 +127,12 @@ The local closed loop (1,142 games x 16 seeds) is confirmed UNDERPOWERED by its 
 ### 2.1 Addendum (written 22:45 EDT, BEFORE it ran): local partial run of arm G2 only
 
 The measured Stage B fg_make timing (56 s per arm on the box at 18 jobs) suggests one arm fits locally at the 4-core cap. Run tonight, LOCAL, labelled PRELIMINARY: `G2` (T without `off_make_c`; wrapper `scripts/train_fg_make_v4_par_g2_v1.py`, wrapped trainer unchanged), fold 2 only, seed 0 and seed 1 (its own retrain floor), with the box's `T` extra cache. Read through the harness as an X_F-style stack (S0 + G2 fg_make): harness 1 - slope against S0 (0.088), X_F (0.123) and the fg_make seed floor; team-game make slopes by month; the trainer's own attempt-level log loss vs `T` and `R` from `team_rate_stageb_offline_2026-09-30.md`. G1 and G3, fold 1 and the closed loop are NOT run tonight. No decision is taken from this partial run; it only informs the order of the box round.
+
+### 2.2 Addendum E (written 23:06 EDT by the wall clock, BEFORE it ran): G2 result and the training-season overfit test
+
+G2 (section 2.1) ran 22:37-22:50 (local, fold 2, seeds 0 and 1; the local `T` retrain reproduces the box `T` harness exactly). Read: harness 1 - slope S0 0.088, X_F 0.123, X_G2 0.118 (seed 0) / 0.123 (seed 1). Dropping `off_make_c` does NOT remove the over-spread: the response moves onto the ratings (L1 ratings k -0.048 under `T` -> +0.017 under G2). So the over-response belongs to what fg_make learns on the E3 design as a whole, not to one column.
+
+Hypothesis H_fit: E3 features are smooth within a team-season, so in the TRAINING seasons a GBM can isolate team-seasons and fit their realised shooting (luck included); out of sample that response is too steep. Addendum B only removed the 2024-25 rows; this tests the training seasons.
+
+- **Test:** score the pre-season (2024-11-01) refit of `T` and of `R` (served features, Stage B seed 0) on (a) their own training rows (seasons 2022-2024, in sample) and (b) fold-2 rows (out of sample). Aggregate to team-game make rates per class; attempt-weighted slope of realised on predicted.
+- **Rule:** H_fit SUPPORTED if `T`'s in-sample slope minus out-of-sample slope exceeds `R`'s gap by >= 0.10 in at least two of the three classes; REFUTED if the gaps differ by < 0.05 in all three; otherwise PARTIAL. Descriptive, no decision.
