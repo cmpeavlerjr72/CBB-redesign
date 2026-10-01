@@ -1146,6 +1146,13 @@ class Adapters:
         # (`docs/tests/usage_decision10_gate_2026-09-11.md`).
         usage_mode = os.environ.get("ENGINE_USAGE", "reference")
         usage = _load_usage(inp, usage_mode)
+        # LATE-GAME FT-TRIP ALLOCATION (usage/experiments.md section 13, lane I): DEFAULT OFF.
+        # Unset/`off` never imports the module and adds no flag.
+        uft_mode = os.environ.get("ENGINE_USAGE_FT_LATE", "off") or "off"
+        uft_src = None
+        if uft_mode != "off":
+            from cbb_sim.engine.usage_ft_late import wrap as _uft_wrap
+            usage, uft_src = _uft_wrap(inp, usage, uft_mode)
         # SEASON-DRIFT ANCHOR O (engine/season_anchor_serving.py): DEFAULT OFF.
         # Unset/`off` adds no flag and imports nothing unless an artifact is
         # marked anchored, which is then refused (served without its offset).
@@ -1256,6 +1263,9 @@ class Adapters:
         if lg_mk_src is not None:
             flags["ENGINE_LG_MAKE"] = lg_mk
             flags["sources"]["late_game_make"] = lg_mk_src
+        if uft_src is not None:
+            flags["ENGINE_USAGE_FT_LATE"] = uft_mode
+            flags["sources"]["usage_ft_late"] = uft_src
         if (os.environ.get("ENGINE_LG_BUZZER", "off") or "off") != "off":
             flags["ENGINE_LG_BUZZER"] = os.environ["ENGINE_LG_BUZZER"]   # late-game round 4 (loop.py)
         if sa_src is not None:
