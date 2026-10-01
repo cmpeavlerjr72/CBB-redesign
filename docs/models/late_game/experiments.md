@@ -749,3 +749,115 @@ object is the clock's censoring at the horn, not the role gate).
    `ENGINE_FOUL_JOINT` env (v3 inputs need the S0 event-block overlay: the box docker mount, or locally
    `R9_ENGINE_DIR` as in `scripts/run_foul_joint_tap_v2.py`).
 3. The window-possession actual on `possessions_v4` (lane B's event layer v4) for the new veto.
+
+---
+
+## 7. AMENDMENT -- round 3 restated on served stack v2 (written 2026-10-01 06:20-06:45 EDT by lane L, BEFORE any round-3 arm was wired or run; append-only, section 6 is unchanged)
+
+**Nothing has been wired or simulated for round 3 at the time of writing. No served default changes.**
+Section 6 was written on 2026-09-30, before served stack v2 was adopted (02:06 EDT 2026-10-01,
+`docs/tests/adoption_served_v2_2026-10-01.md`). Its base stacks no longer describe what is served, so the
+round cannot run as written. This section restates only what the stack change forces, and adds the
+pre-arm diagnostic and an offline line the PM's brief asks for. Everything section 6 does not name here
+stands.
+
+### 7.1 What changed underneath section 6
+
+1. **The corrected foul state is now SERVED.** `ENGINE_FOUL_JOINT=R9ao3` (R8b's trip repair + the AO3
+   and-one model) is the default. Section 6.2 conditioned `B9` on round 9 being VALIDATED by the PM;
+   adoption is stronger than that, and the PM named `R9ao3`.
+2. **The rest of the stack moved too:** clock `v5b_r6L2_glat_pmean` (same P3 / `sr_floor_bucket = 5` cell
+   family as `v5b_glat_pmean`, refit on event layer v4, its own latent parameters), `K2_Ocell`, `G3`, `KD`,
+   event team block v3. The reference for every paired read is a plain default run (parity reference v9,
+   `docs/ops/parity_reference_windows_v9.json`, inputs `data/processed/models/engine_v3`). The
+   in-process event-block overlay of 6.6.2 is no longer needed: the v3 block is the default.
+3. **`R8b` is no longer a meaningful base.** It is `R9ao3` minus the and-one model, a stack nobody serves.
+
+### 7.2 Base stacks, restated (replaces 6.2 for this round)
+
+- `B9` = served stack v2, NO `ENGINE_*` variable set. **This is the candidate base.**
+- `B8` (served v1 + R8b): **NOT RUN, superseded** by 7.1.1/7.1.3.
+- `B0` = served stack v2 with `ENGINE_FOUL_JOINT=reference` only (the constant-accrual foul state round 2 ran
+  on). Attribution only, exactly as in 6.2/6.5; it isolates the foul state and nothing else, which the full
+  `SERVED_V1` would not.
+
+Inputs: engine inputs v3 (`data/processed/models/engine_v3`, tag `F2_2025`), the verified 500-game sample
+named in 6.2 (`data/processed/truth/stride500_verified_minswap_v1_F2_2025.parquet`), `CBB_TRUTH=verified_v1`.
+
+### 7.3 Arms, restated (replaces the table in 6.3; flag values unchanged in meaning)
+
+| arm | base | `ENGINE_LATE_GAME` | inside the window | role |
+|---|---|---|---|---|
+| `R9` | B9 | unset | nothing | reference |
+| `R9_f1..f4` | B9 | unset, seed offsets 1000/2000/3000/4000 | nothing | floor draws (Decision 12) |
+| `D9` | B9 | `clk_D` | round 2's `clk_D` law, every window row | candidate |
+| `Dt9` | B9 | `clk_Dt` | `clk_D` law on TIED offence rows only (`score_diff == 0`) | candidate |
+| `Dtt9` | B9 | `clk_Dtt` | `clk_D` law on tied AND trailing offence rows | candidate |
+| `R0` | B0 | unset | nothing | attribution reference |
+| `D0`, `Dt0` | B0 | `clk_D`, `clk_Dt` | as above | attribution only |
+
+`clk_D` is served exactly as in round 2: the same pickle (`data/processed/models/late_game/round2/clk_D.pkl`,
+verified against round 1's saved PMFs by `train_late_game_r2_v1.py`), the same duration uniform, scaled by
+the SERVED clock's own per-game latent (now L2's). No artifact is refit. The two new flag values gate the
+SAME law by the offence's live `score_diff` sign at possession start; rows outside the gate return the
+served draw untouched. Off path (`ENGINE_LATE_GAME` unset) must reproduce parity v9 bit-for-bit, and
+`clk_D` must reproduce itself before and after the edit.
+
+### 7.4 Primary, floor, vetoes, decision rule
+
+Unchanged from 6.4/6.5 with the bases of 7.2: primary `P(0)/P(1)` in floors vs the arm's own base
+reference (`R9` for B9 arms, `R0` for B0 arms); floor = max(SD of the line over `R9` + `R9_f1..f4`, 2 x
+paired game-bootstrap SE of arm - base); vetoes as 6.4. Two clarifications fixed before any output exists:
+
+1. **Window-possession veto, actual.** From `data/processed/possessions_v4/possessions_2025.parquet` on
+   the same 500 games: per game, the anchor `k = |home margin|` at the start of the first period-2
+   possession starting at `<= 120` s, and the count of period-2 possessions starting at `<= 120` s with
+   `|start_score_diff| <= 6`. The sim count is the tap's identical definition. Floor per k = max(SD over the
+   five B9 draws, 2 x paired game-bootstrap SE). **If `R9` itself exceeds the actual by more than one floor
+   in some k, that k is read against `R9` instead** (the arm may not add more than one floor over the
+   served count), and the report says so. The veto exists to stop an arm ADDING possessions; it is not
+   meant to fail every arm on a served-stack excess.
+2. **The OT band** (0.046-0.055, verified universe) and section 1.3's `< 1.0` rule are carried unchanged.
+   The sample's own actual (OT 0.068) is descriptive only.
+
+The B9 decision rule is 6.5's with `R8`/`D8`/`Dt8`/`Dtt8` read as `R9`/`D9`/`Dt9`/`Dtt9`.
+
+### 7.5 Offline line (new; both folds; a GUARD, not the selector)
+
+Round 3 fits nothing, so its offline evidence is the COMPOSED window law graded on round 1's held-out
+window rows (`data/processed/models/late_game/round1_clock/window_test_F{1,2}.parquet` and the saved
+PMFs `pmf/{A,D}_clk_F{1,2}.npy`): `Dt` = D's PMF on tied rows and A's elsewhere; `Dtt` = D's on tied and
+trailing rows. Metric: round 1's duration primary (CRPS of the horn-truncated law on uncensored rows) and the
+censored log-likelihood, overall and per role. Graded by one script for all four (A, D, Dt, Dtt). Floor:
+game-level block-bootstrap SE of the paired delta vs A (the Kaplan-Meier laws are deterministic, so the
+reseed floor is zero; section 2.5.3). **Guard: a candidate that is worse than A on fold 2 by more than one
+floor on the rows it replaces is not a candidate.** Fold 1 is reported. Caveat stated now: A_clk is
+round 1's P3 / floor-5 law fitted on the round-1 training table, the same family as the served L2 clock
+but not its refit; the guard reads structure, not the served artifact.
+
+### 7.6 Pre-arm diagnostic: where the regulation ties are lost (reported, no decision line)
+
+On `R9` (and `R0`) vs the actual (possessions_v4 2025 for the states, verified finals for OT), all with one
+script and identical definitions on both sides:
+
+1. Margin `m(T)` = home margin at the start of the first period-2 possession starting at `<= T` seconds
+   (end-of-regulation margin if none), T = 120, 60, 30, 10. Distribution of `|m(T)|` for k = 0..8+.
+2. Kernel `P(regulation tie | |m(T)| = k)` at every T, and a shift-share of the tie-rate gap at each T into
+   arrival (the distribution of `|m(T)|`) and conversion (the kernel), both substitution orders averaged.
+   Where the arrival share jumps between two T values is where ties are lost.
+3. Behaviour cells inside the final 2:00, by offence role (trailing 1-3, trailing 4-6, tied, leading 1-3,
+   leading 4-6) and clock bucket: possession duration used; share of possessions that are free-throw-only
+   (FTA > 0, no FGA, no TOV: the foul-to-stop-the-clock outcome when the defence trails); three-point
+   share of FGA; points per possession; FT make rate; OREB continuation.
+4. Tied-game final possessions: possessions starting tied with `<= 35` s left: duration used, share that
+   runs to the horn, points distribution, and the share of those games that end regulation tied.
+Season actual (all verified 2024-25 games) and sample actual are both shown; sim cells under 200
+possessions and actual cells under 200 are labelled UNDERPOWERED.
+
+### 7.7 What cannot run, stated now
+
+- **Fold 1 closed loop: NOT RUN.** No 2023-24 engine inputs v3 or fold-1 serving artifacts exist (HANDOFF
+  open item 10). Fold 1 enters only through 7.5.
+- Screening size is 500 x 25 as in 6.4. A candidate that clears it is re-read at 500 x 200 and 5,710 x 200
+  on the box (request written, PENDING); a local closed-loop tap sized from a measured slice is direction
+  only.
