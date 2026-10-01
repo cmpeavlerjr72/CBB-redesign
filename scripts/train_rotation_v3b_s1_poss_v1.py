@@ -31,8 +31,11 @@ import sys
 import time
 from pathlib import Path
 
+#: BLAS threads: 1 by default (the chain's core accounting). `--blas-threads N` exists only for the identity trace
+#: of the R5 override hazards (their lbfgs fit depends on BLAS reduction order; section 2 of the chain doc).
+_BT = next((sys.argv[i + 1] for i, x in enumerate(sys.argv[:-1]) if x == "--blas-threads"), "1")
 for _v in ("OMP_NUM_THREADS", "MKL_NUM_THREADS", "OPENBLAS_NUM_THREADS", "NUMEXPR_NUM_THREADS"):
-    os.environ[_v] = "1"
+    os.environ[_v] = _BT
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "scripts"))
@@ -79,6 +82,7 @@ def main() -> int:
     ap.add_argument("--only-window", default="",
                     help="YYYYMM: fit ONLY this S1 window (plus the static first window, a copy), then stop; "
                          "lets the chain run the windows in parallel. Implies --fits-only")
+    ap.add_argument("--blas-threads", default="1", help="identity trace only (read before numpy import)")
     ap.add_argument("--fits-only", action="store_true",
                     help="stop as soon as the last needed window fit is written (skip the trainer's evaluation sims)")
     a = ap.parse_args(argv)

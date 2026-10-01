@@ -134,3 +134,122 @@ smoke; 21:45 skew diagnostic.
 Incidents: after the first smoke attempt failed, its background rotation process kept running. I stopped that
 process of my own (pid 36076 and its child 29040) at 21:22. Since then the chain stops its own background children
 on any failure. No other lane's process was touched.
+
+---
+
+## 2026-09-30 22:00: second pass (PM follow-up, 21:48). The cont ruling, v4-replay inputs, the rotation trace, residual pre-registrations
+
+### A. Ruling: the corrected foul state on `cont`. Already the case; nothing to fix
+
+The chain applies the corrected (pre-possession) `in_bonus` to every design row, both `first` and `cont`. The overlay
+covers 3,037,203 of 3,037,203 rows of the v4 design (2,649,343 `first` + 387,860 `cont`), and
+`train_possession_outcome_s1_par_v2.py` applies it before any population split. The laneD_1 commands were already
+correct on this point. laneD_2 (below) exists only for the inputs.
+
+### B. The v4 replay of the engine inputs (residual 1). Built, proven and wired
+
+- **Sibling builder:** `scripts/build_engine_inputs_v3_replay_evlayer_v1.py` (shard / assemble, `--event-layer v2|v4`).
+  - The only part of the v3 inputs that reads the possession layer AND is served to the retrained PO is the round-2
+    event block (16 columns), built by `live/features.py::po_team_block_r2`, which hard-codes v2. The sibling replays
+    exactly that block per slate: same slate, same as-of cutoff (first tip minus 30 min), and the same
+    `build_ctx` / `po_team_block_r2` / `rating_site_block` / merge / no-history fill as `build_engine_inputs_live.py`.
+  - Everything else is copied from `engine_v3` unchanged.
+- **Proof:** `--event-layer v2` reproduces engine_v3's event block bit for bit on all 151 dates (11,420 team-games):
+  PASS.
+- **Timing:** about 1.0-1.7 s per date single-core; the full 151 dates take about 195 s. Done locally (v2 proof and v4
+  in parallel, 2 cores, 21:49-21:52).
+- **v3 -> v4 census, by block:**
+
+| block | cells differing | detail |
+|---|---|---|
+| event block cols 0-7 (PO style: off / opp_def x 3pa, rim, tov, ftr) | 10,882-10,975 of 11,420 per column (95-96%) | mean abs 0.003 (rim) to 0.142 (ftr) on the x100 scale; max 1.34 (rim) to 3.86 (ftr) |
+| event block cols 8-15 (ratings, site, season, days) | 0 | |
+| team_static (incl. its own PO columns, which read v1 all-chance tables through `po_team_block`), slot_static, rotation priors, roster, rebound, usage, games, names | 0 by construction (copied) | stated scope: those paths are pinned to their own possession versions and are not served to the retrained PO |
+
+- **Wired:** new chain stage `inputs_base` (variant-independent, reusable with `--reuse-from`) shards the replay and
+  assembles `engine_v3_ev4`. The `inputs` stage builds on it: ratings C, then E3 for F_T, then the overlay. A new
+  `--inputs-event-layer v4|v2` (default v4) keeps the old base available.
+- **Gate result names:** reads on v4 inputs carry the suffix `_ev4`.
+- **`--redo <stages>`:** rebuilds the named stages of a finished tag and archives the old output as
+  `<stage>.prev_<timestamp>`.
+- **Smoke `smoke_FR_ev4`:** PASS. The inputs event block columns 0-7 equal the v4 replay; the overlay block equals the
+  inputs block; the rating columns carry ratings C; source check PASS. The `--redo inputs,gate` path was also tested.
+- **Box request `docs/ops/box_queue/laneD_2.md`:**
+  - Case A (laneD_1 not started): run laneD_2 instead.
+  - Case B (laneD_1 ran): rerun only `inputs_base`, `inputs` and the gate with `--redo inputs,gate`. Every retrain stage
+    output of laneD_1 is reused unchanged.
+- **Commit:** 7d38de5.
+
+### C. The rotation override-hazard non-identity: traced
+
+| comparison (window 202412, possessions v1) | fields differing |
+|---|---|
+| today, `--test-games 60 --seeds 1` vs the same rerun | none (the NaN-vs-NaN note only) |
+| today, trainer defaults (1600 / 3) vs today 60 / 1 | none |
+| today (either arguments, BLAS 1 thread) vs the served 09-11 file | only `hazard_exit` / `hazard_enter` (coef max 0.24 / 0.19) |
+
+- **Ruled out:**
+  - Non-determinism: same arguments give an identical result.
+  - The test arguments: defaults and 60 / 1 give identical results.
+  - Code drift: no commit to `rotation.py` or the rotation trainers after 1e6bb3e, which is the commit that wrote the
+    served file.
+  - Data or library drift: the possession tables, the raw pbp and the sklearn / numpy / scipy installs all predate the
+    served run (09-10 08:48-12:11 EDT vs the run at 20:49 EDT).
+- **Leading cause:** the BLAS thread count inside the R5 hazards' `LogisticRegression(lbfgs)`. The served run was
+  unpinned; the chain pins BLAS to 1 thread.
+- **Test run:** `--blas-threads 3`; result in E below (TRACED).
+- **Consumers of these fields:** `R3_stint_hazard` (`models/rotation.py` line 966) only. The served R2 path and the
+  engine (`grep` of `src/cbb_sim/engine`) never read them.
+
+### D. Pre-registration text proposals (for the PM; not appended to any experiments.md)
+
+**D1. Rotation static chain on the v4 event layer (residual 2).**
+- **Candidates:**
+  - `RS0`: the served static chain on v1, `rotation_fit.json` -> `rotation_fit_v3.json` (reference).
+  - `RS4`: the same trainers (`train_rotation_v1.py` -> corrected hazards -> `train_rotation_v3.py`) with
+    `rotation.load_team_possessions` pointed at `possessions_v4` (a sibling wrapper like `train_rotation_v3b_s1_poss_v1`).
+  - `RS4p`: RS4 plus the engine-input rotation priors (`rot_share`, `rot_srank`, `rot_start`, `rot_fpm`, `rot_pavail`)
+    rebuilt from the RS4 static fit by a v4 replay of `LF.rotation_priors`. That needs a possessions-version parameter
+    in the replay, the same pattern as section B.
+- **Features:** unchanged (a data-layer swap, not a model choice).
+- **Folds:** fold 2 select, fold 1 confirm.
+- **Primary:** the rotation round-10 MAE line (minutes per player-game), with Decision-8 slope and G8 cells as vetoes.
+- **Noise floor:** a seed-1 refit of RS0.
+- **Closed loop:** 500 x 25 paired against the laneD_2 F_R stack, Decision-12 floors.
+- **Decision rule:** RS4 / RS4p ship into the retrain chain only if the primary is not worse beyond the floor. Any
+  difference within the floor ships on the honesty rule (the serve-time table must match the training table).
+- **Expected size:** small (v4 changes duration on 4,708 of 768,834 rows in 2025).
+
+**D2. free_throw bonus-state alignment (residual 3).**
+- **Defect:** at serve time the engine reads `st.in_bonus()` AFTER the shooting trip's own foul is added (`loop.py`
+  ~503 / 703), while training (`foul_class` in {bonus_one_and_one, double_bonus}) is the trip's own class. A seventh-foul
+  shooting trip reads 1 at serve and 0 in training (round-8 trace table).
+- **Candidates:**
+  - `FTB0`: served.
+  - `FTB1`: serving fix, `in_bonus` read BEFORE the trip foul. A default-off `ENGINE_FT_BONUS_STATE=pre` switch, with
+    parity proved on the off path.
+  - `FTB2`: training relabel to the engine's definition (the bonus state from the team-foul counter before the trip,
+    i.e. the corrected foul-state table keyed to the trip), refit on the S1_conf_aligned schedule.
+- **Primary:** FT% calibration by `in_bonus` cell (bonus vs non-bonus trips), offline fold 2, plus G4 FTA/FGA and FT%
+  closed loop.
+- **Vetoes:** total FT%, the shooter slope (Decision 8), G5.
+- **Noise floor:** a seed refit of FTB0.
+- **Rule:** the arm whose serve-time definition equals its training definition is preferred when the primary ties
+  within the floor; that is the leak rule, not a performance preference.
+### E. Rotation trace result (22:12-22:21, `--blas-threads 3`)
+
+| comparison (window 202412) | differing fields |
+|---|---|
+| BLAS 3 vs BLAS 1 (otherwise identical runs) | `hazard_enter` coef up to 0.69, `hazard_exit` up to 0.10; `notes/r7_*` / `r8_*` knob grids up to 3e-4; `notes/r5_*` up to 2e-11 |
+| BLAS 3 vs served | the same fields (hazard coef up to 0.50) |
+| any thread count vs served or vs each other: every R2 field (Dirichlet, scheduler, tilt tables) | 0 |
+
+**TRACED.** The R5 override hazards (and, at the 1e-4 level, the R7 / R8 knob grids) depend on the BLAS thread count
+through the lbfgs `LogisticRegression` fit. That fit is ill-conditioned (collinear deficit / surplus / time features),
+so reduction-order differences move its coefficients by up to 0.7. The served 09-11 run was not thread-pinned, and its
+thread count is not recorded, so its hazard values cannot be reproduced bit for bit. The chain pins 1 thread and is
+deterministic run to run (C). Every field the served R2 path reads is identical at every thread count tested. The
+thread-sensitive fields belong to arms R3 / R5 / R7 / R8, which are not served.
+
+Recommendation (not done here): record the BLAS thread count in every rotation fit's notes, and standardise the
+features before the lbfgs fit if any hazard arm is ever served.
