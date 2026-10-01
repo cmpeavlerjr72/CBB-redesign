@@ -41,8 +41,7 @@ ARMS = {
 TEAM_BLOCK = ("off_rating_off_c", "off_rating_def_c", "def_rating_off_c", "def_rating_def_c", "site_home", "site_away")
 ARMS["FTp"] = ARMS["FTn"] + TEAM_BLOCK                                  # round 15 (section 15.2)
 ARMS["FTpE"] = ARMS["FTn"] + TEAM_BLOCK + ("gt_flag", "eg_trail", "eg_lead")
-SIMPLICITY.update({"FTp": 1, "FTpE": 2})
-SIMPLICITY = {"FT0": 0, "FTn": 1, "FTnE": 2}
+SIMPLICITY = {"FT0": 0, "FTn": 1, "FTnE": 2, "FTp": 1, "FTpE": 2}
 OUT = ROOT / "results/ft_scorediff"
 OUT.mkdir(parents=True, exist_ok=True)
 ART = ROOT / "data/processed/models/free_throw/s1_scorediff"
