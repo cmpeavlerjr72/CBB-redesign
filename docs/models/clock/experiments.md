@@ -4419,3 +4419,12 @@ Full size (box `laneH_1`, 5,705 x 200, floors from S0 draws x4 + paired bootstra
 - G1 count - v4: +0.797 -> +0.970 (+3.7 floors, worse, as forecast). Pooled possession SD 5.49 -> 5.84 vs truth 5.57 (away from truth).
 - **G9 total slope (MC-corrected) 0.976 -> 0.796 (-5.5 floors)**: the per-game predicted count is over-spread (count calibration slope 0.92 -> 0.79, SD of predicted counts 2.68 -> 3.53) and the sim's pace/efficiency correlation turns positive (+0.15 vs actual -0.09). G9 total bias improves (-2.01 -> -1.52). G9 margin slope unchanged (0.936). G5 margin/total ratios, OT rate inside floors.
 - **Outcome: REFUTED as a ship candidate in this form** (the total-slope failure is a new over-spread, not an exposed compensation). The responsiveness diagnosis and the asymmetric law stand as findings; next round re-estimates the offence elasticity against the sim's own start-type composition and adds an in-season level term for the exposed drift. Nothing adopted.
+
+## 35. ADOPTED 2026-10-01 -- round 6 arm L2 (`v5b_r6L2_glat_pmean`) is the served clock (adoption executor)
+
+The Decision 11 set (clock L2 + shot_block K2_Ocell + foul R9ao3 + shared_shooting G3 + chance_time KD) was ADOPTED as ONE served stack by the PM under the user's delegation of 2026-09-30. Evidence: `docs/tests/engine_gates_F2_2025_s200_v3_COMB9GKD_full_2026-10-01.md` (5,710 x 200, verified truth, Decision 12 floors, paired vs S0: G1 possessions mean FAIL -> PASS, OREB% FAIL -> PASS, total and margin bias stay PASS, slope 0.917 -> 0.948, home/away corr 0.117 -> 0.126, G2 cells 3/9 -> 6/9, no verdict regresses). Engine default changed in the adoption commit; the pre-adoption stack stays reachable with the SERVED_V1 env (`docs/tests/adoption_served_v2_2026-10-01.md`), which reproduces parity references v6 and v7 bit-identically.
+
+- `adapters.py` default `ENGINE_CLOCK` = `v5b_r6L2_glat_pmean`; `clock_adapter_v3.ADOPTED_MODES` gains it, so `provisional_clock` is False for it (label only).
+- `v5b_glat_pmean` (round 5b B1) stays selectable and is the SERVED_V1 clock.
+- Artifacts: `data/processed/models/clock/r6_L2/` (gitignored, 14 files, on HF under `model_artifacts`).
+- Not addressed by this adoption: G1 by month 4/5, G5 total SD ratio 0.925, home/away corr 0.126 vs 0.228 (see `docs/tests/adoption_served_v2_2026-10-01.md`).

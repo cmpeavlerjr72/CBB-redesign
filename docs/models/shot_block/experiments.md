@@ -539,3 +539,11 @@ pooled, G9 total bias, and the correlation of sim mean totals with actual
 totals, for served vs `SB_K2O` vs `SB_K2O_noteam`. "Recovers most" = at least
 half of `SB_K2O`'s correlation loss recovered, with at least half of its
 OREB% gain kept (point estimates, with the game intervals reported beside them).
+
+## 8. ADOPTED 2026-10-01 -- drawn block flag `K2_Ocell` is served (adoption executor)
+
+The Decision 11 set (clock L2 + shot_block K2_Ocell + foul R9ao3 + shared_shooting G3 + chance_time KD) was ADOPTED as ONE served stack by the PM under the user's delegation of 2026-09-30. Evidence: `docs/tests/engine_gates_F2_2025_s200_v3_COMB9GKD_full_2026-10-01.md` (5,710 x 200, verified truth, Decision 12 floors, paired vs S0: G1 possessions mean FAIL -> PASS, OREB% FAIL -> PASS, total and margin bias stay PASS, slope 0.917 -> 0.948, home/away corr 0.117 -> 0.126, G2 cells 3/9 -> 6/9, no verdict regresses). Engine default changed in the adoption commit; the pre-adoption stack stays reachable with the SERVED_V1 env (`docs/tests/adoption_served_v2_2026-10-01.md`), which reproduces parity references v6 and v7 bit-identically.
+
+- `shot_block.DEFAULT = "K2_Ocell"`; `loop.py` passes it when `ENGINE_SHOT_BLOCK` is unset. `reference` = served-v1 (no draw).
+- Artifact: `data/processed/models/engine/shot_block_K2_Ocell_F2_2025.npz` (tracked).
+- **OPEN, blocks the daily chain:** the LUT exists only for the `F2_2025` backtest slate. The live runner looks for `shot_block_K2_Ocell_<slate>.npz` and the sim stage of `chain_daily_v3.py --replay-season 2025 --slate-date 2025-02-11` stops with FileNotFoundError. A per-slate live LUT build (`scripts/build_engine_shot_block_lut_v1.py` on live inputs) is the missing piece. `ENGINE_SHOT_BLOCK=reference` lets the chain run, but on a hybrid stack that has not been gated.

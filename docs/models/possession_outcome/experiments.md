@@ -3821,3 +3821,10 @@ COMB read (`docs/tests/engine_gates_F2_2025_s200_v3_COMB_full_2026-09-30.md`) sh
 with sim eFG% 0.5009 vs 0.5086 actual; the owner is the PPP deficit (a separate lane). Next read: full-size
 COMB9 = `ENGINE_CLOCK=v5b_r6L2_glat_pmean` + `ENGINE_SHOT_BLOCK=K2_Ocell` + `ENGINE_FOUL_JOINT=R9ao3`, paired
 against S0 and against `v3full_COMB_s200_o0` (box request `docs/ops/box_queue/laneC_2.md`).
+
+### 28.2 ADOPTED 2026-10-01 -- `R9ao3` (foul-trip repair + round-9 and-one model) is served (adoption executor)
+
+The Decision 11 set (clock L2 + shot_block K2_Ocell + foul R9ao3 + shared_shooting G3 + chance_time KD) was ADOPTED as ONE served stack by the PM under the user's delegation of 2026-09-30. Evidence: `docs/tests/engine_gates_F2_2025_s200_v3_COMB9GKD_full_2026-10-01.md` (5,710 x 200, verified truth, Decision 12 floors, paired vs S0: G1 possessions mean FAIL -> PASS, OREB% FAIL -> PASS, total and margin bias stay PASS, slope 0.917 -> 0.948, home/away corr 0.117 -> 0.126, G2 cells 3/9 -> 6/9, no verdict regresses). Engine default changed in the adoption commit; the pre-adoption stack stays reachable with the SERVED_V1 env (`docs/tests/adoption_served_v2_2026-10-01.md`), which reproduces parity references v6 and v7 bit-identically.
+
+- `foul_joint.DEFAULT = "R9ao3"`; `loop.py` passes it when `ENGINE_FOUL_JOINT` is unset. `reference` = served-v1 (no tables).
+- Artifacts: `round9/lut_ao_AO3_F2.npz` and `round9/ao_team_prior_v1.parquet` (tracked), plus the R8b base tables `round7/lut_acc_A2_F2.npz` and `round7/lut_trip_T2c_F2.npz` (gitignored, on HF under `model_artifacts`).

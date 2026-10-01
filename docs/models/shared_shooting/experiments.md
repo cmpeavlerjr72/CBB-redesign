@@ -160,3 +160,10 @@ neutral, month, as-of tempo tercile; per team (UNDERPOWERED, about 30 games each
 - **Control U1 (25 seeds, local):** corr -0.003, Cov -0.09, margin SD ratio +0.022 (+11.8 floors, away from 1).
 
 **STATUS: VALIDATED-PENDING-SHIP-ACTION (Decision 11)**, arm `G3`. Nothing is adopted and no default changes; the PM decides inside the ship set.
+
+## ADOPTED 2026-10-01 -- arm `G3` is served (adoption executor)
+
+The Decision 11 set (clock L2 + shot_block K2_Ocell + foul R9ao3 + shared_shooting G3 + chance_time KD) was ADOPTED as ONE served stack by the PM under the user's delegation of 2026-09-30. Evidence: `docs/tests/engine_gates_F2_2025_s200_v3_COMB9GKD_full_2026-10-01.md` (5,710 x 200, verified truth, Decision 12 floors, paired vs S0: G1 possessions mean FAIL -> PASS, OREB% FAIL -> PASS, total and margin bias stay PASS, slope 0.917 -> 0.948, home/away corr 0.117 -> 0.126, G2 cells 3/9 -> 6/9, no verdict regresses). Engine default changed in the adoption commit; the pre-adoption stack stays reachable with the SERVED_V1 env (`docs/tests/adoption_served_v2_2026-10-01.md`), which reproduces parity references v6 and v7 bit-identically.
+
+- `shared_shooting.DEFAULT = "G3"`; `ENGINE_SHARED_SHOOTING=reference` = served-v1 (no draw).
+- Artifact: `data/processed/models/shared_shooting/params_v1.json` (tracked).

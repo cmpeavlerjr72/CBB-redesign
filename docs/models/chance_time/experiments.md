@@ -383,3 +383,13 @@ Recorded for the PM (this lane adopts nothing):
 - Under Decision 11 the KD read would be VALIDATED-PENDING-SHIP-ACTION. It shows the
   small G5 cost and leaves OREB% (rebound level, `TO`) and FT% (FT-trip allocation and
   foul state) as the remaining PPP owners.
+
+## 9. ADOPTED 2026-10-01 -- arm `KD` is served (adoption executor)
+
+The Decision 11 set (clock L2 + shot_block K2_Ocell + foul R9ao3 + shared_shooting G3 + chance_time KD) was ADOPTED as ONE served stack by the PM under the user's delegation of 2026-09-30. Evidence: `docs/tests/engine_gates_F2_2025_s200_v3_COMB9GKD_full_2026-10-01.md` (5,710 x 200, verified truth, Decision 12 floors, paired vs S0: G1 possessions mean FAIL -> PASS, OREB% FAIL -> PASS, total and margin bias stay PASS, slope 0.917 -> 0.948, home/away corr 0.117 -> 0.126, G2 cells 3/9 -> 6/9, no verdict regresses). Engine default changed in the adoption commit; the pre-adoption stack stays reachable with the SERVED_V1 env (`docs/tests/adoption_served_v2_2026-10-01.md`), which reproduces parity references v6 and v7 bit-identically.
+
+**PM ruling, recorded here and labelled POST-HOC.** The pre-registered per-row guards (fed log-loss and the calibration-decile line, s2.1 and s4.1) are mis-specified for a DRAWN state feed: a feed drawn from a conditional distribution fails per-row log-loss and calibration-decile lines by construction (s7, s8). The PM replaced them, after the results were seen, with level parity and conditional-distribution parity. KD passes those replacements. This replacement is post-hoc: it was not part of the pre-registration and must be read that way.
+
+- `chance_time.DEFAULT = "KD"`; `ENGINE_CHANCE_TIME=reference` = served-v1 (no draw).
+- Artifact: `data/processed/models/chance_time/F2/lut_v3.npz` (tracked).
+- s8 already measured KD's cost: G5 total SD ratio and home/away corr sit 1.6 and 2.5 S0 floors below COMB9. The adopted-stack gate keeps both lines FAIL (`docs/tests/adoption_served_v2_2026-10-01.md`).
