@@ -113,3 +113,78 @@ No multiplier, offset, cap or blend on any output. The tables are the
 empirical distributions of the models' own training inputs, built from training
 seasons only, never fitted to sim output or to the test season. No sub-model is
 refitted; no served default changes; nothing is adopted by this lane.
+
+## 2. Round 1 results (lane I, run 2026-09-30 23:38 - 2026-10-01 00:04 EDT)
+
+Scripts: `scripts/build_chance_time_lut_v1.py` (tables, 23:38), `scripts/exp_chance_time_offline_v1.py`
+(F2 offline, 23:39-23:40), `scripts/exp_chance_time_f1_parity_v1.py` (F1, 00:03),
+`scripts/grade_chance_time_loop_v1.py` (closed loop, 00:03). Engine wiring `28c03f6`
+(default-off `ENGINE_CHANCE_TIME=C2|C12`, parity of the default path PASS bit-identical,
+digest `0d4ddccc...`). Full tables: `docs/tests/ppp_deficit_decomposition_2026-09-30.md` s6.
+
+### 2.1 Offline, F2 (627,859 of 630,904 held-out rows joined to their possession, 99.5%)
+
+| arm | G_feed | floor | beats R by | rim / jumper / three mean-p gap (pp) | fed - true log loss rim / jump / three | resp. slope rim / jump / three |
+|---|---:|---:|---:|---|---|---|
+| R | 1.973 | | | -1.31 / -0.48 / -0.43 | -0.0187 / -0.0109 / -0.0075 | 1.120 / 0.903 / 0.746 |
+| C2 | 1.819 | 0.0112 | 13.7 floors | -0.84 / -0.69 / -0.53 | -0.0182 / -0.0110 / -0.0074 | 1.050 / 0.912 / 0.743 |
+| C12 | 1.314 | 0.0147 | 44.7 floors | -0.65 / -0.45 / -0.38 | -0.0168 / -0.0096 / -0.0063 | 1.049 / 0.901 / 0.749 |
+
+F1 confirmation (2022-23 tables on 2024 real states; mean absolute fed-vs-real elapsed quantile gap /
+chance-1 transition-share gap): R 3.40 s / 0.055, C2 1.43 s / 0.055, **C12 1.03 s / 0.045**. Both confirm.
+
+**Registered decision: NO ELIGIBLE ARM; `R` stands.** Both arms fail the fed-log-loss guard (rim
+C2 +0.00055, C12 +0.0019 vs R, guard 1.1e-4) and the one-sided rim responsiveness line (R 1.120;
+needs >= 1.070; C2 1.050, C12 1.049).
+
+Found while grading, recorded and NOT used to select: every fed log loss is BELOW the true-feature log
+loss (rim 0.6485 vs 0.6672). The offline replay builds R's (and C12's) chance-1 feed from the REAL
+possession duration, which carries the future (a first shot that is missed and offensively rebounded
+sits in a long possession), so the leakiest feed wins the log-loss guard. A draw cannot beat a constant
+on log loss when neither is informative about the row. The one-sided slope line penalises 1.12 -> 1.05
+(the FT-technicals reading the PM already ruled mis-specified, `season_drift` s3 item 2).
+
+### 2.2 POST-HOC closed loop (outside the rule; COMB stack, 500 verified stride games x 32 paired seeds)
+
+Paired with the R tap (seeds 0-31, bit-identical to the box COMB rows); floor = |R(seeds 100-131) - R|.
+
+| line | R | C2 (move / floors) | C12 (move / floors) | actual (sample) |
+|---|---:|---|---|---:|
+| rim make | 0.5719 | +0.0045 / 3.2 | **+0.0065 / 4.6** | 0.5901 |
+| jumper make | 0.3907 | -0.0015 / 1.5 | -0.0003 / 0.3 | 0.3916 |
+| three make | 0.3361 | -0.0015 / 3.4 away | +0.0001 / 0.3 | 0.3377 |
+| eFG | 0.5022 | +0.0004 / 0.9 | **+0.0026 / 5.3** | 0.5107 |
+| points per game | 144.74 | +0.04 / 0.8 | **+0.35 / 7.4** | 146.55 |
+| rim share | 0.3716 | 0.0000 | +0.0016 / 4.2 | 0.3715 |
+| three share | 0.3893 | 0.0000 | -0.0008 / 2.3 away | 0.3954 |
+| FTA/FGA | 0.3317 | 0.0000 | +0.0024 / 14.7 | 0.3329 |
+| possessions (count) | 69.06 | -0.02 | -0.06 / 1.7 | |
+
+C12 recovers +0.35 of the ~1.7 points the tap swaps attribute to the feed. The remaining defect is
+visible in the fed values: C12's chance-1 elapsed for rim attempts is 4/8/16/22/28 s against the real
+4/7/14/21/26 s, because the engine's possession duration is drawn BEFORE the shot class and is
+class-blind, while the real time to the first shot depends strongly on the class (rim attempts come
+early). The tap swap that closed the gap drew real elapsed values WITHIN class. C2's chance-2+ draw
+lifts rim but lowers jumpers and threes (the median over-fed them), net +0.04 points.
+
+## 3. Addendum, round 1b: class-conditional chance-1 time at the fg_make call (written 2026-10-01 00:10 EDT, COMMITTED BEFORE arm K IS BUILT OR RUN)
+
+POST-HOC relative to round 1: motivated by 2.2. One new arm.
+
+- **`K`**: chance >= 2 as `C2`. Chance 1, at the fg_make call only: `chance_elapsed_s` drawn by inverse
+  CDF (1001 quantiles) from the TRAINING distribution of the design's chance-1 `chance_elapsed_s` in
+  the cell (shot class x start group {DREB, TOV} / other), clipped to <= min(60, seconds remaining
+  at the possession's start); fg_make's `is_transition_f` = (drawn elapsed <= 8 and start in
+  {DREB, TOV}). possession_outcome's transition input stays served (as `R`). Same rng family
+  `chance_time`; tables from training seasons only (F2 2022-2024, F1 2022-2023), built by a versioned
+  sibling `scripts/build_chance_time_lut_v2.py`; flag value `ENGINE_CHANCE_TIME=K`.
+- **Evaluation:** the round-1 offline grader unchanged (`G_feed` primary, same floor definition, F1
+  model-free parity), plus the round-1 guards REPORTED AS WRITTEN. For K's selection the two guards
+  that 2.1 shows mis-specified are REPLACED (labelled POST-HOC): (i) fed log loss -> the fg_make
+  calibration gate on the fed predictions (worst decile |mean p - realised| <= 2.0 pp per class,
+  `fg_make` round-4 gate); (ii) one-sided slope -> symmetric (|slope - 1| not worse than R's by
+  more than 0.05). K is ELIGIBLE iff it beats R on G_feed by more than its floor, passes (i) and
+  (ii) in every class, and F1 confirms. Simplicity: K (rank 2, between C2 and C12).
+- **Closed loop:** same local loop (COMB, 500 x 32, paired, R-floor 100-131). Then the box read
+  `COMB9 + ENGINE_CHANCE_TIME=<K or C12>` vs `COMB9` at full size with Decision 12 floors; the PM
+  rules on ship. Nothing is adopted by this lane.
