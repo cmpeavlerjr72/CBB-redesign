@@ -24,8 +24,9 @@ import run_po4b_closed_loop as R  # noqa: E402
 
 def main() -> int:
     argv = sys.argv[1:]
-    if "--sample-file" not in argv:
-        raise SystemExit("--sample-file PATH is required (use run_po4b_closed_loop.py for the stride rule)")
+    if "--sample-file" not in argv:  # default sample is now the verified stride sample inside run_po4b_closed_loop.py
+        sys.argv = [sys.argv[0], *argv]
+        return R.main()
     i = argv.index("--sample-file"); path = Path(argv[i + 1]); del argv[i:i + 2]
     ids = np.sort(pd.read_parquet(path)["game_id"].to_numpy().astype("int64"))
     if len(ids) != len(set(ids.tolist())):

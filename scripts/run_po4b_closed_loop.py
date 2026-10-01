@@ -92,11 +92,29 @@ def _run_block(job: tuple) -> tuple:
     return res.games, res.players, res.diag, res.n_possessions
 
 
+SAMPLE_ENV = "CBB_SAMPLE"  # unset / "verified_stride_v1" = verified same-rule sample (DEFAULT since 2026-09-30); "legacy_stride" = old sample
+VERIFIED_SAMPLE_FILE = Path(__file__).resolve().parents[1] / "data" / "processed" / "truth" / "stride500_verified_v1_F2_2025.parquet"
+
+
 def subset_rows(games: pd.DataFrame) -> np.ndarray:
-    """The standing 500-game subset: clock experiments.md section 14.4, reused
-    verbatim so this round's table lines up with the clock rounds'."""
-    order = np.argsort(games["game_id"].to_numpy(), kind="stable")
-    return order[::SUBSET_STRIDE][:SUBSET_N]
+    """The standing 500-game subset. DEFAULT (2026-09-30): the same rule (sorted
+    game_id ascending, every 11th, first 500) applied to the VERIFIED universe,
+    read from stride500_verified_v1_F2_2025.parquet (10 games in common with the
+    old sample; docs/tests/truth_unplayed_finals_2026-09-30.md section 8).
+    `CBB_SAMPLE=legacy_stride` selects the old rule on the engine-input games
+    (clock experiments.md section 14.4; includes one unplayed game)."""
+    mode = os.environ.get(SAMPLE_ENV, "").strip()
+    if mode == "legacy_stride":
+        order = np.argsort(games["game_id"].to_numpy(), kind="stable")
+        return order[::SUBSET_STRIDE][:SUBSET_N]
+    if mode not in ("", "verified_stride_v1"):
+        raise SystemExit(f"{SAMPLE_ENV}={mode!r}: expected unset, 'verified_stride_v1' or 'legacy_stride'")
+    ids = np.sort(pd.read_parquet(VERIFIED_SAMPLE_FILE)["game_id"].to_numpy().astype("int64"))
+    pos = {int(g): k for k, g in enumerate(games["game_id"].to_numpy())}
+    miss = [int(g) for g in ids if int(g) not in pos]
+    if miss:
+        raise SystemExit(f"{len(miss)} verified-sample game ids not in the engine inputs, e.g. {miss[:5]}")
+    return np.array([pos[int(g)] for g in ids], dtype=np.int64)
 
 
 def _assert_served_stack(allow_drift: bool) -> list[str]:
@@ -228,6 +246,7 @@ def main() -> int:
         "sealed_touched": False, "partial": bool(dropped),
         "n_games": int(len(rows)), "n_rows": int(len(games)),
         "keep_players": bool(keep_players),
+        "sample_mode": os.environ.get(SAMPLE_ENV) or "verified_stride_v1",
         "subset_rule": (f"F2 {args.season} slate sorted by game_id ascending, every "
                         f"{SUBSET_STRIDE}th row, first {SUBSET_N}"),
         "game_ids": [int(x) for x in sub["game_id"].to_numpy()],
