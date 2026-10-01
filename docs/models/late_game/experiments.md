@@ -861,3 +861,29 @@ possessions and actual cells under 200 are labelled UNDERPOWERED.
 - Screening size is 500 x 25 as in 6.4. A candidate that clears it is re-read at 500 x 200 and 5,710 x 200
   on the box (request written, PENDING); a local closed-loop tap sized from a measured slice is direction
   only.
+
+---
+
+## 8. RESULTS -- round 3, RUN 2026-10-01 (lane L; status PROPOSED -> RUN; NO ARM ADOPTED, no served default changed)
+
+Full evidence: `docs/tests/late_game_round3_2026-10-01.md`. Base = served stack v2 (section 7). Off path parity v9
+PASS bit-identical; first half bit-identical in every arm; all 11 runs re-verified bit-identical on 20-game
+slices after dirty-tree starts. 500 verified games x 25 paired seeds; floor = max(draw SD over R9 + 4 offsets,
+2 x paired game-bootstrap SE).
+
+| arm | P(0)/P(1) | floors vs base | OT | vetoes | candidate |
+|---|---:|---:|---:|---|---|
+| R9 (served v2) | 0.552 | -- | 0.0290 | -- | -- |
+| Dt9 | 0.672 | +2.13 | 0.0341 | PASS | no (< 1.0) |
+| Dtt9 | 0.709 | +1.76 | 0.0319 | PASS | no (< 1.0) |
+| D9 | 0.841 | +2.83 | 0.0402 | FAIL G1 mean, G1 SD, half share, window possessions | no |
+| R0 (v2, foul reference) vs R9 | 0.560 | +0.08 | 0.0297 | -- | attribution |
+| Dt0 / D0 vs R0 | 0.676 / 0.807 | +1.94 / +2.67 | 0.0342 / 0.0425 | -- | attribution |
+
+Offline guard (7.5) passes for every arm on both folds (tied rows: D law -1.11 CRPS, +9.3 floors F2, +7.9 F1).
+Decision rule 6.5: no candidate. Attribution: the extra window possessions are D's LEADING-role draws (Dt and Dtt
+pass the veto); the corrected foul state does not move the tie rate. Where the ties are lost (7.6): arrival at
+2:00 is 16% of the gap; the loss accrues between 1:00 and 0:10 (arrival share 73% at 0:10), through the tied offence
+not holding (fixed by Dt), end-of-clock possessions scoring ~1.0 PPP vs ~0.6 actual (NOT fixed; tied final
+possessions score 0 in 50% vs 64%), and the trailing team fouling late (leading offence 10 s vs 4 s inside 30 s).
+Box 500 x 200 re-read requested (`docs/ops/box_queue/d1001_L_1.md`), PENDING at writing.
