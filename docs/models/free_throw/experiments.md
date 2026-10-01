@@ -1096,3 +1096,44 @@ to build a winner's serving artifacts). Arms are paired on one calendar.
   present, else pooled FTM/FTA) toward the verified actual, in floors. Vetoes as rebound 12.3. A1 is put forward to the
   PM only with a primary move beyond 2 floors and no veto.
 - Priority: `A1` runs only after 13.2 and the rebound section 12 work; if time runs out it is reported NOT RUN.
+
+## 14. Round 14 (lane B, 2026-10-01 ~07:50 EDT): the score-margin feature as an engine-produced within-game response (written and COMMITTED BEFORE the `offline` stage ran)
+
+Lane I's section 13 (newcomer priors) is a separate, concurrent round. This section does not touch its arms, files or flag.
+
+### 14.0 What was seen before this was written (disclosure)
+
+- G5 owner (`docs/tests/g5_variance_channels_2026-10-01.md` section 8, tap `scripts/diag_ftfg_tap_v1.py`, 5,710 games x 6 seeds, bit-identical to the served 200-seed rows): the engine's between-team FT-make x opponent-FG-make covariance is -3.53 pts^2 (actual +0.28, SE 0.36). Of the -3.53, -3.19 is COMPOSITION (the FT make probability moving with the state), not luck. It is spread evenly over H1, early H2 and late H2, over leading and trailing states, and over trip kinds.
+- Served model (seg_27, 2025 attempts), partial dependence on `score_diff`: 0.668 at -20, 0.712 at 0, 0.768 at +20. That is +10 pp across the range, already in the first half (early: 0.673 at -10 to 0.749 at +10).
+- Sim, within (game, side): first-attempt p rises about 0.0019 per point of the shooting team's own margin.
+- Real 2023-25, within (game, team): FT% residual by margin is +0.014 when trailing by 15+ and -0.013 when leading by 15+. FT% does not rise with a team's own margin inside a game.
+- Reading: across games, `score_diff` proxies team strength (good teams lead and shoot FTs better). Inside the engine the same term becomes a causal response: the opponent makes a shot and this team's FT% falls. Decision 10's case: a state feature the engine produces.
+
+### 14.1 Arms (simplicity FT0 < FTn < FTnE)
+
+| arm | features |
+|---|---|
+| `FT0` | served `FT_FEATURES` |
+| `FTn` | `FT_FEATURES` minus `score_diff` |
+| `FTnE` | `FTn` + `gt_flag`, `eg_trail`, `eg_lead` (fg_make's end-game / garbage-time indicators, the arithmetic `loop._state_block` already serves), keeping a genuine late-game fouling effect without a full-game margin slope |
+
+All arms: `FT.LgbmArm` served params, `FT.build_ft_design` rows from `attempts_v1_era.parquet` (the served trainer's input), technicals excluded. Offline calendar: ONE static fit per fold (train seasons only), a stated cost deviation like section 13's; arms paired on it. Trainer: `scripts/exp_ft_scorediff_v1.py` (new; the served trainer is imported, not edited).
+
+### 14.2 Folds, metric, floor, guards, rule (fixed now)
+
+- Fold 1: train 2022-23, test 2024. Fold 2 (selection): train 2022-24, test 2025. 2025-26 sealed.
+- Primary: the within-game margin response error = |OLS slope of (y - p) on score_diff centred within (game, team)| on the held-out season. Gain = FT0's |slope| minus the arm's.
+- Floor: max(SD of the paired difference under a 200-replicate Poisson game bootstrap; |change in gain when every arm is refitted with seed 1|).
+- Guards (fold 2):
+  - held-out log loss no worse than FT0 by more than 0.0010;
+  - calibration by score_diff bin (9 bins), max |mean(y - p)| at most 1.0 pp;
+  - shooter-responsiveness verdict passes (`PM.responsiveness_verdict`, min steps 3).
+- Rule: eligible = fold-2 gain > 2 floors AND fold-1 gain > 0 AND guards pass. Winner = the largest fold-2 gain; within 1 floor tie, ties to the simpler. No eligible arm: FT0 stands, REFUTED offline.
+
+### 14.3 Engine and closed loop (fixed now)
+
+- Winner's serving artifacts: the served `S1_conf_aligned` F2 calendar via the served trainer's `run_cell` with the arm's feature list, written under `data/processed/models/free_throw/s1_scorediff/<arm>/` (gitignored, HF bulk).
+- Flag `ENGINE_FT_SCORE` (unset / `reference` = served manifest, bit-identical to parity v9; `<arm>` = that manifest). The adapter reads the artifact's own feature list. Nothing else changes.
+- Local tap (direction and parity only; Decision 12: a tap cannot decide G5). Box: 5,710 x 200 paired vs served v2 with four served-default floor draws.
+- Status: VALIDATED-PENDING-SHIP-ACTION if G5 home/away corr moves toward target beyond floor at 200 seeds and no line regresses beyond floor except through a named compensation (FT% level and G9 total bias included); REFUTED if corr does not move; UNDERPOWERED if only a tap exists.
+- Mechanism lines: the engine's FT x opponent-FG composition covariance (target about 0) and FT x own-FG within-team covariance (sim +0.92 vs actual +0.32 pts^2 for three x FT).
