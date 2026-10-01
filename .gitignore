@@ -116,6 +116,11 @@ data/processed/models/free_throw/s1_confirm/
 data/processed/models/rebound/s1_confirm/
 logs/
 
+# Full-retrain chain (lane D, 2026-09-30): every stage's outputs per tag, model artifacts well
+# over 20 MB; rebuildable by scripts/chain_full_retrain_v1.py; HF key proposed in
+# docs/ops/full_retrain_chain_2026-09-30.md
+data/processed/models/full_retrain_v1/
+
 # L7 late-game round 1 (2026-09-18): the event-half design (85 MB) and the
 # per-cell prediction / PMF dumps are model artifacts well over the 20 MB bar,
 # so they are gitignored and go to the HF dataset, per CLAUDE.md data rules.
