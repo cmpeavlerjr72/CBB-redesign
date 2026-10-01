@@ -1233,6 +1233,8 @@ class Adapters:
             flags["ENGINE_EVENT_TEAM_BLOCK"] = "v3"
         if (os.environ.get("ENGINE_FT_SCORE", "reference") or "reference") != "reference":
             flags["ENGINE_FT_SCORE"] = os.environ["ENGINE_FT_SCORE"]   # free_throw round 14 (lane B)
+        if (os.environ.get("ENGINE_TEAM_FORM", "reference") or "reference") != "reference":
+            flags["ENGINE_TEAM_FORM"] = os.environ["ENGINE_TEAM_FORM"]   # round 16 form latent (lane B)
         if lg_src is not None:
             flags["ENGINE_LATE_GAME"] = lg_mode
             flags["sources"]["late_game"] = lg_src

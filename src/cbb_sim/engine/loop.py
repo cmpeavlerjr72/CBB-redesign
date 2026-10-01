@@ -309,6 +309,8 @@ def simulate_chunk(inp: EngineInputs, ad: Adapters, game_index: np.ndarray,
         cbook = StreamBook(seeds, gids, families=("clock_cont",))
     if ssl is not None:
         ssl.init_game(seeds, gids, book.keys["clock"])
+    # round 16 (shared_shooting experiments.md s5): FT form shift, None unless ENGINE_TEAM_FORM is set
+    st.team_form = ssl if (ssl is not None and ssl.ft_u is not None) else None
     neutral_g = ((inp.games["neutral"].to_numpy() > 0)
                  if (foul_tab is not None or fj is not None) else None)
     ce_med = {int(k): float(v) for k, v in rules["chance_elapsed_median_by_chance"].items()}
@@ -828,6 +830,8 @@ def _shoot_trip(st: S.GameState, inp: EngineInputs, ad: Adapters, book: StreamBo
         x = _state_block(st, r, n_state, st.off_score_diff(), st.in_bonus())
         p = ad.ft.predict(inp.team_static[gidx[k], side[k]],
                           inp.slot_static[gidx[k], side[k], sh], x, gidx[k])
+        if getattr(st, "team_form", None) is not None:      # round 16 form latent (default off)
+            p = st.team_form.shift_ft(p, r, side[k])
         made = book.draw("free_throw", r) < p
         st.box["fta"][r, side[k]] += 1
         st.player_box["fta"][r, side[k], sh] += 1
