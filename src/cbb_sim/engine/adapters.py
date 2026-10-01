@@ -447,6 +447,9 @@ _FG_DATED_ROUNDS: tuple[tuple[str, str, str], ...] = (
     ("round2b_", "round2b", "scripts/train_fg_make_v2b_s1.py"),
     ("round3_shooter_", "round3_shooter", "scripts/train_fg_make_v3_shooter.py"),
     ("round4_", "round4", "scripts/train_fg_make_v4_shooter_block.py"),
+    # Lane G 2026-09-30, DEFAULT-OFF, NOT ADOPTED: `round4site_G4` = B1 trees without
+    # site + an FE-identified site logit offset (fg_make experiments.md s21-22).
+    ("round4site_", "round4_site", "scripts/train_fg_make_v4_site.py"),
 )
 _FG_ROUND_NOTE = {
     "round2b": ("fg_make round 2b (experiments.md s15): the round-2 winner under "
@@ -457,6 +460,8 @@ _FG_ROUND_NOTE = {
                        "FGA_jump2 and FGA_3"),
     "round4": ("fg_make round 4 (experiments.md s19): the shooter block re-baked "
                "from scratch on shot_shooter_id"),
+    "round4_site": ("fg_make Lane G home-site arm (experiments.md s21-22): B1 without site "
+                    "columns + team-FE-identified site logit offset; NOT ADOPTED, default-off"),
 }
 
 
