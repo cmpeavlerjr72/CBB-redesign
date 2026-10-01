@@ -2293,3 +2293,44 @@ NO WINNER. All of TS1 / TS2 / TS3, both seeds, break the jumper log-loss guard (
 ## 28. Lane A day round 3: RESULTS (run 2026-10-01 09:30-09:47 EDT; pre-registration section 27, commit 5518059)
 
 NO WINNER by the pre-registered rule. `TSR` wins the primary (harness |1 - slope| 0.0880 -> 0.0038 / 0.0019, 4.4 floors; close lens agrees; margin SD 9.65 -> 8.87) and passes the team-game slope line (0.83 / 0.79 / 0.73 -> 0.85 / 0.98 / 0.89 F2; fold 1 same direction), offence-quintile, log-loss, D8 and parity lines, but breaks two jumper level lines fixed in advance: month calibration (March +1.52 / +1.50 pp vs +-1.0; served +1.33 there too) and overall level (+0.52 / +0.51 pp vs +-0.5). `aL` (served trees + league-level offset only): primary inside the floor, same March cell fails: NO WINNER. Series closed. Full tables and the three-round reading: `docs/tests/g9_slope_team_response_2026-10-01.md` section 8.
+
+## 29. Lane A day round 4 (2026-10-01): the jumper league-level round, owner diagnosis + repairs on BOTH the served structure and TS-R (pre-registration, written and COMMITTED BEFORE the diagnosis or any arm ran)
+
+**Origin.** Section 28 / PM ruling: TS-R is NO WINNER as registered (jumper March +1.5 pp vs +-1.0; overall jumper level +0.52 vs +-0.5). The served model fails the same March cell (+1.33). PM: diagnose the owner of the jumper level drift, repair it in the within-game / league-level part, on both structures.
+
+**Owner diagnosis (`scripts/diag_jumper_level_v1.py`, descriptive).**
+- T1, league level lag / within-season seasonality: realised league jumper make rate by season x month vs the attempt-weighted served as-of league rate (`lg_make_asof`, season-to-date expanding mean) in 2022-2025. OWNER if, in 2024-25, as-of minus realised is >= +0.75 pp in March (half the +1.5 pp) and <= -0.4 pp in November, with the same signs in at least 2 of the 3 training seasons.
+- T2, trees re-learning level from month-correlated state: in 2024-25, monthly mean of (prediction - offset-only prediction) for TS-R's stage A, `aL` and served `aR`. OWNER if the tree part's March-minus-November swing is >= 50% of the prediction's March-minus-November bias swing.
+- T3, shot mix inside "jumper" (long two vs short mid-range): UNTESTABLE here, because the design carries no shot location. Proxies are reported by month: transition share, putback share (chance_number > 1), late-clock share (chance_elapsed_s >= 25).
+- No arm in this round targets T2 or T3. If either owns the drift, it is reported and not repaired here.
+
+**League-level variants (`scripts/train_fg_make_two_stage_v3.py`, a wrapper of v2; all use only games before tip).** Each variant replaces the league level that enters as the logit offset (and is served per game).
+- `J1` roll28: the league make rate over the previous 28 days of the same season. If the window has fewer than 1,500 attempts of the type, it falls back to the season-to-date as-of rate.
+- `J2` seasonal: logit(season-to-date as-of) + s_k(14-day bucket since the season's first date). s_k is the attempt-weighted mean realised-vs-as-of logit gap per type and bucket, fitted on the fold's TRAINING seasons only.
+- Opening day fix (both variants): the previous season's final rate. The served column instead back-fills from the next date, which looks forward.
+
+**Arms.** All arms run under seeds 0 and 1 (spec-identical reseed), on folds 1 and 2.
+- Served structure: `aLJ1`, `aLJ2`. These are the served B1 trees and features with the league level as an offset (section 27's `aL`) and the J variant.
+- Two-stage: `TSRJ1`, `TSRJ2`. These are section 27's TS-R with the J variant. Stage B's fitted terms are re-fitted, because stage A changes.
+- References: served `aR`, `aL`, `TSR` (sections 23 and 27).
+
+**Lines, guards and levels: section 27's, unchanged.**
+- Harness |1 - slope| with margin SD alongside; floor = max(0.0089, the arm's seed spread, paired bootstrap SE).
+- Team-game make slope line; offence-quintile line.
+- Month-level calibration: every powered month within +-1.0 pp for every type.
+- Log-loss guard. TS arms: `LL_aR + 0.25 x (LL_stageA - LL_aR)`. Served-structure arms: the fallback `LL_aR + 2 x aR's seed difference`.
+- D8 on fold 2, both seeds; overall level within +-0.5 pp.
+- Fold-1 design-level direction; train/serve parity exact.
+
+**Decision.**
+- **TS arms** (`TSRJ1`, `TSRJ2`) WIN only if every section-27 line passes.
+  - If both win: the larger primary gain, unless the two are within one floor; then the simpler (J1 < J2).
+  - A winner is wired: an `ENGINE_FG_MAKE` value, team columns `fg_team_offset__k` / `lg_make_asof__k` carried by a versioned input-dir sibling, parity v9 on a clean `src/` tree, a local tap, an HF bulk key, and `d1001_A_1.md` (full-size paired read with four floor draws, read on |1 - slope| and margin SD).
+- **Served-structure arms** (`aLJ1`, `aLJ2`). Month-level calibration is a PRIMARY line for them (the served model fails it today). They PASS if:
+  - every powered fold-2 month is within +-1.0 pp for every type;
+  - the overall level is within +-0.5 pp;
+  - |1 - slope| is not worse than served by more than one floor;
+  - the fallback log-loss bound, D8 and parity hold;
+  - fold 1's powered month cells are within +-1.0 pp, or not worse than aR's.
+  - A passing served-structure arm is wired and filed as its own request.
+- **If nothing passes by about 13:00 EDT** (PM instruction): plain TS-R (section 27) is wired anyway and filed with the request's first line reading DIAGNOSTIC, NOT ELIGIBLE FOR ADOPTION.
