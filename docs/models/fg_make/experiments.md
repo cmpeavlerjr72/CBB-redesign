@@ -2197,3 +2197,38 @@ The table is the `S0` held-out FE-adjusted HCA, in points per game per team side
 - **G4 is the offline winner, awaiting a paired closed loop.** The win is marginal and F1 is underpowered.
 - **G1 and G2 are REFUTED.** G1 improves log loss beyond the floor in rim and three, but not the primary.
 - **Closed-loop needs** (artifact export, a default-off `ENGINE_FG_MAKE=round4site_G4` adapter path, the expected G6 exposure under Decision 11) are listed in `docs/tests/home_site_terms_2026-09-30.md` section 5. Nothing was exported or wired tonight.
+
+## 23. Lane A day round (2026-10-01): fg_make team-rate response for the G9 slope of served stack v2 (pre-registration, written and COMMITTED BEFORE any arm ran)
+
+**Origin.** HANDOFF open item 4. Served stack v2 G9 calibration slope 0.948 (target 1.0, FAIL). Last night's lane A attributed the S0 miss to the team-rate responses of possession_outcome (PO) and fg_make (harness beta about 0.57) and named fix arms G1 / G3 in `docs/models/aggregation/experiments.md` section 2 (aggregation-lane names; NOT lane G's site arms of section 21 and NOT the shared-shooting latent G3). Here they are prefixed `a` to avoid the collision.
+
+**Step-1 evidence (diagnostic, not an arm; run 06:19 EDT, `scripts/diag_g9_team_response_v1.py --part attrib`, output `results/g9_team_response_v1/attrib_v2_v1.json`).** Harness inputs proven identical to served v2's (arrays equal, event block sha 228794fc). Sim-anchored on the v2 200-seed margins (`v3full_COMB9GCTKD_s200_o0`), Y lens: slope 0.948; PO rates k +0.035 (beta 0.64, SE 0.08), fg_make rates k +0.020 (beta 0.65, SE 0.14), rebound +0.014 (0.67), ratings -0.019 (1.03), not_harnessed -0.013. Close lens betas PO 0.44, FG 0.53, RB 0.43, ratings 1.07. Per possession type (sim team-game slope of realised on the 200-seed mean rate): TOV 0.94, FT trip 1.01, rim share 1.02, jump share 1.02, 3PA share 0.99 (PO's rates are calibrated at team-game level); make rim 0.90, jump 0.70, three 0.67 (fg_make over-spread); OREB 0.92; FT% 0.64. Margin responsiveness between team prior quintiles 0.99. **So the one scoring sub-model whose own team-game predictions are over-spread is fg_make; this round retrains fg_make.** PO's margin component is over-spread although its rates are calibrated; that is a valuation question (not a PO retrain), tested descriptively and, if motivated, by a separately registered addendum.
+
+**Arms (all fg_make B1 spec and S1 monthly schedule through `scripts/train_fg_make_v4_par_g9_v1.py`, a wrapper of the unchanged `train_fg_make_v4_par_v1.py`; 4 processes, 1 thread each):**
+
+| arm | features | fit change | servable how |
+|---|---|---|---|
+| `aR` (reference) | served (`round4/B1`) | none | is the served artifact set (Stage B `R` reproduces it exactly); trained here only for fold 1 and for the design-level metrics |
+| `aTfix` (reference) | E3 v4 + rawfix (09-30 `Tfix`) | none | input stack `engine_v3_X_Tfix_laneA` |
+| `aG1` (spec G1) | `aTfix` + E3 posterior variances `off_make_v`, `def_allow_v` (offence's / defence's `make_{rim,jump,3}_{off,def}_v`) | none | needs two new team columns (builder) |
+| `aG3` (spec G3) | `aTfix` | monotone +1 on `off_make_c`, `def_allow_c`; `min_child_samples` per class by team-season-grouped 3-fold CV log loss on the fold's training seasons over {200, 800, 3200, 12800} | as `aTfix` |
+| `aG1R` (own evidence: reliability) | served + `off_att_prior`, `def_att_prior` (attempts behind the as-of rate; the served rate is unshrunk, the Nov betas are the worst: FG 0.43) | none | needs two new team columns (builder) |
+| `aG3R` (own evidence: G3 on the served design) | served | as `aG3` | artifact swap only |
+
+Deviation from section 2's text, stated: G1 / G3 were written on Stage B `T`, which carries the train/serve skew found that night; they are built on the skew-free `Tfix`.
+
+**Folds.** Fold 2 (train 2022-24, test 2024-25) selects; fold 1 (train 2022-23, test 2023-24) confirms. 2025-26 untouched. Fold-1 caveat, the same for every arm: `fit_m` (shooter shrinkage m) is the trainer's own, chosen on 2023-24.
+
+**Noise floor.** Each arm retrained under seed 1 (spec-identical). Floor of a difference = max(|seed0 - seed1| of the arm, |seed0 - seed1| of `aR`, paired game-bootstrap SE).
+
+**Primary (fold 2 only; there are no fold-1 engine inputs):** the deterministic harness margin `1 - slope(Y on X_h)` with fg_make replaced by the arm and every other sub-model served (`scripts/diag_g9_harness_arm_v1.py`), paired against the served harness (`harness_S0`, 0.088). Lower is better. Close lens reported beside it and must have the same sign.
+
+**Co-primary, design level, both folds (`scripts/grade_g9_team_response_v1.py`, one grading script for every arm, blind to arm labels until the table is printed):** attempt-weighted slope of realised team-game make rate on predicted, per class, from the trainer's out-of-sample test predictions, and the beta of the team-rate part (prediction minus the same model's prediction with `off_make_c`, `def_allow_c` = 0) in the joint regression on [no-rate prediction, rate part].
+
+**Segments.** Per class; month (Nov-Mar); offence team prior quintile; home/away vs neutral. Cells under 300 team-games labelled UNDERPOWERED.
+
+**Responsiveness check.** Predicted vs realised team-game make rate by offence-team prior quintile (as-of `off_make_c` quintile and own-rating quintile): the quintile slope of realised on predicted must be in [0.8, 1.25] or not worse than `aR`'s by more than 0.05.
+
+**Guards.** Shot-level log loss per class not worse than `aR` by more than 2 x `aR`'s seed difference; D8 calibration checks pass; fold 1 the same sign on the co-primary (team-game slope moves toward 1); train/serve parity of every team and slot feature the arm reads, checked by the harness before it runs (share of rows off by > 1e-4 must be < 0.1%, else the arm is reported SKEWED and not graded).
+
+**Decision rule.** An arm WINS offline if it lowers the fold-2 harness `1 - slope` below `aR` by more than 2 floors, the close lens agrees in sign, the co-primary moves toward 1 in at least 2 of 3 classes on fold 2 with none worse beyond its floor, fold 1 agrees in sign, and no guard breaks. Several winners: the larger primary gain unless within one floor of each other, then the simpler, in the order `aG3R` < `aG1R` < `aG3` < `aG1`. A winner then goes behind a default-off `ENGINE_FG_MAKE` value (off path bit-identical to parity v9), a local closed-loop tap vs the default (direction only; underpowered, Decision 12) and a box request for the full-size paired read. Nothing is adopted by this lane. Outcome labels: REFUTED, NO WINNER, or OFFLINE WINNER awaiting the full-size read.

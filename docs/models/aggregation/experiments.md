@@ -156,3 +156,7 @@ Addendum F2 result: replacing the engine's S1 shooter devs with the values `T` w
 ### 2.6 Addendum H (registered 00:06 EDT, BEFORE it ran): the same parity check for possession_outcome `T`
 
 Descriptive. For fold-2 rows, compare the possession_outcome Stage B `T` training overlay (`design_overlay.parquet` from HF `model_artifacts/possession_outcome/round_stageb/T/team_rate_features_E3_v4/`) with the S1 engine's round-2 team block, column by column (correlation, max |difference|), as addendum F did for fg_make.
+
+## 3. Pointer (lane A, day 2026-10-01): the G1 / G3 fix round is registered as fg_make retrains
+
+Arms `aG1` / `aG3` (this file's section 2 G1 / G3, rebuilt on the skew-free `Tfix`) plus `aG1R` / `aG3R` on the served design are pre-registered in `docs/models/fg_make/experiments.md` section 23 (committed before any arm ran). Step-1 reproduction on served stack v2: `results/g9_team_response_v1/attrib_v2_v1.json`; results doc `docs/tests/g9_slope_team_response_2026-10-01.md`.
