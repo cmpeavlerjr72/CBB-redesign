@@ -677,6 +677,15 @@ V3C_MODES["v3c_r6D1_srfloor_P3_s1"] = {
 V5_MODES["v5b_r6D1_glat_pmean"] = {
     "base_mode": "v3c_r6D1_srfloor_P3_s1", "unit": "game", "param": "B1_sigma", "loc": "plus_half",
     "params_file": "r6_D1/v5b_bakeoff/v5b_bakeoff_report.json"}
+# Clock round 7 (experiments.md section 32; lane H 2026-09-30): arm A2 = L2's cell
+# grid without the tempo tercile x a continuous offence/defence AFT time scale
+# (`cbb_sim.models.clock_r7.AFTArmR7`, reads off/def_tempo_rel already in TEAM_COLS).
+# DEFAULT-OFF: new keys only. Artifacts: scripts/train_clock_r7_pace_v1.py.
+V3C_MODES["v3c_r7A2_P3_s1"] = {
+    "manifest": "r7_A2/F2/manifest.json", "base_arm": "clock_r7_A2", "parametrisation": "P3"}
+V5_MODES["v5b_r7A2_glat_pmean"] = {
+    "base_mode": "v3c_r7A2_P3_s1", "unit": "game", "param": "B1_sigma", "loc": "plus_half",
+    "params_file": "r7_A2/v5b_bakeoff/v5b_bakeoff_report.json"}
 
 #: The pregame tempo feature the round-5d dispersion function is a function of.
 #: It is a TEAM_COLS member the served round-3c frame already carries, and it is

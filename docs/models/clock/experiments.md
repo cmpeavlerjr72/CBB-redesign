@@ -4377,3 +4377,37 @@ section 5.5.
 - **Decision rule.** An arm beats C0 if, on fold 2, deviance improves by more than its floor AND the offence-quintile slope moves toward 1.0 by more than its floor. Vetoes: overall implied-count gap |model - actual| per team-game not worse than C0's by > 0.10; no start type's mean gap worse than C0's by > 0.20 s; fold 1 does not reverse the sign of the deviance improvement. Among winners, the simplest (A1 < A2 < A3) whose deviance and slope are each within one floor of the best winner. If none wins: REFUTED.
 
 **Closed loop (the offline winner only).** Wired as a default-off `ENGINE_CLOCK` mode `v5b_r7<arm>_glat_pmean` (new `V3C_MODES`/`V5_MODES` keys only; flag-off parity bit-identical to `docs/ops/parity_reference_windows_v6.json`), the B1 latent sigma refitted on the new law with `exp_clk5b_mean_consistent.py --fit-only` (with team effects in the law, the game latent should shrink; it is refitted, not reused). Control `v5b_r6L2_glat_pmean`, paired seeds, v3 inputs, `ENGINE_EVENT=round2_s1`, `CBB_TRUTH=verified_v1`. Lines: G1 possession count - v4 count (like-for-like) and pooled SD; team pace responsiveness IN THE SIM (per-team sim possessions per game by team tempo quintile vs actual v4 counts, slope); G5 total SD ratio by component; G9 total and margin bias and slope (margin slope reported because of the E3 Stage C finding); vetoes: G5 margin SD ratio, first-half share, OT rate, everything else in the gate. Floors per Decision 12 (>= 4 seed-offset draws + paired game bootstrap, max). Full size requested through the box queue; a local loop sized by a measured timing at 3 cores, its G5 ratio lines labelled UNDERPOWERED. Outcome is at most VALIDATED-PENDING-SHIP-ACTION (Decision 11); nothing is adopted and no default changes. Results: `docs/tests/clock_round7_pace_responsiveness_2026-09-30.md`.
+
+## 33. Round 7 OFFLINE result and the closed-loop registration (2026-09-30 ~22:45 EDT, lane H; written BEFORE any closed loop of a round-7 arm)
+
+**Run.** `scripts/chain_clk7_train_v1.sh` (all arm x fold schedules, 22:29-22:32 EDT) and `scripts/grade_clock_r7_offline_v1.py` (22:33-22:35) -> `results/clock_r7/offline_grade.json`. C0 reproduces L2 exactly on fold 2 (max abs E[min(T,R)] and log-lik diff 0.0 on 20,000 rows).
+
+| fold | arm | deviance | d vs C0 (floor) | offence-q slope | defence-q slope | game-prior-q slope | implied poss / team-game | per-game count cal. slope |
+|---|---|---:|---:|---:|---:|---:|---:|---:|
+| F2 | C0 (=L2) | 6.98976 | | 0.401 | 2.106 | 0.826 | +0.527 | 0.913 |
+| F2 | A1 | 6.96529 | -0.0245 (0.0039) | 0.576 | 2.992 | 1.061 | +0.737 | 0.844 |
+| F2 | **A2** | 6.96064 | -0.0291 (0.0041) | **0.987** | **0.906** | 1.062 | +0.733 | 0.843 |
+| F2 | A3 | 6.95870 | -0.0311 (0.0044) | 1.019 | 0.850 | 1.070 | +0.657 | 0.796 |
+| F1 | C0 | 6.99254 | | 0.474 | 2.041 | 0.878 | +0.369 | 0.855 |
+| F1 | A1 | 6.95872 | -0.0338 (0.0052) | 0.684 | 2.931 | 1.179 | +0.201 | 0.769 |
+| F1 | A2 | 6.95435 | -0.0382 (0.0051) | 1.121 | 1.077 | 1.180 | +0.196 | 0.769 |
+| F1 | A3 | 6.95416 | -0.0384 (0.0051) | 1.131 | 1.137 | 1.178 | +0.147 | 0.711 |
+
+**Reading under the section-32 rule.**
+- Primaries: all three arms beat C0 on deviance by 6-7 floors on both folds; the offence-quintile slope moves toward 1 by 4.6 (A1, 0.40 -> 0.58), 15 (A2, -> 0.99) and 15 (A3, -> 1.02) floors. A2 also brings the defence slope from 2.1 to 0.9. A3's extra over A2 (deviance -0.0019, slope +0.03) is inside one floor: **A2 is the simplest arm within one floor of the best.**
+- **Veto that FIRES on fold 2 for every arm: the overall implied-count gap.** |gap| worsens by +0.21 (A1, A2) and +0.13 (A3) against the 0.10 veto; on fold 1 it IMPROVES (-0.17, -0.17, -0.22). Start-type veto passes (max +0.06 s). Fold-1 sign check passes.
+- **Cause of the veto, decomposed by month (F2, model - actual seconds):** C0 Nov -0.12, Dec +0.03, Jan -0.24, Feb -0.16, Mar -0.14; A2 Nov +0.05, Dec +0.03, Jan -0.33, Feb -0.35, Mar -0.32. The as-of league tempo mean inside C0's RAW `tempo_prior_game` falls every season from about 70.0 (Nov) to 67.9-68.4 (Mar) while real durations lengthen (17.3 -> 17.9 s): C0's raw level was partly tracking the in-season drift (L34) through a banned raw-level feature. The relative features remove that, and the drift reappears. This is a compensation exposed by the fix, the Decision 11 case.
+- **Status: by the literal section-32 rule no arm wins (count-gap veto on F2).** Under Decision 11 the exposure is read rather than refused: A2 is carried to the closed loop as a **Decision-11 read, NOT a winner**. The PM decides whether the veto or Decision 11 governs; nothing here can produce more than VALIDATED-PENDING-SHIP-ACTION.
+
+**Closed loop registration (A2 vs L2).**
+- Arm `ENGINE_CLOCK=v5b_r7A2_glat_pmean` (adapter keys added, default-off). The B1 latent sigma refitted on A2's law by `scripts/exp_clk7_latent_v1.py`: 0.04326 (L2 0.04682).
+- Flag-off parity: 60 x 5 smoke PASS, bit-identical digest `0d4ddccc...029f` against `parity_reference_windows_v6.json`. L2 path: no line serving it changed; it is checked by rerunning lane B's `clk6_L2_s25` and comparing games bit-for-bit.
+- **Full size (box):** A2 at 5,710 x 200, paired with the on-disk `v3full_L2_s200_o0`. Floors per Decision 12 come from the on-disk S0 seed-offset draws `v3full_S0f{1..4}` together with a paired game bootstrap; the floor is the max.
+- **Local:** A2 on the 500-game verified sample, seeds 0-24, paired with `clk6_L2_s25`. G5 ratio lines at this size are UNDERPOWERED.
+- **Lines:**
+  - G1 count - v4 count, and pooled SD;
+  - sim team pace responsiveness (per team, sim possessions per game by the team's as-of tempo quintile against actual v4 counts; slope);
+  - G5 total SD ratio by component;
+  - G9 total and margin bias and slope.
+- **Vetoes:** G5 margin SD ratio, first-half share, OT rate, and the rest of the gate.
+- **Expectation, stated in advance:** the G1 count worsens by about +0.2 possessions per team-game (the offline level shift). Team responsiveness in the sim should rise toward 1.
