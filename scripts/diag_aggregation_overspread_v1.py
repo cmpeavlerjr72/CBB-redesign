@@ -484,6 +484,13 @@ def part_loop(d: pd.DataFrame, nseeds: int, suffix: str) -> dict:
                     z[a] = full - X[a]
                 z["I1"] = full - X["ALL"] - sum(full - X[a] for a in L1_LOOP)
                 out["L1"] = z
+            if all(a in X for a in ("TEAM", "PO", "FG", "RB", "RAT")):
+                # L1t: the four team-feature families against the all-team-swapped base (no PACE / PLY arms needed)
+                zt = {"base_TEAM": X["TEAM"]}
+                for a in ("PO", "FG", "RB", "RAT"):
+                    zt[a] = full - X[a]
+                zt["I1t"] = full - X["TEAM"] - sum(full - X[a] for a in ("PO", "FG", "RB", "RAT"))
+                out["L1t"] = zt
             if all(a in X for a in ("TEAM", "OFF", "DEF")):
                 out["L2"] = {"base_TEAM": X["TEAM"], "OFF": full - X["OFF"], "DEF": full - X["DEF"],
                              "I2": full - X["TEAM"] - (full - X["OFF"]) - (full - X["DEF"])}

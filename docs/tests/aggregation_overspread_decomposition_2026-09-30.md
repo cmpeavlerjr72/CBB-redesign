@@ -5,7 +5,8 @@ DIAGNOSTIC ONLY. Nothing is adopted, served or re-defaulted. No engine module wa
 **Pre-registration**
 - `docs/models/aggregation/experiments.md` section 1, commit f14886f (20:58 EDT), before any swap arm ran.
 - Addenda A-D (sections 1.8-1.11), each committed before it ran: 3f25bac, 3938a8d, 2302801, 30cf4fb. Addendum D's header says "22:00 EDT"; the commit is 21:51.
-- Fix round: section 2, commit 0dc0171. NOT run.
+- Fix round: section 2, commit 0dc0171. The box round itself is NOT run.
+- Addenda E, F, F2 and G (sections 2.1-2.5): each committed before it ran (8a0f44c, bfe5c4c, 3fbd1dd, 0aaa257, 8200a93). Several of these headers carry a time written by estimate, 2-9 minutes later than the commit's wall clock. The commit times are the record.
 - Ledger: one row in `docs/models/change_ledger.md` section A.
 
 **Scripts**
@@ -13,6 +14,8 @@ DIAGNOSTIC ONLY. Nothing is adopted, served or re-defaulted. No engine module wa
 - `scripts/diag_aggregation_harness_v1.py`: the deterministic expected-points harness.
 - `scripts/diag_aggregation_overspread_v1.py`: parts `identity`, `harness`, `rates`, `factorial`, `loop`.
 - `scripts/diag_aggregation_addendum{B,C,D}_v1.py` and `scripts/diag_aggregation_sim_vs_harness_v1.py`.
+- `scripts/diag_aggregation_{g2,overfit,parity,devoverride,tfix}_v1.py`.
+- Trainer wrappers: `scripts/train_fg_make_v4_par_g2_v1.py` and `scripts/train_fg_make_v4_par_rawfix_v1.py`. Both wrap `train_fg_make_v4_par_v1.py`, which is unchanged.
 - Outputs are in `results/aggregation_v1/` (`analysis_*_v1.json`, `harness_*.parquet`, the box reads `X_F_FULL_s200_o0`, `X_PR_FULL_s200_o0`).
 
 **Data**
@@ -31,25 +34,34 @@ DIAGNOSTIC ONLY. Nothing is adopted, served or re-defaulted. No engine module wa
   - S0 matches the box's 200-seed rows on 9,136 rows x 26 columns.
   - S1 matches on 480 rows.
   - The box's `X_F` and `X_PR` reads match on 120 rows each.
+  - The box's swap arms `S1_TEAM`, `S1_PO` and `S0_FG` match on 80 rows each.
+  - The local fg_make `T` retrain (`G0`) reproduces the box `T`'s log losses and harness margin exactly.
 - The builder's npz sha256 values differ between builds of identical content. The npz is a zip whose metadata differs between builds; the rows are identical. This covers the operator's "S1_laneA DIFFERS" note.
 
 **Compute**
 - The 4-core cap was held, with one exception, disclosed here. At 21:10-21:12 five compute processes overlapped for about 90 s: two harness runs and three loop workers that were still loading.
-- No AWS action by this lane. Box work went through requests `laneA_1` .. `laneA_3`.
+- No AWS action by this lane. Box work went through requests `laneA_1` .. `laneA_4`.
+- Local fg_make retrains (G2, G0, Tfix) used `--n-jobs 4`, about 2 min each.
 
 ## 0. Verdicts per pre-registered line
 
 | line | result | verdict |
 |---|---|---|
 | Owner of the S0 miss (k >= 0.02, > 2 floors, same sign vs the close) | possession_outcome team-RATE response: k 0.042 (SE 0.009; close 0.062). fg_make team-rate response: k 0.025 (SE 0.008, retrain floor 0.009; close 0.032). Own ratings: k -0.011, beta 1.02 (not over-spread) | **possession_outcome and fg_make rate responses own the S0 miss** (harness, section 2) |
-| Owner of the S1 deterioration (Delta k >= 0.01, > 2 floors, same sign vs the close) | fg_make: Delta k +0.046 (SE 0.011; close +0.043). Factorial main effect of fg_make's `T` retrain: +0.035 of +0.043, 4.0 x its own retrain-seed floor | **fg_make's E3 retrain owns it**, through its response to the OFFENCE make-rate features |
+| Owner of the S1 deterioration (Delta k >= 0.01, > 2 floors, same sign vs the close) | fg_make: Delta k +0.046 (SE 0.011; close +0.043). Factorial main effect of fg_make's `T` retrain: +0.035 of +0.043, 4.0 x its own retrain-seed floor | **fg_make's E3 retrain owns it**, through its response to the OFFENCE make-rate features. Mechanism: a train/serve skew in the shooter feature (rows F-G below; section 5.6) |
 | Same, rebound | Delta k_RB +0.017 (2.9 floors) in the swap lens; rebound's own retrain +0.003 in the factorial (1.5 floors) | not an owner: the RB swap component grows because fg_make `T` changes the miss volume rebound acts on |
 | "Combination" verdict | Per-sub-model and own terms carry more than 100% of the change. Interactions: I1 -0.004 (1.3 floors), I2 +0.006 (2.6 floors, 14%), factorial three-model interaction +0.002 (4%). Part A cross terms FALL by 0.024 | **MIXED by the letter of the rule**, because I2 is 2.6 floors. In substance the "combination" statement is not supported: the over-spread is additive, sub-model by sub-model |
 | Closure | Harness partitions close exactly (no MC; residual 0). Sim-anchored: S0 `not_harnessed` +0.0047 vs an MC expectation of +0.0082 (1.9 SE) | S0 **CLOSED**. S1 **NOT CLOSED by -0.012** (section 2.4): partly localised to the harness's PPP aggregation step |
 | Addendum A (factorial; owner if main effect >= 40%, > 2 own seed floors, close same sign) | fg_make 82% (close 86%), 4.0 floors; possession_outcome 1.0 floor; rebound 1.5 floors; interaction 4% | **fg_make owns**; combination < 25% |
 | Addendum B (same-season memorisation via monthly refits) | X_F - S0 with fg_make scored by its pre-season refit: +0.043 (served schedule: +0.035) | **REFUTED** |
 | Addendum D (closed loop, box, 5,710 x 200) | X_F (S0 + fg_make `T` only) carries 94% of S1's slope drop (6.0 floors); X_PR (S1 with fg_make served) carries 6% (0.3 floors) | **CONFIRMED** |
-| Full-size swap arms (laneA_1), sim-level retrain floor (laneA_2) | not returned at the time of writing | NOT RUN (section 8.3) |
+| Full-size swap arms (laneA_1, 5,710 x 48) | Per-arm MC-corrected slopes reproduce the harness pattern. Component k's are unreadable except for ratings and offence/defence (reliability of PO/FG/RB 0.23-0.32 < 0.5) | per-arm CONFIRMS the harness; per-component UNDERPOWERED (section 8.2) |
+| Sim-level retrain-seed floor (laneA_2, R2 5,710 x 200) | R2 - S0 slope -0.0057 (close -0.0029). S1 - S0 = -0.0232: 4.1 retrain floors (close 7.6) | S1's loss is real beyond retraining noise; the "15 floor-SD" overstated it |
+| Addendum E: training-season overfit (H_fit) | Pre-season refits scored on their own design rows: T and R have the same in-sample minus out-of-sample gaps (differences -0.03 / -0.09 / -0.03) | **NOT SUPPORTED** (PARTIAL by the letter: the one class beyond 0.05 goes the wrong way) |
+| Addendum F: train/serve parity | Team rates exact in both stacks. **S1's served `shooter_shrunk_dev_c` is NOT what `T` was trained on** (corr 0.94-0.97); S0 exact | **skew found** |
+| Addendum F2: does the skew carry the gap? | Serving `T` its training shooter devs closes 62% (SE 7%) of the X_F - S0 harness gap (close 63%) | **carrier** (>= 50%) |
+| Addendum G: skew-free retrain `Tfix` | X_Tfix - S0 harness +0.012 / +0.004 (seeds 0 / 1; floor 0.007), against X_F's +0.035. Shot-level log loss still beats R | **the skew explains the fg_make owner** (inside 2 floors) |
+| Closed loop of Tfix (laneA_4) | see section 8.3 | see section 8.3 |
 
 ## 1. Method
 
@@ -245,7 +257,7 @@ Each cell shows k, then (beta, variance share).
   | jump | 0.018 | 0.061 |
   | three | 0.010 | 0.040 |
 
-- **No reliability input.** fg_make has no season-phase or reliability feature: no `days_since_start` and no E3 posterior variance. One learned response therefore serves an estimate whose reliability changes through the season.
+- **No reliability input.** fg_make has no season-phase or reliability feature: no `days_since_start` and no E3 posterior variance. One learned response therefore serves an estimate whose reliability changes through the season. This was the first working explanation. Sections 5.4-5.7 replace it: the larger cause is a train/serve skew in the shooter feature.
 
 ### 5.3 Per-rate team-game calibration
 
@@ -279,6 +291,95 @@ Each cell is the attempt-weighted slope of the realised team-game rate on the pr
 **The FT-trip slope is near 2 in both stacks.** possession_outcome's trip class is too flat by team. That compression offsets part of the over-spread elsewhere; keep it in view when fg_make is fixed (Decision 11).
 
 **Stage B could not see this.** Stage B graded fg_make only on attempt-level log loss and binned calibration (`team_rate_stageb_offline_2026-09-30.md`). It had no team-game slope or responsiveness line. `T`'s -8.4-floor log-loss win coexists with a rim make slope of 0.75 against 0.84 served.
+
+### 5.4 Arm G2 (section 2.1, local, preliminary): dropping `off_make_c` does not fix it
+
+| | rim log loss | jump log loss | three log loss | harness 1 - slope | Delta vs S0 |
+|---|---:|---:|---:|---:|---:|
+| R (served features) | 0.667252 | 0.666385 | 0.637738 | 0.088 | |
+| T | 0.666884 | 0.666111 | 0.637701 | 0.123 | +0.035 |
+| G2 seed 0 / 1 | 0.667258 / 0.667237 | 0.666265 / 0.666292 | 0.637828 / 0.637752 | 0.118 / 0.123 | +0.030 / +0.035 |
+
+- G2 loses T's log-loss gains and keeps T's over-spread.
+- The response moves onto other inputs. Under G2 the ratings component turns from k -0.048 (T) to +0.017.
+- Reading: the defect is in what fg_make learned on the `T` design as a whole, not in one column.
+
+### 5.5 Addendum E: not training-season overfitting (NOT SUPPORTED)
+
+Each pre-season (2024-11-01) refit was scored on its own design rows: the training seasons (in sample) and the fold-2 rows (out of sample). Cells are the team-game make slope, in sample / out of sample.
+
+| | rim | jump | three |
+|---|---|---|---|
+| T | 1.18 / 0.81 | 1.72 / 0.84 | 1.80 / 0.71 |
+| R | 1.21 / 0.81 | 1.79 / 0.82 | 1.84 / 0.71 |
+
+- T's gaps are no larger than R's.
+- **Key observation:** on the design's own fold-2 shot rows, T and R have the SAME out-of-sample team-game slopes. Through the engine inputs, T is clearly worse. That points at the inputs the engine serves.
+
+### 5.6 Addenda F and F2: a train/serve skew in Stage B's fg_make `T`
+
+**Parity of each fold-2 (game, offence team, class) value, training design vs engine inputs:**
+
+| input | T vs S1 | R vs S0 |
+|---|---|---|
+| `off_make_c` / `def_allow_c` | exact (corr 1.000, max difference 0) | exact |
+| `shooter_shrunk_dev_c` | **corr 0.970 / 0.947 / 0.943** (rim / jump / three); engine SD 3-6% larger; 15% of rim rows differ by > 0.01 | exact |
+
+**Cause** (checked on the fold-2 design rows):
+- With `--team-rate-table`, `cbb_sim.team_rate_adapter.apply` replaces `off_make_c` / `def_allow_c` with E3 values.
+- It leaves `off_make_raw` at the SERVED expanding-mean value: max |raw - (c_E3 + lg)| is 0.63, against 6e-8 on the served design.
+- `train_fg_make_v4_par_v1.py` then computes `fit_m` and `build_extra` (and so `shooter_shrunk_dev_c`) from that stale raw rate.
+- The engine builder derives the dev from c_E3 + lg, as documented in its header.
+- So `T` was trained on a shooter feature measured against the served team rate and is served one measured against the E3 rate. Since dev = att (smc - c)/(m + att), the served value carries an extra team-level term att (c_served - c_E3)/(m + att). That term is team-level estimation noise the model treats as signal.
+- The `--feature-table` path of the same trainer does re-derive raw. Only the `--team-rate-table` path, used for every Stage B `T` arm, skips it.
+
+**F2 test.** The engine's S1 shooter devs were replaced with the training values (198,369 matched rows) and the harness rerun:
+
+| | Y lens | close lens |
+|---|---:|---:|
+| X_F 1 - slope, before -> after | 0.123 -> 0.101 | 0.127 -> 0.107 |
+| share of the X_F - S0 gap closed | **62% (SE 7%)** | **63% (SE 6%)** |
+
+### 5.7 Addendum G: the skew-free retrain `Tfix`
+
+`Tfix` re-derives raw as c + lg after the adapter. Everything else is T's spec.
+
+**Parity:** shooter devs are exact against the `X_Tfix` engine inputs (corr 1.000, 0 rows off).
+
+**Shot-level log loss** (seed 0 / seed 1):
+
+| class | Tfix | T | R |
+|---|---|---:|---:|
+| rim | 0.667031 / 0.666990 | 0.666884 | 0.667252 |
+| jump | 0.666049 / 0.666001 | 0.666111 | 0.666385 |
+| three | 0.637736 / 0.637873 | 0.637701 | 0.637738 |
+
+- Tfix still beats R on rim (about -5 R2-floors) and jump.
+- Three is level with R.
+- Calibration: all D8 checks pass.
+
+**Harness 1 - slope (Y / close):**
+
+| stack | 1 - slope (Y / close) | Delta vs S0, Y (SE) | Delta vs S0, close |
+|---|---|---:|---:|
+| X_F (S0 + fg_make T) | 0.123 / 0.127 | +0.035 (0.004) | +0.031 |
+| **X_Tfix (S0 + fg_make Tfix), seed 0** | 0.100 / 0.105 | **+0.012 (0.003)** | +0.010 |
+| X_Tfix, seed 1 | 0.092 / 0.098 | +0.004 (0.004) | +0.003 |
+| S1 (PO T + RB T + fg_make T) | 0.131 / 0.133 | +0.043 (0.006) | +0.037 |
+| **S1fix (PO T + RB T + fg_make Tfix)** | 0.109 / 0.111 | **+0.021 (0.006)** | +0.016 |
+| X_PR (PO T + RB T, fg_make served) | 0.095 / 0.100 | +0.007 (0.004) | +0.004 |
+
+- Tfix's seed-to-seed spread is 0.007.
+- Tfix removes 67-88% of fg_make's harness damage. What remains is inside 2 x max(seed floor, SE).
+- S1fix halves S1's harness loss. The remaining +0.021 is about 1.5 times the all-three-model retrain floor (0.014) in the harness. Its sim value is pending (section 8.3).
+
+**Team-game make slopes, S0 / X_F / X_Tfix:**
+
+| class | overall | Jan | Mar |
+|---|---|---|---|
+| rim | 0.84 / 0.75 / 0.80 | 0.76 / 0.62 / 0.68 | 0.90 / 0.71 / 0.75 |
+| three | 0.69 / 0.64 / 0.67 | not reported | not reported |
+| jump | 0.71 / 0.67 / 0.67 | not reported | not reported |
 
 ## 6. Multi-level evidence
 
@@ -339,7 +440,7 @@ The per-cell SE of k is about 0.01-0.02.
 | 4 | usage / rotation concentration | shooter component +0.005; S1 - S0 +0.001. Not the owner. Rotation and usage arrays were not swapped (stated in the pre-registration) |
 | 5 | ratings double counting | ratings beta 1.02-1.05 (not over-spread); ratings in PO vs elsewhere are inside 2 SE. Not identified |
 | 6 | possession count x efficiency | Part A pace / parity S1 - S0 is -0.001 / +0.001. The PACE swap was box tier 2 and NOT RUN. Not the owner of S1 - S0 |
-| new | sub-model team-RATE responses | S0 miss: possession_outcome (0.042) and fg_make (0.025). S1 deterioration: fg_make's E3 retrain, offence make-rate features. **Owner** |
+| new | sub-model team-RATE responses, and a train/serve skew | S0 miss: possession_outcome (0.042) and fg_make (0.025) rate responses. S1 deterioration: fg_make's E3 retrain, through a skewed shooter feature (section 5.6). **Owner** |
 
 ## 8. Closed loop
 
@@ -356,38 +457,78 @@ Floors follow Decision 12: four seed draws of 50, and a 200-rep game bootstrap.
 
 **CONFIRMED in the sim.** fg_make's E3 retrain alone reproduces S1's slope loss and S1's extra spread (+0.19 of +0.22 SD). Possession_outcome and rebound on E3 together leave the slope at S0's level.
 
-### 8.2 Local swap loop (1,142 games x 16 seeds; TEAM, OFF, DEF): UNDERPOWERED, not read
+The sim-level retrain-seed floor comes from laneA_2 (`R2`, the served features retrained under seed 1, 5,710 x 200):
+- R2 slope 0.9112 (MC-corrected 0.9187); Delta vs S0 -0.0057 (boot 0.0036); close lens -0.0029.
+- S1's -0.0232 is therefore 4.1 retrain floors (close 7.6), and X_F's -0.0217 is 3.8.
+- The S1 loss is real, but the box read's "15 floor-SD" used Monte Carlo floors only and overstated its significance about fourfold.
 
-- On this subset the FULL slopes are 0.87 (S0) and 0.89 (S1), the opposite order from the full read.
-- The split-half reliability of the L2 components is 0.02-0.47, and the floors are 0.2-2.0.
-- Numbers are in `analysis_loop_s16_local5_v1.json`. No line is decided from them.
+### 8.2 Full-size swap arms (laneA_1, 5,710 x 48 seeds, paired with the box's FULL rows)
 
-### 8.3 Not returned at the time of writing
+**MC-corrected slope of Y on each arm.** FULL here is the 48-seed subset.
 
-- **laneA_1:** the full-size swap arms (5,710 x 48), both stacks.
-- **laneA_2:** a full read of `R2` (5,710 x 200), the sim-level retrain-seed floor for every S1 vs S0 comparison.
-- Both are in `docs/ops/box_queue/`.
+| stack | FULL | PO swapped | FG swapped | RB swapped | ratings swapped | TEAM swapped | ALL swapped |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| S0 | 0.927 | 0.975 | 0.964 | 0.943 | 1.958 | 0.862 | 0.576 |
+| S1 | 0.903 | 0.964 | **0.987** | 0.958 | 1.712 | 1.235 | 0.566 |
+
+- **Agreement with the harness.** The per-arm pattern is the harness's: PO 0.982 / 0.948, FG 0.956 / 0.957, RB 0.926 / 0.914 for S0 / S1.
+- **Removing fg_make's team rates.** In S1 this recovers the most (+0.084 vs +0.037 in S0).
+
+**Component k's (IV on split seeds).** These are readable only where the pre-registered first-stage reliability is >= 0.5:
+- Ratings (0.77-0.83): beta 0.98-1.16, not over-spread in either lens, consistent with the harness.
+- OFF / DEF (0.62-0.70): S0 close lens OFF +0.061 (floor 0.013), DEF +0.039 (0.011). S1 close OFF +0.035 (0.016), DEF +0.079 (0.017). The Y lens is inside its floors (0.03-0.08).
+- PO / FG / RB (reliability 0.23-0.32) and the interactions (0.03-0.09) are UNDERPOWERED at 48 seeds and not read.
+- The seed-quarter IV floors for S1 are unstable: they reach 5-50 where 12-seed quarters make the instrument weak.
+- Numbers are in `analysis_loop_s48_v1.json`.
+
+**Not run:** tier 2 (RAT_PO, PACE, PLY), queued behind other lanes. The local 1,142 x 16 loop is UNDERPOWERED (component reliability 0.02-0.47) and is not read (`analysis_loop_s16_local5_v1.json`).
+
+### 8.3 Closed loop of the skew-free fg_make (laneA_4)
+
+Requested at 23:19 EDT: `docs/ops/box_queue/laneA_4.md` (X_Tfix, S1fix, X_Tfix1; 5,710 x 200). It had not returned when this section was committed; the result is appended here when it lands.
 
 ## 9. What this changes
 
-- **The PM's working statement is not supported in its "combination" form.**
-  - The statement was that "compressed served levels were compensating an over-spread in how the cascade COMBINES team effects".
-  - The interactions are small, the cross terms fall, and the over-spread is additive by sub-model.
-  - What IS supported: E3 made fg_make's response to the offence make-rate features steeper than the data justify at team-game level. The sim reproduces this (X_F carries 94% of S1's drop).
-  - fg_make's shot-level log loss improved at the same time. Stage B's primary could not see it.
-- **S0's own miss is owned by the team-RATE responses** of possession_outcome and fg_make (beta about 0.57: about 40% of the margin movement they add is not real). The ratings are at scale.
-  - This agrees with the F diagnostic's "as-of features" owner. It adds that the excess enters through the sub-models' learned responses, and that E3's smoother features did not remove it in fg_make; they made it worse.
-- **Every S1 vs S0 sim read needs the retrain-seed floor.** It is 0.014 on the harness slope; the sim-level value is pending laneA_2.
-- **E3 does not need to be abandoned wholesale.** With possession_outcome and rebound on E3 and fg_make served (X_PR), the slope matches S0 (0.9155 vs 0.9169). Their Stage B offline wins stand, at no G9 cost.
+**1. The owner of S1's G9 loss is a train/serve skew in how Stage B built fg_make `T`, not a property of the E3 estimator and not the cascade's aggregation.**
+- Mechanism: under `--team-rate-table` the raw team make rate stayed stale, so `T`'s `shooter_shrunk_dev_c` was trained against the served team rate and is served against the E3 rate.
+- Evidence, harness and box:
+  - fg_make carries 82% of the harness loss and 94% of the sim loss.
+  - Serving `T` its training shooter devs closes 62% of fg_make's harness gap.
+  - A skew-free retrain (`Tfix`) leaves fg_make's harness effect inside its retrain floor while keeping most of the shot-level log-loss gain.
+- This is a BUILD defect. The fix belongs in the trainer path or `cbb_sim.team_rate_adapter`: re-derive `off_make_raw` / `def_allow_raw` when the centred columns are replaced. The `--feature-table` path already does this.
+- Lane A did not edit either shared file. The wrapper `train_fg_make_v4_par_rawfix_v1.py` shows the change.
+- Every stack that serves fg_make `T` (S1 and its variants built with `--fg-artifacts .../round_stageb/T/...`) inherits the skew.
+- **The PM ruling "E3 REFUTED as a sim improvement" rests on it, and should be re-read with S1fix** (section 8.3).
+
+**2. The PM's "combination" statement is not supported.**
+- Interactions are small, cross terms fall, and the over-spread is additive by sub-model.
+- The served models' compressed levels were not compensating an aggregation over-spread. S1's extra spread was injected by one sub-model's skewed input.
+
+**3. S0's own miss (0.083) is owned by the team-RATE responses of possession_outcome and fg_make** (harness beta about 0.57; close-lens k 0.062 and 0.032).
+- Ratings are at scale (beta about 1.0).
+- This refines the F diagnostic's "as-of team-rate features" owner: the excess enters through the sub-models' learned responses to rate-feature movement.
+- possession_outcome's FT-trip class is under-spread by team (slope about 2) and partly offsets it.
+
+**4. Every S1-vs-S0 sim comparison needs the retrain-seed floor.** It is 0.0057 on the sim slope and 0.014 on the harness slope. Spec-identical retrains under another seed move the G9 slope by a quarter of the effect being judged.
+
+**5. Stage B's fg_make gate could not see either defect.**
+- It graded attempt-level log loss and binned calibration only.
+- Proposed for the PM: every scoring-stage Stage B also reports a train/serve parity check of every derived feature against the engine inputs, the team-game calibration slope by month, and the harness margin slope.
 
 ## 10. Next step and resume
 
-- **Fix round:** pre-registered in `docs/models/aggregation/experiments.md` section 2 (NOT run; box retrains with `train_fg_make_v4_par_v1.py`).
-  - Candidates: `G1` adds the E3 posterior variances as features; `G2` drops the offence make features; `G3` adds monotone constraints with grouped-CV leaf size.
-  - Primary: the harness margin slope with fg_make replaced, plus team-game make slopes by month.
-  - Guards: Stage B's log loss, fold 1, and a 200-seed closed loop before any ship decision.
-- **Box:** laneA_2 (R2 sim floor) and laneA_1 (swap arms) as filed.
-- **Local resume:**
-  - Harness: `scripts/diag_aggregation_harness_v1.py --stack <S0|S1|R|R2|X_*|Z_*> [--arms ...] [--fg-first-refit]`.
-  - Analysis: `scripts/diag_aggregation_overspread_v1.py --part identity --part harness --part rates --part factorial`, then `scripts/diag_aggregation_addendumD_v1.py` (picks up `R2_FULL_s200_o0` automatically when it lands).
-  - Stacks are rebuilt by the builder commands in experiments.md 1.1 and 1.8, and the box request files.
+**1. Decide on laneA_4 (section 8.3).** If S1fix's sim slope is within the retrain floor of S0, E3 is back on the table as a set (Decision 11). The Stage B `T` wins for possession_outcome and rebound, and Tfix's own log-loss win, become the candidate set.
+
+**2. Fix the trainer path**, then rerun fg_make `T` (as `Tfix`) at fold 1 as well, under the experiments.md section 2 round.
+- G1 / G3 are deprioritised. G2 was run (preliminary, fold 2): it does not help.
+- The owner of that file is lane J's `train_fg_make_v4_par_v1.py` or `team_rate_adapter`. It is a small change and it needs a parity test.
+
+**3. Audit the other Stage B arms for the same class of skew.** possession_outcome and rebound `T` have no derived team columns that we know of, and their harness effects sit inside their retrain floors. That is not a parity proof.
+
+**Local resume:**
+- Harness: `scripts/diag_aggregation_harness_v1.py --stack <S0|S1|R|R2|X_*|Z_*|X_Tfix|S1fix> [--arms ...] [--fg-first-refit] [--slot-dev-override ...]`.
+- Analyses:
+  - `scripts/diag_aggregation_overspread_v1.py --part identity --part harness --part rates --part factorial --part loop`.
+  - `scripts/diag_aggregation_addendumD_v1.py` (S0, S1, X_F, X_PR, R2, and X_Tfix, S1fix, X_Tfix1 once synced).
+  - `scripts/diag_aggregation_{parity,tfix,g2,overfit}_v1.py`.
+- Stacks: builder commands in experiments.md 1.1, 1.8 and 2.5 and in `docs/ops/box_queue/laneA_{1..4}.md`.

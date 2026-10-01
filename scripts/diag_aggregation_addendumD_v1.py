@@ -7,7 +7,9 @@ d = A.base_frame(); gid = d["game_id"].to_numpy()
 Y = d["margin"].to_numpy(float); C = d["close"].to_numpy(float); lined = d["close"].notna().to_numpy()
 runs = {"S0": "results/engine_v0/v3full_S0_s200_o0", "S1": "results/engine_v0/v3full_S1_s200_o0",
         "X_F": "results/aggregation_v1/X_F_FULL_s200_o0", "X_PR": "results/aggregation_v1/X_PR_FULL_s200_o0",
-        "R2": "results/aggregation_v1/R2_FULL_s200_o0"}
+        "R2": "results/aggregation_v1/R2_FULL_s200_o0",
+        "X_Tfix": "results/aggregation_v1/X_Tfix_FULL_s200_o0", "S1fix": "results/aggregation_v1/S1fix_FULL_s200_o0",
+        "X_Tfix1": "results/aggregation_v1/X_Tfix1_FULL_s200_o0"}
 M = {}
 for k, p in runs.items():
     if not Path(p, "games.parquet").exists():
@@ -37,6 +39,10 @@ def stats(idx, sel=None):
         o["share_XPR"] = o["d_slope_X_PR"] / o["d_slope_S1"] if "X_PR" in M else np.nan
         o["shareC_XF"] = o["d_slopeC_X_F"] / o["d_slopeC_S1"]
         o["shareC_XPR"] = o["d_slopeC_X_PR"] / o["d_slopeC_S1"] if "X_PR" in M else np.nan
+    for k in ("X_Tfix", "S1fix", "X_Tfix1"):
+        if k in M and "S1" in M:
+            o[f"share_{k}"] = o[f"d_slope_{k}"] / o["d_slope_S1"]
+            o[f"shareC_{k}"] = o[f"d_slopeC_{k}"] / o["d_slopeC_S1"]
     return o
 idx = np.arange(len(Y))
 est = stats(idx)
