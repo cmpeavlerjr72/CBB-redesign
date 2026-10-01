@@ -1204,3 +1204,7 @@ The team block is joined per (game_id, shooting team) from `data/processed/model
 - The pregame team block does not recover what `score_diff` carries, so the term is same-game information (a team-form proxy), not cross-sectional strength.
 - Next step (proposed, NOT registered): a per-team-game form latent shared by a team's FG and FT make logits, with an FT model without `score_diff`, judged in the engine (Decision 10).
 - Evidence: `docs/tests/g5_variance_channels_2026-10-01.md` section 8.
+
+## 17. Round 16 pointer (lane B, 2026-10-01 ~08:45 EDT)
+
+Round 16 (`score_diff` dropped from free_throw (arm FTn, served `S1_conf_aligned` calendar kept) plus a per-team-game form latent shared by a team's FG and FT makes) is pre-registered in `docs/models/shared_shooting/experiments.md` section 5. Its primary is CLOSED-LOOP by registered choice (section 5.2 there). Its offline guards on the FTn model are in section 5.3 there.

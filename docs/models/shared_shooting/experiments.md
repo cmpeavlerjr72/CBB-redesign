@@ -221,3 +221,86 @@ Secondary (reported, not deciding): held-out between-team covariance obs/pred by
 **STATUS: REFUTED offline (rule 3.3); G3P (served `params_v1.json`) stands.**
 - The refits fix the level of the held-out covariance, but the per-game density cannot separate them.
 - Delivery diagnostic (3.0): the rate-level delivery is 94-95% of `E[W Sigma W]`. The count-level 58% is the attempts' response (OREB and possession routes). Scale is not the cause.
+
+---
+
+## 5. Round 16 pre-registration (lane B, 2026-10-01 ~08:45 EDT; COMMITTED BEFORE any fit or run below): a per-team-game FORM latent shared by a team's FG and FT makes, with `score_diff` dropped from free_throw
+
+PM-ordered (ruling after `docs/tests/g5_variance_channels_2026-10-01.md` section 8). Cross-referenced from `docs/models/free_throw/experiments.md` section 17.
+
+### 5.0 What was seen before this was written (disclosure)
+
+- **Engine ablation (`ENGINE_FT_SCORE=FTn`, 2,000 x 6):**
+  - FT composition x opponent FG -3.35 -> -0.05 pts^2;
+  - FT x own FG +3.12 -> +0.10 (both sides summed);
+  - home/away points covariance 24.10 -> 27.79.
+- **Actual 2025:**
+  - FT x opponent FG +0.28 (SE 0.36);
+  - own-team FG x FT about +0.45 pts^2 per side (three x FT +0.32, rim x FT +0.16, jumper x FT -0.03).
+- **Offline:** removing `score_diff` costs about +0.0045 log loss and 3.9 pp of live-margin-bin calibration. The pregame team block does not recover it (rounds 14-15).
+- **Per-team-game FG residual variance, sim (served v2) vs actual, pts^2:** rim 22.8 / 24.4, jumper 14.1 / 14.5, three 47.4 / 46.5 home side. The engine already produces most of the within-team FG dispersion; three is at or past actual.
+- **Round 1's within-team excess and between-team Sigma** (section 1.2 of the 09-30 doc) were seen.
+- **NO form-latent moment has been computed.**
+
+### 5.1 The object and the composition with G3 (no double count)
+
+Per team-game `(g, i)` and make type `k in {rim, jump2, three, ft}`: `R_ik = sum(y - p)`, `W_ik = sum p(1-p)`.
+- FG `p`: the served fg_make spec (`results/shared_shooting/preds_v1.parquet`, walk-forward).
+- FT `p`: the `FTn` spec (FT_FEATURES minus `score_diff`), out-of-sample static fits: train <= 2022 -> 2023, <= 2023 -> 2024, <= 2024 -> 2025.
+
+Centred by (season, ISO week, type). Two moment matrices on TRAIN seasons only:
+- `M` = within-team second moment over binomial: `(sum R_ik R_il - delta_kl sum W_ik) / sum W_ik W_il`;
+- `B` = between-team cross moment: `sum R_hk R_al / sum W_hk W_al` (symmetrised).
+
+Model: logit shift of team i in game g = `u_g` (G3, shared, per game) + `v_gi` (form, per team-game, independent across the two teams).
+- Then `B` identifies Var(u) and `M = Var(u) + Var(v)`, so `Omega = Var(v) = psd(M - B)`.
+- **The G3 part is subtracted, so the shared variance G3 already serves is not counted twice.**
+- G3 has no FT component. The FT row of `B` (between-team FT, about 0.0065 in round 1) is subtracted from `M` and NOT served: the shared FT variance stays unmodelled, as round 1 chose.
+
+Arms (simplicity FN < FL1 < FL):
+
+| arm | FT model | form latent |
+|---|---|---|
+| `FN` | FTn (drop `score_diff`) | none (the ablation; reference for attribution) |
+| `FL1` | FTn | rank-1 factor: `v = lambda f`, `f ~ N(0,1)` per team-game, `lambda` = sqrt(top eigenvalue) x top eigenvector of `psd(M - B)` (4 loadings) |
+| `FL` | FTn | full `Omega = psd(M - B)` (4 x 4) |
+
+Fold 1 fits on 2023; fold 2 (served params) fits on 2023-24. Params are written to `data/processed/models/shared_shooting/team_form_params_v1.json`. Never tuned on sim output.
+
+- **FG dispersion double count (the engine already has most of it):** the fit's FG diagonal is reported next to the engine's realised within-team FG residual variance. If the arm's PREDICTED engine FG variance (served sim + `W^2 Omega`) overshoots actual by more than 5% on any type, that is the stated risk for the closed-loop margin-SD veto. It is not corrected by hand.
+- **Free throw's `S1_conf_aligned` scheme stays.** The FTn serving artifacts are that calendar refitted with FTn features (`free_throw/s1_scorediff/FTn/S1_conf_aligned/F2/`, built 07:58 EDT by `scripts/exp_ft_scorediff_v1.py build FTn`; train/serve identical feature list).
+- The form shift is added to the logit of the FT model's p in the engine. G3 + form enter fg_make's logit additively.
+
+### 5.2 The primary is CLOSED-LOOP, by registered choice
+
+Why: any offline log-loss primary favours the leaky `score_diff` by construction. The term is a same-game form proxy, informative offline and a feedback loop in the engine (Decision 10; rounds 14-15). What this round must fix is an engine-produced covariance, so it is decided in the engine.
+
+Primary lines (full size, 5,710 x 200, paired with the plain served default, four floor draws, Decision 12 floor = max(draw SD, paired game bootstrap)), measured by `scripts/diag_g5_channels_v1.py`, `scripts/diag_ftfg_report_v1.py` equivalents:
+1. FT x opponent FG covariance (pts^2, both directions): must move toward actual (+0.28) beyond floor;
+2. FT x own FG within-team covariance: must move toward actual (about +0.9 summed) beyond floor;
+3. G5 home/away correlation: must move toward 0.228 beyond floor;
+4. G5 total SD ratio: must not regress beyond floor;
+5. G5 margin SD ratio: must not regress beyond floor (VETO; per-team variance widens the margin, as U1 showed).
+
+Status (Decision 11 wording):
+- **VALIDATED-PENDING-SHIP-ACTION** if 1, 2 and 3 move toward target beyond floor, 4 and 5 do not regress beyond floor, and no other G1-G9 line regresses beyond floor (FT%, G9 bias / slope included) except through a named compensation;
+- **REFUTED** otherwise;
+- **UNDERPOWERED** if only the local tap exists.
+- Between arms passing: the larger G5-corr move wins; within 1 floor, the simpler.
+
+### 5.3 Offline guards (folds 1 and 2, seed-1 refit floor) on the FTn FT model (all must pass for the arm to go to the box)
+
+- **FT% level:** |mean(y - p)| <= 0.5 pp on the held-out season.
+- **Responsiveness:** shooter-prior quintile calibration passes `PM.responsiveness_verdict` (min steps 3).
+- **Pregame margin tier:** calibration by the game's PREGAME margin tier, max |mean(y - p)| <= 1.0 pp. Terciles of the as-of point-differential gap: the shooting team's season-to-date mean margin minus the opponent's, prior games only. The LIVE-margin bins are not a guard here: they fail by construction once the proxy is removed, and their closed-loop analogue is line 2.
+- **Fit validation (the form latent):** held-out per-team-game residual variance obs/pred by type, and the held-out FT x own-FG cross moment obs/pred, both reported. An arm whose held-out FT x FG cross moment obs/pred is outside [0.5, 2.0] on fold 2 is not taken to the box.
+- **Reseed floor:** each guard is recomputed with the seed-1 FTn refit and a seed-1 game-bootstrap refit of `Omega`; a guard passes only if it passes for both.
+
+### 5.4 Engine
+
+- Flag `ENGINE_TEAM_FORM` = `FL1` | `FL` (unset / `reference` = OFF: no draw, no stream). It requires `ENGINE_FT_SCORE=FTn` and the served G3; it raises otherwise.
+- One draw of `f` (FL1) or a 4-vector (FL) per team-game, from its own stream family `team_form` keyed on (seed, game_id).
+- FG: added inside `shared_shooting` (per side, per type, next to G3).
+- FT: added to the logit of `p` in `loop._shoot_trip` (one small hunk).
+- Off path: bit-identical to `docs/ops/parity_reference_windows_v9.json` on a CLEAN `src/` tree.
+- Local tap (direction only; UNDERPOWERED for every primary line). Artifacts to HF under a bulk key. Box request `docs/ops/box_queue/d1001_B_1.md`: FN, FL1, FL at 5,710 x 200 paired with the plain default, plus four plain-default floor draws (reused if the operator already has them).
