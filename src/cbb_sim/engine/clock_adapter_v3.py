@@ -278,6 +278,11 @@ class ClockAdapterV3:
     #: incumbent `ClockAdapter` needs no change.
     wants_game_index: bool = True
 
+    #: Clock round 8 (experiments.md section 36): team_static column of
+    #: `days_since_start`, set ONLY for modes declaring `needs_days_since_start`
+    #: (the in-season level term). None for every other mode, whose frame is unchanged.
+    dss_idx: int | None = None
+
     # -- construction -----------------------------------------------------
     @classmethod
     def load(cls, inp: EngineInputs, mode: str, season: int = 2025) -> ClockAdapterV3:
@@ -345,7 +350,9 @@ class ClockAdapterV3:
                      "live fitted object, no lookup table, so no binning error (L26)"),
         }
         gm = pd.to_datetime(inp.games["game_date"]).dt.month.to_numpy().astype(np.int64)
-        return cls(mode=mode, arm=arms[0], manifests={"clock": man}, segment=pinned,
+        dss_idx = (int(inp.team_names["days_since_start"])
+                   if spec.get("needs_days_since_start") else None)
+        return cls(mode=mode, arm=arms[0], manifests={"clock": man}, segment=pinned, dss_idx=dss_idx,
                    freeze=freeze, source=src, team_idx=team_idx,
                    state_idx=dict(STATE_INDEX), arms=tuple(arms),
                    season=int(season), game_month=gm,
@@ -377,6 +384,8 @@ class ClockAdapterV3:
             name: team[:, j].astype(np.float64)
             for name, j in zip(TEAM_COLS, self.team_idx, strict=True)
         }
+        if self.dss_idx is not None:
+            cols["days_since_start"] = team[:, self.dss_idx].astype(np.float64)
         cols["period"] = per
         cols["seconds_remaining"] = sr
         cols["score_diff"] = sd
@@ -688,6 +697,16 @@ V3C_MODES["v3c_r7A2_P3_s1"] = {
 V5_MODES["v5b_r7A2_glat_pmean"] = {
     "base_mode": "v3c_r7A2_P3_s1", "unit": "game", "param": "B1_sigma", "loc": "plus_half",
     "params_file": "r7_A2/v5b_bakeoff/v5b_bakeoff_report.json"}
+# Clock round 8 (experiments.md section 36; lane H 2026-10-01): arm M2D = the P3n cell
+# grid x a MEAN-SCALE (Poisson pseudo-likelihood) offence/defence AFT team scale + an
+# in-season level term on days_since_start (`cbb_sim.models.clock_r8.AFTArmR8`).
+# DEFAULT-OFF: new keys only. Artifacts: scripts/train_clock_r8_tempo_v1.py.
+V3C_MODES["v3c_r8M2D_P3_s1"] = {
+    "manifest": "r8_M2D/F2/manifest.json", "base_arm": "clock_r8_M2D", "parametrisation": "P3",
+    "needs_days_since_start": True}
+V5_MODES["v5b_r8M2D_glat_pmean"] = {
+    "base_mode": "v3c_r8M2D_P3_s1", "unit": "game", "param": "B1_sigma", "loc": "plus_half",
+    "params_file": "r8_M2D/v5b_bakeoff/v5b_bakeoff_report.json"}
 
 #: The pregame tempo feature the round-5d dispersion function is a function of.
 #: It is a TEAM_COLS member the served round-3c frame already carries, and it is

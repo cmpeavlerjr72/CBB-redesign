@@ -4473,3 +4473,43 @@ Vetoes (any one refuses the arm): F2 |implied count gap| worse than C0's by > 0.
 **Not an arm: the pace x efficiency channel (14% of the G5 gap, lane B).** Section F of the step-1 diagnostic measures whether it has a clock-structure owner (the per-possession duration-points coupling the engine's draw-before-cascade structure cannot carry). Reported in the results doc; any arm for it is a later round.
 
 **Results:** `docs/tests/clock_round8_team_tempo_2026-10-01.md`.
+
+## 37. Round 8 OFFLINE result and the closed-loop registration (2026-10-01 ~06:40 EDT, lane H; written BEFORE any closed loop of a round-8 arm)
+
+**Run.** `scripts/chain_clk8_train_v1.sh` (06:28-06:31 EDT; a first pass at 06:25 hit a 0/0 in the Poisson Hessian for an all-zero cell on fold 1, fixed in `clock_r8.fit_poisson` and EVERY arm refitted with the fixed code), `scripts/grade_clock_r8_offline_v1.py` (06:31-06:32) -> `results/clock_r8/offline_grade.json`. Reseed floor: M2D F2 refitted under `--seed 1`: coefficients identical and max abs pmf difference 0.0 over 30,000 rows x 6 refits (`scripts/diag_clock_r8_reseed_v1.py` -> `results/clock_r8/reseed_proof.json`). The floor is the paired game bootstrap (2 x SE, 200 draws). G2D's lambda: F2 0.979 (training e_law 0.949 vs e_act 0.929), F1 0.980.
+
+| fold | arm | deviance (d vs C0, floor) | offence-q slope | elasticity ratio | count cal. slope | between-game SD ratio | count gap / team-game |
+|---|---|---:|---:|---:|---:|---:|---:|
+| F2 | C0 (=L2) | 6.98976 | 0.401 | 0.743 | 0.913 | 1.095 | +0.527 |
+| F2 | A2 (r7) | -0.0291 (0.0045) | 0.987 | 1.126 | 0.843 | 1.186 | +0.733 |
+| F2 | M1 | -0.0301 (0.0045) | 0.915 | 1.006 | 0.920 | 1.087 | +0.767 |
+| F2 | M2 | -0.0302 (0.0045) | 0.902 | 0.989 | 0.931 | 1.074 | +0.772 |
+| F2 | **M2D** | -0.0295 (0.0044) | **0.899** | **0.986** | 0.933 | 1.072 | **+0.615** |
+| F2 | G2D | -0.0297 (0.0044) | 0.879 | 0.964 | 0.948 | 1.055 | +0.620 |
+| F1 | C0 | 6.99254 | 0.474 | 0.839 | 0.855 | 1.170 | +0.369 |
+| F1 | A2 | -0.0382 (0.0049) | 1.121 | 1.268 | 0.769 | 1.301 | +0.196 |
+| F1 | M1 | -0.0387 (0.0049) | 1.036 | 1.128 | 0.844 | 1.186 | +0.229 |
+| F1 | M2 | -0.0383 (0.0049) | 1.021 | 1.109 | 0.855 | 1.170 | +0.233 |
+| F1 | M2D | -0.0386 (0.0050) | 1.025 | 1.100 | 0.870 | 1.149 | -0.010 |
+| F1 | G2D | -0.0389 (0.0049) | 1.004 | 1.077 | 0.884 | 1.131 | -0.005 |
+
+(Elasticity ratio here: offline, durations of the clock-complete test games; actual elasticity 0.967 on F2, 0.880 on F1.)
+
+**Reading under the section-36 rule (F2).**
+- (a) deviance: every arm beats C0 by 6.6-6.7 floors. (b) offence-quintile slope: every arm moves toward 1 by 13-15 floors (|slope - 1| -0.48 to -0.51, floor 0.033-0.036) and lies in [0.85, 1.15]. (d) count calibration slope: no arm below C0.
+- (c) |ratio - 1| vs A2: M1 -0.121 (floor 0.065) PASS; M2 -0.116 (0.087) PASS; M2D -0.113 (0.091) PASS; **G2D -0.091 (0.110) FAILS** (not by more than the floor). None larger than C0's (all -0.22 to -0.25).
+- Count-gap veto (|gap| not worse than C0's by > 0.10): **M1 +0.240 and M2 +0.245 FIRE** (the exposed drift); **M2D +0.088 and G2D +0.093 pass**. Start-type veto: max +0.03 to +0.08 s, passes. Month veto (Nov-Mar, 0.25 s): M1/M2 +0.19, M2D/G2D +0.05, passes. Fold 1: every arm keeps the sign of the deviance improvement and of the ratio improvement over A2 (M2D -0.168, floor 0.015).
+- **Winner: M2D**, the only arm passing every line and veto. It is NOT the simplest arm in the round; the simpler M1/M2 are refused by the count veto, which the in-season term exists to fix.
+- Segments (M2D, F2): offence-quintile slope by month Nov 0.64, Dec 0.79, Jan 0.93, Feb 1.07, Mar 1.21 (A2 0.71-1.31, C0 0.30-0.56): the in-season rise of responsiveness is still there (as-of features sharpen; first noted in round 7). Elasticity ratio by month 0.89-1.10. By site 0.85 (neutral) / 0.94 (offence away) / 0.87 (offence home). By conference tier: both-power 0.87 (ratio 0.89), neither 0.94 (1.05), one-power 0.60 (0.75; 157 games, on the edge of the 150-game power line). The F2 gap by month (s): Nov -0.17, Dec -0.07, Jan -0.29, Feb -0.17, Mar -0.04 (C0 -0.12/+0.03/-0.24/-0.16/-0.14): March fixed, January not.
+- Fold 1 still over-responds at the game level (M2D ratio 1.100; A2 1.268, C0 0.839): the mean-scale fix halves the over-response on F1 rather than removing it.
+
+**B1 latent refitted on M2D's law** (`scripts/exp_clk8_latent_v1.py`, the unedited round-5b fit, design `days_since_start` replaced by the engine definition): sigma **0.04207** (L2 0.04682, A2 0.04326; the fit's own bootstrap floor refits 0.0404-0.0451). Stated before the loop: the decomposition (section 36) predicted the refitted latent would rise toward L2's; it FELL. The in-sample law now also explains in-season drift and the team level, so less per-game residual is left for the latent. Whether the sim's within-game spread is then too small is a closed-loop line.
+
+**Wiring.** `ENGINE_CLOCK=v5b_r8M2D_glat_pmean` (`clock_adapter_v3`: two mode keys, and a `dss_idx` field that is non-None only for a mode declaring `needs_days_since_start`, so every other mode's frame is unchanged). Artifacts `data/processed/models/clock/r8_M2D/F2/` and `r8_M2D/v5b_bakeoff/` (2.9 MB, tracked). Flag-off parity 60 x 5: **PASS, bit-identical to `parity_reference_windows_v9.json`** (sha e0a42353...). `tests/test_clock_adapter_v3.py` 52 passed. Arm smoke 30 x 2 runs (mean 66.9 possessions).
+
+**Closed loop registration (M2D vs the served default).**
+- Control: the served default stack at full size, `results/engine_v0/v3full_COMB9GCTKD_s200_o0` (the adoption read; bit-identical to a plain local default run per `docs/tests/adoption_served_v2_2026-10-01.md`), restricted to the arm's games and seeds.
+- Local tap: M2D on the 500-game verified stride sample, seeds 0-99 (4 x 25), via `run_clk6_closed_loop_sample_v1.py --clock v5b_r8M2D_glat_pmean` (only ENGINE_CLOCK differs from the default). Seed-draw floor: the control's seeds 100-199 vs 0-99 (one draw; plus the paired game bootstrap). G5 lines UNDERPOWERED; every line is direction only (Decision 12).
+- Full size: box request `docs/ops/box_queue/d1001_H_1.md`: M2D 5,710 x 200 (o0) and a floor draw (o1000), plain `run_engine.py`, only `ENGINE_CLOCK` set; floors from the served-stack draws `v3full_D2f<k>` if the operator has them.
+- Lines (one grader `scripts/grade_clock_r8_loop_v1.py`): G1 count - v4 count; pooled possession SD (truth 5.57 full) and the possession SD ratio = sqrt(mean within-game var) / SD(actual - sim mean); between-game variance vs the calibrated benchmark corr^2 Var(actual); sim team pace slope (team quintile) and sim game elasticity ratio (log sim mean on X, month FE, over actual's); G5 total and margin SD ratio; G9 total and margin bias and MC-corrected slope; OT rate; within-game corr(possessions, points per possession) vs the actual residual corr (the pace x efficiency line, reported only).
+- Expectation stated in advance: team slope 0.67 -> ~0.95; game elasticity ratio 0.76 -> ~1.0 (A2 was 1.21); G9 total slope down less than A2's (0.98 -> 0.80); count gap vs v4 worse by about +0.09 (offline).
