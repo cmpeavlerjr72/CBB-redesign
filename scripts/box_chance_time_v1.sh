@@ -3,7 +3,7 @@
 # ENGINE_CHANCE_TIME=<arm>. Versioned sibling of scripts/box_r9_v1.sh `full` mode (lane C, not edited); the only
 # difference is that ENGINE_CHANCE_TIME is passed into the container (box_run_v2.sh does not pass it).
 #   scripts/box_chance_time_v1.sh <BASE> <CT_ARM> <WORKERS> [OFFSET=0] [SEEDS=200]
-# BASE: COMB9 (L2 + K2_Ocell + R9ao3) or COMB (L2 + K2_Ocell + R8b). CT_ARM: K, C12 or C2.
+# BASE: COMB9 (L2 + K2_Ocell + R9ao3) or COMB (L2 + K2_Ocell + R8b). CT_ARM: KD, K, C12 or C2.
 set -uo pipefail
 cd "$(dirname "$0")/.."
 M=data/processed/models
@@ -17,7 +17,7 @@ case "$BASE" in
   COMB9) export ENGINE_CLOCK=v5b_r6L2_glat_pmean ENGINE_SHOT_BLOCK=K2_Ocell ENGINE_FOUL_JOINT=R9ao3 ;;
   *) echo "unknown base $BASE"; exit 2 ;;
 esac
-case "$CT" in K|C12|C2) export ENGINE_CHANCE_TIME="$CT" ;; *) echo "unknown CT arm $CT"; exit 2 ;; esac
+case "$CT" in KD|K|C12|C2) export ENGINE_CHANCE_TIME="$CT" ;; *) echo "unknown CT arm $CT"; exit 2 ;; esac
 echo "[env] $BASE+$CT ENGINE_CLOCK=$ENGINE_CLOCK ENGINE_SHOT_BLOCK=$ENGINE_SHOT_BLOCK ENGINE_FOUL_JOINT=$ENGINE_FOUL_JOINT ENGINE_CHANCE_TIME=$ENGINE_CHANCE_TIME"
 export BOX_DOCKER_ARGS; BOX_DOCKER_ARGS="$(sed "s#\$PWD#$PWD#g" "$IN/docker_mounts.txt" | tr '\n' ' ') -e ENGINE_CHANCE_TIME"
 $B scripts/ops_overlay_check_v1.py --input-dir "$IN" --root /app || { echo "OVERLAY CHECK FAILED"; exit 3; }
