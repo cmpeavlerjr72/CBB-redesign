@@ -1113,3 +1113,125 @@ Total about **$6.0** (rates 3.495 / 2.56 / 3.495 per hour at launch; not reconci
 **Not run (resume commands).** S2/S3 full-size seeds 50-199: `scripts/box_queue_v1.sh - S2:0:96 S3:0:96` (chunks already on HF are skipped if pulled back); full-size K2O / R8b / R8bS / S1K2O: `scripts/box_queue_v1.sh - K2O:0:96 R8b:0:96 R8bS:0:96 S1K2O:0:96`; TO sample sim: `scripts/box_to_sim_v1.sh` (needs the TO artifacts on the box); S1tfs / S1opp / S0f3 sample reads: `scripts/box_lane_v1.sh - 64 S1tfs S1opp S0f3`; fold-1 confirmation retrains.
 
 **Files this session**: `scripts/box_bootstrap_v1.sh`, `box_stageb_launch_v2.sh`, `box_stageb_R_v1.sh`, `box_tfs_launch_v1.sh`, `box_builds_v1.sh`, `box_draws_v1.sh`, `box_fullread_v1.sh`, `box_queue_v1.sh`, `box_lane_v1.sh`, `box_gradewait_v1.sh`, `box_v3_sims_v2.sh`, `box_to_launch_v1.sh`, `box_to_sim_v1.sh`, `ops_launch_spot_v1.sh`, `ops_build_tfs_table_v1.py`, `ops_stageb_table_v1.py`, `ops_v3_pair_table_v1.py`, `ops_v3_gate_doc_v1.py`, `ops_local_grade_v1.sh`, `ops_local_grade2_v1.sh`, `ops_optional_docs_v1.sh`; docs `docs/tests/engine_gates_F2_2025_s200_v3_{S0,S1,S2,S3,K2O,R8b,R8bS}_2026-09-30.md`, `team_rate_stageb_offline_2026-09-30.md`, `v3box_grades_2026-09-30/`.
+
+---
+
+## 19. SIXTH LAUNCH, 2026-09-30 / 10-01 overnight (operator session): Decision 11 set DONE at full size, two spot reclaims, on-demand fallback, 14 queue requests served
+
+All times are the real wall clock: UTC on the box (`Z`), EDT = UTC - 4. Every number in this section comes from a log or a committed doc. Nothing was adopted, and no served default changed.
+
+### 19.1 Instances, reclaims, spend
+
+c7a.48xlarge, us-east-2, 100 GB gp3, key `cfb-sweep-ohio.pem`. Two STOPPED instances in the account (t3.small `kalshi-sniper`, c7a.48xlarge `cfb-sweep-cloud10k_wk0c`) are not ours and were never touched.
+
+| # | id | AZ | market | launch | end | end reason | min | $/h | cost |
+|---|---|---|---|---|---|---|---:|---:|---:|
+| 1 | i-03a8d9f659c0cb469 | 2b | spot | 00:49:45Z | 01:13:45Z | spot reclaim (`Server.SpotInstanceTermination`) | 24.0 | 2.6355 | $1.05 |
+| 2 | i-0ffff33b2d838ea69 | 2a | spot | 01:24:30Z | 01:34:35Z | spot reclaim (same) | 10.1 | 2.5605 | $0.43 |
+| 3 | i-0393f93baca3f0f66 | 2a | **on-demand** (allowed: spot reclaimed twice) | 01:43:03Z | 06:04:15Z (terminate call; confirmed terminated 06:04:48Z) | operator terminate | 261.2 | 9.8534 | $42.90 |
+
+- **Spend tally** (instance-hours x price, not reconciled against the bill): **$44.38**, under the $60 cap.
+  - Spot rates are the AZ spot price at launch.
+  - On-demand is the published c7a.48xlarge Linux rate.
+- **Safety nets:**
+  - every instance had `sudo shutdown -h 06:50` (02:50 EDT);
+  - the on-demand instance also had `instanceInitiatedShutdownBehavior=terminate` (spot refuses that attribute: `UnsupportedOperation`).
+- **Losses to the reclaims:**
+  - Instance 1 had finished and pushed COMB and R8b (graded, bootstrapped, pushed to HF and scp'd). It lost the K2O and L2 chunks in flight, because the per-arm push had not run yet.
+  - Instance 2 was lost about 3 minutes into K2O / L2. A 5-minute chunk sync loop was added from instance 2 on.
+- **Detection lag:** I noticed reclaim 1 about 10 minutes late (a blocking wait loop on ssh). From then on, a Monitor polled `describe-instances` every 60 s.
+
+### 19.2 Parity
+
+Every clone used for a number was proven against `docs/ops/parity_reference_windows_v6.json` before use: `--parity only`, 60 x 5, PASS bit-identical digest `0d4ddccc...029f`.
+
+| clone | SHA | parity at | used for |
+|---|---|---|---|
+| image + `~/cbb` | f72bcb0 / f670e02 | 00:57Z, 01:32Z, 01:50Z | Decision 11 set |
+| `~/cbb2` | 0ac56fd | 01:12Z, 01:52Z | none (superseded) |
+| `~/cbb3` | 222a570 | 01:51Z | none (superseded) |
+| `~/cbb4` | 7d38de5 | 02:03Z | lanes A, B, C tier 1, D (laneD_2) |
+| `~/cbb5` | 759be01 | 03:08Z | lanes H, G |
+| `~/cbb6` | 7840d40 | 03:16Z | laneC_2, laneB_2 |
+| `~/cbb7` | acad375 | 03:57Z | laneA_4 |
+| `~/cbb8` | 38eafdc | 04:36Z | laneI_1 |
+| `~/cbb9` | e998b22 | 04:38Z | laneD_3 |
+| `~/cbb10` | 6edbe94 | 05:21Z | laneI_2, PM pm_1 |
+
+The engine's default path is unchanged since the 09-30 S0 read, so `v3full_S0_s200_o0` and its four floor draws (seeds 1000-4199) were REUSED as the reference for every pairing. No S0 re-run.
+
+### 19.3 Decision 11 set (5,710 x 200, seeds 0-199, v3 inputs on the S0 tag, verified truth, paired with S0)
+
+| arm | flags | gate doc |
+|---|---|---|
+| COMB | L2 clock + K2_Ocell + R8b | `docs/tests/engine_gates_F2_2025_s200_v3_COMB_full_2026-09-30.md` |
+| R8b | `ENGINE_FOUL_JOINT=R8b` | `..._v3_R8b_full_2026-09-30.md` |
+| K2O | `ENGINE_SHOT_BLOCK=K2_Ocell` | `..._v3_K2O_full_2026-09-30.md` |
+| L2 | `ENGINE_CLOCK=v5b_r6L2_glat_pmean` | `..._v3_L2_full_2026-09-30.md` |
+| COMB9 (PM ruling 23:12 EDT: R9ao3 replaces R8b) | L2 + K2_Ocell + R9ao3 | `..._v3_COMB9_full_2026-09-30.md` |
+| COMB9GKD (PM request pm_1) | COMB9 + `ENGINE_SHARED_SHOOTING=G3` + `ENGINE_CHANCE_TIME=KD` | `..._v3_COMB9GKD_full_2026-10-01.md` |
+
+Each doc holds:
+- the headline G1-G9 lines under verified truth and legacy truth (`CBB_TRUTH=legacy_v0`, the pre-flip "current" column);
+- the paired multi-draw table;
+- the Decision 12 table from `scripts/ops_pair_bootstrap_v1.py`: floor = max(2 x SD over the 5 S0 draws, the paired game-bootstrap 95% half-width with 2,000 resamples). It reports G5 by component (within-game SD, residual SD, accuracy correlation) and TOV as a count per team-game.
+
+**Measured throughput:** a 200-seed full read takes 11-12 min at 96 workers with two reads sharing the box, and 6-8 min for the in-process `exp_aggregation_swap_v1.py` reads. Grading under both truths takes about 25 s, the bootstrap about 5 s.
+
+### 19.4 Queue served (requests in `docs/ops/box_queue/`, each with a `.done.md`)
+
+Order rule: ship-decision requests first, then first come first served. Two of my own low-priority jobs (laneB_1 U1, the section-18 S1K2O) were stopped mid-run to let ship-decision reads start. Partial chunks were deleted, and each was later re-run whole or left resumable.
+
+| request | what ran | window (Z) |
+|---|---|---|
+| laneD_1 / laneD_2 | F_R, F_T full retrain + gate reads (as laneD_2 case A) | 02:03-02:39 |
+| laneA_3 | X_F, X_PR at 200 seeds | 02:03-02:15 |
+| laneB_1 | G3 at 200 seeds; U1 tier 2 | 02:15-02:31; 04:53-05:08 |
+| laneC_1 | tier 1 (12 runs); tier 2 cancelled by lane C | 02:31-03:00 |
+| laneA_1 | tier 1 (16 runs); tier 2 (6 runs) | 02:39-03:15; 04:03-04:20 |
+| laneA_2 | R2 FULL at 200 seeds | 03:00-03:07 |
+| laneH_1 | A2 at 200 seeds; floor draw at seeds 1000-1199 | 03:07-03:25; 04:20-04:35 |
+| laneC_2 (ship) | COMB9 full + pairings; 3 tapfull reads; tier C (4 tapfull reads) | 03:15-04:04; 05:05-05:53 |
+| laneB_2 (ship) | COMB9G at 200 seeds + pairings | 03:24-03:41 |
+| laneA_4 | X_Tfix, S1fix, X_Tfix1 | 03:56-04:19 |
+| laneG_1 (low) | G4 at 200 seeds + lane G grader | 04:19-04:36 |
+| laneD_3 (ship) | FT_box_v2 (skew-free fg trainer): parity stage PASS, gate read, pairings | 04:37-04:50 |
+| laneI_1 | COMB9+K; tier B COMB9+C12 | 04:35-04:53; 04:50-05:06 |
+| laneI_2 | COMB9+KD | 05:20-05:38 |
+| PM pm_1 (ship) | COMB9 + G3 + KD at 150 workers, grade, two pairings | 05:51-06:02 |
+
+Results were synced to the same local paths after each job (scp / tar). The `~/cbb` reads (Decision 11 set) and lane D's outputs (`results`, `model_artifacts`) were also pushed to HF.
+
+### 19.5 Incidents
+
+1. **Two spot reclaims in 45 minutes**, then on-demand per the brief (19.1).
+2. **My blocking waits** hid reclaim 1 for about 10 minutes. Fixed with a Monitor on `describe-instances`.
+3. **Hard links to root-owned files fail on AL2023** (`protected_hardlinks`): `cp -al` did not populate the second clone. Fixed with `sudo cp -an` (XFS reflink, instant).
+4. **`v3full_COMB_s200_o0` was not on instance 3**, because the pull globs only covered K2O / L2. It was pulled from HF into the lane C clone before the COMB9-vs-COMB pairing.
+5. **Pairings with a non-S0 reference** (`--ref COMB`, `COMB9`, `COMB9G`, `FR_box_v1`): `ops_pair_bootstrap_v1.py` takes the draw SD over [ref, S0 draws]. That mixes a different arm into the "floor". It is flagged in every affected `.done.md`; only the bootstrap CI column of those tables is a valid floor. A v2 of the tool should take the draw SD over the floor draws plus their own reference.
+6. **Lane A's `S1_laneA` builder hash differs** from lane A's local build (box `32f6a992a7bb` / `c0217cb73284`; local `556b66547f5c` / `21ef52ea6f86`), while the input tables are byte-identical. Reported, not investigated.
+7. **Section-18 S2 / S3:** the 09-30 chunks for seeds 0-49 could not be shown to come from the same S1 inputs as tonight's rebuild (yesterday's S1 builder hash was not recorded). They were moved aside on the box (`~/old_0930_chunks/`), not mixed. HF still holds the 09-30 chunk files under the same names.
+8. **Lane D's `box_run.sh` writes root-owned files.** I needed `sudo cp` to copy `fr1_*` results between clones.
+
+### 19.6 NOT RUN (resume commands)
+
+- **Section-18 S1K2O full read:** PARTIAL. Chunks at seeds 0-124 are done (5 of 8) and pushed to HF by the sync loop. Resume: on a box with `~/cbb` at `f670e02`, run `scripts/box_builds_v1.sh S1`, then `scripts/box_fullread_v1.sh run S1K2O 90 0 200 25` (finished chunks are skipped once pulled back from HF, `results` key).
+- **Section-18 S2 / S3 full reads:** NOT RUN. Run `scripts/box_draws_v1.sh`, then `scripts/box_fullread_v1.sh run S2 90 0 200 25` and the same with `S3`. Delete or move the 09-30 seed 0-49 chunks first if they were pulled from HF.
+- **Section-18 fold-1 confirmation retrains and the TO sample sim:** NOT RUN (not attempted).
+
+### 19.7 Files
+
+Scripts, committed: `scripts/ops_pair_bootstrap_v1.py`, `scripts/box_fullread_v2.sh`, and the operator chain as run (on the box under short names in `~`):
+- `box_op1001_setup_v1.sh` (pull + build);
+- `box_op1001_main_v1.sh` (parity + S0 tag);
+- `box_op1001_stream_v1.sh` (one Decision 11 stream: run, grade, bootstrap, push);
+- `box_op1001_go_v1.sh`, `box_op1001_sync_v1.sh` (5-minute HF push loop);
+- `box_op1001_clone_v1.sh` (idempotent extra clone: data reflink copy + parity + S0 tag);
+- `box_op1001_worker_v1.sh` / `box_op1001_jobs_v1.sh` (two-worker locked job queue; `~/STOP_NEW` stops new pops);
+- `ops_op1001_relaunch_v1.sh` (local: bring a fresh instance to the full chain in one call);
+- `ops_op1001_watch_v1.sh` (local monitor);
+- `ops_op1001_fetch_v1.sh`, `ops_op1001_fetch_doc_v1.sh`, `ops_op1001_ssh_v1.sh`.
+
+Docs: the six gate docs in 19.3; the `.done.md` files in `docs/ops/box_queue/` (not committed, per the queue protocol).
+
+**Termination proof** (02:04:48 EDT): `aws ec2 wait instance-terminated` returned for i-0393f93baca3f0f66; `describe-instances --instance-ids i-0393f93baca3f0f66` -> `terminated`. The two spot instances were reclaimed (terminated by AWS) at 01:13:45Z and 01:34:35Z, confirmed `terminated` at the time, and have since aged out of `describe-instances`. `describe-instances` with state in {pending, running, stopping, stopped} lists only the two foreign STOPPED instances (i-0a43653240eb0d33d t3.small, i-03ced0582d227a33d c7a.48xlarge). `describe-volumes status=available` is empty. Final HF pushes from `~/cbb` and `~/cbb10` returned rc=0 at 06:03-06:04Z, before the terminate call.
