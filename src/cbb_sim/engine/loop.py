@@ -53,6 +53,7 @@ import numpy as np
 import pandas as pd
 
 from cbb_sim.engine import andone_label as AL
+from cbb_sim.engine import chance_time as CT
 from cbb_sim.engine import foul_joint as FJ
 from cbb_sim.engine import rotation_adapter as RA
 from cbb_sim.engine import shared_shooting as SSL
@@ -256,6 +257,9 @@ def simulate_chunk(inp: EngineInputs, ad: Adapters, game_index: np.ndarray,
     # shared_shooting round 1: per-game shared fg_make logit effect. DEFAULT OFF
     # (ENGINE_SHARED_SHOOTING unset -> None, no draw, no stream touched).
     ssl = SSL.load()
+    # chance_time round 1 (chance_time/experiments.md s1): fed chance timing. DEFAULT OFF
+    # (ENGINE_CHANCE_TIME unset -> None, no draw, no stream touched).
+    ctf = CT.load(seeds, gids)
     if ssl is not None:
         ssl.init_game(seeds, gids, book.keys["clock"])
     neutral_g = ((inp.games["neutral"].to_numpy() > 0)
@@ -411,6 +415,9 @@ def simulate_chunk(inp: EngineInputs, ad: Adapters, game_index: np.ndarray,
         # is <= 8 s and the previous possession ended in a DREB or a TOV.
         prev = st.prev_end[act]
         trans = ((dur <= 8) & ((prev == PREV["DREB"]) | (prev == PREV["TOV"]))).astype(np.float64)
+        e1 = used
+        if ctf is not None:
+            e1, trans = ctf.first(act, used, (prev == PREV["DREB"]) | (prev == PREV["TOV"]), trans)
 
         # ---- (b)-(d) the chance cascade ----------------------------------
         live = np.ones(m, dtype=bool)          # rows whose possession is still open
@@ -429,7 +436,7 @@ def simulate_chunk(inp: EngineInputs, ad: Adapters, game_index: np.ndarray,
             xx[:, I["is_transition"]] = np.where(is_first, trans[rows], 0.0)
             xx[:, I["is_transition_f"]] = xx[:, I["is_transition"]]
             xx[:, I["chance_elapsed_s"]] = np.where(
-                is_first, used[rows], ce_lut[np.minimum(chance[rows], 3)])
+                is_first, e1[rows], ce_lut[np.minimum(chance[rows], 3)])
             t_off = (inp.team_static[gidx[rows], off[rows]] if kk is None
                      else trd.team_static_k[kk[rows], gidx[rows], off[rows]])
 
@@ -488,6 +495,8 @@ def simulate_chunk(inp: EngineInputs, ad: Adapters, game_index: np.ndarray,
                     st.player_box["fg3a"][ar, off[r], sh] += 1
                 xs = xx[sel].copy()
                 xs[:, I["blocked_f"]] = 0.0
+                if ctf is not None:
+                    ctf.cont(xs, I["chance_elapsed_s"], chance[r], SHOT_CLASSES[sc], ar)
                 slot_blk = inp.slot_static[gidx[r], off[r], sh]
                 p_make = ad.fg.predict(SHOT_CLASSES[sc], (inp.team_static[gidx[r], off[r]] if kk is None
                                                           else trd.team_static_k[kk[r], gidx[r], off[r]]),
