@@ -2265,3 +2265,27 @@ NO WINNER. Fold-2 harness `1 - slope` vs served 0.0880 (seeds 0 / 1): aG3R +0.00
 ## 26. Lane A day round 2: RESULTS (run 2026-10-01 08:56-09:30 EDT; pre-registration section 25, commit 476ca10)
 
 NO WINNER. All of TS1 / TS2 / TS3, both seeds, break the jumper log-loss guard (0.66782-0.66822 vs the fixed bound 0.667048), the jumper D8 calibration guard (3.6-4.0 pp) and the jumper responsiveness line (team-game slope 0.79 -> 0.61-0.68). The registered primary ("1 - slope, lower is better") was crossed: the harness slope overshoots to 1.16-1.24 (margin SD 9.65 -> 6.8-7.4) because the ratings leave fg_make; disclosed, not used as a win. Threes improve (team-game slope 0.73 -> 0.82-0.85 F2, 0.87-0.90 F1). Parity exact. Full tables: `docs/tests/g9_slope_team_response_2026-10-01.md` section 7.
+
+## 27. Lane A day round 3 (2026-10-01): TS-R, two-stage fg_make with rating terms and the league level as a logit offset (pre-registration, written and COMMITTED BEFORE any arm ran)
+
+**Origin.** Section 26 (NO WINNER): without ratings the margin collapsed (harness slope 1.16-1.24); jumpers broke in stage A because the league level was a split variable. PM ruling: run TS-R; the slope metric is |1 - slope| from now on; this is the last round of the series (no fourth).
+
+**Trainer** `scripts/train_fg_make_two_stage_v2.py` (versioned sibling; v1 imported, not edited); served-shape object `scripts/fg_two_stage_model_v2.py` (`TwoStageModelR`: P = sigmoid(tree raw score + logit(lg_make_asof) + fg_team_offset)).
+
+**Arms.**
+- `TSR`: stage A = LightGBM (served B1 params, S1 monthly schedule) on `R2_SAFE_STATE` + `shooter_shrunk_dev_c`, trained with `init_score = logit(lg_make_asof)` (league level as a logit OFFSET, not a split variable). Stage B per shot type, fitted on the fold's TRAINING seasons only: pass 1 fits b on x = (site_home, site_away, off_rating_off_c, def_rating_def_c) (ratings league-centred, offence's offensive and defence's defensive) by Newton; the as-of residual stats S, I are taken relative to stage A + x'b (so the pooled term carries only what ratings do not); pass 2 grids tau_off x tau_def (section 25 grid) refitting b at each point. Team term = x'b + u_off + v_def. Home/away/neutral first-class (neutral reference).
+- `aL` (cheap reference arm): the SERVED B1 trees and feature list with only the league-level-as-offset change (init_score = logit(lg_make_asof)); no stage B. Separates that repair from the two-stage structure.
+- Each under seed 0 and seed 1 (spec-identical reseed), folds 1 and 2. Reference `aR` (served, seeds 0 / 1, section 23).
+
+**Primary (fold 2):** harness |1 - slope(Y on X_h)| with fg_make replaced, against served 0.0880. Floor = max(0.0089, the arm's |seed 0 - seed 1| of the metric, paired bootstrap SE). Win: lower than served by more than 2 floors and the close lens |1 - slope| also lower. The harness margin SD is reported beside the slope (served 9.65) so that a slope reached by collapsing spread is visible.
+
+**Explicit lines (reported, part of the decision where marked).**
+- Team-game make slope per type, design level F2 (aR 0.83 / 0.79 / 0.73): responsiveness line as section 25 (toward 1.0 in at least 2 of 3 types, none away by more than 0.03) -- decision line.
+- Month-level calibration per type, design level F2: weighted mean predicted - actual make rate by month (Nov-Mar), beside aR's; the Nov / Mar drift of round 2 (jumper -1.4 / +2.4 pp) must not reappear: every powered month within +-1.0 pp for every type -- decision line.
+- Offence-quintile slope as section 25 -- decision line.
+- Variance composition (excess residual variance over binomial; two-team shared covariance) as section 25 -- reported.
+- Fold 1, design level: team-game slope moves toward 1 in the same types -- decision line.
+
+**Guards: section 25's, at the same levels, unchanged.** Log loss per type `LL_arm <= LL_aR + 0.25 x (LL_stageA - LL_aR)`, LL_stageA = the same run's stage-A-only log loss (for TSR: stage A with the league offset, no team inputs), fallback `LL_aR + 2 x aR's seed difference` when the team information is not measurable. For the one-stage reference `aL`, which has no team-free stage, the fallback bound applies. D8 checks pass on fold 2 for both seeds; overall level within +-0.5 pp; train/serve parity exact (the harness refuses on > 0.1% of rows off by > 1e-4, here for `fg_team_offset`, `lg_make_asof`, every served team column and the shooter dev).
+
+**Decision.** An arm wins offline if the primary beats served by more than 2 floors with the close lens agreeing, every decision line holds and no guard breaks. If both win: the larger primary gain unless within one floor, then the simpler (aL < TSR). A winner: default-off `ENGINE_FG_MAKE` value plus builder columns, parity v9 on a clean `src/` tree, local tap (underpowered), HF bulk key, `docs/ops/box_queue/d1001_A_1.md` (full-size paired read, four floor draws). No winner: the results doc states what the three rounds establish about fg_make's team signal, and the series stops.

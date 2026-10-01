@@ -79,12 +79,13 @@ def design_metrics(pr: pd.DataFrame, rating_q: pd.DataFrame | None) -> dict:
         e["shared_cov"] = float(np.mean((a_ - a_.mean()) * (b_ - b_.mean())))
         e["by_month"] = {}
         for m, sm in s.groupby("mon"):
-            if len(sm) < 300:
-                e["by_month"][int(m)] = {"n": int(len(sm)), "underpowered": True}
-                continue
             wm = sm["n"].to_numpy(float)
+            bias = float(np.average(sm["p"] - sm["y"], weights=wm))     # month-level calibration (s27)
+            if len(sm) < 300:
+                e["by_month"][int(m)] = {"n": int(len(sm)), "underpowered": True, "bias": bias}
+                continue
             bm = wls(sm["y"].to_numpy(), np.column_stack([sm["pz"], sm["p"] - sm["pz"]]), wm)
-            e["by_month"][int(m)] = {"n": int(len(sm)), "tg_slope": wslope(sm["y"].to_numpy(), sm["p"].to_numpy(), wm),
+            e["by_month"][int(m)] = {"n": int(len(sm)), "tg_slope": wslope(sm["y"].to_numpy(), sm["p"].to_numpy(), wm), "bias": bias,
                                      "b_rate": float(bm[2])}
         # responsiveness: offence as-of make-rate quintile
         q = pd.qcut(s["oc"].rank(method="first"), 5, labels=False)
@@ -133,11 +134,13 @@ def harness_metrics(names: dict, nb: int = 200) -> dict:
         li = idx[lined[idx]]
         for k, x in X.items():
             o[f"oms_{k}"] = 1 - A.slope(Y[idx], x[idx])
+            o[f"abs_{k}"] = abs(o[f"oms_{k}"])          # round 3 (s27): the registered slope metric is |1 - slope|
             o[f"omsC_{k}"] = 1 - A.slope(C[li], x[li])
             o[f"sd_{k}"] = float(np.std(x[idx], ddof=1))
         for k in X:
             if k != "SERVED":
                 o[f"d_{k}"] = o[f"oms_{k}"] - o["oms_SERVED"]
+                o[f"dabs_{k}"] = o[f"abs_{k}"] - o["abs_SERVED"]
                 o[f"dC_{k}"] = o[f"omsC_{k}"] - o["omsC_SERVED"]
         return o
     est = stats(np.arange(len(Y)))
