@@ -131,3 +131,8 @@ data/processed/models/late_game/
 data/processed/models/clock/r8_K2/F1/
 data/processed/models/clock/r8_K2/F2/
 data/processed/models/clock/r8_K2/F2_seed*/
+# lane D 2026-10-01: fold-1 engine inputs and artifacts (> 20 MB; HF model_artifacts, pushed by scripts/ops_hf_push_paths_v1.py)
+data/processed/models/fold1_v1/
+data/processed/models/engine_f1/
+data/processed/models/engine_v3_f1/
+data/processed/models/engine_live_f1/
