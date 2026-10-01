@@ -275,3 +275,125 @@ Arithmetic expectation: the two parts move in opposite directions on correlation
   - No engine file was edited.
   - The ledger was edited as bytes with its CRLF endings preserved; `git diff --stat` shows only this lane's rows.
 - The shared tree had other lanes' uncommitted edits during this work (`clock_adapter_v3.py` and several scripts). Nothing here ran the engine, so none of it entered a result.
+
+
+---
+
+## 8. Second task (PM, 07:00 EDT): who owns the cross-type make residual (+0.039, 37%)? (appended 2026-10-01 ~08:40 EDT)
+
+**Answer: the free_throw model's `score_diff` feature, through who shoots and when.**
+- Cross-sectionally, `score_diff` carries a real association: FT% is higher when a team leads. That association is a proxy for the team's same-game form.
+- Inside the engine the term becomes a CAUSAL response: an opponent make lowers this team's margin, and the model lowers this team's FT make probability.
+- It owns about 62% of the group (about +0.024 corr units, 23% of the whole correlation gap).
+- It has no fix yet. Rounds 14 and 15 (two feature swaps) are both REFUTED offline. A structural round is proposed (8.5).
+- Nothing is adopted. Flag `ENGINE_FT_SCORE` is default-off and parity v9 PASSES with it off.
+
+### 8.1 Possession-level tap
+
+`scripts/diag_ftfg_tap_v1.py`:
+- It wraps `loop._shoot_trip` and `ad.ft.predict` in its own process only.
+- Coverage: 5,710 games x 6 seeds, 718k FT trips. It is bit-identical to the served 200-seed rows (34,260 rows, 0 mismatched cells). `src/` was clean.
+- The FT make channel `R_ft = FTM - FTA f0` splits exactly per trip into:
+  - **luck** = sum(made - p);
+  - **composition** = sum(p) - f0 FTA (who shoots, in which state, at which p).
+- Contexts: half (H1 / H2 before the last 4:00 / last 4:00 + OT), lead state at the trip (trail 4+ / close / lead 4+), trip kind (and-one / one-and-one / 2-3 shot).
+- Grader: `scripts/diag_ftfg_report_v1.py` (`results/g5_channels/ftfg_report_v1.json`).
+
+Between-team `Cov(FG make residual of one team, FT residual of the other)`, both directions, summed over rim / jumper / three, pts^2:
+
+| cut | sim luck | sim composition | actual 2025 (SE) |
+|---|---:|---:|---:|
+| **all** | -0.34 | **-3.19** | **+0.28 (0.36)** |
+| H1 | -0.03 | -1.09 | -0.19 (0.23) |
+| H2 before 4:00 | -0.18 | -1.18 | +0.52 (0.22) |
+| last 4:00 + OT | -0.13 | -0.91 | -0.06 (0.16) |
+| trailing 4+ | -0.19 | -1.40 | +0.46 (0.23) |
+| close | -0.07 | -0.25 | -0.14 (0.19) |
+| leading 4+ | -0.08 | -1.54 | -0.04 (0.21) |
+| 2-3 shot trips | -0.27 | -2.31 | +0.12 (0.30) |
+| one-and-one | -0.02 | -0.65 | +0.19 (0.14) |
+| and-one | -0.05 | -0.23 | -0.04 (0.10) |
+
+- **Predicted-margin tiers (2025).** Sim composition is -3.46 / -3.28 / -2.81 (close / mid / wide). Actual is +0.84 (0.66) / -1.24 (0.72) / +1.20 (0.70).
+- **Per season (real, as-of expectations).** 2023 +0.45 (0.45), 2024 +0.49 (0.38), 2025 -0.12 (0.38). Real data shows no coupling in any season: not a 2025 artefact.
+- **Per game:** UNDERPOWERED, not produced; about 0.5 pts^2 against per-game binomial noise.
+
+**What the table says.**
+- The engine's coupling is composition, not luck.
+- It is spread in proportion to FT volume over every half, lead state, trip kind and margin tier.
+- That rules out the four brief candidates as owners:
+  - the and-one draw (-0.23, its volume share);
+  - bonus / one-and-one state (-0.65, its volume share);
+  - late-game fouling (the last 4:00 carries 29%, about its share);
+  - box accounting of FT possessions. That one is a volume effect, the separate FTA rows in 8.4.
+
+### 8.2 The served FT model's margin term
+
+- Served seg_27 on 2025 attempts, partial dependence on `score_diff`: 0.668 at -20, 0.712 at 0, 0.768 at +20. Already in the first half: 0.673 at -10 to 0.749 at +10.
+- In the sim, a trip's first-attempt p rises 0.0019 per point of own margin within (game, side).
+
+### 8.3 Attribution by ablation, and the two refuted feature swaps
+
+**Ablation.** `ENGINE_FT_SCORE=FTn` serves `FT_FEATURES` minus `score_diff`, on the served S1_conf_aligned calendar. Run: 2,000 games x 6 seeds, paired seeds with the served tap. `scripts/diag_ftfg_ablation_v1.py`, `results/g5_channels/ftfg_ablation_v1.json`.
+
+| line | served | FTn |
+|---|---:|---:|
+| FT composition x opponent FG (pts^2) | -3.35 | **-0.05** |
+| per half, H1 / early H2 / late | -1.11 / -1.25 / -0.99 | -0.02 / +0.03 / -0.06 |
+| FT x own FG, within team (actual about +0.9) | +3.12 | +0.10 |
+| home/away points covariance | 24.10 | 27.79 (+3.7, direction only: Decision 12, a tap does not decide G5) |
+| FT% (actual 0.7213) | 0.7192 | 0.7239 |
+
+Removing the term removes the coupling in every cut. **Owner: free_throw `score_diff`.**
+
+**Rounds 14 and 15 (pre-registered, `docs/models/free_throw/experiments.md` sections 14-15; commits `1ef9a3a`, `15d51d7`).**
+- Round 14 drops the term (`FTn`, `FTnE`).
+- Round 15 replaces it with the pregame team block (`FTp`, `FTpE`).
+- **Both are REFUTED offline (FT0 stands).**
+
+Fold-2 guards against FT0:
+
+| arm | log loss vs FT0 | margin-bin calibration |
+|---|---:|---:|
+| FTn | +0.0045 | 3.9 pp |
+| FTnE | +0.0041 | 4.0 pp |
+| FTp | +0.0046 (19 floors) | 3.5 pp |
+| FTpE | +0.0042 | 3.4 pp |
+
+Fold 1 is the same.
+
+**Why the swaps fail.**
+- The pregame team block does not recover the loss, so the margin term is NOT cross-sectional team strength.
+- It is same-game information. The real within-(game, team) association of FT% with own margin is +0.0040 per point. Real FT x opponent-FG covariance is about 0, while own FG x FT is positive (about +0.45 per side). So the margin is a proxy for the team's FORM that night, not a cause.
+- The engine has no form latent, so the proxy becomes a causal path.
+- Round 14's registered primary (within-game slope) was mis-specified for this reason. That is stated in section 15.1; no guard was replaced.
+
+### 8.4 Closing the +0.039 group (2025, pts^2 of between-team covariance, gap = actual minus sim)
+
+| piece | gap | share of group (~5.2 pts^2) | owner |
+|---|---:|---:|---|
+| FT composition x opponent FG | +3.2 | ~62% (+0.024 corr) | **free_throw `score_diff`** (ablation 8.3) |
+| FT luck x opponent FG, and the actual's sampling | +0.6 | ~12% | none (sim luck -0.34 is noise-level; actual +0.28 +/- 0.36) |
+| FG x FG cross-type (rim x three +1.05, jumper x three +0.27) | +1.3 | ~25% | unattributed: fg_make has no margin term; G3's fitted rim x three term is 0.0018 |
+| remainder (shot-mix pairs) | +0.1 | ~2% | |
+
+**Split of the "+0.024 pace x FTA / shot mix / FTA x non-pace" row: different owners, not this one.**
+- **pace x FTA (+0.006) and pace x shot mix (+0.007).** Pace terms of the clock structure in section 4 (lane H).
+- **FTA volume x opponent FG (+0.010).** Sim -2.84 vs actual +1.98 (1.23) count-cov. The last 4:00 MATCHES (sim -3.67, actual -3.68). The gap sits in H1 (-0.63 vs +1.02) and early H2 (+1.46 vs +4.64).
+  - So it is foul generation outside late game (possession_outcome trip classes / R9ao3), not late-game fouling and not the FT model. FTn leaves it unchanged (-2.91 -> -4.02).
+  - Real as-of seasons read -3.5 / -4.5 / -3.4. That residual definition carries team-strength errors, so the sim-mean version above is the comparable one.
+
+### 8.5 Not run, and the proposed next round
+
+- **Not run:** a full-size read of FTn. It did not win offline, so per the brief no box request was filed.
+  - If the PM wants the ablation's G5 effect at full size as an ATTRIBUTION read: the flag is ready; the FTn artifacts (78 MB, gitignored, `free_throw/s1_scorediff/FTn/`) need an HF push first.
+- **Not run:** the FG x FG cross-type piece (`scripts/diag_fgctx_tap_v1.py` is written and committed).
+- **Proposed (not registered):** a per-team-game FORM latent in the shared_shooting form.
+  - One draw per team per game, shared between that team's FG and FT make logits, fitted from within-team FT x FG residual covariance (real about +0.45 pts^2 per side);
+  - together with an FT model without `score_diff`;
+  - judged in the engine (Decision 10), because offline log loss favours the proxy by construction.
+- **Incidents:**
+  - Two offline launches failed on my own bugs (JSON keys; a NameError) and were rerun; no other lane was affected.
+  - A speculative FTp artifact build was stopped (own PID) and its partial directory removed.
+  - `.gitignore` gained one line for `free_throw/s1_scorediff/`.
+  - Parity ran with another lane's uncommitted `shot_block.py` in the tree; the digest was still bit-identical.

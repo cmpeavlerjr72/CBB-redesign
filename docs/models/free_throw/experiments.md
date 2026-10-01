@@ -1188,3 +1188,19 @@ The team block is joined per (game_id, shooting team) from `data/processed/model
 - The decisive lines are G5 home/away corr and total SD ratio.
 - No other line may regress beyond floor, FT% and G9 included.
 - Mechanism line: FT composition x opponent FG, about 0.
+
+## 16. Round 15 RESULTS (lane B, 2026-10-01 ~08:35 EDT; `results/ft_scorediff/offline15_v1.json`, run after commits `15d51d7` / `573aa2e`)
+
+| fold | arm | log loss (vs FT0, floors) | max margin-bin cal gap | eligible |
+|---|---|---|---|---|
+| F1 | FT0 | 0.57889 | 0.91 pp | ref |
+| F1 | FTp | 0.58266 (+0.0038, 12.6) | 3.16 pp | |
+| F1 | FTpE | 0.58241 (+0.0035, 11.4) | 3.13 pp | |
+| F2 | FT0 | 0.57565 | 0.79 pp | ref |
+| F2 | FTp | 0.58028 (+0.0046, 19.4) | 3.49 pp | no |
+| F2 | FTpE | 0.57988 (+0.0042, 18.2) | 3.38 pp | no |
+
+**Status: REFUTED offline. FT0 stands.**
+- The pregame team block does not recover what `score_diff` carries, so the term is same-game information (a team-form proxy), not cross-sectional strength.
+- Next step (proposed, NOT registered): a per-team-game form latent shared by a team's FG and FT make logits, with an FT model without `score_diff`, judged in the engine (Decision 10).
+- Evidence: `docs/tests/g5_variance_channels_2026-10-01.md` section 8.
