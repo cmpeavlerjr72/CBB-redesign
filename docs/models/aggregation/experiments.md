@@ -144,3 +144,11 @@ Addendum E's result (results doc section 5.4): scored on the TRAINING design's o
 ### 2.4 Addendum F2 (registered 23:06 EDT, BEFORE it ran): does the shooter-dev skew carry the harness gap?
 
 Addendum F found the team-rate inputs in exact train/serve parity for both stacks, but S1's engine `shooter_shrunk_dev_c` differs from the value `T` was trained on (corr 0.94-0.97, engine SD 3-6% larger, 15% of rim rows off by > 0.01), while S0's is exact. Test: the X_F harness rerun with every matched (game, shooter, class) slot value replaced by the training design's value (`--slot-dev-override`, built from the locally rebuilt E3 extra cache); read harness 1 - slope against X_F (0.123) and S0 (0.088). If the override closes >= 50% of the X_F - S0 gap the skew is a carrier; if < 25% it is not.
+
+### 2.5 Addendum G (registered 23:08 EDT, BEFORE it ran): the train/serve skew and arm Tfix
+
+Addendum F2 result: replacing the engine's S1 shooter devs with the values `T` was trained on closes 62% (SE 7%) of the X_F - S0 harness gap (close lens 63%): the skew is a carrier. Cause (checked): with `--team-rate-table`, `team_rate_adapter.apply` replaces `off_make_c` / `def_allow_c` but leaves `off_make_raw` at the served expanding-mean value (max |raw - (c_E3 + lg)| 0.63 on fold-2 rows; 0 on the served design), and the trainer's `fit_m` / `build_extra` derive `shooter_shrunk_dev_c` from that stale raw, while the engine builder derives it from c_E3 + lg. Stage B's `T` was therefore trained on one shooter feature and served another.
+
+- **Arm `Tfix`:** `T` with `off_make_raw` / `def_allow_raw` re-derived as c + lg_make_asof after the adapter (wrapper `scripts/train_fg_make_v4_par_rawfix_v1.py`; the `--feature-table` path already does this), seeds 0 and 1, local, fold 2. Stacks `X_Tfix` (S0 + fg_make Tfix) and `S1fix` (PO T + RB T + fg_make Tfix).
+- **Read:** train/serve parity of the shooter dev (must be exact), the trainer's attempt-level log loss vs `T` / `R`, harness 1 - slope vs S0 (0.088) and X_F (0.123) with the seed floor, team-game make slopes by month.
+- **Rule (descriptive; nothing is adopted):** the skew explains the fg_make owner if X_Tfix's harness Delta vs S0 is inside 2 x max(seed floor, bootstrap SE); then a box closed-loop request (`X_Tfix`, `S1fix`, 5,710 x 200) is filed before 01:30 EDT if the measured local timing leaves room.
