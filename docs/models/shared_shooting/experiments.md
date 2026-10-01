@@ -167,3 +167,43 @@ The Decision 11 set (clock L2 + shot_block K2_Ocell + foul R9ao3 + shared_shooti
 
 - `shared_shooting.DEFAULT = "G3"`; `ENGINE_SHARED_SHOOTING=reference` = served-v1 (no draw).
 - Artifact: `data/processed/models/shared_shooting/params_v1.json` (tracked).
+
+---
+
+## 3. Round 2 pre-registration: walk-forward refit of G3's Sigma (lane B, 2026-10-01 ~06:40 EDT; COMMITTED BEFORE THE `wf` STAGE RUNS)
+
+### 3.0 What was seen before this was written (disclosure)
+
+- Round 1 (sections 1-2): held-out between-team covariance obs/pred 0.73 (fold 2) and 0.66 (fold 1); the per-season Sigma table (2023 / 2024 / 2025) in `docs/tests/shared_shooting_latent_2026-09-30.md` 1.2. Those numbers saw the test seasons and are the reason this round exists.
+- Today's delivery diagnostic (`scripts/diag_g3_delivery_v1.py`, existing 200-seed runs only): at the RATE level (made FG minus attempts x the game's own make rate) the engine delivers 94-95% of `E[W_h Sigma W_a]`. The 58% at the count level is the attempts' response (fewer misses -> fewer OREB -> fewer attempts; the clock). The latent is applied on the scale it was fitted. A Sigma "corrected" for that dilution would be a fit to sim output and is NOT an arm.
+- The `wf` stage below has NOT run.
+
+### 3.1 Candidates (simplicity order G3P < G3L < G3A)
+
+| arm | Sigma for a test-season game | note |
+|---|---|---|
+| `G3P` | round-1 G3: `psd(sigma_between)` pooled over every train season | the served spec (reference) |
+| `G3L` | the same fit on the LAST train season only | fold 1 trains on 2023 only, so G3L == G3P by construction there (fold-1 gain exactly 0) |
+| `G3A` | as-of in-season update: `psd((n0 * S_P + num_cur) / (n0 + den_cur))` elementwise on the MoM numerator and denominator; `S_P` = G3P; `n0` = the train seasons' mean per-season between-team mass `sum_g W_hk W_al` (one season of prior weight, fixed, not tuned); `num_cur` / `den_cur` = the test season's centred between-team cross products from ISO weeks strictly before the game's week | strictly as-of: completed earlier weeks of the same season only |
+
+Within-team unshared `T` is fitted per arm on train exactly as in round 1 (`psd(within_cross - S)`), with `S` the arm's train-time Sigma (G3A uses G3P's T).
+
+### 3.2 Data, folds, metric, floor (identical to round 1 unless stated)
+
+- Residuals: `results/shared_shooting/preds_v1.parquet` (unchanged), verified finals, (season, ISO week, type) centring.
+- Fold 1: train 2023, test 2024. Fold 2 (selection): train 2023-24, test 2025. 2025-26 sealed.
+- Primary: held-out per-game Gaussian log density of the 6-vector `[R_h(3), R_a(3)]` (round 1's pace element is dropped: no arm here couples to pace), mean over test games, reported as the gain over `G3P`.
+- Floor: max(SD of the paired test-mean difference under a 200-replicate Poisson game bootstrap; |change| of the arm's test mean log density when refitted on a seed-1 Poisson bootstrap of its training games).
+
+### 3.3 Decision rule (fixed now)
+
+1. Eligible: fold-2 gain over `G3P` > 2 floors AND fold-1 gain over `G3P` > 0. `G3L` therefore cannot be eligible (its fold 1 is identical by construction); it is reported as a fold-2-only read.
+2. Winner: the eligible arm with the largest fold-2 gain; arms within 1 floor tie; ties go to the simplest.
+3. No eligible arm: `G3P` stands (the served Sigma) and the walk-forward refit is REFUTED offline for this round.
+
+Secondary (reported, not deciding): held-out between-team covariance obs/pred by arm; per-month gain; the G3A Sigma path through the season.
+
+### 3.4 Closed loop (only if an arm other than G3P wins)
+
+- New arm values `G3L` / `G3A` of `ENGINE_SHARED_SHOOTING` in `src/cbb_sim/engine/shared_shooting.py` (the default stays `G3`). G3A reads a per-game Sigma table built offline for the fold-2 slate from completed earlier weeks only.
+- Read: paired vs served v2, full slate, 200 seeds on the box with four floor draws (Decision 12). A local tap is direction only. Status per section 1.7's wording.
