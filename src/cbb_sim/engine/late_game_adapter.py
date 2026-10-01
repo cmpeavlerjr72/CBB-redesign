@@ -1,4 +1,4 @@
-"""late_game_adapter.py -- late-game ROUND 2 window arms, DEFAULT-OFF.
+﻿"""late_game_adapter.py -- late-game ROUND 2 window arms, DEFAULT-OFF.
 
 Pre-registration: `docs/models/late_game/experiments.md` section 4.
 
@@ -45,17 +45,19 @@ from cbb_sim.models import clock as CK
 from cbb_sim.models import late_game as LGM  # registers the P3R/LGD cell dims
 
 R2_DIR = Path("data/processed/models/late_game/round2")
-CLOCK_ARMS = ("clk_C2", "clk_D", "clk_Dt", "clk_Dtt", "clk_DtL")
+CLOCK_ARMS = ("clk_C2", "clk_D", "clk_Dt", "clk_Dtt", "clk_DtL", "clk_DtLL")
 EVENT_ARMS = ("ev_BL3", "ev_L0S0")
 # Round 3 (experiments.md sections 6.3 / 7.3): the SAME clk_D law, gated by the offence's
 # live score_diff sign at possession start. None = every window row (round 2's clk_D).
 #   clk_Dt  -> tied rows only; clk_Dtt -> tied and trailing rows. No artifact is refit.
 # Round 4 (experiments.md section 9.3): clk_DtL = clk_D on tied rows + the LGL law (role refined to
 # five bands) on LEADING rows; trailing rows keep the served law.
-ROLE_GATE = {"clk_Dt": (0,), "clk_Dtt": (0, -1), "clk_DtL": (0,)}
-ARTIFACT_OF = {"clk_Dt": "clk_D", "clk_Dtt": "clk_D", "clk_DtL": "clk_D"}
+ROLE_GATE = {"clk_Dt": (0,), "clk_Dtt": (0, -1), "clk_DtL": (0,), "clk_DtLL": (0,)}
+ARTIFACT_OF = {"clk_Dt": "clk_D", "clk_Dtt": "clk_D", "clk_DtL": "clk_D", "clk_DtLL": "clk_D"}
 R4_DIR = Path("data/processed/models/late_game/round4")
-LEAD_ARTIFACT = {"clk_DtL": R4_DIR / "clk_LGL.pkl"}
+LEAD_ARTIFACT = {"clk_DtL": R4_DIR / "clk_LGL.pkl", "clk_DtLL": R4_DIR / "clk_LGL.pkl"}
+# Round 5 (experiments.md section 11): clk_DtLL serves LGL on trailing AND leading window rows.
+LEAD_ROLES = {"clk_DtL": (1,), "clk_DtLL": (1, -1)}
 
 
 def parse_mode(mode: str) -> tuple[str | None, str | None]:
@@ -93,6 +95,7 @@ class LateGameClock:
     _state_idx: dict = field(default_factory=dict)
     roles: tuple | None = None       # round 3: allowed sign(score_diff) values; None = all
     arm_lead: object = None          # round 4: law for LEADING window rows (clk_DtL); None = none
+    lead_roles: tuple = (1,)         # round 5: sign(score_diff) values arm_lead serves
 
     def __getattr__(self, k):
         return getattr(self.__dict__["inner"], k)
@@ -110,7 +113,7 @@ class LateGameClock:
             w &= np.isin(np.sign(state[:, idx["score_diff"]]), self.roles)
         self._redraw(self.arm, w, team, state, u, gidx, keys, dur)
         if self.arm_lead is not None:
-            self._redraw(self.arm_lead, win & (state[:, idx["score_diff"]] > 0),
+            self._redraw(self.arm_lead, win & np.isin(np.sign(state[:, idx["score_diff"]]), self.lead_roles),
                          team, state, u, gidx, keys, dur)
         return dur
 
@@ -292,7 +295,8 @@ def wrap(inp, event, clock, mode: str) -> tuple[object, object, dict]:
             s["leading_rows_law"] = str(LEAD_ARTIFACT[clk_name])
             s["preregistration"] = "docs/models/late_game/experiments.md section 9"
         clock = LateGameClock(inner=clock, arm=arm, name=clk_name, source={**clock.source,
-                              "late_game": s}, roles=ROLE_GATE.get(clk_name), arm_lead=arm_lead)
+                              "late_game": s}, roles=ROLE_GATE.get(clk_name), arm_lead=arm_lead,
+                              lead_roles=LEAD_ROLES.get(clk_name, (1,)))
         src["clock"] = s
     if ev_name is not None:
         if getattr(event, "team_block", None) is None:

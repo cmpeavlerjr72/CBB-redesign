@@ -1,4 +1,4 @@
-"""grade_late_game_r4_clock_offline_v1.py -- late-game ROUND 4 (b), offline line (experiments.md 9.2).
+﻿"""grade_late_game_r4_clock_offline_v1.py -- late-game ROUND 4 (b), offline line (experiments.md 9.2).
 
 Composites on round 1's held-out window rows, both folds, one code path:
     A      served-family law everywhere
@@ -47,7 +47,8 @@ def grade(fold: str) -> dict:
     D = np.load(CK_DIR / "pmf" / f"D_clk_{fold}.npy").astype("float64")
     L = np.load(R4 / f"clk_LGL_{fold}.npy").astype("float64")
     arms = {"A": A, "Dt": np.where((role == 0)[:, None], D, A),
-            "DtL": np.where((role == 0)[:, None], D, np.where((role > 0)[:, None], L, A)), "LGLall": L}
+            "DtL": np.where((role == 0)[:, None], D, np.where((role > 0)[:, None], L, A)), "LGLall": L,
+            "DtLL": np.where((role == 0)[:, None], D, L)}   # round 5 (experiments.md s11)
     sc = {}
     for k, pmf in arms.items():
         tp, _ = c3.truncate_pmf(pmf, rl)
@@ -92,7 +93,7 @@ def main() -> int:
                 f"{s}: {row[s]['crps']:.4f} ({(row[s]['floors_crps'] or 0):+.2f} fl, ll {(row[s]['floors_ll'] or 0):+.2f})"
                 for s in ("all", "trailing", "tied", "leading")))
         for cell in r["arms"]["A"]["profile"]:
-            if not cell.startswith("lead"):
+            if not (cell.startswith("lead") or cell.startswith("trail")):
                 continue
             print(f"   {cell:20s} act {r['arms']['A']['profile'][cell]['actual'] or 0:6.2f} "
                   + " ".join(f"{k} {r['arms'][k]['profile'][cell]['pred'] or 0:6.2f}" for k in r["arms"])
