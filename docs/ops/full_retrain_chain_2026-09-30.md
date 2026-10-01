@@ -253,3 +253,48 @@ thread-sensitive fields belong to arms R3 / R5 / R7 / R8, which are not served.
 
 Recommendation (not done here): record the BLAS thread count in every rotation fit's notes, and standardise the
 features before the lbfgs fit if any hazard arm is ever served.
+---
+
+## 2026-10-01 00:25-00:35: section 3, the E3 fg_make train/serve skew (lane A finding)
+
+**(1) Which F_T stages go through the skewed path.**
+- **fg_make: YES.** `train_fg_make_v4_par_v1.py --team-rate-table` calls `team_rate_adapter.apply`, which swaps
+  `off_make_c` / `def_allow_c` but leaves `off_make_raw` / `def_allow_raw` at the served values. `fit_m` and
+  `shooter_shrunk_dev_c` are then trained on the stale raw rate, while the inputs builder serves the E3-derived one.
+- **Rebound: NO skew in the served arm.** The adapter does leave the round-3 rate-derived extras stale (`rawc_off`,
+  `off_oreb_g*`, `off_priorc`, `*_oa*_c`, ...), but A0B0C0 reads only `off_oreb_c` and `opp_def_dreb_c` plus non-rate
+  columns (feature list checked through `train_rebound_v3_round3.features_for`).
+- **PO: no skew.** The adapter recomputes the interactions; lane A found `T` parity exact.
+
+**(2) The fix.**
+- **New `src/cbb_sim/team_rate_adapter_v2.py`:** v1 plus re-derivation of every raw column that depends on a swapped
+  rate (fg_make raw = c + `lg_make_asof`). The rebound audit list is `RB_STALE_DERIVED`, and
+  `assert_rebound_features` refuses an arm that reads one.
+- **New `scripts/train_fg_make_v4_par_v2.py`:** v1 with the v2 adapter installed. The chain's fg stage now uses it.
+- **New chain stage `parity`, between inputs and gate** (`scripts/diag_train_serve_parity_fg_v1.py`). It joins the
+  trainer's `slot_source_v2.parquet` (the `shooter_shrunk_dev_c` it trained on) with the inputs' `slot_static` (what is
+  served) on (player, date), for the 2025 test season. It FAILS the run if any class has corr < 0.999 or p99 |diff| > 1e-3,
+  and it also runs the rebound feature audit.
+- **F_R default path:** without a table the adapter is never called, so v2 is v1 line for line.
+
+| run | rim corr / p99 | jump2 corr / p99 | three corr / p99 | verdict |
+|---|---|---|---|---|
+| F_R (`smoke_FR_ev4`, served path) | 0.999828 / 0 | 0.999815 / 0 | 0.999975 / 0 | PASS |
+| F_T skewed (`smoke_FT_v1`, adapter v1) | 0.969898 / 0.0225 | 0.946771 / 0.0121 | 0.942733 / 0.0100 | FAIL (reproduces lane A's 0.94-0.97) |
+| F_T fixed (`smoke_FT_v2`, adapter v2) | 0.999917 / 2.6e-8 | 0.999949 / 5.4e-9 | 0.999995 / 6.5e-9 | PASS |
+
+The F_R residual (about 2e-4 off perfect correlation, p99 0) comes from a handful of player-dates where the v3 live
+replay and the backtest design differ (the v3 replay's freshness fixes). It is the same in every variant, so it is
+not a skew of the swap.
+
+- **Smokes:**
+  - `smoke_FT_v2`: whole F_T chain, 00:25-00:28, PASS.
+  - `smoke_FT_v1c`: a copy of the skewed F_T tag, then `--redo fg_train,inputs,gate`, 00:28-00:31, PASS. This is
+    exactly the box flow.
+- **Commit:** e998b22.
+
+**(3) Box request `docs/ops/box_queue/laneD_3.md`** (filed 00:33):
+- Copy FT_box_v1 to FT_box_v2, then `--redo fg_train,inputs,gate` with `--reuse-from FR_box_v1`.
+- PO and rebound F_T artifacts are reused unchanged.
+- One full gate read, paired against S0 (four floor draws) and against FR_box_v1.
+- About 10 min of box time.
