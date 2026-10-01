@@ -515,6 +515,25 @@ Requested at 23:19 EDT: `docs/ops/box_queue/laneA_4.md` (X_Tfix, S1fix, X_Tfix1;
 - It graded attempt-level log loss and binned calibration only.
 - Proposed for the PM: every scoring-stage Stage B also reports a train/serve parity check of every derived feature against the engine inputs, the team-game calibration slope by month, and the harness margin slope.
 
+**6. The PM's question (23:40 EDT): is there one mechanism behind both the pace case and the margin case?**
+
+The proposed mechanism is team effects from both sides combined additively on a scale where they should partly overlap. Clock round 7 shows per-team pace responsiveness 1.02, but a game-level slope of 1.17. Script: `scripts/diag_aggregation_sides_v1.py`; output `analysis_sides_v1.json`.
+
+- **For S1 vs S0: no.** The margin deterioration is the fg_make shooter-feature skew (sections 5.6-5.7). The off x def interaction carries none of it: I2 is -0.006 in S0 and +0.000 in S1. The offence and defence components change by similar amounts, each inside its floor.
+- **For S0's own margin miss: the same SHAPE, but this decomposition cannot attribute it to "overlap".**
+  - Team level is calibrated: the slope of the realised team mean on the predicted team mean is 1.02 (harness S0).
+  - Game level is not: the harness slope is 0.912.
+  - The offence-team and defence-team parts of the margin correlate +0.80. Jointly each has realised beta 0.92 / 0.90 (close 0.86 / 0.94). With one shared coefficient the beta is 0.89 (S1 0.85).
+  - Alone, each part's beta is 1.46-1.62. That is omitted-variable loading from the other, correlated part, not evidence that each side is calibrated.
+- **At the rate level the pattern is the reverse of the pace case.**
+  - The offence and defence parts of each possession's rates are nearly uncorrelated or negatively correlated (-0.40 to +0.27).
+  - Their joint betas are 0.59-0.94 for TOV, makes and OREB: each side over-responds by itself.
+- **What the margin evidence supports.** The F diagnostic's split explains why the team level is calibrated while the game level is not:
+  - The team component is at market scale.
+  - Game-to-game movement of the as-of rate features is over-varied, and it averages away in team means.
+- **This is a different mechanism from additive overlap.** The pace case shows the same team-calibrated, game-over-spread signature. Before concluding overlap there, split the clock's predicted pace into a team-mean component and a within-team movement component, as F did for margin.
+- **The PACE swap arm was not run** (box tier 2), so this lane cannot test the pace case directly.
+
 ## 10. Next step and resume
 
 **1. Decide on laneA_4 (section 8.3).** If S1fix's sim slope is within the retrain floor of S0, E3 is back on the table as a set (Decision 11). The Stage B `T` wins for possession_outcome and rebound, and Tfix's own log-loss win, become the candidate set.
