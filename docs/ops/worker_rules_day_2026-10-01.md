@@ -21,7 +21,9 @@ You adopt nothing and change no served default. New behaviour goes behind a defa
 ## Compute (replaces the AWS and box-queue bullets)
 
 - Home box, 20 cores, shared by seven lanes; your cap is in your brief.
-- AWS is NOT approved for this session unless the PM tells you so. No lane touches AWS. Write box requests exactly as in the overnight rules (`docs/ops/box_queue/<lane>_<n>.md`, code committed and pushed first, not committed themselves); name them with today's lane letter. If the box is approved an operator lane will run them; if not, they are the first jobs of the next box session. Do not wait on a request: finish your offline work and local taps, and report the request as PENDING.
+- AWS: APPROVED by the user for this session at ~06:25 EDT (same terms as last night, spend cap $60). Only the OPERATOR lane touches AWS. Write box requests exactly as in the overnight rules (`docs/ops/box_queue/<lane>_<n>.md`, code committed and pushed first, not committed themselves); name them `d1001_<lane>_<n>.md` so they do not collide with last night's files. The operator launches the instance when the first request exists, accepts requests until 14:30 EDT, and terminates by 15:45. You may wait for `<request>.done.md` (poll no more often than every 10 minutes) and put the full-size read in your report; a request still unanswered at 15:45 is reported as PENDING.
+- Adoption: the user delegated it to the PM again for this session. Lanes still adopt nothing; the PM rules on each full-size read.
+- The 2025-26 seal HOLDS until the audit window (user, 06:25 EDT). Nothing reads 2025-26 results.
 - Local closed-loop taps (for example 500 x 25) are for direction and parity only. Decision 12 applies: they cannot decide a G5 ratio line or any line whose floor needs the full-size read; say "underpowered".
 
 ## Known hazards from last night (do not repeat)
