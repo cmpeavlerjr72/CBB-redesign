@@ -1084,7 +1084,7 @@ floor on F2 (block-bootstrap SE of the paired delta). BZ3's offline evidence is 
 
 ## 12. RESULTS -- round 5, RUN 2026-10-01 (lane L; status PROPOSED -> RUN; NO ARM ADOPTED, no served default changed)
 
-Full evidence: \docs/tests/late_game_round5_2026-10-01.md\.
+Full evidence: `docs/tests/late_game_round5_2026-10-01.md`.
 
 Offline guards pass on both folds: LGL on trailing rows +10.0 floors (F1 +7.2), on leading rows +13.1 (F1 +13.2).
 
