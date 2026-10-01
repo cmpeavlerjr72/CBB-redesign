@@ -24,7 +24,11 @@ import numpy as np
 LUT_DIR = Path("data/processed/models/engine")
 ARMS = {"K2": "shot_block_K2", "K2_Ocell": "shot_block_K2_Ocell",
         # DIAGNOSTIC (section 7): K2_Ocell with both team block rates at the league level (0.0)
-        "K2_Ocell_noteam": "shot_block_K2_Ocell_noteam"}
+        "K2_Ocell_noteam": "shot_block_K2_Ocell_noteam",
+        # DEFAULT OFF (lane F, 2026-10-01; docs/tests/live_vs_backtest_slot_skew_2026-10-01.md): K2_Ocell with the table built
+        # against the v3 inputs' roster slots (the table the live chain already serves). Same model and anchors; differs only in
+        # the shooter / known arrays of the 334 games whose slots the v2-built table left anonymous.
+        "K2_Ocell_v3in": "shot_block_K2_Ocell_v3in"}
 TYPE_INDEX = {"rim": 0, "jump2": 1, "three": 2}
 #: SERVED DEFAULT, ADOPTED 2026-10-01 (Decision 11 set, PM under user delegation;
 #: docs/tests/adoption_served_v2_2026-10-01.md): `loop.py` passes this when

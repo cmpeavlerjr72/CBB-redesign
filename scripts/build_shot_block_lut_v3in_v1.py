@@ -26,7 +26,7 @@ V3 = REPO / "data/processed/models/engine_v3"
 V2 = REPO / "data/processed/models/engine"
 inp3 = EngineInputs.load(V3, "F2_2025")
 tab = SBL.build_table(inp3, "K2_Ocell", as_of=None)
-out = V3 / "shot_block_K2_Ocell_v3in_F2_2025.npz"
+out = V2 / "shot_block_K2_Ocell_v3in_F2_2025.npz"      # tracked engine dir, next to the v2-built table (engine flag K2_Ocell_v3in)
 np.savez_compressed(out, roster_cbbd=inp3.roster_cbbd, **tab)
 old = np.load(V2 / "shot_block_K2_Ocell_F2_2025.npz")
 assert np.array_equal(old["game_id"], tab["game_id"])
