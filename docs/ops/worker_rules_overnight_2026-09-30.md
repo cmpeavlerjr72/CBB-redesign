@@ -15,7 +15,8 @@ Neither the PM nor any worker can estimate elapsed time. Never reason about how 
 ## Compute
 
 - Home box, 20 cores, shared by seven lanes. Your core cap is in your brief; it is a hard cap on concurrent worker processes x threads. Pin `OMP_NUM_THREADS`, `MKL_NUM_THREADS`, `OPENBLAS_NUM_THREADS`, `NUMEXPR_NUM_THREADS` and LightGBM `n_jobs` so the cap holds.
-- NO AWS tonight. Box approval is per session and was not given. Do not launch, start, stop or touch any instance. If a job needs the box, write the exact resume commands and stop there.
+- AWS: APPROVED by the user for this session (message after 20:42 EDT, "approval and even encouragement"). Only the OPERATOR lane touches AWS. Other lanes do not launch, start, stop or touch any instance; they hand jobs to the operator through the box queue below.
+- BOX QUEUE: to get a job run on the box (full-size 5,710 x 200 paired loops with four floor draws, big retrains), commit and push your code first, then write ONE request file `docs/ops/box_queue/<lane>_<n>.md` containing: the git commit hash, the exact command line(s), the flags / env, the inputs and artifacts needed (and their HF bulk key or path), the expected output paths, and the one line you need decided. Do not commit request files. The operator picks requests up between jobs, runs them, syncs outputs back to the stated local paths and writes `<lane>_<n>.done.md` next to the request (or `.failed.md` with the error). Do not poll for it more often than every 10 minutes. Requests arriving after 01:30 EDT may not run; the operator stops accepting at 02:00 and the instance is terminated by 03:00.
 - No paid data. Do-not-scrape list in CLAUDE.md stands.
 - Use `.venv/Scripts/python.exe`; set `PYTHONIOENCODING=utf-8`.
 - Multi-step shell goes in a script FILE (in `scripts/` if it is worth keeping, otherwise your scratch dir), never a long ad-hoc line with backticks or globs that could execute file names.
