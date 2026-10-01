@@ -80,3 +80,13 @@ For a reference R (realised verified margin Y = the G9 line; or the close C = th
 - **Owner of the S1 deterioration:** a component with Delta k_j(Y) >= 0.01 (about 40% of the 0.023), > 2 floors, same sign in the close lens.
 - **"Combination" verdict:** the PM's working statement is CONFIRMED if the interaction terms (I1, I2) or Part A's cross terms carry >= 50% of the S1 - S0 deterioration; REFUTED if the per-sub-model terms (D_PO, D_FG, D_RB) or Part A's own terms carry >= 50% and the interaction terms are inside 2 floors; otherwise MIXED.
 - If an owner emerges with time left, the fix round is pre-registered in section 2 of this file as a SUB-MODEL change (never a sim-output shrink, which is the banned pattern) and is not run unless its measured timing fits.
+
+### 1.8 Addendum A (written 21:20 EDT, BEFORE it ran): sub-model replacement factorial and per-sub-model retrain-seed floors
+
+Reason for the addendum: the first Part C read showed that the Stage B `R` artifacts (served features, retrain seed 0) reproduce the served harness margin exactly, while `R2` (seed 1) moves the harness slope by -0.014; so the S1 - S0 comparison needs a retrain-seed floor per sub-model, and the "which sub-model's retrain" question is answered most directly by replacing sub-models one at a time rather than by league-average swaps alone.
+
+- **Factorial (harness, `FULL` arm only, deterministic):** the eight stacks with each of possession_outcome (P), fg_make (F) and rebound (R) either served or Stage B `T` on E3 v4 features: none (= S0), P, F, R, PF, PR, FR, PFR (= S1). Built with `build_engine_inputs_v3_tag_v1.py --tag X_<letters>_laneA` (`--team-rate-table E3_v4 --no-table-for <served ones>` plus the `T` artifact dir of each replaced model).
+- **Seed floors (harness):** S0 with ONE sub-model replaced by its `R2` (seed-1) retrain: `Z_P`, `Z_F`, `Z_R`.
+- **Read:** the effect of each sub-model's T on 1 - slope(Y on X_h) and SD(X_h), as main effects (average over the other two's states) and interactions; each main effect is compared with |that sub-model's Z effect| (the spec-identical retrain-under-another-seed floor) and the game bootstrap.
+- **Rule:** a sub-model owns the S1 deterioration if its main effect is >= 40% of the S1 - S0 harness change, > 2 x max(its seed floor, bootstrap SE), and the same sign in the close lens. Interactions >= 25% of the change make the "combination" verdict at least MIXED.
+- **Closed loop:** box request laneA_2 asks for the sim-level retrain floor (`R2` stack `FULL`, 5,710 x 200); the factorial is not run in the closed loop tonight.

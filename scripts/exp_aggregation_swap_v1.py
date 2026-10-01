@@ -38,7 +38,8 @@ _PIN = ("OMP_NUM_THREADS", "OPENBLAS_NUM_THREADS", "MKL_NUM_THREADS",
         "NUMEXPR_NUM_THREADS", "LIGHTGBM_NUM_THREADS")
 OUT_ROOT = ROOT / "results" / "aggregation_v1"
 STACK_DIRS = {"S0": "data/processed/models/engine_v3_S0_laneA",
-              "S1": "data/processed/models/engine_v3_S1_laneA"}
+              "S1": "data/processed/models/engine_v3_S1_laneA",
+              "R2": "data/processed/models/engine_v3_R2_laneA"}
 
 PO_OFF = ["off_3pa_c", "off_rim_c", "off_tov_c", "off_ftr_c"]
 PO_DEF = ["opp_def_3pa_c", "opp_def_rim_c", "opp_def_tov_c", "opp_def_ftr_c"]

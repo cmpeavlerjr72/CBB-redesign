@@ -78,7 +78,8 @@ def main() -> int:
     from run_engine_live import prepare_from_overlay
     from cbb_sim.engine import adapters as AD
     from cbb_sim.engine.inputs import EngineInputs
-    sdir = ROOT / (SW.STACK_DIRS.get(args.stack) or EXTRA_STACKS[args.stack])
+    sdir = ROOT / (SW.STACK_DIRS.get(args.stack) or EXTRA_STACKS.get(args.stack)
+                   or f"data/processed/models/engine_v3_{args.stack}_laneA")
     over = prepare_from_overlay(sdir / "overlay", "F2", 2025, OUT / "_adapter_dirs" / f"harness_{args.stack}")
     for k, v in over.items():
         setattr(AD, k, Path(v))
