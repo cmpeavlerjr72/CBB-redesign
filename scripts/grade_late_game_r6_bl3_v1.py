@@ -1,4 +1,4 @@
-﻿"""grade_late_game_r6_bl3_v1.py -- late-game ROUND 6 offline grader (experiments.md 13.2 / 13.4). One code path.
+"""grade_late_game_r6_bl3_v1.py -- late-game ROUND 6 offline grader (experiments.md 13.2 / 13.4). One code path.
 
     .venv/Scripts/python.exe scripts/grade_late_game_r6_bl3_v1.py --run lg4_R9_s25 --out results/late_game/round6/bl3_grade.json
 """

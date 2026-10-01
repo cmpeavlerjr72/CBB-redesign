@@ -313,6 +313,13 @@ def simulate_chunk(inp: EngineInputs, ad: Adapters, game_index: np.ndarray,
     if (os.environ.get("ENGINE_LG_BUZZER", "off") or "off") != "off":
         from cbb_sim.engine.late_game_adapter import load_buzzer
         bz = load_buzzer(seeds, gids)
+    # late foul accrual (possession_outcome experiments.md s29): DEFAULT OFF; unset -> None, nothing drawn.
+    lfl = None
+    if (os.environ.get("ENGINE_LATE_FOUL", "off") or "off") != "off":
+        from cbb_sim.engine import late_foul as LFL
+        lfl = LFL.load()
+        if fj is None:
+            raise ValueError("ENGINE_LATE_FOUL needs the foul joint's open-time state (ENGINE_FOUL_JOINT set)")
     if ssl is not None:
         ssl.init_game(seeds, gids, book.keys["clock"])
     # round 16 (shared_shooting experiments.md s5): FT form shift, None unless ENGINE_TEAM_FORM is set
@@ -725,9 +732,16 @@ def simulate_chunk(inp: EngineInputs, ad: Adapters, game_index: np.ndarray,
             sf = u_sf < silent_foul
         else:
             sf = u_sf < _foul_p(foul_tab, per0, sec0, sd0, tf_def0, tf_off0, site0)
+        lk = None
+        if lfl is not None:                    # s29: count law replaces the served draw in the window
+            lk = lfl.count(u_sf, per0, sec0, sd0, tf_def0)
+            sf = sf & (lk < 0)
         if sf.any():
             rs = np.flatnonzero(sf)
             st.team_fouls[act[rs], dfn[rs]] += 1
+        if lk is not None and (lk > 0).any():
+            rk = np.flatnonzero(lk > 0)
+            st.team_fouls[act[rk], dfn[rk]] += lk[rk].astype(st.team_fouls.dtype)
 
         if clk_cont is not None:
             used = _clock_cont(ad.clock, cbook, clk_cont, team_off, x, u_clock, gidx, act,

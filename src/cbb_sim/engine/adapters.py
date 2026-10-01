@@ -1268,6 +1268,8 @@ class Adapters:
             flags["sources"]["usage_ft_late"] = uft_src
         if (os.environ.get("ENGINE_LG_BUZZER", "off") or "off") != "off":
             flags["ENGINE_LG_BUZZER"] = os.environ["ENGINE_LG_BUZZER"]   # late-game round 4 (loop.py)
+        if (os.environ.get("ENGINE_LATE_FOUL", "off") or "off") != "off":
+            flags["ENGINE_LATE_FOUL"] = os.environ["ENGINE_LATE_FOUL"]   # late foul accrual, PO s29 (loop.py)
         if sa_src is not None:
             flags["ENGINE_SEASON_ANCHOR"] = sa_mode
             flags["sources"]["season_anchor"] = sa_src

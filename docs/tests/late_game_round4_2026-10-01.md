@@ -1,4 +1,4 @@
-﻿# Late-game round 4: end-of-period possession value and the leading team's clock (2026-10-01)
+# Late-game round 4: end-of-period possession value and the leading team's clock (2026-10-01)
 
 Lane L, day session 2026-10-01, 09:04-10:40 EDT (wall clock; run log `results/late_game/round3/run_log.txt`).
 **NOTHING IS ADOPTED. No served default changes.** All new behaviour sits behind default-off flags.

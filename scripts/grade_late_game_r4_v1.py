@@ -1,4 +1,4 @@
-﻿"""grade_late_game_r4_v1.py -- late-game ROUND 4: the ONE closed-loop grader (experiments.md 9.4).
+"""grade_late_game_r4_v1.py -- late-game ROUND 4: the ONE closed-loop grader (experiments.md 9.4).
 
 Round 3's grader (`grade_late_game_r3_v1.py`) with 9.4's one change: the first-half bit-identity veto is
 replaced by the FIRST-HALF BUZZER TEST (H1 points per possession for possessions starting at <= 10 s must move

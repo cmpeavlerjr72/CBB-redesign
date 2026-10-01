@@ -1,4 +1,4 @@
-﻿"""late_game_adapter.py -- late-game ROUND 2 window arms, DEFAULT-OFF.
+"""late_game_adapter.py -- late-game ROUND 2 window arms, DEFAULT-OFF.
 
 Pre-registration: `docs/models/late_game/experiments.md` section 4.
 

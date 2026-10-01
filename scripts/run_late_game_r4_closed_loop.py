@@ -1,4 +1,4 @@
-﻿"""run_late_game_r4_closed_loop.py -- late-game ROUND 4 tapped closed loop (experiments.md section 9).
+"""run_late_game_r4_closed_loop.py -- late-game ROUND 4 tapped closed loop (experiments.md section 9).
 
 Round 3's runner (`run_late_game_r3_closed_loop.py`) with three read-only additions:
 
@@ -35,7 +35,7 @@ sys.path.insert(0, str(ROOT / "scripts"))
 import run_late_game_r2_closed_loop as R2                             # noqa: E402
 import run_late_game_r3_closed_loop as R3                             # noqa: E402
 
-ALLOWED_ENV = {"ENGINE_LATE_GAME", "ENGINE_LG_BUZZER", "ENGINE_LG_MAKE", "ENGINE_FOUL_JOINT"}
+ALLOWED_ENV = {"ENGINE_LATE_GAME", "ENGINE_LG_BUZZER", "ENGINE_LG_MAKE", "ENGINE_FOUL_JOINT", "ENGINE_LATE_FOUL"}
 SHOT_SEC = 35
 R3.CNT = ("fta", "ftm", "fga3", "fga2_rim", "fga2_jump", "tov", "oreb", "fgm3", "fgm2_rim", "fgm2_jump")
 _W: dict = {}

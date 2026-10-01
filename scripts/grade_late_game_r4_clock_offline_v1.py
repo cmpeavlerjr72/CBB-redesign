@@ -1,4 +1,4 @@
-﻿"""grade_late_game_r4_clock_offline_v1.py -- late-game ROUND 4 (b), offline line (experiments.md 9.2).
+"""grade_late_game_r4_clock_offline_v1.py -- late-game ROUND 4 (b), offline line (experiments.md 9.2).
 
 Composites on round 1's held-out window rows, both folds, one code path:
     A      served-family law everywhere

@@ -1,4 +1,4 @@
-﻿"""diag_late_game_r4_owner_v1.py -- late-game ROUND 4: who owns the end-of-period possession value?
+"""diag_late_game_r4_owner_v1.py -- late-game ROUND 4: who owns the end-of-period possession value?
 
 Reported lines (the pre-registration's motivating evidence), one code path per side. Possessions that START
 at <= 35 s in period 1 or 2, by start bucket (and role in period 2), sim (round-4 tap) vs actual
