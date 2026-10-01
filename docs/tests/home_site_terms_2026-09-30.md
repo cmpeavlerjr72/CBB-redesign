@@ -315,3 +315,24 @@ The A2 logit slope is b = +0.002.
 
 - "Site rule audit closed for free_throw, clock and foul accrual: arms refuted, no realised effect to model or already over-produced by state features."
 - "fg_make G4 offline winner (1.05 floors F2), needs engine flag and closed loop, expected to expose the G6 non-neutral cancellation."
+
+## 9. Outcome wiring for the G4 closed loop (PM follow-up, 22:35-22:40 EDT)
+
+**Engine flag.** `ENGINE_FG_MAKE=round4site_G4` is wired default-off in commit `c5667bc`. It adds one `_FG_DATED_ROUNDS` entry and one `_FG_ROUND_NOTE` entry to `src/cbb_sim/engine/adapters.py`; the diff held only that 5-line hunk.
+
+**Parity of the default path.** A 60-game x 5-seed run on 2 workers, `engine_v3` inputs, `ENGINE_INPUTS_VERSION=v1` (`results/engine_v0/laneG_parity_v7_default`). Against `docs/ops/parity_reference_windows_v7.json` it is a **PASS**, bit-identical (sha `34cd58dd...`).
+
+**Flag smoke run.** The same smoke run with the flag set (`laneG_G4_smoke60x5`) completes. Its 300 rows are mechanics only, not evidence.
+
+**Artifacts on HF.**
+- `data/processed/models/fg_make/round4_site/G4/` (21 files, 25 MB) is uploaded under the existing `model_artifacts` key path, `model_artifacts/fg_make/round4_site/G4/`, by `scripts/ops_hf_push_g4_site_v1.py`. The remote listing was verified: 21 of 21 files.
+- Box pull: `hf_sync_data.py pull --dirs model_artifacts --only 'fg_make/round4_site/**'`.
+
+**Box request.** `docs/ops/box_queue/laneG_1.md`, LOW PRIORITY (diagnostic, behind ship decisions).
+- Runner: `scripts/box_fullread_laneG_v1.sh` (preflight / run / grade).
+- Graders: `ops_pair_bootstrap_v1.py` for the vetoes, plus the new `scripts/grade_laneG_site_loop_v1.py` for the site lines, all on four S0 floor draws and the paired game bootstrap.
+- Site lines: G6 by site, the real FE HCA kept separate from the listed-home neutral line, the team-part bias, G9 slope and bias overall and by site, and eFG% by site.
+
+**Grader smoke test.** On local reads (ref K2O, one floor draw L2, arm COMB, 20 resamples) the grader reproduces the diagnostic's numbers: `hca_fe` 3.40 (actual 3.06), `team_part_ha_bias` -0.35.
+
+**Status.** PM ruling: G4 is NOT on tonight's adoption list. The loop exists to test the exposure hypothesis in section 5, item 4.
