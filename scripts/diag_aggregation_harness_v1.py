@@ -73,6 +73,9 @@ def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--stack", required=True)
     ap.add_argument("--arms", default=",".join(HARNESS_ARMS))
+    ap.add_argument("--slot-dev-override", default=None,
+                    help="addendum F2: parquet (game_id, shooter_id, shot_class, shooter_shrunk_dev_c) whose values "
+                         "replace the engine's slot shooter_shrunk_dev_c__* where the (game, player, class) matches")
     ap.add_argument("--fg-first-refit", action="store_true",
                     help="addendum B: score every game's fg_make by its FIRST refit (trained before the season)")
     args = ap.parse_args()
@@ -87,6 +90,25 @@ def main() -> int:
         setattr(AD, k, Path(v))
     inp = EngineInputs.load(sdir, "F2_2025")
     G = inp.n_games
+    if args.slot_dev_override:
+        ov = pd.read_parquet(args.slot_dev_override)
+        key = {"FGA_rim": "rim", "FGA_jump2": "jump2", "FGA_3": "three"}
+        gid = inp.games["game_id"].to_numpy()
+        n_rep = 0
+        for cls, k in key.items():
+            o = ov[ov["shot_class"] == cls]
+            lut = dict(zip(zip(o["game_id"].to_numpy().tolist(), o["shooter_id"].to_numpy().tolist()),
+                           o["shooter_shrunk_dev_c"].to_numpy().tolist()))
+            j = inp.slot_names[f"shooter_shrunk_dev_c__{k}"]
+            ros = inp.roster_cbbd
+            for gi in range(G):
+                for sd in (0, 1):
+                    for sl in range(ros.shape[2]):
+                        v = lut.get((int(gid[gi]), int(ros[gi, sd, sl])))
+                        if v is not None:
+                            inp.slot_static[gi, sd, sl, j] = v
+                            n_rep += 1
+        print(f"slot dev override: {n_rep} slot values replaced", flush=True)
     ev = AD.EventAdapter.load(inp, "round2_s1", "F2", 2025)
     fg = AD.FgMakeAdapter.load(inp, "F2", "decision8", "round4_B1")
     ft = AD.FreeThrowAdapter.load(inp, "F2", "s1_conf_aligned")
@@ -196,7 +218,7 @@ def main() -> int:
     out = pd.concat(frames, ignore_index=True)
     out["game_id"] = inp.games["game_id"].to_numpy()[out["game_idx"].to_numpy()]
     OUT.mkdir(parents=True, exist_ok=True)
-    path = OUT / f"harness_{args.stack}{'_fgfirst' if args.fg_first_refit else ''}.parquet"
+    path = OUT / f"harness_{args.stack}{'_fgfirst' if args.fg_first_refit else ''}{'_devov' if args.slot_dev_override else ''}.parquet"
     out.to_parquet(path, index=False)
     print(f"wrote {path} {out.shape} in {time.time() - t0:.0f}s", flush=True)
     return 0
