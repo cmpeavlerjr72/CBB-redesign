@@ -66,7 +66,8 @@ def load_slate(slate_date: str, season: int, source: str, schedule_path: str | N
             columns={"home_display_name": "home_name", "away_display_name": "away_name"})
         slate = slate.merge(names, on="game_id", how="left")
         slate["tip_source"] = "universe"
-        return slate
+        from cbb_sim.live import tips as TP
+        return TP.flag_placeholders(slate)      # explicit placeholder flag (midnight ET or no tip); replay games rows are unchanged
     slate = BL.load_slate_from_cbbd(schedule_path, slate_date, crosswalk)
     unmapped = slate.attrs.get("unmapped", [])
     g = pd.read_parquet(schedule_path, columns=["id", "homeTeam", "awayTeam", "startTimeTbd"])
@@ -176,6 +177,9 @@ def run_sim_stage(slate_date: str, season: int, fold: str = "F2", seeds: int = 2
     games, pl, ad = RL.simulate(inp, fold, season, seed_arr, keep_players=players, adapter_dir=adir)
     games = RL.stamp_rows(games, inp, now, per_game=False)         # created_at + tipoff_utc, asserts created_at < tipoff
     G.assert_created_before_tipoff(games)
+    if pass_name:                                   # two-pass chain: placeholder tips never certify a row as pre-tip (tips.stamp_pre_tip_basis)
+        from cbb_sim.live import tips as TP
+        games = TP.stamp_pre_tip_basis(games, ok, slate_date)
     games.to_parquet(out / "games.parquet", index=False)
     if players and pl is not None:
         RL.stamp_rows(pl, inp, now, per_game=False).to_parquet(out / "players.parquet", index=False)

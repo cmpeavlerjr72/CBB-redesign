@@ -103,3 +103,42 @@ def default_clock(slate_date, pass_name: str = "evening") -> pd.Timestamp:
     if pass_name == "evening":
         return (d - pd.Timedelta(days=1) + pd.Timedelta(hours=20)).tz_localize(ET).tz_convert("UTC")
     return (d + pd.Timedelta(hours=9)).tz_localize(ET).tz_convert("UTC")
+
+
+# ---------------------------------------------------------------------------------------------- pre-tip basis (lane F, 2026-10-01)
+def flag_placeholders(slate: pd.DataFrame) -> pd.DataFrame:
+    """Return `slate` with an explicit `tip_time_is_placeholder`: kept where a feed already set it, and ALSO true for any tip at exactly
+    00:00 America/New_York or with no tip. Used by the universe (replay) path, which has no feed flag."""
+    s = slate.copy()
+    base = s["tip_time_is_placeholder"].fillna(True).astype(bool) if "tip_time_is_placeholder" in s.columns else pd.Series(False, index=s.index)
+    tip = pd.to_datetime(s["tipoff_utc"], utc=True, errors="coerce")
+    s["tip_time_is_placeholder"] = (base | is_midnight_et(tip) | tip.isna()).to_numpy()
+    return s
+
+
+def earliest_possible_tip(slate_date) -> pd.Timestamp:
+    """00:00 America/New_York of the slate date, in UTC: no real tip of that slate date can be earlier. It is the only thing a placeholder tip proves."""
+    return pd.Timestamp(slate_date).normalize().tz_localize(ET).tz_convert("UTC")
+
+
+def stamp_pre_tip_basis(games: pd.DataFrame, slate: pd.DataFrame, slate_date) -> pd.DataFrame:
+    """Add `tip_time_is_placeholder`, `tip_source`, `pre_tip_basis` and `pre_tip_verified` to every output row.
+
+      real tip         pre_tip_basis 'real_tip',               pre_tip_verified True  (created_at < a tip a feed reports as real)
+      placeholder tip  pre_tip_basis 'placeholder_lower_bound', pre_tip_verified False (created_at < placeholder is NOT evidence of
+                       a pre-tip row; it is accepted only because created_at is before the earliest possible tip of the slate date,
+                       which is asserted here, and the row stays unverified until a real tip arrives)
+
+    Raises LeakGuardError for a placeholder row whose created_at is not before `earliest_possible_tip(slate_date)`."""
+    from cbb_sim.live.guards import LeakGuardError
+    s = flag_placeholders(slate)[["game_id", "tip_time_is_placeholder"] + (["tip_source"] if "tip_source" in slate.columns else [])]
+    out = games.merge(s.drop_duplicates("game_id"), on="game_id", how="left")
+    ph = out["tip_time_is_placeholder"].fillna(True).astype(bool)
+    out["tip_time_is_placeholder"] = ph
+    out["pre_tip_basis"] = ph.map({True: "placeholder_lower_bound", False: "real_tip"})
+    out["pre_tip_verified"] = ~ph
+    bound = earliest_possible_tip(slate_date)
+    bad = ph & ~(pd.to_datetime(out["created_at"], utc=True) < bound)
+    if bad.any():
+        raise LeakGuardError(f"{int(bad.sum())} row(s) rest on a placeholder tip time with created_at >= {bound} (earliest possible tip of {slate_date})")
+    return out

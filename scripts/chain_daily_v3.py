@@ -167,11 +167,12 @@ def run_replay(a) -> int:
         raise SystemExit("replay refuses season >= 2026 (2025-26 is SEALED)")
     root = Path(a.root)
     d = a.slate_date
-    now = pd.Timestamp(f"{d}T14:00:00Z") if not a.now else D.utc(a.now)
+    rp = getattr(a, "replay_pass", None)            # two-pass replay: evening 20:00 ET D-1 or morning 09:00 ET D (tips.default_clock)
+    now = D.utc(a.now) if a.now else (TP.default_clock(d, rp) if rp else pd.Timestamp(f"{d}T14:00:00Z"))
     gnow = pd.Timestamp(d, tz="UTC") + pd.Timedelta(days=1, hours=14)
     res = []
-    run_id = D.default_run_id(a.seeds, 0)
-    V2.run_stage("sim", lambda: SIM.run_sim_stage(d, S, "F2", a.seeds, 0, now, root, None, "universe", replay=True), res)
+    run_id = D.default_run_id(a.seeds, 0) + ("_morning" if rp == "morning" else "")
+    V2.run_stage("sim", lambda: SIM.run_sim_stage(d, S, "F2", a.seeds, 0, now, root, None, "universe", replay=True, pass_name=rp), res)
     V2.run_stage("publish", lambda: PUB.run_publish_stage(d, run_id, now, root, "replay_open", S), res)
     V2.run_stage("grade", lambda: GR.run_grade_stage(d, S, gnow, root, "truth"), res)
     V2.run_stage("bias_clv", lambda: MON.run_monitor_stage(S, gnow, root, "replay_close"), res)
@@ -198,6 +199,8 @@ def main(argv=None) -> int:
                     help="evening (DEFAULT): run the evening before the slate, every game tipping after the clock. morning: same-day re-publish, "
                          "only games with a REAL tip time still in the future. Dry run without --now uses the pass's documented clock "
                          "(evening 20:00 ET the day before, morning 09:00 ET the slate date).")
+    ap.add_argument("--replay-pass", dest="replay_pass", choices=("evening", "morning"), default=None,
+                    help="with --replay-season: replay the sim / publish stages as the evening (20:00 ET the day before) or morning (09:00 ET) pass")
     ap.add_argument("--require-rosters", action="store_true", help="block the sim on empty 2027 rosters instead of warning")
     ap.add_argument("--dry-run-sim", action="store_true", help="in a dry run, still run the (tiny) sim into results/daily_dry when nothing blocks")
     a = ap.parse_args(argv)
