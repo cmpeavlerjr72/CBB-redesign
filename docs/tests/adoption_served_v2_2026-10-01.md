@@ -121,3 +121,26 @@ python scripts/hf_sync_data.py pull --dirs engine_inputs engine_inputs_v3
 - G1 by month: 4/5 months inside.
 - G2: 6/9 cells inside.
 - PIT p 0.002.
+
+## Follow-up 2026-10-01 02:27-02:35 EDT: live shot-block table (job 1)
+
+- `scripts/build_shot_block_lut_live_v1.py` builds the served `K2_Ocell` table for any live slate. It imports the backtest builder's own as-of functions (`asof_by_date`, `league_before`). It reads coef/mu/sd/features from the backtest table and Lbar/prior from its meta json, so nothing is refitted. Values use slate-season events strictly before each game date, and also strictly before the clock date.
+- The table is written to the sim stage's private `_adapter` dir. `inp.meta["shot_block_lut"]` names it, and `shot_block.ShotBlock` loads it. The backtest path is unchanged: v8 re-checked PASS after the edit.
+- A slate with no table now fails with a message naming the build. It never falls back to `reference`.
+- Hook: `run_daily_sim_v1.run_sim_stage` calls `attach(inp, out/"_adapter", as_of=now)` after `build_live`.
+
+**Proof (fold-2 date 2025-02-11, 37 games, live build vs backtest rows):**
+- team, anchor, coef, mu and sd: EXACT (max abs 0.0).
+- shooter: 969 of 994 live roster players equal exactly. The other 25 are not on the backtest inputs' roster for that game, so there is nothing to compare.
+- `tests/test_shot_block_live_lut.py` checks all four arrays on a 6-game slice of the backtest inputs: exact equality.
+
+**Replay smoke on the new defaults:** `chain_daily_v3.py --replay-season 2025 --slate-date 2025-02-11 --seeds 4`, no ENGINE_* variables set.
+- sim, publish, grade and bias_clv all complete.
+- run_meta `adapter_flags` shows L2, K2_Ocell, R9ao3, G3 and KD.
+- Full test suite: 674 passed, 1 skipped.
+
+**Other four flags (grep and run):**
+- Clock L2: no per-slate artifact. It uses the dated S1 refits, the same mechanism as the old clock.
+- G3 and KD: no per-slate artifact. They use (seed, game_id) streams and fold LUTs.
+- R9ao3 reads `round9/ao_team_prior_v1.parquet`, keyed by (season, team_id), with seasons 2023-2026 only. A 2026-27 game would silently get a zero prior term. Before live 2026-27 serving, this needs a season-2027 row built from 2025-26 finals (that season is sealed; the PM must authorise it).
+- Also open for 2026-27: the shot-block live builder covers season 2025 only. For any other season it refuses loudly, because the anchor prior and the design events for the new season are not built.

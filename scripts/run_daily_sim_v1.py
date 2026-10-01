@@ -169,6 +169,9 @@ def run_sim_stage(slate_date: str, season: int, fold: str = "F2", seeds: int = 2
     import run_engine as RE
     prov = RE.engine_provenance()
     adir = RL.prepare_adapter_dir(inp.event_block, fold, season, out / "_adapter")
+    # served shot_block K2_Ocell (adopted 2026-10-01) needs a per-slate table; as-of the clock `now`.
+    import build_shot_block_lut_live_v1 as SBL
+    SBL.attach(inp, out / "_adapter", as_of=now)
     seed_arr = np.arange(seed_offset, seed_offset + seeds, dtype=np.int64)
     games, pl, ad = RL.simulate(inp, fold, season, seed_arr, keep_players=players, adapter_dir=adir)
     games = RL.stamp_rows(games, inp, now, per_game=False)         # created_at + tipoff_utc, asserts created_at < tipoff

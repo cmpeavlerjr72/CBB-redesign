@@ -38,7 +38,15 @@ class ShotBlock:
     def __init__(self, arm: str, inp):
         tag = str(inp.meta.get("inputs_tag_loaded", ""))
         slate = tag[:-3] if tag.endswith("_v2") else tag
-        path = LUT_DIR / f"{ARMS[arm]}_{slate}.npz"
+        # Live slates (2026-10-01): `scripts/build_shot_block_lut_live_v1.attach` builds the
+        # per-slate table and names it in inp.meta; the backtest path below is unchanged.
+        live = (inp.meta.get("shot_block_lut") or {}).get(arm)
+        path = Path(live) if live else LUT_DIR / f"{ARMS[arm]}_{slate}.npz"
+        if not path.exists():
+            raise FileNotFoundError(
+                f"{path}: no shot_block table for this slate (tag {tag!r}). Live inputs need "
+                "scripts/build_shot_block_lut_live_v1.attach(inp, ...) before the sim. "
+                "ENGINE_SHOT_BLOCK=reference would serve an ungated mix; do not use it to get past this.")
         z = np.load(path)
         if not np.array_equal(z["game_id"], inp.games["game_id"].to_numpy()):
             raise ValueError(f"{path}: game order does not match the engine slate {tag}")
