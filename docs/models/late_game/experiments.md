@@ -1103,3 +1103,58 @@ G9 total bias, priced (not a disqualifier for the set): +0.12 points per game, m
 Remaining gap, reported separately:
 - Arrival at a tie at 0:10: 0.031 -> 0.044 (actual 0.055).
 - One-point finishes: 0.053, unchanged (actual 0.036). This is now the larger half of the ratio gap.
+
+---
+
+## 13. PROPOSED -- Round 6 pre-registration: one-point finishes, and whether possession_outcome owns the leading team's late outcome mix (written 2026-10-01 ~11:10 EDT by lane L, BEFORE any round-6 arm was scored or run; NOT RUN, NOT ADOPTED)
+
+**No served default changes.** Lane I owns WHO is fouled (FT-trip allocation); this round is only WHETHER the
+possession ends in a foul trip.
+
+### 13.1 Motivating evidence (diagnostics only; no arm involved)
+
+`scripts/diag_late_game_r6_onepoint_v1.py`, `diag_late_game_r6_onepoint_seq_v1.py` on `lg4_R9_s25` (served v2)
+vs 2024-25:
+- P(|regulation margin| = 1) is 0.0525 in the sim against 0.0366 actual (gap +0.0158). By the last scoring
+  sequence of regulation, the gap is two sequences:
+  - **trailer down 3 scores 2** (+0.0086): sim 0.0132 vs 0.0046, mostly with 10-30 s left (+0.0054);
+  - **trailer down 1 scores 2** (+0.0085), with > 30 s left (+0.0038) and inside 10 s.
+  In both, the sim's game then STOPS scoring. In the data the leading team is fouled and the margin moves.
+- **Leading-team turnovers are NOT the source.** In 1-6-point leads inside 30 s the sim's TOV rate is
+  0.08-0.11 against 0.05-0.13; the round-4 excess (0.21-0.29) sits in 7+ point leads.
+- `scripts/diag_late_game_r6_po_mix_v1.py`, leading offence, window first chances, FT_trip_bonus (the
+  intentional-foul trip): actual 0.85-0.88 inside 30 s.
+  - **Model gap:** possession_outcome's offline prediction on actual states (round 1 arm A, the served
+    bundle, S0) is 0.81-0.84, -0.02 to -0.05, up to -5 SE; FGA_3 is over-predicted, 0.015 vs 0.002.
+  - **State gap:** the sim's probabilities on its own states are 0.75-0.76, a further -0.07.
+  So possession_outcome is a PARTIAL owner. The larger part is the state fed (bonus occupancy / transition
+  state), which a reported shift-share will attribute.
+
+### 13.2 Offline arms (both folds; fold 2 selects)
+
+| arm | what | source |
+|---|---|---|
+| `A` | the served first-chance bundle (`C_plus_state`), S0 LightGBM | round 1 cells c024 / c036 (F2 seeds 0/1), c000 / c012 (F1) |
+| `BL3` | the same plus round 1's role x time-left terms (`L3_gates`: role, gt_margin, role x sec, possession deficit, double bonus, trail_must_foul, lead_can_hold) | round 1 c027 (F2 seed 0), c003 (F1 seed 0); **F2 seed 1 refit here** (`scripts/train_late_game_r6_bl3_seed1_v1.py`, round 2's fit code, seed = 1, n_jobs 3) |
+
+- **Primary:** multiclass log loss on the INTENTIONAL-FOUL CELLS (window first chances with a leading offence and
+  <= 60 s left), fold 2.
+- **Floor:** max(|BL3 seed 0 - BL3 seed 1| on F2, game-block bootstrap SE of the paired per-row delta vs A).
+- **Win:** BL3 beats A by > 1 floor on F2 with the same sign on F1. Also reported: FT_trip_bonus calibration by
+  lead band x bucket, all window rows' log loss (no regression beyond one floor = guard), and responsiveness
+  (FT_trip_bonus by defence prior late-foul quintile: slope must not flatten vs A).
+- If F1's seed-1 refit is not reached, F1 is read on the block SE only and labelled.
+
+### 13.3 Closed loop, only if BL3 wins offline
+
+`ENGINE_LATE_GAME=clk_Dt+ev_BL3` (round 2's existing `ev_BL3` artifact, unchanged), 500 x 25 vs `clk_Dt`
+(`lg3_Dt9_s25`) and R9, floors = round 4's draws.
+- **Lines:** P(1) and P(0)/P(1) (1.3 rule), leading FT_bonus in the sim, round 5's hard vetoes.
+- **Box:** `d1001_L_2.md` only if the closed loop qualifies or is the clear best and the request can be filed by
+  14:30 EDT.
+- **If BL3 does not win offline:** NOT RUN, with the command.
+
+### 13.4 State-gap attribution (reported)
+
+The FT_trip_bonus gap (sim vs offline prediction) is split by bonus occupancy: the offline model's P(trip | in
+bonus) and P(trip | not in bonus), mixed by the sim's occupancy vs the actual's (both orders averaged).
