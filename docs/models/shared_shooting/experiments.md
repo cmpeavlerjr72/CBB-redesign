@@ -133,3 +133,30 @@ neutral, month, as-of tempo tercile; per team (UNDERPOWERED, about 30 games each
   UNDERPOWERED if only the 25-seed read exists (Decision 12: it cannot decide a
   G5 line). Mechanism line: sim within-game between-team covariance of made FG by
   type against the fitted `W_h Sigma W_a`.
+
+
+---
+
+## 2. Results, round 1 (appended 2026-09-30 23:20 EDT; full evidence in `docs/tests/shared_shooting_latent_2026-09-30.md`)
+
+**Offline (rule 1.6).** Bake-off at 20:50 EDT, after commit `86e3d0f`.
+
+| arm | fold-1 gain (floors) | fold-2 gain (floors) | eligible |
+|---|---|---|---|
+| G1 | +0.70 | +1.55 | no |
+| GP | +0.78 | +1.84 | no |
+| **G3** | **+3.55** | **+3.65** | **yes: WINNER** |
+
+- Served candidate: `params_v1.json` (fold-2 train Sigma).
+- Secondary: held-out between-team covariance obs/pred is 0.73 (fold 2) and 0.66 (fold 1). The training seasons carry more shared variance than the test seasons. Reported, not corrected.
+
+**Closed loop (rule 1.7).** G3 vs S0, v3 inputs, verified truth, 5,705 graded games.
+- **200 seeds (box):**
+  - home/away corr 0.1174 -> 0.1350, +20 floors;
+  - total SD ratio 0.9306 -> 0.9495, +24 floors;
+  - margin SD ratio 1.0500 -> 1.0494, -0.3 floors;
+  - no other line beyond 2 floors except possession SD (+2.7, PASS -> PASS).
+- **G5 by component:** Var(home) +2.47, Var(away) +2.51, Cov +2.65.
+- **Control U1 (25 seeds, local):** corr -0.003, Cov -0.09, margin SD ratio +0.022 (+11.8 floors, away from 1).
+
+**STATUS: VALIDATED-PENDING-SHIP-ACTION (Decision 11)**, arm `G3`. Nothing is adopted and no default changes; the PM decides inside the ship set.
