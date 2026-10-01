@@ -437,6 +437,10 @@ class Chain:
                     rargs = ["--sample-file", sample, "--arm", "round2_s1", "--input-dir", inp["input_dir"],
                              "--seeds", str(self.a.gate_seeds), "--seed-offset", str(off),
                              "--workers", str(self.a.gate_workers), "--tag", tag, "--results-dir", "results/engine_v0"]
+                    if self.a.gate_stack == "adopted":
+                        # the sample runner's served-stack check compares the clock KEY with the default (L2); the
+                        # chain pins the base-layout key that serves the chain's L2 refit (see env above): recorded
+                        rargs.append("--allow-drift")
                 else:
                     rargs = ["--fold", "F2", "--season", "2025", "--seeds", str(self.a.gate_seeds),
                              "--seed-offset", str(off), "--workers", str(self.a.gate_workers),
