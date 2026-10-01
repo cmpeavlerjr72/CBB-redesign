@@ -252,3 +252,57 @@ draws.
 Requested as a POST-HOC DIAGNOSTIC (not a registered ship decision): `docs/ops/box_queue/laneI_1.md`,
 `COMB9 + ENGINE_CHANCE_TIME=K` vs `COMB9` at 5,710 x 200 with the Decision 12 floors; C12 as tier B.
 The PM rules on the guards. Nothing is adopted by this lane.
+
+## 5. Full-size box read of K (POST-HOC diagnostic, laneI_1, run by the operator 04:36-04:53Z)
+
+`COMB9 + ENGINE_CHANCE_TIME=K` vs `COMB9` (both 5,705 x 200, verified truth). The moves are K minus
+COMB9. Floors are the Decision 12 S0-draw floors (2 x SD over the five S0 draws, from the S0-referenced
+table). The COMB9-referenced table mixes the ref with S0 reruns and is not used for floors.
+
+| line | COMB9 | COMB9+K | move | floor | reading |
+|---|---:|---:|---:|---:|---|
+| **G9 total bias** | -1.486 FAIL | **-0.557 PASS** | **+0.929** | 0.029 | toward, 32 floors |
+| G9 calibration slope | 0.9462 | 0.9477 | +0.0014 | 0.0044 (boot) | inside |
+| G9 margin bias | -0.246 | -0.262 | -0.016 | 0.042 | inside |
+| G9 bias by month / tier / pred-total tercile, cells outside | 7/10, 4/6, 2/6 | 4/10, 3/6, **0/6** | | | toward |
+| G4 eFG pooled (actual 0.5086) | 0.5009 | 0.5068 | +0.0059 | 0.0001 | toward |
+| G1 possessions (actual 67.875) | 68.953 | 68.837 | -0.115 | 0.010 | toward |
+| **G5 total SD ratio** | 0.9094 | **0.8933** | **-0.016** | 0.0016 | **AWAY, 10 floors** |
+| **G5 home/away corr (actual 0.2283)** | 0.1125 | **0.0915** | **-0.021** | 0.0015 / boot 0.0019 | **AWAY** |
+| G5 margin SD ratio | 1.0408 | 1.0436 | +0.003 | 0.0035 | inside |
+| OREB% / TOV% / FTA-FGA | 0.2894 / 0.1754 / 0.3274 | 0.2888 / 0.1751 / 0.3274 | -0.0006 / -0.0003 / 0 | | small |
+| G7 OT rate | 0.0306 | 0.0300 | -0.0006 | 0.0005 | away, 1.3 floors |
+
+Decomposition of COMB9+K (`scripts/diag_ppp_decomp_v1.py`): total -0.547. Rim make -1.148 -> -0.144,
+three make -0.433 -> -0.051 (the make channels are closed). Remaining: OREB% -0.74 (live boards
++0.53), FT% -0.34, shot mix -0.21, TOV -0.19, FT rate -0.06, possessions +0.67.
+
+**Mechanism of the G5 regression, measured on the local taps (500 x 32):**
+- Within-game corr(possessions, home eFG) is -0.087 under R and -0.123 under K.
+- Within-game total SD is 15.27 under R and 15.07 under K.
+- The h/a points corr is 0.241 under R and 0.220 under K.
+
+The served feed ties every chance-1 make probability to the possession's drawn duration. That
+gives a positive pace-to-make link through the per-game pace latent that both teams share
+(fast game, early shots, higher p). K removes it, so the engine's already too-negative pace x
+efficiency arrow (`g1_g5_possessions_corr_diagnostic_2026-09-30.md` s2.2: sim -0.060 vs actual
+-0.041) gets more negative. Part of that link is real: early-clock shots do make more often.
+K throws away the duration conditioning entirely.
+
+## 6. Addendum 1c (written 2026-10-01 00:58 EDT, COMMITTED BEFORE arm KD IS BUILT OR RUN)
+
+POST-HOC, motivated by section 5. One new arm.
+
+- **`KD`**: K with the chance-1 table conditioned also on the possession duration. The chance-1
+  `chance_elapsed_s` at the fg_make call is drawn from the TRAINING distribution of the design's
+  chance-1 elapsed in the cell (shot class x start group x possession-duration bin, the round-1
+  bins). It is clipped to min(60, seconds remaining, the drawn duration). Cells with fewer than
+  200 rows fall back to K's (class x start group) row. Training rows are joined to their possession
+  exactly as in the round-1 offline grader. Tables are built by `scripts/build_chance_time_lut_v3.py`
+  from training seasons only. Flag value `ENGINE_CHANCE_TIME=KD`. Chance 2+ and possession_outcome
+  are as K.
+- **Rule:** section 3's rule and grader, unchanged. The offline replay of KD conditions on the real
+  duration and inherits round 1's leak. G_feed is read with that caveat.
+- **Closed loop:** local COMB, 500 x 32 paired with R and K. The added reads are within-game
+  corr(possessions, eFG), within-game total SD and h/a points corr; K's G5 losses must shrink.
+  Box: `COMB9+KD` vs `COMB9`, if the operator still accepts it (request after 01:30 EDT may not run).
