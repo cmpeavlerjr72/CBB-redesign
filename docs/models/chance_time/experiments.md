@@ -306,3 +306,44 @@ POST-HOC, motivated by section 5. One new arm.
 - **Closed loop:** local COMB, 500 x 32 paired with R and K. The added reads are within-game
   corr(possessions, eFG), within-game total SD and h/a points corr; K's G5 losses must shrink.
   Box: `COMB9+KD` vs `COMB9`, if the operator still accepts it (request after 01:30 EDT may not run).
+
+## 7. Addendum 1c results (arm KD; lane I, run 2026-10-01 00:56-01:05 EDT)
+
+Tables: `scripts/build_chance_time_lut_v3.py` (00:56). Fold-2 training chance-1 rows joined to a
+possession: 1,393,749. Cells under 200 rows that fell back to K's row: 7 of 216. Wiring: `6edbe94`.
+Default-path parity re-checked: PASS bit-identical (`0d4ddccc`).
+
+**Offline F2** (`scripts/exp_chance_time_offline_v3.py`)
+- G_feed **0.149** against R's 1.973. Floor 0.0183. **Beats R by 99.6 floors**; K was 56.7.
+- Mean-p gap rim / jumper / three: -0.08 / -0.02 / -0.05 pp.
+- Signed gap by month: -0.24 / -0.18 / -0.12 / -0.08 / -0.14 (Nov, Dec, Jan, Feb, Mar).
+- Calibration worst decile, rim / jumper / three: 7.8 / 6.8 / 4.6 pp. **FAIL**: the duration
+  conditioning re-imports round 1's offline leak.
+- Symmetric slope 1.048 / 0.895 / 0.767: **PASS** in every class.
+
+**F1** (`scripts/exp_chance_time_f1_parity_v3.py`): 0.20 s / 0.0025, the closest of every arm.
+Confirms.
+
+**Addendum rule: NOT ELIGIBLE** (calibration-decile gate). The gate's mis-specification is
+recorded in s4.1.
+
+**POST-HOC closed loop** (COMB, 500 x 32, paired with R; floor from R seeds 100-131):
+
+| line | R | K | **KD** | KD move / floors | actual (sample) |
+|---|---:|---:|---:|---|---:|
+| rim make | 0.5719 | 0.5829 | 0.5846 | +0.0127 / 8.9 | 0.5901 |
+| jumper make | 0.3907 | 0.3908 | 0.3939 | +0.0032 / 3.0 (past actual) | 0.3916 |
+| three make | 0.3361 | 0.3388 | 0.3389 | +0.0028 / 6.7 | 0.3377 |
+| eFG | 0.5022 | 0.5079 | 0.5093 | +0.0071 / 14.1 | 0.5107 |
+| points per game | 144.74 | 145.67 | **145.84** | **+1.10 / 23.0** | 146.55 |
+| possessions | 69.06 | 68.95 | 68.92 | -0.14 / 4.1 | |
+| OREB% | 0.2903 | 0.2896 | 0.2892 | -0.0011 / 3.8 away | 0.2985 |
+| within-game corr(possessions, eFG) | -0.087 (R floor -0.096) | -0.123 | **-0.097** | inside R's floor | |
+| within-game h/a points corr | 0.241 (R floor 0.235) | 0.220 | **0.235** | inside R's floor | |
+| within-game total SD | 15.27 (R floor 15.32) | 15.07 | **15.21** | inside R's floor | |
+
+Rim chance-1 elapsed under KD: 4/7/14/21/26 s (real 4/7/14/21/26). Rim chance-1 transition share
+0.257 (real 0.219).
+
+KD keeps K's level repair and removes K's G5 loss in the local loop. A full-size read was requested
+as a POST-HOC diagnostic (`laneI_2`).
