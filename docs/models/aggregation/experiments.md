@@ -152,3 +152,7 @@ Addendum F2 result: replacing the engine's S1 shooter devs with the values `T` w
 - **Arm `Tfix`:** `T` with `off_make_raw` / `def_allow_raw` re-derived as c + lg_make_asof after the adapter (wrapper `scripts/train_fg_make_v4_par_rawfix_v1.py`; the `--feature-table` path already does this), seeds 0 and 1, local, fold 2. Stacks `X_Tfix` (S0 + fg_make Tfix) and `S1fix` (PO T + RB T + fg_make Tfix).
 - **Read:** train/serve parity of the shooter dev (must be exact), the trainer's attempt-level log loss vs `T` / `R`, harness 1 - slope vs S0 (0.088) and X_F (0.123) with the seed floor, team-game make slopes by month.
 - **Rule (descriptive; nothing is adopted):** the skew explains the fg_make owner if X_Tfix's harness Delta vs S0 is inside 2 x max(seed floor, bootstrap SE); then a box closed-loop request (`X_Tfix`, `S1fix`, 5,710 x 200) is filed before 01:30 EDT if the measured local timing leaves room.
+
+### 2.6 Addendum H (registered 00:06 EDT, BEFORE it ran): the same parity check for possession_outcome `T`
+
+Descriptive. For fold-2 rows, compare the possession_outcome Stage B `T` training overlay (`design_overlay.parquet` from HF `model_artifacts/possession_outcome/round_stageb/T/team_rate_features_E3_v4/`) with the S1 engine's round-2 team block, column by column (correlation, max |difference|), as addendum F did for fg_make.
