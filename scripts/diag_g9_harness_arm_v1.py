@@ -158,6 +158,7 @@ def main() -> int:
     round_dir, arm = rel.parts[0], "/".join(rel.parts[1:])
     old_dir = AD.FG_DIR
     AD.FG_DIR = ROOT / "data/processed/models/fg_make"
+    AD._FG_ROUND_NOTE.setdefault(round_dir, "lane A g9 round arm (in-process only, fg_make experiments.md s23)")
     fg_arm = AD.FgMakeAdapter._load_dated(inp, "F2", f"g9_{arm}", "g9_", round_dir, "train_fg_make_v4_par_g9_v1.py")
     AD.FG_DIR = old_dir
     orig_load = AD.FgMakeAdapter.load

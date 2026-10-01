@@ -69,6 +69,8 @@ _orig_apply = TRA.apply
 
 def _apply_g9(frame, table_path, submodel, *a, **k):
     k["fold"] = G9.fold
+    if G9.fold == "F1":   # the F1 table has no 2024-25 rows; fold 1 never uses them
+        frame = frame[frame["season"] <= 2024].reset_index(drop=True)
     out = _orig_apply(frame, table_path, submodel, *a, **k)
     if submodel != "fg_make":
         return out
