@@ -4,7 +4,7 @@ Last updated: 2026-09-30 15:40 EDT (hard stop 17:00; box operator finishing). Se
 
 ## Overnight 2026-09-30 20:39 EDT -> 2026-10-01 04:00 EDT (user away; wall clock only)
 
-Seven lanes launched 20:45 EDT on the home box. NO AWS (approval is per session, not given). Compute stops 02:30, reports due 02:45, PM wrap-up 03:00-04:00. Rules: `docs/ops/worker_rules_overnight_2026-09-30.md`. Core caps sum to 20.
+Seven lanes launched 20:41 EDT on the home box. At ~20:45 the user APPROVED AWS for this session and delegated adoption to the PM where the data supports it; an eighth lane, the AWS operator (Opus; spot c7a.48xlarge, $60 cap, instance terminated by 03:00), launched 20:47: full-size Decision 11 set (K2_Ocell, R8b, L2, combined) vs S0, then the lanes' box queue (`docs/ops/box_queue/`), then lane D's full retrain. Compute stops 02:30, reports due 02:45, PM wrap-up 03:00-04:00. Rules: `docs/ops/worker_rules_overnight_2026-09-30.md`. Core caps sum to 20.
 
 | lane | worker | object | cores | output |
 |---|---|---|---|---|
