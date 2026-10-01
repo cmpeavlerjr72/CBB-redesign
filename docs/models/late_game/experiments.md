@@ -668,3 +668,84 @@ and C2 does not (tied rows fall back below `eg_role6`). Every duration arm
 over-produces window possessions against the like-for-like pbp count, which is
 what fails G1 and the half share. The event half is not the lever (enrichment
 ~+0.05 floors net of its cadence control). **Status: RUN. NO ARM ADOPTED.**
+
+## 6. PROPOSED -- Round 3 pre-registration: the hold without the extra possessions, on the corrected foul state (written 2026-09-30 by lane C, BEFORE any arm was wired or run; NOT RUN, NOT ADOPTED)
+
+**Nothing below has been simulated or wired. No served default changes. The PM decides whether and when
+it runs.** Evidence carried in: section 5 and `docs/tests/late_game_round2_2026-09-30.md`; foul rounds 7-9
+(`possession_outcome/experiments.md` sections 20-26, `docs/tests/foul_round9_first_half_2026-09-30.md`).
+
+### 6.1 Why a round 3, and what changed underneath it
+
+1. Round 2's `W_D` (`clk_D`) is the only arm that moves `P(0)/P(1)` (+4.88 floors, 0.551 -> 0.854) because
+   its tied offence HOLDS for the last shot (tied (0,10] intended 20.4 s vs 12.2). It fails the G1-mean,
+   G1-SD and half-share vetoes through REAL window over-production (+0.3-0.9 window possessions per game
+   against the like-for-like pbp count), and its LEADING rows draw very short durations (2.6 / 3.6 s
+   intended vs 10.3 / 10.8 served).
+2. Round 2 attributed the leading-offence bonus-FT gap (0.41 closed loop vs 0.54 actual, while the event
+   model predicts 0.538 on actual states) to the bonus STATE the engine arrives in, i.e. foul accrual. Round
+   2 ran on the served foul stack (constant accrual, labelled-state PO), whose final-2:00 bonus occupancy is
+   0.787 vs 0.920 actual on the verified sample (round-9 taps, minute 38-40, 500 x 25). Under
+   `ENGINE_FOUL_JOINT=R8b` it is 0.885 and under `R9ao1` 0.890 (round 9 changes only the and-one rate).
+3. So two things are confounded in round 2's `W_D`: the hold (wanted) and short leading possessions that
+   are, in the data, mostly the trailing team FOULING to stop the clock. With the served foul state the
+   foul does not produce the bonus trip it produces in the data, so the leading team's short possession
+   becomes a cheap extra possession rather than a free-throw trip.
+
+### 6.2 Base stacks (fixed before any run)
+
+- `B8` = served + `ENGINE_FOUL_JOINT=R8b` (round 8's VALIDATED-PENDING-SHIP-ACTION arm).
+- `B9` = served + `ENGINE_FOUL_JOINT=R9ao1` (or `R9ao3`, whichever the PM names; round 9 results: possession_outcome experiments.md section 28) only if round 9 is VALIDATED by the PM before this
+  round runs; otherwise `B9` is NOT RUN and that is stated.
+- `B0` = served (round 2's base), carried for the attribution of the foul-state effect.
+Inputs: engine inputs v3 (S0 tag), verified 500-game sample `stride500_verified_minswap_v1`, verified truth.
+
+### 6.3 Arms (new values of `ENGINE_LATE_GAME`; unset / `off` = served, bit-identical; window = section 4.1)
+
+| arm | base | inside the window |
+|---|---|---|
+| `R8` | B8 | nothing |
+| `R8_floor` | B8, seeds +1000 (four offsets 1000-4000, Decision 12) | nothing |
+| `D8` | B8 | `clk_D` (round 2's `W_D`, unchanged artifact) |
+| `Dt8` | B8 | `clk_D` law for TIED offence rows only (`score_diff == 0`); leading and trailing rows keep the served law -- the hold without the leading-role short draws |
+| `Dtt8` | B8 | `clk_D` for tied AND trailing offence rows; leading rows served |
+| `D0` | B0 | `clk_D` (= round 2's `W_D`, re-run on v3 inputs as the foul-state attribution) |
+| `Dt0` | B0 | as `Dt8` on the served foul stack |
+| `Dt9` | B9 | as `Dt8`, only if B9 exists |
+
+Role is the offence's LIVE `score_diff` at possession start, as in round 2 (`role3`). The tied-only and
+tied+trailing gates are pre-registered here; no other split is tried. No artifact is refit: `clk_D` is
+served exactly as in round 2 (Kaplan-Meier cells, same verification), with the same per-game clock latent.
+
+### 6.4 Primary, vetoes, reported lines
+
+- **Primary:** `P(0)/P(1)` (target 1.546; OT rate band 0.046-0.055; section 1.3's rule: below 1.0 = NOT
+  fixing the defect), in floors vs the arm's own base reference (`R8` for B8 arms, served R for B0 arms).
+- **Floor (Decision 12):** max(SD over the base reference + four seed-offset draws, 2 x paired game-bootstrap
+  SE of arm - base). 500 x 25 is the screening size; any arm that clears the primary is re-read at 500 x 200
+  on the box before any statement beyond "screen".
+- **Vetoes:** section 4.5's (G1 mean and SD, G5 margin and total SD ratios, G9 biases, first half
+  bit-identical to the base in every simulation, half share) PLUS a new window line: **window possessions per
+  game by `|m@2:00| = k` (k = 0..6) must not exceed the like-for-like pbp actual (round 2 section 5 count,
+  `possessions_v4` when available) by more than one floor in any k**, which is the "without the extra
+  possessions" condition stated as a line.
+- **Reported (not decision lines):** leading-offence and trailing-offence bonus-FT rate on window first chances
+  (actual 0.543 leading), final-2:00 FTA per game (pbp 5.10 / 6.00 close), window bonus occupancy by role,
+  window duration by role x bucket, the tie kernel P(tie | k), per game, per team (n >= 200 else UNDERPOWERED).
+
+### 6.5 Decision rule
+
+An arm is a candidate only if it moves the primary toward target by > 1 floor, lands `P(0)/P(1)` >= 1.0, and
+passes every veto. Among candidates, the simplest in the order `Dt` < `Dtt` < `D`. The B0 arms are
+attribution only and cannot be candidates. If `Dt8` passes the window-possession veto while `D8` fails it, the
+extra possessions are attributed to the leading-role draws; if both fail, to the hold itself (then the next
+object is the clock's censoring at the horn, not the role gate).
+
+### 6.6 What this round needs before it can run (not done here)
+
+1. Two new `ENGINE_LATE_GAME` values (`clk_Dt`, `clk_Dtt`) in `src/cbb_sim/engine/late_game_adapter.py`,
+   default off, with parity: unset and `clk_D` bit-identical to round 2's runs at the same HEAD.
+2. The round-2 tap (`scripts/run_late_game_r2_closed_loop.py`) taking `--sample-file`, `--input-dir` and an
+   `ENGINE_FOUL_JOINT` env (v3 inputs need the S0 event-block overlay: the box docker mount, or locally
+   `R9_ENGINE_DIR` as in `scripts/run_foul_joint_tap_v2.py`).
+3. The window-possession actual on `possessions_v4` (lane B's event layer v4) for the new veto.
