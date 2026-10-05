@@ -116,3 +116,24 @@ The three arms differ only in the treated teams' slots. Complexity order: R0 < R
 **Decision rule.** R1 (or R2) is adopted as the fallback only if on fold 2 its paired total-MAE delta vs R0 is below -floor AND its 95% game-bootstrap interval excludes 0, AND |total bias| does not exceed R0's, AND on fold 1 its delta is not positive (does not lose). Between R1 and R2 both passing, the lower fold-2 total MAE wins unless within the floor, then the simpler (R1). If neither passes, R0 stands (anonymous). Margin MAE is reported and vetoes only if worse than R0 by more than 0.05 (the Phase 1 margin reseed scale; section 3 documented that 0.007 was too tight).
 
 **Output.** The winner ships as a default-off option `fallback=R1|R2` of `make_seed_fn` in `scripts/build_engine_inputs_day1prior_v1.py` (CLI `--fallback`); teams using it are listed in `diag["d1p_fallback_teams"]` and flagged in the build diag. With the option off, behaviour is bit-identical.
+
+---
+
+## 5. Results of section 4 (2026-10-05). Roster-less-team fallback, 50 seeds, paired, verified truth
+
+Treated: 73 teams (F2) / 72 teams (F1), seeded 20% of window teams (seed 20261005). Games simulated: those with at least one treated team (219 F2, 231 F1 sims; 218 / 231 graded; 23 / 28 have both teams treated, rest one). `docs/tests/roster_fallback_2026-10-05.md` has the table. Floor = |R0 o0 - R0 o1000| total MAE, min 0.06.
+
+| arm | fold | total MAE | total bias | d total MAE vs R0 [95% CI] | floor | margin MAE | minutes: all_rot MAE / coverage / named MAE / precision |
+|---|---|---|---|---|---|---|---|
+| R0 | F2 | 14.555 | -6.44 | - | 0.335 | 10.505 | 22.98 / 0 / - / - |
+| R1 | F2 | 14.202 | -5.03 | -0.353 [-0.60, -0.12] | | 10.293 | 15.43 / 0.46 / 7.17 / 0.41 |
+| R2 | F2 | 14.257 | -5.50 | -0.298 [-0.50, -0.11] | | 10.231 | 14.82 / 0.46 / 5.80 / 0.61 |
+| R0 | F1 | 15.447 | -8.22 | - | 0.119 | 10.094 | 23.08 / 0 / - / - |
+| R1 | F1 | 15.039 | -6.42 | -0.408 [-0.68, -0.13] | | 9.776 | 14.64 / 0.50 / 6.70 / 0.46 |
+| R2 | F1 | 15.074 | -6.71 | -0.373 [-0.62, -0.13] | | 9.986 | 14.27 / 0.50 / 5.93 / 0.61 |
+
+**Rule as registered.** F2: R1 delta -0.353 is below -floor (0.335), CI excludes 0, |bias| smaller than R0's: passes. R2 delta -0.298 is inside the floor: fails. F1: R1 -0.408 (floor 0.119) does not lose. Margin vetoes: none (margin MAE improves). **WINNER R1.** R2 is not adopted: it does not clear the F2 floor, though it names fewer wrong players (precision 0.61 vs 0.41) and has lower named-minutes MAE.
+
+**Stated weakness.** The F2 floor (0.335) is one reseed draw on 218 games and is large; R1's margin over it is 0.018. Sensitivity (extra runs after the rule was applied, not part of the decision): R0 at offset 2000 = 14.559 (offset 1000 = 14.220); R1 at 1000 = 13.980; paired deltas R1 vs R0 are -0.353 (o0), -0.240 (o1000 vs o1000), -0.357 (R1 o0 vs R0 o2000), all negative. Bias still -5.0 for R1 (opening-day total bias is not this object). Both-treated cells (23 / 28 games) are UNDERPOWERED (deltas -1.2 / -1.5 with wide intervals). Eligibility is a proxy (`S-1 - start_season >= 3`), not recorded class.
+
+**Shipped.** `make_seed_fn(arm, fallback="R1"|"R2")` and `--fallback` in `scripts/build_engine_inputs_day1prior_v1.py`, default off (bit-identical when off); the diag carries `d1p_fallback_teams`. Recommended value if the 2027 roster gap persists: `R1`. The PM decides.

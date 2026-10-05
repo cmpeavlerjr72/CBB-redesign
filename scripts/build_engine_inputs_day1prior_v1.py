@@ -46,6 +46,7 @@ import build_engine_inputs_live as BL  # noqa: E402
 from cbb_sim.live import features as LF  # noqa: E402
 
 ARMS = ("A0", "A1n", "A1", "A2", "A3")
+FALLBACKS = (None, "R1", "R2")      # default-off roster-less-team fallback (experiments.md section 4)
 ROSTER_DIR = ROOT / "data/raw/cbbd/rosters"
 
 
@@ -84,8 +85,9 @@ def prev_minutes(season: int, source: str) -> pd.DataFrame:
     return pd.DataFrame({"team_id": b["team_id"].astype("int64"), "pid": b["pid"].astype("int64"), "minutes": b["minutes"].astype(float)})
 
 
-def tables(season: int, need_roster: bool, roster_path: str | None = None, minutes_source: str = "onfloor") -> dict:
-    key = (season, need_roster, roster_path, minutes_source)
+def tables(season: int, need_roster: bool, roster_path: str | None = None, minutes_source: str = "onfloor",
+           need_prev_roster: bool = False) -> dict:
+    key = (season, need_roster, roster_path, minutes_source, need_prev_roster)
     if key in _C:
         return _C[key]
     from cbb_sim.data.seal import assert_not_sealed
@@ -110,17 +112,50 @@ def tables(season: int, need_roster: bool, roster_path: str | None = None, minut
         ros["team_id"] = pd.to_numeric(ros["team_source_id"], errors="coerce")
         ros = ros.dropna(subset=["team_id"])
         out["roster"] = {int(t): set(g["cbbd_player_id"].astype("int64").tolist()) for t, g in ros.groupby("team_id")}
+        out["pid_team"] = {}                            # pid -> teams whose season-S roster lists him (R2 outgoing-transfer test)
+        for t, g in ros.groupby("team_id"):
+            for p_ in g["cbbd_player_id"].astype("int64").tolist():
+                out["pid_team"].setdefault(int(p_), set()).add(int(t))
+    if need_prev_roster:
+        # R1 final-year proxy from the S-1 roster file: S-1 - start_season >= 3 (4th or later D-I season). Hard stop if missing.
+        pp = ROSTER_DIR / f"roster_{season - 1}.parquet"
+        if not pp.exists():
+            raise SourceMissing(f"{pp} missing: fallback R1/R2 needs the S-1 roster (start_season)")
+        pr = pd.read_parquet(pp, columns=["cbbd_player_id", "start_season"]).dropna(subset=["cbbd_player_id"])
+        pr["cbbd_player_id"] = pr["cbbd_player_id"].astype("int64")
+        pr = pr.groupby("cbbd_player_id")["start_season"].min()
+        out["final_year"] = {int(p_) for p_, st in pr.items() if pd.notna(st) and (season - 1) - int(st) >= 3}
     _C[key] = out
     return out
 
 
-def seeds_for(arm: str, T: dict, team: int) -> tuple[list[int], list[float]]:
-    """(player ids in slot order, their S-1 minutes at THIS team (0 for transfers)). A0 -> empty."""
+def fallback_seeds(fb: str, T: dict, team: int) -> tuple[list[int], list[float]]:
+    """Roster-less team (no season-S roster): S-1 players of this team by S-1 minutes, minus final-year players (R1) and, for R2,
+    minus those listed on ANOTHER team's season-S roster (observed outgoing transfers). No season-S information about this team."""
+    prev = T["by_team"].get(team, [])
+    keep = [(p, m) for p, m in prev if p not in T["final_year"]]
+    if fb == "R2":
+        keep = [(p, m) for p, m in keep if not (T["pid_team"].get(p, set()) - {team})]
+    return [p for p, _ in keep], [m for _, m in keep]
+
+
+def seeds_for(arm: str, T: dict, team: int, withheld: frozenset = frozenset(), fallback: str | None = None,
+              used: set | None = None) -> tuple[list[int], list[float]]:
+    """(player ids in slot order, their S-1 minutes at THIS team (0 for transfers)). A0 -> empty.
+    `withheld` = teams whose season-S roster is treated as missing (experiment only). `fallback` (default None = off) = R1/R2 for a
+    team with no season-S roster (absent from the roster file or withheld); such teams are added to `used` for the diag."""
     if arm == "A0":
         return [], []
     prev = T["by_team"].get(team, [])
     if arm == "A1n":
         return [p for p, _ in prev], [m for _, m in prev]
+    if team in withheld or team not in T["roster"]:
+        if fallback:
+            if used is not None:
+                used.add(team)
+            return fallback_seeds(fallback, T, team)
+        if team in withheld:
+            return [], []
     ros = T["roster"].get(team, set())
     ret = [(p, m) for p, m in prev if p in ros]
     pids, mins = [p for p, _ in ret], [m for _, m in ret]
@@ -132,12 +167,16 @@ def seeds_for(arm: str, T: dict, team: int) -> tuple[list[int], list[float]]:
     return pids, mins
 
 
-def make_seed_fn(arm: str, roster_path: str | None = None, minutes_source: str = "onfloor"):
+def make_seed_fn(arm: str, roster_path: str | None = None, minutes_source: str = "onfloor", fallback: str | None = None,
+                 withheld: frozenset = frozenset()):
     if arm not in ARMS:
         raise KeyError(arm)
+    if fallback not in FALLBACKS:
+        raise KeyError(fallback)
+    used: set = set()
 
     def seed_fn(ctx, games, tg, roster_cbbd, roster_valid, S, diag) -> dict:
-        T = tables(int(ctx.season), arm in ("A1", "A2", "A3"), roster_path, minutes_source)
+        T = tables(int(ctx.season), arm in ("A1", "A2", "A3"), roster_path, minutes_source, need_prev_roster=bool(fallback))
         gpos = {int(g): i for i, g in enumerate(games["game_id"])}
         seed_fn.shares = {}
         n_tg = n_slots = 0
@@ -145,7 +184,7 @@ def make_seed_fn(arm: str, roster_path: str | None = None, minutes_source: str =
             i, side = gpos[int(g)], (0 if bool(h) else 1)
             if (roster_cbbd[i, side] > 0).any():          # has an in-season prior: untouched
                 continue
-            pids, mins = seeds_for(arm, T, int(t))
+            pids, mins = seeds_for(arm, T, int(t), withheld, fallback, used)
             k = min(len(pids), S)
             if not k:
                 continue
@@ -154,7 +193,8 @@ def make_seed_fn(arm: str, roster_path: str | None = None, minutes_source: str =
             if arm == "A2":
                 tm = T["team_min"].get(int(t), 0.0)
                 seed_fn.shares[(i, side)] = np.array(mins[:k]) / tm if tm > 0 else None
-        diag.update({"d1p_arm": arm, "d1p_team_games": n_tg, "d1p_slots": n_slots})
+        diag.update({"d1p_arm": arm, "d1p_team_games": n_tg, "d1p_slots": n_slots, "d1p_fallback": fallback,
+                     "d1p_fallback_teams": sorted(used)})      # which teams used the roster-less fallback (empty when off)
         return {(int(g), int(t)): [int(x) for x in roster_cbbd[gpos[int(g)], 0 if bool(h) else 1] if x > 0]
                 for g, t, h in zip(tg["game_id"], tg["team_id"], tg["is_home"])}
 
@@ -174,9 +214,10 @@ def post(inp, seed_fn) -> None:
         inp.rot_share[i, side] = (new / new.sum()).astype(np.float32)
 
 
-def build(slate, as_of, season, fold, arm, season_start=None, roster_path=None, anon=False, minutes_source="onfloor", **kw):
+def build(slate, as_of, season, fold, arm, season_start=None, roster_path=None, anon=False, minutes_source="onfloor",
+          fallback=None, withheld=frozenset(), **kw):
     """`build_live` with the arm's seed (and, for the bake-off window, the in-season rotation prior suppressed)."""
-    fn = make_seed_fn(arm, roster_path, minutes_source)
+    fn = make_seed_fn(arm, roster_path, minutes_source, fallback, withheld)
     orig = LF.rotation_priors
     if anon:
         LF.rotation_priors = lambda ctx, fit, min_prior_games=1: {}
@@ -188,31 +229,40 @@ def build(slate, as_of, season, fold, arm, season_start=None, roster_path=None, 
     return inp, diag
 
 
-def out_dir(fold: str, arm: str) -> Path:
-    return ROOT / "data/processed/models" / f"engine_v3_d1p_{arm}{'' if fold == 'F2' else '_f1'}"
+def out_dir(fold: str, arm: str, tag: str = "") -> Path:
+    return ROOT / "data/processed/models" / f"engine_v3_d1p_{arm}{tag}{'' if fold == 'F2' else '_f1'}"
 
 
-def cmd_window(fold: str, arm: str) -> None:
+def treated_teams(fold: str, frac: float = 0.2, seed: int = 20261005) -> frozenset:
+    """Section 4 experiment: seeded random `frac` of the teams playing in the fold's opening window (sorted ids)."""
+    _, w, _ = AW.window(fold)
+    ids = np.array(sorted(set(w["home_team_id"].astype("int64")) | set(w["away_team_id"].astype("int64"))))
+    pick = np.random.default_rng(seed).choice(ids, size=int(round(frac * len(ids))), replace=False)
+    return frozenset(int(x) for x in pick)
+
+
+def cmd_window(fold: str, arm: str, fallback: str | None = None, treated: frozenset = frozenset(), vtag: str = "") -> None:
     c = AW.CFG[fold]
     tag = f"{fold}_{c['season']}"
     g, w, s0 = AW.window(fold)
-    od = out_dir(fold, arm)
+    od = out_dir(fold, arm, vtag)
     sd = od / "_stage"
     sd.mkdir(parents=True, exist_ok=True)
     BL.ENGINE_DIR = c["template"]
     t0 = time.time()
     diags = {}
     for D in sorted(w["game_date"].dt.strftime("%Y-%m-%d").unique()):
-        st = f"D1P_{arm}_{fold}_{D}"
+        st = f"D1P_{arm}{vtag}_{fold}_{D}"
         if (sd / f"games_{st}.parquet").exists():
             continue
         ids = w.loc[w["game_date"] == pd.Timestamp(D), "game_id"].tolist()
         slate = BL.load_slate_from_universe(D, c["season"], only_ids=ids)
         as_of = pd.to_datetime(slate["tipoff_utc"], utc=True).min() - pd.Timedelta(minutes=30)
         inp, diag = build(slate, as_of, c["season"], fold, arm, season_start=s0, anon=True, strict_finish=False,
-                          minutes_source="onfloor" if fold == "F2" else "box")
+                          minutes_source="onfloor" if fold == "F2" else "box", fallback=fallback, withheld=treated)
         inp.save(sd, st)
-        diags[D] = {k: diag.get(k) for k in ("n_games", "rotation_fallback_team_games", "d1p_team_games", "d1p_slots")}
+        diags[D] = {k: diag.get(k) for k in ("n_games", "rotation_fallback_team_games", "d1p_team_games", "d1p_slots",
+                                             "d1p_fallback_teams")}
         print(f"[{time.time()-t0:6.0f}s] {D} {arm}: {diags[D]}", flush=True)
     # assemble on the anonymous-window base (same LUT: window shooter/known held anonymous for every arm, spec section 1)
     base = c["out"]
@@ -221,7 +271,7 @@ def cmd_window(fold: str, arm: str) -> None:
     arrs = {k: v.copy() for k, v in zb.items()}
     same = {}
     for D in sorted(w["game_date"].dt.strftime("%Y-%m-%d").unique()):
-        st = f"D1P_{arm}_{fold}_{D}"
+        st = f"D1P_{arm}{vtag}_{fold}_{D}"
         gg = pd.read_parquet(sd / f"games_{st}.parquet")
         z = np.load(sd / f"arrays_{st}.npz")
         idx = np.array([pos[int(x)] for x in gg["game_id"]])
@@ -236,7 +286,9 @@ def cmd_window(fold: str, arm: str) -> None:
         shutil.copy2(base / f, od / f)
     win = g["game_id"].isin(w["game_id"]).to_numpy()
     rc = arrs["roster_cbbd"][win]
-    rep = {"arm": arm, "non_player_arrays_equal_anon_base": same, "window_games": int(win.sum()),
+    rep = {"arm": arm, "fallback": fallback, "treated_teams": sorted(treated),
+           "fallback_teams_used": sorted({t for d in diags.values() for t in (d.get("d1p_fallback_teams") or [])}),
+           "non_player_arrays_equal_anon_base": same, "window_games": int(win.sum()),
            "named_slots_per_team_game": float((rc > 0).sum(axis=2).mean()),
            "team_games_with_any_named": float((rc > 0).any(axis=2).mean())}
     (od / "assemble_report.json").write_text(json.dumps(rep, indent=1), encoding="utf-8")
@@ -248,9 +300,9 @@ def cmd_serve(a) -> None:
         slate = BL.load_slate_from_universe(a.slate_date, a.season)
     else:
         slate = BL.load_slate_from_cbbd(a.schedule_path, a.slate_date, a.crosswalk)
-    tables(a.season, a.arm in ("A1", "A2", "A3"), a.roster, a.minutes_source)          # hard stop BEFORE any build work
+    tables(a.season, a.arm in ("A1", "A2", "A3"), a.roster, a.minutes_source, need_prev_roster=bool(a.fallback))  # hard stop BEFORE any build work
     inp, diag = build(slate, a.as_of, a.season, a.fold, a.arm, season_start=a.season_start, roster_path=a.roster,
-                      minutes_source=a.minutes_source, ratings_dir=a.ratings_dir)
+                      minutes_source=a.minutes_source, ratings_dir=a.ratings_dir, fallback=a.fallback)
     tag = a.tag or f"D1P_{a.arm}_{a.fold}_{a.season}_{a.slate_date}"
     inp.save(a.out_dir, tag)
     np.savez_compressed(Path(a.out_dir) / f"event_block_{tag}.npz", team_block=inp.event_block, cols=np.array(list(BL.BL_TEAM16)))
@@ -268,7 +320,15 @@ if __name__ == "__main__":
     ap.add_argument("--schedule-path"); ap.add_argument("--crosswalk", default="data/reference/team_crosswalk.parquet")
     ap.add_argument("--season-start"); ap.add_argument("--roster", default=None)
     ap.add_argument("--ratings-dir", default=None)
+    ap.add_argument("--fallback", choices=("R1", "R2"), default=None,
+                    help="default OFF; roster-less teams get S-1 roster minus final-year (R1) / minus outgoing transfers (R2)")
+    ap.add_argument("--treated-frac", type=float, default=0.0,
+                    help="window only (experiment section 4): withhold this fraction of teams' season-S rosters")
     ap.add_argument("--minutes-source", choices=("onfloor", "box"), default="onfloor")
     ap.add_argument("--out-dir", default="data/processed/models/engine_live"); ap.add_argument("--tag")
     a = ap.parse_args()
-    cmd_window(a.fold, a.arm) if a.cmd == "window" else cmd_serve(a)
+    if a.cmd == "window":
+        tr = treated_teams(a.fold, a.treated_frac) if a.treated_frac > 0 else frozenset()
+        cmd_window(a.fold, a.arm, a.fallback, tr, f"_{a.tag}" if a.tag else "")
+    else:
+        cmd_serve(a)
