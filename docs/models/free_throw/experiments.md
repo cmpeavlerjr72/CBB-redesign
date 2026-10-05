@@ -1363,3 +1363,42 @@ Full-size G1-G9 (5,710 x 200) has not been read locally. Box request: `docs/ops/
   - a full-season sample (every 11th game, both folds).
 - **Read:** FT% and total bias toward actual, in floors, and margin MAE inside its floor.
 - **Full-size read:** the G1-G9 gates go out as a box request.
+
+## 21. Section 20 RESULTS (player-FT worker, 2026-10-05; run after commit c1cd2ef; NO WINNER, P0 stands)
+
+**Run.**
+- Trainer `scripts/train_free_throw_v5_prior.py`, grader `scripts/grade_free_throw_prior_v1.py`.
+- Outputs `results/ft_prior/grade_v1.json` and `prior_params_*.json`.
+- `P0` reproduces the registered log losses: F2 0.575237, F1 0.578044.
+- Floors:
+  - log loss 0.000147 (F2 seed spread 4e-6);
+  - T and every cell gap 0.25 pp (the seed spreads are all below 0.125 pp).
+- Fitted:
+  - k = 30 for P2 and 40 for P3, on both folds;
+  - P3's m_c spans about +-3 pp (guards +2.6 pp, centres -1.4 pp, transfers +2.4 pp).
+
+| arm | F2 dLL | F1 dLL | F2 T gap (P0 -1.82) | F1 T gap (P0 -1.09) | F2 / F1 window gap (P0 -1.73 / -0.63) | worst calib F2 / F1 | verdict |
+|---|---|---|---|---|---|---|---|
+| P1 +prior_season_fta | **-0.000237** | -0.000049 | **-1.29** | -0.50 | -2.02 / -0.80 | 0.97 / 1.95 | VETO: cells 1-10 d46+ (F2 +0.68 pp), 41+ d0-14 (F2 +0.63, F1 +0.53) |
+| P2 EB prior | -0.000303 | -0.000210 | -1.77 (no move) | -1.05 | -1.94 / -0.74 | 0.81 / **2.10** | FAIL: F1 calibration gate; T does not move; cell 11-40 d0-14 vetoes |
+| P3 EB, conditioned mean | **-0.001514** | **-0.001533** | -1.41 | -0.84 | -1.89 / -0.76 | 0.83 / 1.52 | VETO: six cells, incl. 41+ d0-14 (+0.41 / +0.48) and 11-40 d0-14 |
+
+- The Decision 8 slope stays at 0.95-0.98 for every arm.
+- The prior-FT% quintile span is 0.98-1.01 for every arm (responsive, no flattening).
+- **Pattern in every arm.** Each arm raises the thin-prior cells (1-10: F2 d0-14 -2.55 -> -2.10 / -1.44 / -0.02). The model's season-level calibration then pays for it in the other early cells: 41+ d0-14 drops by 0.3-0.6 pp and 11-40 d0-14 drops in P2/P3.
+- The **window** gap therefore gets worse in every arm, on both folds.
+- P3's large log-loss gain is the bio channel (section 13's N1 again). It does not reach the window level.
+
+**Sizing (P0, real window attempts).** The window model gap of -1.73 pp (F2) splits by prior-season FTA as follows:
+- 0: -0.69 pp;
+- 1-40: -0.47 pp;
+- 41+: -0.58 pp.
+
+F1 splits -0.29 / -0.27 / -0.06. A perfect fix of the thin-sample (1-40) piece is therefore worth about +0.47 pp of window FT%, about +0.18 points per window game (F2).
+The window shortfall is shared by every bucket, 41+ included on F2. It behaves like a season-level / early level term (section 18, X1), not like a shrinkage-size defect. Thin-sample shrinkage is a real but small defect.
+The larger sim-side owner remains the anonymous-slot block: about -1.9 pp of window FT% (player layer).
+
+**Descriptive loop.** `P1` is served behind the default-off `ENGINE_FT_SCORE=P1` for a read only. It is NOT a winner.
+- Inputs: `engine_v3_FTP_P1` / `engine_v3_f1_FTP_P1` (slot column appended; serving check max abs diff 0.0 on 55,518 / 51,569 slot rows).
+- Artifacts: `free_throw/s1_scorediff/P1/` (S1_conf_aligned, F2 log loss 0.574931, F1 0.577826).
+- Results: section 21.1.
