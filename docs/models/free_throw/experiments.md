@@ -1270,3 +1270,39 @@ The arms add exposure features that the engine already serves, so serving needs 
   Read: window FT% and total bias toward actual in floors, and margin MAE inside its floor. Full-size G1-G9 is a box request; the PM decides adoption.
 - **Sizing stated now:** a perfect fix of the model part moves window FT% by about +1.7 pp (F2) / +0.6 pp (F1), about +0.65 / +0.2 points per window game.
   The anonymous-slot part (about -1.9 / -2.3 pp) belongs to the player layer and to section 13.3, not to this round.
+
+## 19. Section 18 RESULTS (scoring-level worker, 2026-10-05; run after commit 120bee9; NOTHING ADOPTED)
+
+Offline (S1_monthly, paired). `X0` reproduces the registered numbers: F2 0.575237, F1 0.578044.
+Floors: log loss 0.000147 (seed spread 4e-6); gap 0.25 pp (seed spread of the window gap 0.03 pp).
+Grader: `scripts/grade_free_throw_exposure_v1.py`. Output: `results/ft_exposure/grade_v1.json`.
+
+| arm | F2 W gap (pp) | F1 W gap | F2 W newcomer / returner | F2 d15-45 / d46+ | F2 dLL | F1 dLL | worst calib F2 / F1 | verdict |
+|---|---|---|---|---|---|---|---|---|
+| X0 | -1.73 | -0.63 | -2.71 / -1.40 | -0.38 / +0.19 | - | - | 0.84 / 1.80 | reference |
+| **X1** | **-1.20** (+0.53 better) | -0.40 | -1.29 / -1.17 | +0.08 / +0.20 | **-0.00027** | -0.00006 | 0.87 / 1.76 | **WIN** |
+| X2 | -1.83 | -0.69 | -2.85 / -1.48 | -0.16 / +0.60 | +0.00009 | +0.00017 | 0.81 / 1.99 | no gain; VETO d46+ (+0.41) |
+| X3 | -1.05 | -0.45 | -1.01 / -1.06 | +0.15 / +0.05 | -0.00037 | -0.00008 | 0.62 / **2.18** | FAILS F1 calibration gate |
+
+**Winner by the registered rule: X1.** It is the simplest arm and beats X0 on the F2 window gap by 2.1x the floor. Fold 1 moves the same way (-0.63 -> -0.40), every gate passes and no veto fires.
+Decision 8 slope is 0.980 / 1.014, and responsiveness by prior-season FT% quintile is 0.981 / 1.023.
+Stated weakness: F1 d15-45 moves -0.02 -> -0.23 pp. That is inside the floor and not a registered line.
+Residual: about -1.2 pp of the F2 window gap remains, so X1 removes about a third of the model part.
+
+**Serving.**
+- Built on `S1_conf_aligned` with `scripts/build_ft_exposure_serving_v1.py X1`: 29 fits, F2 log loss 0.574878 vs served 0.575210, gates pass. Artifacts are in `free_throw/s1_scorediff/X1/` (78 MB, gitignored, pushed to HF `model_artifacts`).
+- Served by the existing default-off `ENGINE_FT_SCORE=X1`. No engine edit.
+- Train/serve parity: the engine's `days_since_start` team column equals the design value on all 5,593 F2 games present in both. The 573 window games are all among them.
+
+**Closed loop, local (F2 opening window).** 598 graded games x 50 seeds, paired with `F2_srv_o0` (same engine src), floor = `F2_srv_o1000`.
+Script `scripts/grade_ft_exposure_window_v1.py`.
+
+| line | served | X1 | move [95% game bootstrap] | reseed move |
+|---|---|---|---|---|
+| FT% (actual 0.705) | 0.6702 | 0.6783 | **+0.81 pp [+0.73, +0.89]** | +0.04 pp |
+| total bias | -4.94 | -4.70 | **+0.24 [+0.19, +0.30]** | +0.05 |
+| total MAE | 14.73 | 14.70 | -0.03 [-0.09, +0.03] | -0.05 |
+| margin MAE | 10.43 | 10.48 | +0.05 [-0.03, +0.13] | +0.05 |
+| margin bias | -0.85 | -0.88 | -0.03 [-0.11, +0.06] | -0.05 |
+
+Full-size G1-G9 (5,710 x 200) has not been read locally. Box request: `docs/ops/box_queue/scoring_1.md`. The PM decides adoption.
