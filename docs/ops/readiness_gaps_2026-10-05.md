@@ -104,3 +104,12 @@ Findings (2025-26 CBBD metadata only, no scores read; provider names and game st
 - CLV: CBBD gives open-to-close only (spreadOpen vs spread, overUnderOpen vs overUnder), one number per provider, no intraday snapshots. Our own daily snapshots (chain `lines` step, fetched_at) give true pre-tip captures once running; CLV vs those is only as granular as run cadence.
 
 Recommendation: primary CBBD /lines (Bovada, Draft Kings; open+close fields); run the chain lines step daily from Oct 20 and the probe daily to see first postings. Fallback: ESPN site scoreboard/summary odds snapshots (free, current line only, hourly capture on game day builds our own open/close) with a pre-tip snapshot. A paid feed needs a user decision.
+
+## Lines snapshot + open/close build (2026-10-05, lines ops worker)
+
+PM decision: primary CBBD /lines (Bovada, Draft Kings); fallback and timestamp source = our own ESPN odds snapshots.
+- `scripts/pull_espn_odds_snapshot_v1.py --date D`: one ESPN scoreboard call plus CBBD /games + /lines per run, one `captured_at` (UTC) per run, appended to `data/raw/lines_snapshots/lines_snapshots_<D>.parquet` (gitignored). Spread stored home-perspective. Idempotent on (game_id, provider, source, captured_at); prior rows never edited. Failures write nothing, exit 0.
+- `scripts/build_lines_open_close_v1.py`: per (game, provider, source) open = first capture, close = last capture strictly before tipoff (tip_times_2027), with lead minutes; captured_at >= tipoff excluded. Output `data/processed/lines/lines_open_close_v1.parquet`. n_captures = 1 means open == close (no movement information).
+- chain_daily_v3: new stages `lines_snapshot` (after `lines`; dry run prints the plan) and `lines_probe` (skipped before Oct 20, then daily; dry-run safe).
+- `ops_register_tasks_v1.ps1`: `CBB\LinesSnapshot_GameDay` hourly 10:00-23:00 ET; still WhatIf by default, NOT registered. Needs PM go-ahead.
+- Caveats: ESPN scoreboard odds are 0 today (fixtures only tested); live ESPN spread-sign convention (favourite's spread, home perspective derived from `favorite` flags) is unverified until real odds appear; CBBD rows carry fetch time, not posting time, so CBBD "open" lead is an upper bound only. Tests: `tests/test_lines_snapshot.py` (4) + `test_daily_chain_v3.py` pass.

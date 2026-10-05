@@ -159,6 +159,30 @@ def fallback_report_line(slate_date) -> str | None:
     return json.loads(Path(fs[-1]).read_text(encoding="utf-8")).get("d1p_fallback_line")
 
 
+def _run_script(args: list[str]) -> dict:
+    import subprocess
+    r = subprocess.run([sys.executable, *args], capture_output=True, text=True, timeout=600, cwd=str(REPO))
+    return {"rc": r.returncode, "out": (r.stdout or "")[-300:]}
+
+
+def stage_lines_snapshot(ctx, a) -> dict:
+    """Own lines snapshot (ESPN current line + CBBD /lines, captured_at stamped) then the open/close builder. Never blocks the chain."""
+    snap = str(REPO / "scripts" / "pull_espn_odds_snapshot_v1.py")
+    build = str(REPO / "scripts" / "build_lines_open_close_v1.py")
+    extra = ["--dry-run"] if a.dry_run else []
+    out = {"snapshot": _run_script([snap, "--date", str(ctx.slate_date), *extra])}
+    if not a.dry_run:
+        out["open_close"] = _run_script([build])
+    return out
+
+
+def stage_lines_probe(ctx, a) -> dict:
+    """Daily source probe from Oct 20 (dry-run safe: --dry-run prints the plan, no network)."""
+    if ctx.today < date(ctx.today.year, 10, 20) and ctx.today.month >= 5:
+        return {"_status": "skipped", "why": "probe starts Oct 20"}
+    return _run_script([str(REPO / "scripts" / "probe_lines_sources_v1.py"), *(["--dry-run"] if a.dry_run else [])])
+
+
 def stage_publish(ctx, a, CD) -> dict:
     run_id = ctx.state.get("sim_run_id") or D.default_run_id(a.seeds, 0)
     if ctx.dry_run:
@@ -274,6 +298,8 @@ def main(argv=None) -> int:
         ("schedule", lambda: CD.step_schedule(cctx)),
         ("tips", lambda: stage_tips(ctx, a, CD, cctx)),
         ("lines", lambda: CD.step_lines(cctx)),
+        ("lines_snapshot", lambda: stage_lines_snapshot(ctx, a)),
+        ("lines_probe", lambda: stage_lines_probe(ctx, a)),
         ("ingest", lambda: V2.stage_ingest(v2ctx, CD, a)),
         ("ratings", (lambda: DAY1.stage_ratings(ctx, CD, a)) if day1 else (lambda: V2.stage_ratings(v2ctx, CD, a))),
         ("kenpom", (lambda: CD.step_kenpom(cctx)) if a.with_kenpom else (lambda: {"_status": "skipped", "why": "audit gap 10: PM decision"})),
