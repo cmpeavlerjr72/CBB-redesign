@@ -145,3 +145,6 @@ data/processed/models/fg_make/round_tsr/
 data/processed/models/fg_make/round_lj/
 data/processed/models/fg_make/round_tsr_served/
 data/processed/models/engine_v3_TSRJ1_laneA/
+
+# PO TOV level round (section 30) artifacts, >20 MB
+data/processed/models/possession_outcome/tovlevel/
