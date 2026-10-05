@@ -54,3 +54,45 @@ Underpowered cells are labelled.
 ## 2. Fold-1 source deviation (2026-10-05, before any fold-1 arm was built or run)
 
 `possessions_2023.parquet` has no on-floor columns: lineups start in 2023-24. So the registered S-1 minutes source does not exist for fold 1 (S-1 = 2022-23). Fold 1 instead reads S-1 minutes from the hoopR player box, mapping ESPN athlete ids to CBBD ids through the CBBD rosters' `source_id` (`--minutes-source box`). Fold 2 keeps the registered on-floor source. On fold 2 (S-1 = 2023-24) the box source maps 99.8% of player-game rows. Over 355 teams it shares 97.5% of the top-8 seeds with the on-floor source and the same top player for 83%. No fold-2 arm had been graded when this was written; fold-2 arm runs had started.
+
+---
+
+## 3. Results (2026-10-05). Fold 2 selects, fold 1 confirms. 50 seeds, paired, verified truth
+
+Total-MAE floor = |A1n o0 - A1n o1000| = 0.122. Margin-MAE floor (same pair) = 0.007. Deltas are vs A0, with 95% game-bootstrap intervals.
+
+| arm | F2 total MAE | F2 d total MAE | F2 d margin MAE | F2 total bias | F1 d total MAE | F1 d margin MAE | props: F2 minutes MAE / pts MAE (named rotation player-games) |
+|---|---|---|---|---|---|---|---|
+| A0 | 15.173 | - | - | -7.52 | - | - | - |
+| A1n | **14.620** | -0.553 [-0.79, -0.31] | +0.054 [-0.11, 0.20] | -4.94 | -0.911 | -0.073 | 8.37 / 5.05 |
+| A1 | 14.719 | -0.454 [-0.64, -0.27] | +0.015 [-0.13, 0.16] | -5.84 | -0.699 | -0.144 | **6.20** / 4.92 |
+| A2 | 14.785 | -0.389 [-0.55, -0.23] | -0.019 [-0.15, 0.11] | -6.03 | -0.643 | -0.139 | 6.53 / **4.72** |
+| A3 | 14.622 | -0.551 [-0.77, -0.33] | -0.001 [-0.15, 0.15] | -5.27 | -0.789 | -0.094 | 8.65 / 5.31 |
+| (served, reference only) | 14.725 | -0.448 | +0.027 | -4.94 | -0.755 | -0.018 | 5.60 / 4.47 |
+
+Brier is within 0.0035 of A0 for every arm, and none is worse.
+
+**Rule applied as registered.**
+- Rule 1: all four arms beat A0.
+- Rule 2: A1n has the lowest total MAE, A3 is within the floor of it, and A1n is the simpler of the two.
+- Rule 3: A1n is VETOED. Its margin MAE is +0.054 against its own margin floor of 0.007.
+- With the vetoed arm removed, rules 1-2 are re-applied. A3 is now lowest, and A1 is within the floor and simpler. A1 is VETOED: margin +0.015 > 0.007.
+- Re-applying again leaves A3: margin -0.001, Brier -0.003, |bias| 5.27 < 7.52, so no veto.
+- Rule 4: fold 1 has the same sign (-0.789).
+
+**WINNER: A3.** Stated weakness: the margin floor is one reseed draw, and 0.007 is well under the Phase 1 margin reseed of 0.05-0.06. Every margin delta here sits inside its bootstrap interval, and all arms improve margin MAE on fold 1. So the vetoes of A1n and A1 rest on a tight floor. They are not evidence of harm. A3 and A1n tie on total MAE.
+
+**Segments (F2 / F1).**
+- First games (181 / 182; no in-season history at all): total bias A0 -9.5 / -10.1, A3 -8.8 / -8.7, A1n -8.2 / -8.3. The player layer recovers 0.7-1.8 points. Most of the opening-day under-prediction is NOT the player layer and needs its own owner.
+- Later window games: A3 total MAE 14.48 / 13.83 vs served 14.47 / 13.71.
+- Neutral-site cells (46 F2) are UNDERPOWERED.
+- Responsiveness slope (actual on predicted total) is 0.59 / 0.76 for A3 vs 0.62 / 0.88 for A0. The window is too short to read it.
+
+**Per possession type (pooled make, sim / truth, F2).** FT: A0 0.646, A1 0.668, A3 0.677, A1n 0.692, truth 0.707 (served 0.670). Three: 0.317 -> 0.326 (truth 0.329). Rim and jump2 move by 0.3-0.5 pp. The lever is the no-history shooter state, FT above all. It sits well below the true make rate of opening-day rosters. A1n scores best partly because it names departed players, which removes more no-history slots. That identity is wrong, and its props are the worst. Under the bottom-up rule, A1n compensates for an upstream bias.
+
+**Props.** A3 names players who play 72% / 76% of actual minutes (A1: 42% / 53%). Its transfers get league role-profile shares in slot order, so minutes MAE on named player-games is 8.65 (A1: 6.20). Props need a share prior for named day-1 players. That is a separate object, not run here.
+
+**Recommendation to the PM.**
+1. Ship A3 behind the hook (default off; `make_seed_fn("A3")`) only together with the season-2027 CBBD roster. It hard-stops without that roster.
+2. Open two upstream objects: the no-history FT / fg shooter prior, and the opening-day total bias.
+3. Do not use A1n.
