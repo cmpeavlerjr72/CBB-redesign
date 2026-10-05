@@ -1402,3 +1402,25 @@ The larger sim-side owner remains the anonymous-slot block: about -1.9 pp of win
 - Inputs: `engine_v3_FTP_P1` / `engine_v3_f1_FTP_P1` (slot column appended; serving check max abs diff 0.0 on 55,518 / 51,569 slot rows).
 - Artifacts: `free_throw/s1_scorediff/P1/` (S1_conf_aligned, F2 log loss 0.574931, F1 0.577826).
 - Results: section 21.1.
+
+### 21.1 Descriptive closed loop, P1 vs served (local, 50 seeds, paired; NOT a registered line)
+
+**Setup.**
+- Parity: with the flag off, the run is bit-identical to parity v9 on both `engine_v3` and `engine_v3_FTP_P1` (60 x 5).
+- Grader: `scripts/grade_ft_prior_loop_v1.py`. Window refs and floors: `player_day1` `*_srv_o0` / `o1000`.
+- Sample: every 11th game, with fresh served o0 / o1000 runs.
+- F1 runs use `results/ft_prior/overrides_V2_P1.json`: the fold-1 overrides with `FT_S1_MANIFEST` pointed at P1's F1 manifest.
+  - The overlay source check stays on and PASSES. It confirms that the run loaded the overridden artifact path.
+  - As-of integrity (`max_train_date < game_date`) is enforced separately, at manifest load.
+
+| read | games | FT% move [95%] | reseed | total bias ref -> P1 (move [95%]) | reseed | margin MAE move |
+|---|---|---|---|---|---|---|
+| F2 window | 598 | -0.07 pp [-0.13, -0.02] | +0.04 | -4.94 -> -4.98 (-0.03 [-0.09, +0.02]) | +0.05 | +0.07 (reseed +0.05) |
+| F1 window | 643 | -0.08 pp [-0.14, -0.02] | -0.05 | -5.22 -> -5.25 (-0.03 [-0.09, +0.02]) | +0.11 | +0.05 |
+| F2 season sample | 520 | +0.10 pp [+0.04, +0.17] | +0.05 | -1.52 -> -1.55 (-0.03 [-0.10, +0.04]) | +0.26 | +0.01 |
+| F1 season sample | 513 | +0.12 pp [+0.05, +0.19] | -0.12 | -0.79 -> -0.78 (+0.01 [-0.06, +0.08]) | +0.04 | -0.04 |
+
+**Reading.**
+- The loop confirms the offline result. P1 moves window FT% slightly the wrong way and season FT% slightly toward actual.
+- Total bias does not move beyond the reseed floor in any read.
+- The thin-sample channel is not an owner of the window total bias at a size that matters. P0 stands.
