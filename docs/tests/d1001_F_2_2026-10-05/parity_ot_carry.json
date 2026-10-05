@@ -1,0 +1,57 @@
+{
+ "otc_root": "/app/data/processed/models/full_retrain_v1/FRc_box_v1/otc_designs/out",
+ "recount_rows": 6525053,
+ "checks": {
+  "fg_events": {
+   "table": "/app/data/processed/models/full_retrain_v1/FRc_box_v1/otc_designs/out/fg_make/events_v2_shotshooter.parquet",
+   "rows": 2241195,
+   "joined": 2023952,
+   "regulation_joined": 2008625,
+   "regulation_mismatch": 0,
+   "ot_joined": 15327,
+   "ot_mismatch": 0,
+   "regulation_mismatch_rate": 0.0,
+   "ot_mismatch_rate": 0.0,
+   "ot_bonus_share_trained": 0.9755333724799373,
+   "ot_bonus_share_expected": 0.9755333724799373,
+   "pass": true
+  },
+  "rebound_events": {
+   "table": "/app/data/processed/models/full_retrain_v1/FRc_box_v1/otc_designs/out/rebound/events_v1.parquet",
+   "rows": 1549406,
+   "joined": 1324231,
+   "regulation_joined": 1313437,
+   "regulation_mismatch": 0,
+   "ot_joined": 10794,
+   "ot_mismatch": 0,
+   "regulation_mismatch_rate": 0.0,
+   "ot_mismatch_rate": 0.0,
+   "ot_bonus_share_trained": 0.9752640355753196,
+   "ot_bonus_share_expected": 0.9752640355753196,
+   "pass": true
+  }
+ },
+ "chances_ot_informational": {
+  "2022": {
+   "ot_chances": 7417,
+   "ot_off_in_bonus_share": 0.9853040312794931,
+   "ot_off_in_double_bonus_share": 0.734528785223136
+  },
+  "2023": {
+   "ot_chances": 8012,
+   "ot_off_in_bonus_share": 0.9706689965052422,
+   "ot_off_in_double_bonus_share": 0.7340239640539191
+  },
+  "2024": {
+   "ot_chances": 8100,
+   "ot_off_in_bonus_share": 0.9780246913580247,
+   "ot_off_in_double_bonus_share": 0.7527160493827161
+  },
+  "2025": {
+   "ot_chances": 7839,
+   "ot_off_in_bonus_share": 0.9849470595739253,
+   "ot_off_in_double_bonus_share": 0.7703788748564868
+  }
+ },
+ "pass": true
+}

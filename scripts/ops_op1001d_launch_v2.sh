@@ -14,6 +14,6 @@ K="-i $HOME/.ssh/cfb-sweep-ohio.pem -o IdentitiesOnly=yes -o StrictHostKeyChecki
 for i in $(seq 1 30); do ssh $K -o ConnectTimeout=8 ec2-user@$IP true 2>/dev/null && break; sleep 8; done
 scp -q $K "$S/box_bootstrap_v1.sh" "$S/${SETUP:-box_op1001d_setup_v1.sh}" ec2-user@$IP:~/
 grep "^HF_TOKEN=" "$S/../.env" | sed 's/^HF_TOKEN=/export HF_TOKEN=/' | ssh $K ec2-user@$IP 'umask 077; cat > ~/.hf_env'
-ssh $K ec2-user@$IP "sudo shutdown -h 20:00 >/dev/null 2>&1; bash ~/box_bootstrap_v1.sh install >/dev/null && sg docker -c 'bash ~/box_bootstrap_v1.sh clone $SHA' >/dev/null && echo cloned"
+ssh $K ec2-user@$IP "sudo shutdown -h +360 >/dev/null 2>&1; bash ~/box_bootstrap_v1.sh install >/dev/null && sg docker -c 'bash ~/box_bootstrap_v1.sh clone $SHA' >/dev/null && echo cloned"
 ssh $K ec2-user@$IP "nohup sg docker -c 'bash ~/${SETUP:-box_op1001d_setup_v1.sh} $SHA' > ~/setup.out 2>&1 < /dev/null & echo setup started"
 date -u +%H:%M:%SZ

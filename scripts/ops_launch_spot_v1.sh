@@ -12,14 +12,14 @@ echo "AMI $AMI"
 declare -A SUBNET=( [us-east-2c]=subnet-02b40dd48e9ed2bd9 [us-east-2b]=subnet-07dfcc25641a55194 [us-east-2a]=subnet-0f8629b0edec07b47 )
 for AZ in ${AZS:-us-east-2c us-east-2b us-east-2a}; do
   if [ "$MODE" = spot ]; then
-    OUT=$(aws ec2 run-instances --region $R --image-id "$AMI" --instance-type c7a.48xlarge --key-name cfb-sweep \
+    OUT=$(aws ec2 run-instances --region $R --image-id "$AMI" --instance-type ${ITYPE:-c7a.48xlarge} --key-name cfb-sweep \
       --security-group-ids sg-05aacf67a5a55fbf7 --subnet-id "${SUBNET[$AZ]}" \
       --instance-market-options 'MarketType=spot,SpotOptions={SpotInstanceType=one-time,InstanceInterruptionBehavior=terminate}' \
       --block-device-mappings 'DeviceName=/dev/xvda,Ebs={VolumeSize=100,VolumeType=gp3,DeleteOnTermination=true}' \
       --tag-specifications 'ResourceType=instance,Tags=[{Key=Name,Value=cbb-box-0930}]' \
       --query 'Instances[0].InstanceId' --output text 2>&1)
   else
-    OUT=$(aws ec2 run-instances --region $R --image-id "$AMI" --instance-type c7a.48xlarge --key-name cfb-sweep \
+    OUT=$(aws ec2 run-instances --region $R --image-id "$AMI" --instance-type ${ITYPE:-c7a.48xlarge} --key-name cfb-sweep \
       --security-group-ids sg-05aacf67a5a55fbf7 --subnet-id "${SUBNET[$AZ]}" \
       --block-device-mappings 'DeviceName=/dev/xvda,Ebs={VolumeSize=100,VolumeType=gp3,DeleteOnTermination=true}' \
       --tag-specifications 'ResourceType=instance,Tags=[{Key=Name,Value=cbb-box-0930}]' \
