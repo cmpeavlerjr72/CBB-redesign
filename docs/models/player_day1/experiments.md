@@ -96,3 +96,23 @@ Brier is within 0.0035 of A0 for every arm, and none is worse.
 1. Ship A3 behind the hook (default off; `make_seed_fn("A3")`) only together with the season-2027 CBBD roster. It hard-stops without that roster.
 2. Open two upstream objects: the no-history FT / fg shooter prior, and the opening-day total bias.
 3. Do not use A1n.
+
+---
+
+## 4. Pre-registration: fallback roster for teams with no season-S roster (2026-10-05 ~14:50 EDT, committed BEFORE any arm is built or run)
+
+**Problem.** 69 of 365 teams have no 2026-27 ESPN/CBBD roster (`roster_2027.report.json`). A3 needs the season-S roster; such a team-game is 100% anonymous. If coverage is still incomplete near 2026-11-02 a fallback is needed.
+
+**Design.** On each fold's opening window (first 14 days, no in-season rotation prior, anonymous shot-block slot held as in section 1), a seeded random 20% of the teams that play in the window (numpy default_rng(20261005), sorted team ids) are "treated": their season-S roster is withheld, as if missing. All other teams keep A3 with the real roster. Treated teams get one of:
+- **R0** nothing: anonymous (what A3 does today for a team with no roster).
+- **R1** the S-1 roster (players with S-1 minutes for this team, ordered by S-1 minutes, `rot_share` = league role profile) minus players in their final year of eligibility. Eligibility is NOT recorded in the historical rosters (`experience` exists only in 2027), and `end_season` is hindsight (leak), so the pre-season proxy is `S-1 - start_season >= 3` (4th or later D-I season by the roster file's `start_season`), taken from `roster_{S-1}`; these are dropped as senior/grad. Players with unknown start_season are kept. Stated caveat: redshirt and COVID years make the proxy imperfect.
+- **R2** R1 minus observed outgoing transfers: S-1 players of the treated team that appear on a DIFFERENT team's season-S roster among the NON-treated teams (knowable in 2026-27: the 296 rostered teams are visible while the 69 are missing). Caveat: historical roster_S is an end-of-season snapshot (same caveat as A3). Incoming transfers to a treated team are unknown in every arm (slots stay anonymous).
+The three arms differ only in the treated teams' slots. Complexity order: R0 < R1 < R2.
+
+**Folds.** Fold 2 selects: S = 2024-25 (S-1 = 2023-24, on-floor minutes), 599 window games. Fold 1 confirms: S = 2023-24 (box minutes, as section 2). 2025-26 is SEALED and not read. Only window games with at least one treated team are simulated (identical across arms elsewhere by construction). 50 seeds, offset 0, paired streams; served stack v2 (fold 1 via the same overrides as section 3). Noise floor: R0 re-run at seed offset 1000 on the same games; floor = |R0 o0 - R0 o1000| total MAE, minimum 0.06.
+
+**Primary metric.** Total MAE over the simulated games (at least one treated team). Reported: total bias, margin MAE, and for the treated teams' player-games: share of actual box minutes played by sim-named players (coverage), minutes MAE on named rotation (>=10 min) player-games, and precision (share of named sim players with >= 10 actual minutes). Segment: games with both teams treated vs one (underpowered cells labelled). Verified truth, one blind grader (`scripts/grade_player_day1_fallback_v1.py`).
+
+**Decision rule.** R1 (or R2) is adopted as the fallback only if on fold 2 its paired total-MAE delta vs R0 is below -floor AND its 95% game-bootstrap interval excludes 0, AND |total bias| does not exceed R0's, AND on fold 1 its delta is not positive (does not lose). Between R1 and R2 both passing, the lower fold-2 total MAE wins unless within the floor, then the simpler (R1). If neither passes, R0 stands (anonymous). Margin MAE is reported and vetoes only if worse than R0 by more than 0.05 (the Phase 1 margin reseed scale; section 3 documented that 0.007 was too tight).
+
+**Output.** The winner ships as a default-off option `fallback=R1|R2` of `make_seed_fn` in `scripts/build_engine_inputs_day1prior_v1.py` (CLI `--fallback`); teams using it are listed in `diag["d1p_fallback_teams"]` and flagged in the build diag. With the option off, behaviour is bit-identical.
