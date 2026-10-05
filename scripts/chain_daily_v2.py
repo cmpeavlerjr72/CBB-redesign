@@ -255,6 +255,16 @@ def missing_sealed_priors(season: int, repo: Path = REPO, r9_seasons=None) -> li
     return miss
 
 
+def load_availability(ctx):
+    """The injuries_parse output for today plus manual availability.csv rows for the slate date (`player_out_for`), or None when empty (then
+    build_live runs exactly as before)."""
+    import pull_injuries_player_out_v1 as PI
+    days = {getattr(ctx, "today", None) or ctx.slate_date, ctx.slate_date}
+    parts = [PI.player_out_for(pd.Timestamp(d).date()) for d in sorted(days, key=str)]
+    df = pd.concat(parts, ignore_index=True) if parts else pd.DataFrame()
+    return df.drop_duplicates("athlete_id") if len(df) else None
+
+
 def build_live_inputs(ctx, BL, slate, out: dict) -> dict:
     """Live 2027 branch: hard-stop on any missing sealed prior table, else build the slate's EngineInputs (as of the chain clock) and
     save to data/processed/models/engine_live/. Nothing is simulated here."""
@@ -267,14 +277,16 @@ def build_live_inputs(ctx, BL, slate, out: dict) -> dict:
     if miss:
         return {**out, "_status": "blocked", "blocked_on": miss, "built": False}
     import numpy as np
+    avail = load_availability(ctx)
     with unsealed():                                          # prior-season carry reads the 2026 tables
         inp, diag = BL.build_live(slate, getattr(ctx, "now", None) or pd.Timestamp.now("UTC"), season, "F2", created_at=pd.Timestamp.now("UTC"),
-                                  ratings_dir=ctx.state["ratings_dir"])
+                                  ratings_dir=ctx.state["ratings_dir"], availability=avail)
     tag = f"LIVE_F2_{season}_{ctx.slate_date}"
     out_dir = REPO / "data/processed/models/engine_live"
     inp.save(str(out_dir), tag)
     (out_dir / f"build_diag_{tag}.json").write_text(json.dumps(diag, indent=2, default=str), encoding="utf-8")
-    return {**out, "_status": "ok", "built": True, "tag": tag, "n_games": int(len(slate))}
+    return {**out, "_status": "ok", "built": True, "tag": tag, "n_games": int(len(slate)),
+            "availability": diag.get("availability", "none (no player-out rows)")}
 
 
 def stage_reuse(CD, fn_name):

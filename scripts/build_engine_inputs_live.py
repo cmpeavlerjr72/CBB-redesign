@@ -110,13 +110,63 @@ def load_slate_from_cbbd(path: str, slate_date: str, crosswalk_path: str) -> pd.
 # ---------------------------------------------------------------------------
 # assembly
 # ---------------------------------------------------------------------------
+def apply_availability(priors: dict, availability, created_at, diag: dict) -> dict:
+    """Drop listed-out players from each team-game's rotation prior. Returns a NEW dict (input untouched); nothing is hand-redistributed:
+    the remaining players keep their own as-of share / fouls-per-minute / availability, `build_live` renormalises shares, and start order is
+    re-ranked 1..k by the existing start_order (so the next-ranked players start). A team-game left with no real player falls back to the
+    league-mean profile (the same path as a team with no prior). Pids that match no slate candidate list are reported in diag, never dropped
+    silently. Leak guard: rows stamped after `created_at` raise."""
+    import dataclasses
+    from cbb_sim.live import guards as _G
+    df = pd.read_csv(availability) if isinstance(availability, (str, Path)) else pd.DataFrame(availability)
+    if "cbbd_player_id" not in df.columns:
+        raise ValueError("availability needs a cbbd_player_id column")
+    if "created_at" in df.columns and len(df):
+        ts = pd.to_datetime(df["created_at"], utc=True, errors="coerce")
+        late = ts > created_at
+        if late.any():
+            raise _G.LeakGuardError(f"{int(late.sum())} availability rows stamped after created_at {created_at}")
+    ids = pd.to_numeric(df["cbbd_player_id"], errors="coerce")
+    out_ids = set(int(x) for x in ids.dropna().astype("int64") if x > 0)
+    seen: set = set()
+    new: dict = {}
+    n_tg = n_drop = n_fb = 0
+    for key, pr in priors.items():
+        hit = np.isin(pr.pids, list(out_ids)) if out_ids else np.zeros(len(pr.pids), dtype=bool)
+        if not hit.any():
+            new[key] = pr
+            continue
+        seen.update(int(x) for x in pr.pids[hit])
+        n_tg += 1
+        n_drop += int(hit.sum())
+        keep = ~hit
+        if not (pr.pids[keep] > 0).any():
+            n_fb += 1                                   # nobody real left: omit, the fallback profile path takes over
+            continue
+        k = int(keep.sum())
+        order = np.argsort(pr.srank[keep], kind="stable")
+        srank = np.empty(k, dtype=pr.srank.dtype)
+        srank[order] = np.arange(1, k + 1)
+        so = np.argsort(srank, kind="stable").astype(pr.start_order.dtype)
+        new[key] = dataclasses.replace(pr, pids=pr.pids[keep], share=pr.share[keep], rank=np.arange(1, k + 1, dtype=pr.rank.dtype),
+                                       srank=srank, start_order=so, fpm=pr.fpm[keep], p_avail=pr.p_avail[keep])
+    diag["availability"] = {"rows": int(len(df)), "rows_without_cbbd_id": int(ids.isna().sum()), "out_ids": len(out_ids),
+                            "team_games_affected": n_tg, "players_dropped": n_drop, "team_games_fallback_after_drop": n_fb,
+                            "unknown_pids": sorted(out_ids - seen)}
+    return new
+
+
 def build_live(slate: pd.DataFrame, as_of, season: int, fold: str, created_at=None,
                season_start=None, template_tag: str | None = None, families: str = "all",
                t0: float | None = None, strict_finish: bool = True,
-               ratings_dir: str | None = None, seed_fn=None) -> tuple[EngineInputs, dict]:
+               ratings_dir: str | None = None, seed_fn=None, availability=None) -> tuple[EngineInputs, dict]:
     """`seed_fn` (DEFAULT None = unchanged; lane F, 2026-10-01, docs/tests/early_season_roster_slots_2026-10-01.md): an as-of-safe
     candidate-seeding hook, called as seed_fn(ctx, games, tg, roster_cbbd, roster_valid, S, diag) after the rotation roster arrays are built;
-    it fills anonymous tail slots in place and returns the candidate dict. Used only by scripts/build_engine_inputs_seeded_v1.py."""
+    it fills anonymous tail slots in place and returns the candidate dict. Used only by scripts/build_engine_inputs_seeded_v1.py.
+
+    `availability` (DEFAULT None = bit-identical to before; 2026-10-05, docs/ops/readiness_gaps_2026-10-05.md): a DataFrame (or csv path) in the
+    `player_out_for` format with a `cbbd_player_id` column (the set of players OUT for this slate, supplied by the caller). Each listed pid is removed from
+    the matching team-game's rotation prior (see `apply_availability`) before the shares are normalised and the candidate list is formed."""
     t0 = t0 or time.time()
     template_tag = template_tag or f"{fold}_{season}_v2"
     names_t = json.loads((ENGINE_DIR / f"names_{template_tag}.json").read_text(encoding="utf-8"))
@@ -181,6 +231,8 @@ def build_live(slate: pd.DataFrame, as_of, season: int, fold: str, created_at=No
     # ---- rotation priors (roster) ----------------------------------------
     fit = ROT.RotationFit.from_json(B.ROT_FIT)
     priors = LF.rotation_priors(ctx, fit, min_prior_games=1)
+    if availability is not None:
+        priors = apply_availability(priors, availability, created_at, diag)
     n_have = sum((int(g), int(t)) in priors for g in games["game_id"] for t in tg.loc[tg["game_id"] == g, "team_id"])
     log(f"rotation priors: {n_have} of {2 * Gn} slate team-games have a prior", t0)
     roster_cbbd = np.zeros((Gn, 2, S), dtype=np.int64)
@@ -385,6 +437,7 @@ def main() -> int:
     ap.add_argument("--out-dir", default="data/processed/models/engine_live")
     ap.add_argument("--tag", default=None)
     ap.add_argument("--created-at", default=None)
+    ap.add_argument("--availability", default=None, help="default off: player_out csv (cbbd_player_id column) of players OUT; see build_live")
     args = ap.parse_args()
     t0 = time.time()
     if args.schedule_source == "universe":
@@ -393,7 +446,7 @@ def main() -> int:
         slate = load_slate_from_cbbd(args.schedule_path, args.slate_date, args.crosswalk)
         print("unmapped games:", slate.attrs.get("unmapped"))
     inp, diag = build_live(slate, args.as_of, args.season, args.fold, created_at=args.created_at,
-                           season_start=args.season_start, t0=t0)
+                           season_start=args.season_start, t0=t0, availability=args.availability)
     tag = args.tag or f"LIVE_{args.fold}_{args.season}_{args.slate_date}"
     inp.save(args.out_dir, tag)
     np.savez_compressed(Path(args.out_dir) / f"event_block_{tag}.npz", team_block=inp.event_block,

@@ -134,7 +134,7 @@ def stage_rosters(ctx, a, CD) -> dict:
 
 
 def stage_injuries_parse(ctx, a) -> dict:
-    """ESPN league-wide injuries -> data/processed/injuries/player_out_{today}.csv (override format). Engine does not consume it yet (see readiness gaps)."""
+    """ESPN league-wide injuries -> data/processed/injuries/player_out_{today}.csv (override format). Consumed by chain_daily_v2.load_availability -> build_live(availability=...) on live runs."""
     import pull_injuries_player_out_v1 as PI
     return PI.run_injury_parse_stage(ctx.today, ctx.dry_run, now=str(ctx.now))
 
