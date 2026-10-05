@@ -120,9 +120,9 @@ def test_score_equals_points_from_events(bundle):
     captured = {}
     real_final = L._finalise
 
-    def spy(inp_, st, gids, seeds, keep):
+    def spy(inp_, st, gids, seeds, keep, *rest):
         captured["st"] = st
-        return real_final(inp_, st, gids, seeds, keep)
+        return real_final(inp_, st, gids, seeds, keep, *rest)
 
     L._finalise = spy
     try:
