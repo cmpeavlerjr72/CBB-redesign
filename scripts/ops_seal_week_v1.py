@@ -46,6 +46,7 @@ class Stage:
     seal: bool = False                         # stage needs the lifted seal
     note: str = ""
     runner: str = "py"                         # py | ps1 | pytest
+    unseal: bool = False                       # --execute sets CBB_UNSEAL=1 for this stage (reads sealed 2025-26; refused anyway unless the flag is true)
 
 
 def stages(slate: str, as_of: str, tip_to: str, roster_season: int = 2027) -> list[Stage]:
@@ -72,16 +73,16 @@ def stages(slate: str, as_of: str, tip_to: str, roster_season: int = 2027) -> li
                    "executed by the execute path below as a plain chain run for the slate)"),
         Stage("ratings_parity", "own-ratings entry-point parity on 2025 (no sealed read)", "scripts/diag_own_ratings_asof_parity_v1.py",
               ["--season", "2025"], tokens=["--season", "--dates"]),
-        Stage("r9ao3_prior", "R9ao3 and-one team prior with season 2027 (ao_team_prior_v2.parquet)", None, seal=True,
-              probe=("import pandas as pd; t=pd.read_parquet('data/processed/models/possession_outcome/round9/ao_team_prior_v1.parquet', columns=['season']); "
-                     "assert t['season'].max()<2027, 'already has 2027'; raise RuntimeError('ao_team_prior_v1 covers up to %d only: 2027 hard stop' % t['season'].max())"),
-              probe_expect="2027 hard stop",
-              note="MISSING SCRIPT: no builder for ao_team_prior_v2.parquet (and-one design for 2026 -> train_foul_r9_v1.team_prior_table, write versioned v2, "
-                   "PM switches path). Writing it needs the sealed events, so it cannot be rehearsed"),
-        Stage("shot_block_prior", "shot-block 2027 anchor prior engine/shot_block_prior_2027_v1.parquet (PM-approved name)", None, seal=True,
-              probe=("import sys; sys.path[:0]=['scripts','src']; import build_shot_block_lut_live_v1 as M; M.season_events(2027)"),
-              probe_expect="SEALED",
-              note="MISSING SCRIPT: new versioned builder + lift of the 2025-only guard in build_shot_block_lut_live_v1.season_events"),
+        Stage("r9ao3_prior", "R9ao3 and-one team prior with season 2027 (ao_team_prior_v2.parquet = v1 rows + season 2027 from 2026 data)",
+              "scripts/build_ao_team_prior_v2.py", ["--season", "2027"], tokens=["--season", "--out", "--validate", "assert_not_sealed"],
+              probe="import sys; sys.path[:0]=['scripts','src']; import build_ao_team_prior_v2 as M; M.build_season(2027)",
+              probe_expect="sealed", seal=True, unseal=True,
+              note="builder validated bit-identical on served seasons 2025 / 2026 (--validate); writes a versioned v2, PM switches the served path"),
+        Stage("shot_block_prior", "shot-block 2027 anchor prior engine/shot_block_prior_2027_v1.parquet (PM-approved name)",
+              "scripts/build_shot_block_prior_v1.py", ["--season", "2027"], tokens=["--season", "--out", "--validate", "assert_not_sealed"],
+              probe="import sys; sys.path[:0]=['scripts','src']; import build_shot_block_prior_v1 as M; M.build_prior(2027)",
+              probe_expect="sealed", seal=True, unseal=True,
+              note="builder validated bit-identical to the stored 2025 prior_2024_end (--validate). The live LUT builder's own 2025-only guard is a separate step"),
         Stage("a3_day1_priors", "A3 day-1 player-prior build (returners + transfers-in, S-1 on-floor minutes) for the slate",
               "scripts/build_engine_inputs_day1prior_v1.py",
               ["serve", "--arm", "A3", "--season", "2027", "--fold", "F2", "--slate-date", sd, "--as-of", as_of,
@@ -91,8 +92,8 @@ def stages(slate: str, as_of: str, tip_to: str, roster_season: int = 2027) -> li
               tokens=["--arm", "--season", "--slate-date", "--as-of", "--schedule-source", "--schedule-path", "--crosswalk", "--roster", "--ratings-dir",
                       "--out-dir", "--tag"],
               probe=("import sys; sys.path[:0]=['scripts','src']; import build_engine_inputs_day1prior_v1 as M; M.tables(2027, True)"),
-              probe_expect="sealed", seal=True,
-              note="standalone: NOT yet wired into chain_daily_v3's inputs stage (grep: no reference); needs roster_2027.parquet (stage rosters) and ratings"),
+              probe_expect="sealed", seal=True, unseal=True,
+              note="wired into the chain inputs stage for live 2027 via build_live seed_fn (chain_daily_v2.build_live_inputs); needs roster_2027.parquet (stage rosters) and ratings"),
         Stage("inputs_census", "live inputs 2027 census + degenerate day-1 feature list", "scripts/diag_live_day1_v1.py",
               ["--date", sd, "--crosswalk", "data/reference/team_crosswalk_v2.parquet"], tokens=["--date", "--crosswalk"], seal=False,
               note="dry run: ast check only (script builds live inputs); real run follows the ratings / priors stages"),
@@ -215,7 +216,7 @@ def main(argv=None) -> int:
     rc_all = 0
     for i, s in enumerate(sel, 1):
         if a.execute:
-            if s.script is None and s.probe is not None:
+            if s.script is None and s.probe is not None:                # a probed stage with no script yet
                 print(f"[{i:2}] [MISSING  ] {s.name:18} {s.note}")
                 rc_all = 1
                 break
@@ -228,7 +229,8 @@ def main(argv=None) -> int:
             if s.name in ("sim_4seed",):
                 cmd = [PY, s.script, "--dry-run", "--dry-run-sim", "--seeds", "4", "--slate-date", a.slate_date]
             print(f"[{i:2}] [RUNNING  ] {s.name:18} {' '.join(cmd)[:230]}", flush=True)
-            rc = subprocess.run(cmd, cwd=REPO, env=dict(os.environ, PYTHONIOENCODING="utf-8")).returncode
+            e = dict(os.environ, PYTHONIOENCODING="utf-8", **({"CBB_UNSEAL": "1"} if s.unseal else {}))
+            rc = subprocess.run(cmd, cwd=REPO, env=e).returncode
             print(f"[{i:2}] [{'DONE' if rc == 0 else 'FAILED':9}] {s.name:18} exit {rc}")
             if rc != 0:
                 rc_all = rc

@@ -265,11 +265,29 @@ def load_availability(ctx):
     return df.drop_duplicates("athlete_id") if len(df) else None
 
 
+def day1_player_prior_missing(season: int, repo: Path = REPO) -> list[str]:
+    """Hard-stop list for the A3 day-1 player-prior seed (live 2027 only): its two source tables must exist."""
+    miss = []
+    ros = repo / f"data/raw/cbbd/rosters/roster_{season}.parquet"
+    if not ros.exists():
+        miss.append(f"A3 day-1 player priors: roster table {ros.relative_to(repo)} missing (stage rosters, pull_rosters_espn_v1.py)")
+    pos = repo / f"data/processed/possessions_v2/possessions_{season - 1}.parquet"
+    if not pos.exists():
+        miss.append(f"A3 day-1 player priors: season {season - 1} on-floor possessions table {pos.relative_to(repo)} missing")
+    return miss
+
+
+def day1_player_prior_seed(season: int, repo: Path = REPO):
+    """(module, seed_fn): the A3 `seed_fn` for `build_live(..., seed_fn=...)` (`build_engine_inputs_day1prior_v1.make_seed_fn('A3')`, called, not edited)."""
+    import build_engine_inputs_day1prior_v1 as D1P
+    return D1P, D1P.make_seed_fn("A3", roster_path=str(repo / f"data/raw/cbbd/rosters/roster_{season}.parquet"))
+
+
 def build_live_inputs(ctx, BL, slate, out: dict) -> dict:
     """Live 2027 branch: hard-stop on any missing sealed prior table, else build the slate's EngineInputs (as of the chain clock) and
     save to data/processed/models/engine_live/. Nothing is simulated here."""
     season = int(slate["season"].iloc[0])
-    miss = missing_sealed_priors(season)
+    miss = missing_sealed_priors(season) + day1_player_prior_missing(season)
     if not ctx.state.get("ratings_dir"):
         miss.insert(0, "own ratings as of the slate date (ratings stage blocked)")
     if not (REPO / f"data/processed/models/engine/names_F2_{season}_v2.json").exists():
@@ -278,9 +296,11 @@ def build_live_inputs(ctx, BL, slate, out: dict) -> dict:
         return {**out, "_status": "blocked", "blocked_on": miss, "built": False}
     import numpy as np
     avail = load_availability(ctx)
-    with unsealed():                                          # prior-season carry reads the 2026 tables
+    D1P, seed_fn = day1_player_prior_seed(season)             # live 2027 only; historical build_live runs keep seed_fn=None
+    with unsealed():                                          # prior-season carry and the A3 S-1 minutes read the 2026 tables
         inp, diag = BL.build_live(slate, getattr(ctx, "now", None) or pd.Timestamp.now("UTC"), season, "F2", created_at=pd.Timestamp.now("UTC"),
-                                  ratings_dir=ctx.state["ratings_dir"], availability=avail)
+                                  ratings_dir=ctx.state["ratings_dir"], availability=avail, seed_fn=seed_fn)
+    D1P.post(inp, seed_fn)
     tag = f"LIVE_F2_{season}_{ctx.slate_date}"
     out_dir = REPO / "data/processed/models/engine_live"
     inp.save(str(out_dir), tag)
