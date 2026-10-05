@@ -1228,3 +1228,45 @@ Full evidence: `docs/tests/oreb_ft_channels_2026-10-01.md` section 2. Grader `sc
 - Both arms are small in points (FT% +0.15 to +0.17 pp, about +0.06 points per game each). The larger FT channels are
   not FT-model channels: usage FT-trip attribution (late-game leading-team trips go to worse shooters: fixed-state p 0.707
   vs 0.730) and the foul/score state fed to the model.
+
+## 18. Early-season exposure round (scoring-level worker, 2026-10-05; written and COMMITTED BEFORE any arm below ran)
+
+**Evidence (diagnostic, `docs/tests/total_bias_decomp_2026-10-05.md`).** On the real attempts of the first 14 days of
+the season, the offline served model (`preds_N0_*`, S1_monthly) under-predicts: F2 mean p - mean y = -1.73 pp
+(newcomers -2.7, returners -1.4) and F1 -0.62 pp. From day 15 on the gap is inside +-0.4 pp. Hypothesis:
+`shooter_fta_asof` is a raw count. A count of 0-10 mixes early-season shooters with rarely-fouled, weaker late-season
+shooters, and no feature separates the two. The model, its params and the `S1_conf_aligned` scheme are not reopened.
+The arms add exposure features that the engine already serves, so serving needs no inputs change.
+
+### 18.1 Arms (offline, both folds; fold 2 selects)
+
+| arm | features | complexity |
+|---|---|---|
+| `X0` | served `FT_FEATURES` | reference |
+| `X0s1` | `X0`, seed 1 | noise floor |
+| `X1` | `X0` + `days_since_start` (calendar days since the season's first D-I game date; the engine's team column of the same name) | +1 |
+| `X2` | `X0` + `shooter_games_asof` (the shooter's prior games with a field-goal attempt this season; the engine slot column, joined backward from `fg_make/design_v2_shotshooter.parquet` exactly as section 13.2 joins N2) | +1 |
+| `X3` | `X0` + both | +2 |
+
+- `FT.LgbmArm`, served params, `FT.build_ft_design` rows (technicals excluded). The refit calendar is `S1_monthly` on both folds for every arm, the same stated cost deviation as sections 11 and 13.
+  A winner's serving artifacts are built on `S1_conf_aligned`. Trainer: `scripts/train_free_throw_v4_exposure.py` (new sibling). Grader: `scripts/grade_free_throw_exposure_v1.py` (one blind grader for every arm).
+- Window W = test-season games with `days_since_start` <= 14.
+- **Primary (F2):** |window calibration gap| = |mean p - mean y| over W.
+- **Floors.** Gap floor = max(0.25 pp, the registered FT calibration threshold; 2 x |X0s1 - X0| window gap).
+  Log-loss floor = max(0.000147, |X0s1 - X0| F2 full-season log loss).
+- **Gates (each fold, unchanged):** `FT.score` calibration (worst decile <= 2.0 pp) and responsiveness; Decision 8 `shooter_ft_asof -> MAKE` slope in [0.8, 1.2].
+- **Vetoes:** F2 full-season log loss worse than X0 by more than the log-loss floor. F2 newcomer (has_prior 0) full-season |gap| growing by more than 0.25 pp. d46+ |gap| growing by more than 0.25 pp (either fold).
+- **Rule.** An arm WINS when all of the following hold:
+  - its F2 window |gap| is below X0's by more than the gap floor;
+  - fold 1's window |gap| does not grow by more than the gap floor;
+  - gates pass on both folds;
+  - no veto fires.
+
+  Among winners, the simplest whose F2 window |gap| is within the gap floor of the best wins (order `X1` < `X2` < `X3`). With no winner, `X0` stands.
+- **Segments (both folds):** W, d15-45, d46+ (gap and log loss); W x has_prior; November; responsiveness by as-of FT% quintile and prior-season FT% quintile (predicted span / realised span).
+- **Closed loop (a winner only).** The winner's `S1_conf_aligned` artifacts are written under the existing default-off `ENGINE_FT_SCORE=<arm>` loader (`free_throw/s1_scorediff/<arm>/`). No engine-core edit, and the off path is untouched.
+  Serving check: the slot/team values match the design on W rows.
+  Local paired sim: 50 seeds on the F2 opening window (`scripts/run_engine_window_v1.py`, served v3 inputs), arm vs served, reseed floor = served at offset 1000.
+  Read: window FT% and total bias toward actual in floors, and margin MAE inside its floor. Full-size G1-G9 is a box request; the PM decides adoption.
+- **Sizing stated now:** a perfect fix of the model part moves window FT% by about +1.7 pp (F2) / +0.6 pp (F1), about +0.65 / +0.2 points per window game.
+  The anonymous-slot part (about -1.9 / -2.3 pp) belongs to the player layer and to section 13.3, not to this round.
