@@ -1306,3 +1306,60 @@ Script `scripts/grade_ft_exposure_window_v1.py`.
 | margin bias | -0.85 | -0.88 | -0.03 [-0.11, +0.06] | -0.05 |
 
 Full-size G1-G9 (5,710 x 200) has not been read locally. Box request: `docs/ops/box_queue/scoring_1.md`. The PM decides adoption.
+
+## 20. Thin-sample shooter prior round (player-FT worker, 2026-10-05; written and COMMITTED BEFORE any arm below ran)
+
+**Evidence** (`docs/tests/ft_prior_buckets_phase1_2026-10-05.md`, served X0 on real attempts).
+- Shooters with 1-10 / 11-40 prior-season FTA are under-predicted by 2.6 / 1.7 pp in d0-14 and 2.2 / 1.6 pp in d15-45 (F2). On F1 the same cells are 1.8 / 0.7 and 1.6 / 1.0 pp.
+- Shooters with 41+ prior-season FTA are inside +-0.5 pp after d14.
+- Cause: `prior_season_ft` (the raw rate, centred) is served without its sample size. A 3-for-8 prior season is priced as a bad shooter, and nothing in the model can shrink it.
+- No-history shooters (0 prior FTA) are -2.7 / -1.2 pp in d0-14 only. That is the pooled-prior-mean / calendar object of section 18.
+- The anonymous-slot block is a player-layer input prior and is not touched here.
+- The model, its params and `S1_conf_aligned` are not reopened.
+
+### 20.1 Arms (offline, both folds; fold 2 selects)
+
+| arm | change to served `FT_FEATURES` | complexity |
+|---|---|---|
+| `P0` | none (served) | reference |
+| `P0s1` | `P0`, seed 1 | noise floor |
+| `P1` | + `prior_season_fta` (the completed prior season's FTA count; 0 with no prior season) | +1 feature |
+| `P2` | `prior_season_ft` replaced by `prior_season_ft_eb` = (prev_ftm + k * lg) / (prev_fta + k) - lg, where lg = `lg_ft_asof`. It is 0 with no prior season. | 0 features, 1 fitted scalar |
+| `P3` | `P2` with a conditioned shrink target: lg replaced by lg + m_c, where m_c = a weighted least-squares fit of (y - lg). Its regressors are `pos_G/F/C`, `height_c`, `d1_years` (missing -> 0 plus a missing flag) and `is_transfer`, as section 13.2 builds them from CBBD rosters. With no prior season the feature equals m_c. | 0 features, k + 7 coefficients |
+
+- Fitting k and m_c:
+  - k is chosen from `FT.SHRINK_GRID` by the attempt-level log loss of the EB rate alone (has_prior rows).
+  - k and m_c are fitted once per fold on that fold's TRAINING seasons only, and held fixed across the monthly refits.
+- Trainer: `scripts/train_free_throw_v5_prior.py` (new sibling). Calendar: `S1_monthly`, the stated cost deviation of sections 11, 13 and 18.
+- Grader: `scripts/grade_free_throw_prior_v1.py`, one blind grader for every arm.
+- Data: hoopR attempts and CBBD rosters (static attributes). Nothing from 2025-26.
+
+### 20.2 Metrics, floors, rule
+
+- Cells: the 12 cells of prior-season FTA bucket (0, 1-10, 11-40, 41+) x days bucket (d0-14, d15-45, d46+). Cell gap = mean p - mean y.
+- Thin-early line, T: attempts with prior-season FTA 1-40 and days 0-45, pooled.
+- **Floors.**
+  - Log-loss floor = max(0.000147, |P0s1 - P0| F2 full-season log loss).
+  - Gap floor (T and every cell) = max(0.25 pp, 2 x |P0s1 - P0| of that line's gap).
+- **Primary (F2):** full-season log loss beats `P0` by more than the log-loss floor. Co-primary (F2): |T gap| shrinks by more than the T gap floor.
+- **Fold 1 confirms:** log loss not worse than `P0` beyond the floor, and |T gap| does not grow.
+- **Vetoes (either fold):**
+  - any of the 12 cells has its |gap| grow by more than its cell floor (this includes 41+ and d46+);
+  - the gates fail: `FT.score` calibration (worst decile <= 2.0 pp) and responsiveness, and the Decision 8 `shooter_ft_asof -> MAKE` slope in [0.8, 1.2];
+  - responsiveness by prior-season FT% quintile (has_prior rows; predicted span / realised span) falls outside [0.8, 1.2].
+- **Rule.** Among the winners, the simplest whose F2 log loss is within the floor of the best wins (order `P1` < `P2` < `P3`). With no winner, `P0` stands.
+- **Reported, not registered:** the same table by known FTA (prior + as-of), and the anonymous-block counterfactual p.
+
+### 20.3 Closed loop (winner only; PM decides adoption)
+
+- **Serving.** `S1_conf_aligned` artifacts for both folds under `free_throw/s1_scorediff/<arm>/`, served by the existing default-off `ENGINE_FT_SCORE=<arm>`.
+  - The new slot column (`prior_season_fta` or `prior_season_ft_eb`) is appended to versioned input siblings `engine_v3_FTP_<arm>` (F2) and `engine_v3_f1_FTP_<arm>` (F1). Served input dirs are not overwritten.
+  - Anonymous slots get 0, the same as the rest of the all-zero block.
+- **Checks.**
+  - Serving check: the slot values equal the design values for named real shooters.
+  - Off path: the plain default must be bit-identical to `docs/ops/parity_reference_windows_v9.json`.
+- **Local paired loop, <= 50 seeds**, arm vs served on identical game sets, with reseed floor = served at offset 1000:
+  - F2 opening window and F1 opening window (the player_day1 window id files);
+  - a full-season sample (every 11th game, both folds).
+- **Read:** FT% and total bias toward actual, in floors, and margin MAE inside its floor.
+- **Full-size read:** the G1-G9 gates go out as a box request.
