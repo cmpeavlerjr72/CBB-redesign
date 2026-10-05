@@ -125,7 +125,7 @@ class GameState:
     poss_count: np.ndarray      # (N, 2) int16, possessions used by each side
 
     # ---- fouls and the rule era ------------------------------------------
-    team_fouls: np.ndarray      # (N, 2) int8, reset every period
+    team_fouls: np.ndarray      # (N, 2) int8, reset at HALFTIME only; carries into overtime (NCAA men)
     bonus_prior_fouls: np.ndarray          # (N,) int8   RULE ERA
     double_bonus_prior_fouls: np.ndarray   # (N,) int8   RULE ERA
 
