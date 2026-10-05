@@ -99,6 +99,11 @@ def pull_rosters(seasons: list[int]) -> int:
                     "end_season": p.get("endSeason"),
                 })
         df = pd.DataFrame(rows)
+        if df.empty or "cbbd_player_id" not in df.columns:
+            raise RuntimeError(
+                f"CBBD /teams/roster season={season} returned {len(data)} team rows but 0 players: the season is not populated yet. "
+                f"Nothing written (an empty roster file is never produced). For 2027 use scripts/pull_rosters_espn_v1.py "
+                f"(ESPN team rosters, same schema). Season label: CBBD 2027 = 2026-27.")
         df = df[df["cbbd_player_id"].notna()]
         df["cbbd_player_id"] = df["cbbd_player_id"].astype("int64")
         df["cbbd_team_id"] = df["cbbd_team_id"].astype("int64")

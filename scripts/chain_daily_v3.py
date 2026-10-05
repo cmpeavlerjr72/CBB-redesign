@@ -60,7 +60,8 @@ GRADE_RETRY_DAYS = 14
 def sim_warnings(season: int) -> list[str]:
     """Non-blocking degradations (the game-level sim runs; the player layer is degraded)."""
     ros = REPO / "data/raw/preseason/2027_v2_20260930/roster_players_2027.parquet"
-    if season >= 2027 and (not ros.exists() or len(pd.read_parquet(ros)) == 0):
+    espn = REPO / "data/raw/cbbd/rosters/roster_2027.parquet"       # pull_rosters_espn_v1 (CBBD 2027 rosters are empty)
+    if season >= 2027 and (not ros.exists() or len(pd.read_parquet(ros)) == 0) and not espn.exists():
         return ["2027 rosters empty (CBBD /teams/roster). build_live reads no roster file: on an opening day it finds NO rotation prior for any team-game "
                 "(0 of 222 on 2024-11-04, even though the prior season exists), so every team-game takes the anonymous league-mean rotation and no named "
                 "candidates exist: the PLAYER layer is degraded on day 1 with or without rosters (game-level outputs do not depend on it). "
@@ -121,6 +122,21 @@ def stage_sim(ctx, a, CD) -> dict:
                               str(CROSSWALK), tips, strict=False, pass_name=pass_name, ratings_dir=ctx.state.get("ratings_dir"))
     ctx.state["sim_run_id"] = D.default_run_id(a.seeds, 0) + ("_morning" if pass_name == "morning" else "")
     return {**census, **r}
+
+
+def stage_rosters(ctx, a, CD) -> dict:
+    """Season-S roster refresh (ESPN team rosters; CBBD is empty for 2027): weekly until 2026-11-02, daily after. Hard error if the pull fails its checks."""
+    import pull_rosters_espn_v1 as PR
+    season = CD.current_season(ctx.slate_date)
+    if season < 2027:
+        return {"_status": "skipped", "why": "past-season replay"}
+    return PR.run_roster_stage(ctx.today, season, ctx.dry_run)
+
+
+def stage_injuries_parse(ctx, a) -> dict:
+    """ESPN league-wide injuries -> data/processed/injuries/player_out_{today}.csv (override format). Engine does not consume it yet (see readiness gaps)."""
+    import pull_injuries_player_out_v1 as PI
+    return PI.run_injury_parse_stage(ctx.today, ctx.dry_run, now=str(ctx.now))
 
 
 def stage_tips(ctx, a, CD, cctx) -> dict:
@@ -247,7 +263,9 @@ def main(argv=None) -> int:
         ("ingest", lambda: V2.stage_ingest(v2ctx, CD, a)),
         ("ratings", (lambda: DAY1.stage_ratings(ctx, CD, a)) if day1 else (lambda: V2.stage_ratings(v2ctx, CD, a))),
         ("kenpom", (lambda: CD.step_kenpom(cctx)) if a.with_kenpom else (lambda: {"_status": "skipped", "why": "audit gap 10: PM decision"})),
+        ("rosters", lambda: stage_rosters(ctx, a, CD)),
         ("injuries", lambda: CD.step_injuries(cctx)),
+        ("injuries_parse", lambda: stage_injuries_parse(ctx, a)),
         ("overrides", lambda: CD.step_overrides(cctx)),
         ("inputs", (lambda: DAY1.stage_inputs(ctx, CD, a, SIM, pass_name=a.pass_name)) if day1 else (lambda: V2.stage_inputs(v2ctx, CD, a))),
         ("grade", lambda: stage_grade(ctx, a, CD)),
