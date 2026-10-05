@@ -3968,3 +3968,68 @@ verified truth: sim TOV/possession vs box, total bias, total MAE, margin MAE, ma
 intervals and the reseed move. Veto: margin MAE or margin bias worse beyond the reseed move. Full season locally if
 time allows, otherwise a box-queue spec. If no arm is eligible, the best-F1 arm's loop is run as DESCRIPTIVE only.
 The PM decides adoption.
+
+## 31. Section 30 RESULTS (PO worker, 2026-10-05; run after commit 22b4627; NOTHING ADOPTED)
+
+**Setup.**
+- `n0` was chosen inside the train folds:
+
+  | arm | F1 | F2 |
+  |---|---|---|
+  | T1 | 3.2e4 first chances (about a week of play) | 0 (pure as-of) |
+  | T2 | 3.2e4 | 1e3 |
+
+- T2 trend priors: 2024 0.1645 (carry 0.1656); 2025 0.1500 (carry 0.1536). The 2025 prior extrapolates the 2024 step.
+- Grader: `scripts/grade_po_tovlevel_v1.py`, output `results/po_tovlevel/grade_v1.{json,md}` (copy in `docs/tests/po_tovlevel_grade_2026-10-05.md`).
+- T0 reproduces the served multiclass log loss: F1 1.520961, F2 1.515428.
+- Floor = the larger of the T1 seed-1 refit and 2 x the paired game-block SE.
+
+| fold | arm | TOV LL d vs T0 (floor) | multi LL d | TOV gap pp d0-14 / d15-45 / d46+ / all | slope all / d0-45 | calib worst |
+|---|---|---|---|---|---|---|
+| F1 | T0 | 0.424617 | 1.520961 | +1.35 / +0.59 / +0.37 / +0.53 | 0.789 / 0.695 | 1.55 |
+| F1 | T1 | **-0.000168** (0.000097) | -0.000107 | +0.68 / +0.00 / -0.17 / **-0.03** | 0.771 / 0.674 | 1.12 |
+| F1 | T2 | -0.000152 | -0.000002 | +0.57 / +0.00 / -0.20 / -0.06 | 0.746 / 0.655 | 1.10 |
+| F2 | T0 | 0.427603 | 1.515428 | +0.28 / -0.11 / -0.09 / -0.05 | 0.712 / 0.689 | 0.98 |
+| F2 | T1 | +0.000010 (0.000063) | +0.000090 | -0.08 / **-0.20** / -0.02 / -0.07 | 0.697 / 0.686 | 1.21 |
+| F2 | T2 | +0.000006 | -0.000047 | -0.16 / **-0.20** / -0.01 / -0.07 | 0.692 / 0.684 | 1.13 |
+
+Gap floors, pp (d0-14 / d15-45 / d46+ / all): F1 0.06 / 0.04 / 0.02 / 0.02; F2 0.05 / 0.03 / 0.03 / 0.01.
+The F1 likelihood gain is about 1.7 floors (the T1 reseed alone moves F1 TOV LL by 9.7e-5). The level gains are many floors.
+
+**Mechanical decision: NO ARM IS ELIGIBLE, so T0 stands.**
+- Both arms pass E1, E2, E4 and E5. Fold 1 confirms: the all-season TOV gap goes from +0.53 to -0.03 pp, the window from +1.35 to +0.68.
+- Both arms FAIL E3: F2 d15-45 |gap| rises from 0.11 to 0.20 pp against a 0.03 floor.
+- On F2 the window improves (+0.28 to -0.08 / -0.16). Nothing else on F2 moves beyond its floor.
+- T2 is not better than T1 on any line.
+- Responsiveness: quintile slopes fall by 0.00-0.04 (inside the 0.05 line) and spread falls by 0.01-0.03. The arms move the level, not the ordering.
+- The F1 d0-14 residual (+0.68) is the within-window curve. A cumulative as-of level follows it with a lag. The month table is in the json.
+
+**Serving.** No engine `src/` edit.
+- The existing default-off `ENGINE_SEASON_ANCHOR` takes a `po_first` array with only the TOV column non-zero (`scripts/build_engine_tovlevel_offsets_v1.py`).
+- The `first` artifacts are marked anchored and sit in a private `ENGINE_DIR`, reached through the overlay.
+- Checks:
+  - plain-default parity vs v9 (60 x 5): PASS;
+  - the scratch-dir overlay with the served event dir is bit-identical to `F2_srv_o0` (1,500 game-seeds);
+  - train/serve offset parity: max |diff| 0.0 on 5,445 F2 games and 5,178 F1 games;
+  - the `cont` joblibs are byte-identical to the served ones;
+  - the F1 event team block is the served v3-replay block.
+
+**Closed loop, DESCRIPTIVE (T1).** Opening windows, 50 paired seeds, verified truth. Script `scripts/grade_po_tovlevel_window_v1.py`, output `results/po_tovlevel/window_F{1,2}.json`.
+
+| fold | line | served -> T1 | move [95% CI] | reseed move |
+|---|---|---|---|---|
+| F1 (642 g) | TOV/poss (actual 0.1820) | 0.1975 -> 0.1909 | -0.0066 [-0.0072, -0.0061] | -0.0002 |
+| | total bias | -5.30 -> -4.27 | **+1.03** [+0.90, +1.15] | +0.11 |
+| | total MAE | 14.25 -> 14.06 | -0.19 [-0.33, -0.04] | -0.07 |
+| | margin MAE / margin bias | | -0.04 / -0.05 (CIs straddle 0) | -0.03 / -0.06 |
+| F2 (596 g) | TOV/poss (actual 0.1819) | 0.1853 -> 0.1813 | -0.0040 [-0.0044, -0.0035] | +0.0001 |
+| | total bias | -4.92 -> -4.42 | **+0.50** [+0.38, +0.62] | +0.04 |
+| | total MAE / margin MAE / margin bias | | -0.07 / -0.07 / +0.08 (CIs straddle 0) | -0.05 / +0.05 / -0.05 |
+
+- No margin veto fires.
+- The full season was not run locally. Box request: `docs/ops/box_queue/po_tov_1.md`.
+- The PM decides whether the F2 d15-45 cost (-0.09 pp of TOV level, about -0.1 pts) outweighs the F1 fix.
+
+**Open.**
+- `cont` is not anchored; its F1 step is -0.33 pp.
+- F1 jump2 make and early-season FTA rate have the same structure and are not run.
