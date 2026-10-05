@@ -3911,3 +3911,60 @@ R9ao3) unchanged.
 **Ship path.** An offline winner whose taps pass every hard guard / veto gets parity v9 on a clean `src/` and
 `d1001_L_2.md` (full-size 5,710 x 200 paired read vs the plain default on lane D's S2 floors `d1001D_S2f{1..4}`),
 if it can be filed by 14:30 EDT; otherwise it is reported NOT RUN with the command.
+
+## 30. TOV level round: an as-of in-season league TOV level for the `first` model (PO worker, 2026-10-05; written and COMMITTED BEFORE any arm ran)
+
+**Why.** `docs/tests/total_bias_decomp_2026-10-05.md`: the fold-1 total drift (-1.72 pts) is mostly TOV level (-1.00 full
+season, -2.12 in days 0-14). League first-chance TOV share stepped 0.1656 (2023) -> 0.1536 (2024), then 0.1554 (2025).
+Served `first` S1 on F1 predicts TOV +1.35 pp (d0-14) / +0.59 (d15-45) / +0.37 (d46+) / +0.53 pp (all) above realised;
+F2 +0.28 / -0.11 / -0.09 / -0.05 pp (pre-run look at the served predictions only; no arm fitted). A season-level shift
+is not knowable before the season, so the candidates update as-of during it. Other channels with the same structure
+(jump2 make F1, early FTA rate) are noted, not run here.
+
+**Arms** (all: served `lgbm / C_plus_state` on `first`, served S1 monthly schedule, round-2 design, served features; `cont`
+cascade fitted unchanged, no offset; seed 0):
+- `T0` served (existing S1 predictions/artifacts: F2 `full_retrain_v1/identity/po_served`, F1 `fold1_v1/po`).
+- `T1` TOV-only link offset `logit L(s,t) - logit Lbar` on the TOV raw score (other five classes 0), LightGBM `init_score`
+  at fit and the same offset at predict. `L(s,t) = (N_tov,before + n0 * prior) / (N_before + n0)` on `first` rows of season
+  `s` with date strictly before `t`; `prior = L_end(s-1)` (previous completed season's realised `first` TOV share; the
+  first panel season 2022 uses the fold's pooled train level `Lbar`, round-1 convention). `n0` (first chances) is chosen
+  INSIDE the fold's train seasons that have a previous season (F1: 2023; F2: 2023, 2024) by maximising the binomial
+  likelihood of the TOV indicator under `L` alone, grid {0, 1e1, 3e1, 1e2, ..., 1e8, inf} (half-decades).
+- `T2` = `T1` with `prior = expit(logit L_end(s-1) + b(s))`, `b(s)` the OLS slope of logit league box TOV/possession on
+  season over the five completed seasons `s-5..s-1` (hoopR team box, regular season; 2015-2021 pulled to
+  `data/raw/hoopr_hist`); `n0` re-chosen the same way under this prior.
+- Simplicity: T0 < T1 < T2.
+
+As-of: every level uses only rows dated strictly before the game's date (`created_at < tipoff`), completed prior
+seasons, or train-fold constants. League-relative team features stay as served. The level is the league's own
+pbp-derived share (not an external feed), so no leak test applies. 2025-26 SEALED (`assert_not_sealed`).
+
+**Grader** (one script, `scripts/grade_po_tovlevel_v1.py`, every arm the same path), `first` population, per fold:
+1. primary: TOV-binary log loss (TOV vs not, from the six-class prediction); multiclass log loss as a guard;
+2. TOV calibration gap (mean p - realised, pp) by days-since-start bucket d0-14 / d15-45 / d46+ / all, and by month;
+3. served gates via `R1.score` (worst gated decile gap <= 2.0 pp, responsiveness);
+4. responsiveness: offence teams in quintiles of their previous-season realised `first` TOV share; slope = span of
+   mean predicted / span of mean realised across quintiles, overall and d0-45; per-team spread (SD of team mean
+   prediction / noise-corrected SD of realised team share, teams >= 300 first chances); per-game TOV level MAE;
+   by site (home / away / neutral);
+5. paired game-block bootstrap (200 reps, seed 12345) SE of every (arm - T0) difference.
+
+**Noise floor.** `T1` refitted under seed 1 on both folds (spec-identical). Floor per line = max(|seed1 - seed0|,
+2 x paired bootstrap SE); multiclass log loss also >= the published 0.000804.
+
+**Decision rule (mechanical).** F2 has no level step (2024 -> 2025 flat), so F2 is the drift-stops test and F1 the
+drift test. An arm is ELIGIBLE iff on F2: (E1) TOV log loss not worse than T0 by more than its floor; (E2) multiclass
+log loss not worse than T0 by more than its floor; (E3) |TOV gap| in each bucket not worse than T0's by more than that
+bucket's floor; (E4) gates not newly failed and quintile slope >= T0's - 0.05 (overall and d0-45, both folds); and
+(E5) FOLD 1 CONFIRMS the fix: F1 TOV log loss better than T0 beyond the F1 floor and F1 all-season |TOV gap| smaller
+beyond its floor. Among eligible arms the best F2 TOV log loss wins; an eligible simpler arm within one floor of it
+wins the tie. No eligible arm -> T0 stands.
+
+**Serving and closed loop.** The winner is served through the existing default-off `ENGINE_SEASON_ANCHOR=<npz>`
+(`po_first` column 0 only; artifacts marked anchored); no engine `src/` edit, so plain-default parity vs
+`docs/ops/parity_reference_windows_v9.json` holds by construction and is re-checked. Local paired loop, 50 seeds, both
+folds' opening windows (the `results/player_day1/runs/F{1,2}_srv_o0` game lists and seeds; floor `F{1,2}_srv_o1000`),
+verified truth: sim TOV/possession vs box, total bias, total MAE, margin MAE, margin bias, with 95% game-bootstrap
+intervals and the reseed move. Veto: margin MAE or margin bias worse beyond the reseed move. Full season locally if
+time allows, otherwise a box-queue spec. If no arm is eligible, the best-F1 arm's loop is run as DESCRIPTIVE only.
+The PM decides adoption.
