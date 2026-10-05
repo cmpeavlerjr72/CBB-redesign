@@ -59,7 +59,8 @@ sys.path.insert(0, str(REPO / "scripts"))
 
 log = logging.getLogger("chain_daily_v2")
 CHOICES_PATH = REPO / "data/overrides/ratings_day1_choices.json"
-PRESEASON = REPO / "data/raw/preseason/2027_v2_20260930"
+from cbb_sim.live.preseason import preseason_dir as _preseason_dir, preseason_rel as _preseason_rel  # noqa: E402,F401
+PRESEASON = _preseason_dir()
 
 #: decisions the day-1 ratings / inputs build needs; value = the implemented options
 DAY1_CHOICES = {

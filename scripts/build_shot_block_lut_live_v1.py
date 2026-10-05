@@ -16,8 +16,8 @@ fold-2 replay) has its own game rows and roster slots, so the engine had no tabl
   * anchor: link(as-of league level) - link(Lbar), with Lbar and the season prior read from
     the v1 builder's meta json (exact float round trip).
 
-Limit: the anchor prior and the events design cover the backtest season (2025) only. For any
-other season this raises with a message naming what is missing, and never falls back.
+Season-generic: the day-0 anchor prior is read from `engine/shot_block_prior_<season>_v1.parquet`
+(build_shot_block_prior_v1.py; Lbar stays the F2 meta constant). A missing prior file raises, naming the file; never a fallback.
 
 The table is written to a private directory (the sim stage's `_adapter`), never under
 data/processed/models/engine. `inputs.meta["shot_block_lut"]` points the engine at it.
@@ -39,18 +39,24 @@ import build_engine_shot_block_lut_v1 as B1  # noqa: E402
 from cbb_sim import season_anchor as SA  # noqa: E402
 
 ENGINE_DIR = ROOT / "data/processed/models/engine"
-SEASON = 2025          # the only season with a stored anchor prior and design events
 _EV: dict = {}
 
 
-def season_events(season: int) -> pd.DataFrame:
-    if season != SEASON:
+def load_prior(season: int) -> dict:
+    """Per-type season-day-0 anchor prior `engine/shot_block_prior_<season>_v1.parquet` (built by build_shot_block_prior_v1.py).
+    Hard stop naming the file when missing; no fallback to another season or to zero."""
+    path = ENGINE_DIR / f"shot_block_prior_{season}_v1.parquet"
+    if not path.exists():
         raise RuntimeError(
-            f"shot_block live LUT: season {season} has no anchor prior / design events (only {SEASON}). "
-            "Build them (scripts/build_engine_shot_block_lut_v1.py + the shot_block design for that season) "
-            "before serving ENGINE_SHOT_BLOCK=K2_Ocell; ENGINE_SHOT_BLOCK=reference is served-v1, an ungated mix. "
-            "For 2027 the anchor prior is the 2025-26 end-of-season block rate by miss type, which needs the SEALED 2025-26 events: "
-            "BLOCKED ON THE 2025-26 SEAL (user decision, holds until the Oct 10-17 audit window). There is no silent fallback to zero.")
+            f"shot_block live LUT: season {season} anchor prior file missing: {path}. Build it with "
+            f"`scripts/build_shot_block_prior_v1.py --season {season}` (reads season {season - 1} blocked-miss events"
+            + ("; for 2027 that is the SEALED 2025-26 season, BLOCKED until the user lifts the seal, audit window Oct 10-17" if season >= 2027 else "")
+            + "). There is no silent fallback to zero or to another season.")
+    t = pd.read_parquet(path)
+    return {r.miss_type: float(r.prior_end_level) for r in t.itertuples()}
+
+
+def season_events(season: int) -> pd.DataFrame:
     if season not in _EV:
         import train_shot_block_v1 as SB
         full, _ = SB.build_design()
@@ -67,6 +73,7 @@ def build_table(inp, arm: str = "K2_Ocell", as_of=None, ev: pd.DataFrame | None 
     seasons = sorted(set(int(s) for s in g["season"]))
     if len(seasons) != 1:
         raise RuntimeError(f"shot_block live LUT: one season per slate, got {seasons}")
+    prior = load_prior(seasons[0])      # hard stop (names the file) before any other read
     if ev is None:
         ev = season_events(seasons[0])
     if as_of is not None:
@@ -104,7 +111,7 @@ def build_table(inp, arm: str = "K2_Ocell", as_of=None, ev: pd.DataFrame | None 
         for ti, t in enumerate(B1.TYPES):
             m = meta[f"{arm}_{t}"]
             L = B1.league_before(gdate, ev[ev["miss_type"] == t], "blk", "n")
-            L = np.where(np.isnan(L), m["prior_2024_end"], L)
+            L = np.where(np.isnan(L), prior[t], L)
             anchor[:, ti] = (SA.link(L, "binary") - SA.link(np.float64(m["Lbar"]), "binary")).astype("float32")
     return {"game_id": g["game_id"].to_numpy(), "team": team, "shooter": shooter, "known": known,
             "anchor": anchor, "coef": ref["coef"], "mu": ref["mu"], "sd": ref["sd"], "features": ref["features"]}

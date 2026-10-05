@@ -29,6 +29,7 @@ import pandas as pd
 REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO / "src"))
 sys.path.insert(0, str(REPO / "scripts"))
+from cbb_sim.live.preseason import preseason_dir as _preseason_dir, preseason_rel as _preseason_rel  # noqa: E402,F401
 
 from cbb_sim.live import daily as D  # noqa: E402
 
@@ -65,7 +66,7 @@ def load_publications(root: Path, slate_date: str, run_id: str | None = None) ->
 def season_start_of(season: int) -> str:
     """First D-I game date of the season (ET). 2027+: the preseason schedule; earlier: the verified games universe."""
     if int(season) >= 2027:
-        g = pd.read_parquet(REPO / "data/raw/preseason/2027_v2_20260930/games_2027.parquet", columns=["startDate"])
+        g = pd.read_parquet(_preseason_dir() / "games_2027.parquet", columns=["startDate"])
         d = pd.to_datetime(g["startDate"], utc=True).dt.tz_convert("America/New_York").dt.tz_localize(None).dt.normalize()
         return str(d.min().date())
     u = pd.read_parquet(REPO / "data/processed/games_universe.parquet", columns=["season", "game_date", "is_d1_game"])

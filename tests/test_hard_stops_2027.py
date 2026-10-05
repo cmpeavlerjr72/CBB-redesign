@@ -34,10 +34,10 @@ def test_table_seasons_has_2025_not_2027(monkeypatch):
     assert 2025 in have and 2027 not in have
 
 
-def test_shot_block_live_season_guard_names_seal():
+def test_shot_block_live_prior_missing_names_file_and_seal():
     import build_shot_block_lut_live_v1 as SBL
     with pytest.raises(RuntimeError, match="SEAL"):
-        SBL.season_events(2027)
+        SBL.load_prior(2027)
 
 
 def test_chain_prereqs_block_2027_on_team_prior():

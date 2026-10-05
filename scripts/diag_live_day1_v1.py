@@ -37,7 +37,8 @@ from cbb_sim.live import features as LF  # noqa: E402
 from cbb_sim.live import players as LP  # noqa: E402
 from cbb_sim.models import rotation as ROT  # noqa: E402
 
-PRE = ROOT / "data/raw/preseason/2027_v2_20260930"
+from cbb_sim.live.preseason import preseason_dir as _preseason_dir, preseason_rel as _preseason_rel  # noqa: E402,F401
+PRE = _preseason_dir()
 OUT = ROOT / "results/live_day1_2026-09-30"
 
 

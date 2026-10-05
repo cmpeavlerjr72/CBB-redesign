@@ -18,7 +18,9 @@ import pandas as pd
 ROOT = Path(__file__).resolve().parents[1]
 SRC = ROOT / "data/reference/team_crosswalk.parquet"
 OUT = ROOT / "data/reference/team_crosswalk_v2.parquet"
-TEAMS = ROOT / "data/raw/preseason/2027_v2_20260930/teams_2027.parquet"
+import sys as _sys; _sys.path.insert(0, str(__import__('pathlib').Path(__file__).resolve().parents[1] / 'src'))
+from cbb_sim.live.preseason import preseason_dir as _preseason_dir, preseason_rel as _preseason_rel  # noqa: E402,F401
+TEAMS = _preseason_dir() / "teams_2027.parquet"
 
 
 def main() -> int:
@@ -29,7 +31,7 @@ def main() -> int:
     r = wf.iloc[0]
     espn, cbbd = int(r["sourceId"]), int(r["id"])
     assert espn not in set(cw["espn_team_id"]) and cbbd not in set(cw["cbbd_team_id"])
-    hp = pd.read_parquet(ROOT / "data/raw/preseason/2027_v2_20260930/hoopr_mbb_schedule_2027.parquet",
+    hp = pd.read_parquet(_preseason_dir() / "hoopr_mbb_schedule_2027.parquet",
                          columns=["home_id", "home_display_name", "away_id", "away_display_name"])
     names = set(hp.loc[hp["home_id"].astype("int64") == espn, "home_display_name"]) | \
         set(hp.loc[hp["away_id"].astype("int64") == espn, "away_display_name"])

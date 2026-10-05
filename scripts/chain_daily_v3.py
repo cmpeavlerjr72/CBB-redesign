@@ -51,7 +51,8 @@ from cbb_sim.live import daily as D  # noqa: E402
 from cbb_sim.live import tips as TP  # noqa: E402
 
 log = logging.getLogger("chain_daily_v3")
-SCHED_2027 = REPO / "data/raw/preseason/2027_v2_20260930/games_2027.parquet"
+from cbb_sim.live.preseason import preseason_dir as _preseason_dir, preseason_rel as _preseason_rel  # noqa: E402,F401
+SCHED_2027 = _preseason_dir() / "games_2027.parquet"
 CROSSWALK = REPO / "data/reference/team_crosswalk_v2.parquet"
 ENGINE_DIR = REPO / "data/processed/models/engine"
 GRADE_RETRY_DAYS = 14
@@ -59,7 +60,7 @@ GRADE_RETRY_DAYS = 14
 
 def sim_warnings(season: int) -> list[str]:
     """Non-blocking degradations (the game-level sim runs; the player layer is degraded)."""
-    ros = REPO / "data/raw/preseason/2027_v2_20260930/roster_players_2027.parquet"
+    ros = _preseason_dir() / "roster_players_2027.parquet"
     espn = REPO / "data/raw/cbbd/rosters/roster_2027.parquet"       # pull_rosters_espn_v1 (CBBD 2027 rosters are empty)
     if season >= 2027 and (not ros.exists() or len(pd.read_parquet(ros)) == 0) and not espn.exists():
         return ["2027 rosters empty (CBBD /teams/roster). build_live reads no roster file: on an opening day it finds NO rotation prior for any team-game "

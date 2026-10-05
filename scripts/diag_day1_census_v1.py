@@ -22,7 +22,8 @@ sys.path.insert(0, str(REPO / "scripts"))
 import run_daily_sim_v1 as SIM  # noqa: E402
 from cbb_sim.live import tips as TP  # noqa: E402
 
-GAMES = REPO / "data/raw/preseason/2027_v2_20260930/games_2027.parquet"
+from cbb_sim.live.preseason import preseason_dir as _preseason_dir, preseason_rel as _preseason_rel  # noqa: E402,F401
+GAMES = _preseason_dir() / "games_2027.parquet"
 XW = REPO / "data/reference/team_crosswalk_v2.parquet"
 
 

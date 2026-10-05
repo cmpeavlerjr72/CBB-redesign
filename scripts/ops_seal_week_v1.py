@@ -30,7 +30,9 @@ from pathlib import Path
 REPO = Path(__file__).resolve().parents[1]
 PY = str(REPO / ".venv/Scripts/python.exe") if (REPO / ".venv/Scripts/python.exe").exists() else sys.executable
 CHOICES = REPO / "data/overrides/ratings_day1_choices.json"
-PRESEASON_GAMES = "data/raw/preseason/2027_v2_20260930/games_2027.parquet"
+import sys as _sys; _sys.path.insert(0, str(__import__('pathlib').Path(__file__).resolve().parents[1] / 'src'))
+from cbb_sim.live.preseason import preseason_dir as _preseason_dir, preseason_rel as _preseason_rel  # noqa: E402,F401
+PRESEASON_GAMES = _preseason_rel() + "/games_2027.parquet"
 
 
 @dataclass
