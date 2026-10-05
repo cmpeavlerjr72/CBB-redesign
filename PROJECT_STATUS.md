@@ -1,6 +1,16 @@
 # PROJECT_STATUS.md
 
-Last updated: 2026-10-01 03:00 EDT (overnight wrap-up). Season tips Nov 1-3, 2026.
+Last updated: 2026-10-05 (day session wrap-up). Season tips Nov 2, 2026.
+
+## SESSION 2026-10-05 (day; PM Opus 5.5): readiness track + pre-freeze modeling. Read this block first.
+
+Deploy target 2026-11-02. Freeze 2026-10-10. Seal lifts in the Oct 10-17 audit window (user ruling 10-01). AWS approved this week ($60 cap; ~$3.8 used). Weekly token allowance resets Friday mornings; ~20% used by Mon morning.
+
+Done today: leftover edits committed; readiness audit `docs/ops/readiness_gaps_2026-10-05.md` (with PM rulings: KenPom skipped for serving, scheduler registration after first 2026-27 live build, OT team-foul mismatch queued with G7); Smart App Control was blocking pyarrow (user turned it off); daily chain dry-run OK on non-sealed stages; tip_times_2027 + `ops_register_tasks_v1.ps1` (not registered); 2027 stage_inputs path to a named hard stop; ESPN roster puller (296/365 teams) + injury player-out parser + default-off `availability` hook in build_live (parity v9 PASS); day-1 player priors A3 SELECTED for 2026-27 serving.
+Not adopted (ledger): F_R / F_T retrains; PO TOV season anchor T1 (pre-registered veto on F2 d15-45); FT X1 (G9 total bias regresses at full size). Served v2 retained; fold-1 confirmation holds except pre-existing total bias.
+Main model risk for launch: early-season totals low ~4 pts (days 0-14), owners TOV level (F1), FT rate/make, anonymous shooters (A3 helps). Decomposition: `docs/tests/total_bias_decomp_2026-10-05.md`.
+
+Next (in order): 1. Oct 10 runbook rehearsal on non-sealed steps; 2. seal-week build (ratings, R9ao3 priors, shot-block prior `engine/shot_block_prior_2027_v1.parquet`, A3 builder, first 2026-27 live build), target Oct 17; 3. register scheduler, >=5 unattended passes before Nov 2; 4. early-season shrinkage candidate (thin as-of samples) pre-registered, not a calendar term; 5. daily TOV-level monitor (report only); lines re-probe Oct 26.
 
 ## RESULT OF THE OVERNIGHT 2026-09-30 -> 10-01: read `HANDOFF.md` "SUMMARY FOR USER, OVERNIGHT" first
 
