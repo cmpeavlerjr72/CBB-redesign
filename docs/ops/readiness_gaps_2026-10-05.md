@@ -1,0 +1,50 @@
+# Deployment-readiness gap list, 2026-10-05 (worker read-only audit)
+
+Sources: `docs/ops/readiness_2026-27_2026-09-30.md` (largely superseded: its gaps 1, 2, 6 are now built), `day1_readiness_2027_2026-10-01.md`, `daily_chain_v3_2026-09-30.md`, HANDOFF Open items 9, `scripts/chain_daily_v3.py` / `chain_daily_v2.py`. Check run today: `chain_daily_v3.py --dry-run --slate-date 2026-11-02` (writes nothing). Dates: freeze Oct 10, seal lift Oct 10-17, tip Nov 2.
+
+**ENVIRONMENT ALERT (new, today):** `import pyarrow.parquet` fails in `.venv` on this box: "DLL load failed while importing _fs: An Application Control policy has blocked this file." Every parquet step (schedule, tips, ingest, inputs, sim) errored in the dry run for that reason, so I could NOT re-verify those steps today; statuses below rest on the 09-30/10-01 docs. Must be fixed before anything else (allow-list the pyarrow DLLs or reinstall). Not touched by me.
+
+## 1. Pipeline status
+
+Legend: WORKS = works today on 2025/dry data; 2025 = works only on 2025 replay; SEAL = blocked on seal lift; MISSING.
+
+| Step | Status | Blocker | Est. effort |
+|---|---|---|---|
+| Schedule / slate pull | WORKS (docs; today's dry run died on pyarrow) | CBBD primary (5,286 games). 91 of 118 Nov-2 games have placeholder midnight tips; hoopR thin; West Florida (CBBD 1073) absent from `team_crosswalk` (v2 file used by chain; verify it has the row) | 1-2 h verify |
+| Tip-time table + two-pass (evening 20:00 ET / morning 09:00 ET) | Built, tested on replay (4 dates); NOT scheduled | `tip_times_2027.parquet` does not exist (first `pull_tip_times_v1.py` run); Task Scheduler jobs not registered; box must stay awake (WakeToRun) | 1-2 h + decision |
+| Rosters | MISSING data | CBBD 2027 `/teams/roster` still 0 players (as of 09-30); availability.csv empty; injuries stored raw only, never parsed into engine | re-pull weekly + Oct 27; parser 6-8 h |
+| Ratings as-of | SEAL | `ratings_day1_choices.json` `seal_lift_approved=false` (ratings stage BLOCKED today); `own_ratings_2027` entry point exists but unrun; 5 other choices are served defaults, PM must still rule on PROPOSED lines | 1-2 h after seal |
+| KenPom step | SKIPPED | audit gap 10 PM decision (scrape terms); own ratings are the compliant path | PM decision |
+| Engine inputs `build_engine_inputs_live.py` | 2025 | v2 `stage_inputs` 2027 branch still `raise NotImplementedError` (`chain_daily_v2.py` ~line 224); needs 2026 prior tables (SEAL) and day-1 priors | 8-16 h (highest-risk item) |
+| R9ao3 team priors | SEAL | `ao_team_prior_v1.parquet` covers 2023-2026 only; 2027 is a hard stop now (good). Need and-one design for 2026 then `team_prior_table` | 2-3 h after seal |
+| Shot-block table (K2_Ocell) | SEAL | live builder raises for any season but 2025 by design; needs 2027 `prior_2026_end` anchors from sealed 2025-26 end-of-season block rates; opening-day empty-events crash fixed (fold 2 only, 10-01) | 3-5 h after seal |
+| 2027 adapter artifacts + rules | Partial | `event_round2_s1_F2_2027` and `names_F2_2027_v2.json` exist (carried-forward). Other families' (clock/rebound/FT/fg/rotation) 2027 dated-refit sets: not confirmed; sim_prereqs only checks event + names | 1-2 h to confirm via dry run once pyarrow fixed |
+| Sim (`run_daily_sim_v1`) | 2025 | blocked on the items above; seeds default 200, seed-count study registered (min seeds before ROI read, section 7 of daily_chain doc) | 0 (after upstream) |
+| Publish | 2025 | replay only; live needs real CBBD line fetch (none for 2027 until ~Oct 26-Nov 2) | 1 h verify |
+| Grade | 2025 | live finals path tested by unit tests only; `finals_verified_2027` does not exist until first ingested day; second-source verification untested live | 2-4 h (Nov 3 first real exercise) |
+| Bias / CLV monitor | 2025 | CLV is open-to-close only, no line timestamps; needs the lines step to run every morning to have close snapshots | 1 h |
+| Lines | MISSING (expected) | 0 rows for 2027; ESPN BET dead; DK + Bovada unverified for 2026-27; re-probe Oct 26 and Nov 2; fallback adapter only if both vanish | 2 h verify; 6-10 h fallback |
+| Daily ingest (finals/box/pbp feeding as-of tables) | WORKS in replay (`chain_ingest_daily_v1`) | untested on live 2027 data; hoopR lag vs CBBD; nothing to ingest until Nov 2 | 2 h watch day 1-2 |
+| Player layer day-1 priors | MISSING | `build_live` carries no prior-season player state: 0 of 222 opening-day team-games get a rotation prior; anonymous league-mean rotation, no named shooters, usage/rebound/FT shooter priors degenerate. "Game-level outputs independent of it" is UNTESTED | 10-16 h; props are stretch so degrade deliberately for day 1 |
+| 2027 rule constants | Audited, nothing blocking | 17 constants: 11 verified, 2 changed (19 s backcourt count, consecutive media timeouts) neither encoded nor modelable; 3 unverified (foul-out 5, FT trip lengths, possession arrow); `bonus_era.json` 2027 text to reword; OT team-foul train/serve mismatch (96% of OT possessions differ, served consumers mismatched) | 1 h wording; OT mismatch needs PM ruling |
+
+## 2. Oct-10 runbook (when the seal lift is approved by the user; each step after the previous)
+
+1. Fix pyarrow Application Control block; run `tests/` smoke (`test_daily_chain_v3.py`, `test_hard_stops_2027.py`, `test_day1_2027.py`).
+2. Set `seal_lift_approved` to true in `data/overrides/ratings_day1_choices.json` (user-approved, PM rules on remaining PROPOSED lines).
+3. Re-pull preseason: `scripts/pull_preseason_refresh_v2.py` (rosters, portal, schedule; ~26 CBBD calls); add West Florida to the crosswalk (versioned sibling).
+4. Own ratings 2027 as-of: `chain_daily_v2.py` ratings stage (runs `build_own_ratings_asof_v1.py`; `CB_UNSEAL` only inside `unsealed()`); check own-ratings parity json.
+5. R9ao3 2027 table: and-one design for 2026 -> `train_foul_r9_v1.team_prior_table` -> write a versioned `ao_team_prior_v2.parquet` including season 2027; PM switches path.
+6. Shot-block 2027: build season-2027 anchor prior (`prior_2026_end` per K2_Ocell type) from sealed 2025-26 events; lift the `build_shot_block_lut_live_v1.py` season guard (new versioned script).
+7. Implement the 2027 branch of `stage_inputs` (`build_engine_inputs_live.py`) plus the 2026-based prior-season carry; run `diag_live_day1_v1.py` to list degenerate day-1 features.
+8. `pull_tip_times_v1.py` for 2027; `chain_daily_v3.py --dry-run --slate-date 2026-11-02` until sim_prereqs is empty.
+9. 4-seed sim on a 2026-11-02 slate (cheap, local) then paired parity check; register Task Scheduler jobs (command text in day1_readiness 10-01 section 2).
+10. Re-seal: set the flag back/record seal-lift audit window closing; commit; `hf_sync_data.py` push.
+
+## 3. Top risks to Nov 2
+
+1. pyarrow blocked by Application Control on this machine: nothing parquet-based runs here (possibly environmental only; confirm on another shell/box). Effort 0.5-2 h but total blocker.
+2. Live inputs 2027 branch unimplemented and gated by the seal: a window of only 7 days (Oct 10-17) to implement + validate; slippage past Oct 17 leaves < 2 weeks. 8-16 h.
+3. Opening day has no player-layer priors, 91 of 118 games on placeholder tips; evening pass must run before midnight ET Nov 1 or those games refuse. Box uptime/scheduler not registered.
+4. Lines unverified for 2026-27 (DK/Bovada); CLV only open-to-close; no lines until about Oct 26; fallback needs a user decision if paid.
+5. Day-1 model quality: team-form features are league mean for all teams until games accumulate; only ratings carry the prior; day-1 predictions are mostly ratings. Fold-1 closed-loop confirmation of the adopted set (HANDOFF item 10) still due before Oct 10 freeze.
