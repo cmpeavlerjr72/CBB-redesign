@@ -1,0 +1,74 @@
+{
+ "run_at": "2026-10-05T19:29:13Z",
+ "range": [
+  "2026-11-02",
+  "2026-11-04"
+ ],
+ "cbbd": {
+  "fetched_at": "2026-10-05T19:29:13Z",
+  "providers_listed": [
+   "ESPN BET",
+   "consensus",
+   "teamrankings",
+   "numberfire",
+   "Bovada",
+   "Draft Kings"
+  ],
+  "games_scheduled": 195,
+  "games_by_date": {
+   "2026-11-02": 122,
+   "2026-11-03": 52,
+   "2026-11-04": 16,
+   "2026-11-05": 5
+  },
+  "games_with_any_line": 0,
+  "by_provider": {},
+  "line_timestamp_field": null
+ },
+ "espn": {
+  "fetched_at": "2026-10-05T19:29:15Z",
+  "scoreboard": {
+   "2026-11-02": {
+    "events": 168,
+    "with_odds": 0
+   },
+   "2026-11-03": {
+    "events": 26,
+    "with_odds": 0
+   },
+   "2026-11-04": {
+    "events": 21,
+    "with_odds": 0
+   }
+  },
+  "scoreboard_providers": {},
+  "summary": {
+   "sampled": 5,
+   "by_provider": {}
+  }
+ },
+ "local_history_season": 2026,
+ "local_history": {
+  "Bovada": {
+   "first_start": "2025-11-07 18:30:00+00:00",
+   "last_start": "2026-04-07 00:50:00+00:00",
+   "rows": 4952,
+   "spreadOpen_frac": 0.995,
+   "totalOpen_frac": 0.996
+  },
+  "Draft Kings": {
+   "first_start": "2025-11-25 17:00:00+00:00",
+   "last_start": "2026-04-07 00:50:00+00:00",
+   "rows": 4505,
+   "spreadOpen_frac": 0.982,
+   "totalOpen_frac": 0.984
+  },
+  "ESPN BET": {
+   "first_start": "2025-11-03 13:00:00+00:00",
+   "last_start": "2025-12-03 02:30:00+00:00",
+   "rows": 1256,
+   "spreadOpen_frac": 0.977,
+   "totalOpen_frac": 0.908
+  }
+ }
+}
