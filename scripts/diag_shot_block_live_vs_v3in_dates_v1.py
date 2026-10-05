@@ -19,7 +19,7 @@ if args and args[0] == "--auto":
     rest = [d for d in cnt.index[8:]]; pick = list(rng.choice(rest, size=max(n - 12, 0), replace=False))
     ctrl = [d for d in sorted(set(g3.d) - set(cnt.index))][:4]
     ctrl = ctrl if len(ctrl) == 4 else list(rng.choice(sorted(set(g3.d) - set(top) - set(pick)), size=4, replace=False))
-    dates = sorted(set(top + pick + ctrl))
+    dates = sorted(set(str(x) for x in top + pick + ctrl))
 else:
     dates = args
 sib = np.load(R / "data/processed/models/engine/shot_block_K2_Ocell_v3in_F2_2025.npz"); pos = {int(x): i for i, x in enumerate(sib["game_id"])}

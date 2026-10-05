@@ -113,7 +113,10 @@ def load_slate_from_cbbd(path: str, slate_date: str, crosswalk_path: str) -> pd.
 def build_live(slate: pd.DataFrame, as_of, season: int, fold: str, created_at=None,
                season_start=None, template_tag: str | None = None, families: str = "all",
                t0: float | None = None, strict_finish: bool = True,
-               ratings_dir: str | None = None) -> tuple[EngineInputs, dict]:
+               ratings_dir: str | None = None, seed_fn=None) -> tuple[EngineInputs, dict]:
+    """`seed_fn` (DEFAULT None = unchanged; lane F, 2026-10-01, docs/tests/early_season_roster_slots_2026-10-01.md): an as-of-safe
+    candidate-seeding hook, called as seed_fn(ctx, games, tg, roster_cbbd, roster_valid, S, diag) after the rotation roster arrays are built;
+    it fills anonymous tail slots in place and returns the candidate dict. Used only by scripts/build_engine_inputs_seeded_v1.py."""
     t0 = t0 or time.time()
     template_tag = template_tag or f"{fold}_{season}_v2"
     names_t = json.loads((ENGINE_DIR / f"names_{template_tag}.json").read_text(encoding="utf-8"))
@@ -223,6 +226,8 @@ def build_live(slate: pd.DataFrame, as_of, season: int, fold: str, created_at=No
                 rot_start[i, side, k:] = np.arange(k, S)
     diag["rotation_fallback_team_games"] = n_fallback
     cand = LF.candidates_from_priors(priors, S)
+    if seed_fn is not None:
+        cand = seed_fn(ctx, games, tg, roster_cbbd, roster_valid, S, diag)
     diag["candidates_per_team_game_mean"] = float(np.mean([len(v) for v in cand.values()])) if cand else 0.0
 
     # ---- fg_make design (team form + shooter block + round 4) ------------
