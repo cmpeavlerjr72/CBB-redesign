@@ -308,6 +308,8 @@ def cmd_serve(a) -> None:
     np.savez_compressed(Path(a.out_dir) / f"event_block_{tag}.npz", team_block=inp.event_block, cols=np.array(list(BL.BL_TEAM16)))
     (Path(a.out_dir) / f"build_diag_{tag}.json").write_text(json.dumps(diag, indent=2, default=str), encoding="utf-8")
     print(f"wrote {a.out_dir}/(games|arrays|names)_{tag}.* ; seeded team-games {diag.get('d1p_team_games')}")
+    ft = diag.get("d1p_fallback_teams") or []
+    print(f"{len(ft)} teams on fallback roster" + (": " + ", ".join(map(str, ft)) if ft else ""))
 
 
 if __name__ == "__main__":

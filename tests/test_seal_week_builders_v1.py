@@ -54,9 +54,11 @@ def test_shot_block_prior_2027_hits_the_seal(monkeypatch):
 
 def test_day1_missing_lists_both_sources(tmp_path):
     import chain_daily_v2 as C2
-    assert len(C2.day1_player_prior_missing(2027, repo=tmp_path)) == 2
+    assert len(C2.day1_player_prior_missing(2027, repo=tmp_path)) == 3
     (tmp_path / "data/raw/cbbd/rosters").mkdir(parents=True)
     (tmp_path / "data/raw/cbbd/rosters/roster_2027.parquet").write_bytes(b"x")
+    assert len(C2.day1_player_prior_missing(2027, repo=tmp_path)) == 2      # S-1 roster (fallback R1) + S-1 possessions
+    (tmp_path / "data/raw/cbbd/rosters/roster_2026.parquet").write_bytes(b"x")
     assert len(C2.day1_player_prior_missing(2027, repo=tmp_path)) == 1
 
 
@@ -103,3 +105,23 @@ def test_build_live_default_seed_fn_is_none():
 
     import build_engine_inputs_live as BL
     assert inspect.signature(BL.build_live).parameters["seed_fn"].default is None
+
+
+def test_live_seed_uses_fallback_r1_and_reports_line(monkeypatch, tmp_path):
+    import chain_daily_v2 as C2
+    import build_engine_inputs_day1prior_v1 as D1P
+    seen = {}
+    monkeypatch.setattr(D1P, "make_seed_fn", lambda arm, roster_path=None, **k: seen.update(arm=arm, **k) or "fn")
+    C2.day1_player_prior_seed(2027)
+    assert seen["arm"] == "A3" and seen["fallback"] == "R1"
+    assert C2.fallback_line([7, 3]) == "2 teams on fallback roster: 3, 7"
+    assert C2.fallback_line([]) == "0 teams on fallback roster"
+
+
+def test_historical_default_is_fallback_off_and_seal_week_passes_flag():
+    import build_engine_inputs_day1prior_v1 as D1P
+    import inspect
+    assert inspect.signature(D1P.make_seed_fn).parameters["fallback"].default is None
+    import ops_seal_week_v1 as OPS
+    st = next(x for x in OPS.stages("2026-11-02", "2026-11-02", "2026-11-15") if x.name == "a3_day1_priors")
+    assert st.args[st.args.index("--fallback") + 1] == "R1"

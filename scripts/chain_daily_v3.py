@@ -150,12 +150,22 @@ def stage_tips(ctx, a, CD, cctx) -> dict:
     return summ
 
 
+def fallback_report_line(slate_date) -> str | None:
+    """'N teams on fallback roster: ...' from the slate's live build diag (None when no live build exists for it)."""
+    import glob
+    fs = sorted(glob.glob(str(REPO / f"data/processed/models/engine_live/build_diag_LIVE_F2_*_{slate_date}.json")))
+    if not fs:
+        return None
+    return json.loads(Path(fs[-1]).read_text(encoding="utf-8")).get("d1p_fallback_line")
+
+
 def stage_publish(ctx, a, CD) -> dict:
     run_id = ctx.state.get("sim_run_id") or D.default_run_id(a.seeds, 0)
     if ctx.dry_run:
         return {"_status": "blocked", "why": "dry run; needs the sim output and a lines fetch (CBBD /lines, 1 call)"}
     r = PUB.run_publish_stage(str(ctx.slate_date), run_id, ctx.now, ctx.root, "live", session=ctx.session, tracker=ctx.tracker)
-    return r
+    line = fallback_report_line(ctx.slate_date)
+    return {**r, "fallback_roster_line": line} if line and isinstance(r, dict) else r
 
 
 def stage_grade(ctx, a, CD) -> dict:
@@ -169,6 +179,9 @@ def stage_grade(ctx, a, CD) -> dict:
     for d in dates:
         r = GR.run_grade_stage(d, season, ctx.now, ctx.root, "ingest")
         out[d] = {k: r.get(k) for k in ("_status", "graded", "pending", "ledger_rows", "margin_mae", "why")}
+        line = fallback_report_line(d)
+        if line:
+            out[d]["fallback_roster_line"] = line
     return {"slates": out}
 
 

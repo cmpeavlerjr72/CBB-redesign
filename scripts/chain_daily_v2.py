@@ -272,16 +272,28 @@ def day1_player_prior_missing(season: int, repo: Path = REPO) -> list[str]:
     ros = repo / f"data/raw/cbbd/rosters/roster_{season}.parquet"
     if not ros.exists():
         miss.append(f"A3 day-1 player priors: roster table {ros.relative_to(repo)} missing (stage rosters, pull_rosters_espn_v1.py)")
+    prv = repo / f"data/raw/cbbd/rosters/roster_{season - 1}.parquet"
+    if not prv.exists():
+        miss.append(f"A3 day-1 player priors: fallback R1 needs the S-1 roster {prv.relative_to(repo)} (start_season) and it is missing")
     pos = repo / f"data/processed/possessions_v2/possessions_{season - 1}.parquet"
     if not pos.exists():
         miss.append(f"A3 day-1 player priors: season {season - 1} on-floor possessions table {pos.relative_to(repo)} missing")
     return miss
 
 
+LIVE_ROSTER_FALLBACK = "R1"     # PM-selected 2026-10-05 (docs/tests/roster_fallback_2026-10-05.md); live 2027 only, historical runs pass no seed_fn
+
+
+def fallback_line(teams) -> str:
+    """The daily report line for teams served on the R1 fallback roster (S-1 roster minus final-year players)."""
+    teams = sorted(int(t) for t in (teams or []))
+    return f"{len(teams)} teams on fallback roster" + (": " + ", ".join(map(str, teams)) if teams else "")
+
+
 def day1_player_prior_seed(season: int, repo: Path = REPO):
     """(module, seed_fn): the A3 `seed_fn` for `build_live(..., seed_fn=...)` (`build_engine_inputs_day1prior_v1.make_seed_fn('A3')`, called, not edited)."""
     import build_engine_inputs_day1prior_v1 as D1P
-    return D1P, D1P.make_seed_fn("A3", roster_path=str(repo / f"data/raw/cbbd/rosters/roster_{season}.parquet"))
+    return D1P, D1P.make_seed_fn("A3", roster_path=str(repo / f"data/raw/cbbd/rosters/roster_{season}.parquet"), fallback=LIVE_ROSTER_FALLBACK)
 
 
 def build_live_inputs(ctx, BL, slate, out: dict) -> dict:
@@ -305,9 +317,12 @@ def build_live_inputs(ctx, BL, slate, out: dict) -> dict:
     tag = f"LIVE_F2_{season}_{ctx.slate_date}"
     out_dir = REPO / "data/processed/models/engine_live"
     inp.save(str(out_dir), tag)
+    fb_teams = diag.get("d1p_fallback_teams") or []
+    diag["d1p_fallback_line"] = fallback_line(fb_teams)
     (out_dir / f"build_diag_{tag}.json").write_text(json.dumps(diag, indent=2, default=str), encoding="utf-8")
     return {**out, "_status": "ok", "built": True, "tag": tag, "n_games": int(len(slate)),
-            "availability": diag.get("availability", "none (no player-out rows)")}
+            "availability": diag.get("availability", "none (no player-out rows)"),
+            "fallback_roster_teams": [int(t) for t in fb_teams], "fallback_roster_line": diag["d1p_fallback_line"]}
 
 
 def stage_reuse(CD, fn_name):
