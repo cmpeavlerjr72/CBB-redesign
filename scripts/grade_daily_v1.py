@@ -62,6 +62,29 @@ def load_publications(root: Path, slate_date: str, run_id: str | None = None) ->
     return pd.concat([pd.read_parquet(p) for p in paths], ignore_index=True) if paths else pd.DataFrame()
 
 
+def season_start_of(season: int) -> str:
+    """First D-I game date of the season (ET). 2027+: the preseason schedule; earlier: the verified games universe."""
+    if int(season) >= 2027:
+        g = pd.read_parquet(REPO / "data/raw/preseason/2027_v2_20260930/games_2027.parquet", columns=["startDate"])
+        d = pd.to_datetime(g["startDate"], utc=True).dt.tz_convert("America/New_York").dt.tz_localize(None).dt.normalize()
+        return str(d.min().date())
+    u = pd.read_parquet(REPO / "data/processed/games_universe.parquet", columns=["season", "game_date", "is_d1_game"])
+    return str(pd.to_datetime(u.loc[(u["season"] == int(season)) & u["is_d1_game"], "game_date"]).min().date())
+
+
+def tov_monitor_block(led: pd.DataFrame, root: Path, season: int, odir: Path) -> list[str]:
+    """REPORT ONLY (cbb_sim.live.tov_monitor). Never raises: a monitor failure is written into the report, it must not block grading."""
+    from cbb_sim.live import tov_monitor as TM
+    try:
+        start = season_start_of(season)
+        res = TM.run_tov_monitor(led, root, season, start)
+        if "table" in res:
+            res["table"].to_csv(odir / "tov_monitor.csv", index=False)
+        return TM.report_block(res, start)
+    except Exception as e:  # noqa: BLE001
+        return ["## TOV level monitor (report only)", "", f"- monitor error (grading unaffected): {type(e).__name__}: {str(e)[:200]}", ""]
+
+
 def report_markdown(slate_date, tabs_day: dict, tabs_cum: dict, pending: pd.DataFrame, n_new: int, finals_source: str, now) -> str:
     def block(t: dict, title: str) -> list[str]:
         o = [f"## {title}", "", f"- games graded: {t['n_games']}  ({D.underpowered(t['n_games'])})",
@@ -94,7 +117,7 @@ def report_markdown(slate_date, tabs_day: dict, tabs_cum: dict, pending: pd.Data
 
 def run_grade_stage(slate_date: str, season: int, now=None, root: Path = D.DAILY_ROOT, finals: str = "ingest",
                     run_id: str | None = None, publish_id: str | None = None, finals_frame: pd.DataFrame | None = None,
-                    truth_box: pd.DataFrame | None = None, n_boot: int = 1000) -> dict:
+                    truth_box: pd.DataFrame | None = None, n_boot: int = 1000, tov_monitor: bool = True) -> dict:
     now = D.utc(now) if now is not None else pd.Timestamp.now("UTC")
     pubs = load_publications(root, slate_date, run_id)
     if not len(pubs):
@@ -122,7 +145,10 @@ def run_grade_stage(slate_date: str, season: int, now=None, root: Path = D.DAILY
     odir.mkdir(parents=True, exist_ok=True)
     pend.to_parquet(odir / "pending.parquet", index=False)
     fsrc = fin["finals_source"].iloc[0] if len(fin) else finals
-    (odir / "report.md").write_text(report_markdown(slate_date, t_day, t_cum, pend, n_new, fsrc, now), encoding="utf-8")
+    rep = report_markdown(slate_date, t_day, t_cum, pend, n_new, fsrc, now)
+    if tov_monitor:
+        rep = rep.rstrip(chr(10)) + chr(10) * 2 + chr(10).join(tov_monitor_block(led, Path(root), season, odir))
+    (odir / "report.md").write_text(rep, encoding="utf-8")
     summary = {k: v for k, v in t_day.items() if not isinstance(v, (pd.DataFrame, dict))}
     (odir / "summary.json").write_text(json.dumps(summary, indent=2, default=str), encoding="utf-8")
     return {"_status": "ok", "graded": int(len(led_new)), "new_ledger_rows": int(n_new), "pending": int(len(pend)),
@@ -138,8 +164,9 @@ def main(argv=None) -> int:
     ap.add_argument("--finals", choices=("ingest", "truth"), default="ingest")
     ap.add_argument("--run-id", default=None)
     ap.add_argument("--publish-id", default=None)
+    ap.add_argument("--no-tov-monitor", dest="tov_monitor", action="store_false", help="skip the report-only TOV level monitor (default on)")
     a = ap.parse_args(argv)
-    print(json.dumps(run_grade_stage(a.slate_date, a.season, a.now, Path(a.root), a.finals, a.run_id, a.publish_id), default=str))
+    print(json.dumps(run_grade_stage(a.slate_date, a.season, a.now, Path(a.root), a.finals, a.run_id, a.publish_id, tov_monitor=a.tov_monitor), default=str))
     return 0
 
 
