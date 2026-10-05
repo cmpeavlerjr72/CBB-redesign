@@ -48,3 +48,9 @@ Complexity order for ties (simplest first): A0 < A1n < A1 < A3 < A2.
 Underpowered cells are labelled.
 
 **Output.** The winner is implemented as `make_seed_fn(arm)` in `scripts/build_engine_inputs_day1prior_v1.py`, default off. It runs for 2026-27 with one command and HARD-STOPS if the S-1 on-floor table or the season-S roster is missing. The PM decides adoption.
+
+---
+
+## 2. Fold-1 source deviation (2026-10-05, before any fold-1 arm was built or run)
+
+`possessions_2023.parquet` has no on-floor columns: lineups start in 2023-24. So the registered S-1 minutes source does not exist for fold 1 (S-1 = 2022-23). Fold 1 instead reads S-1 minutes from the hoopR player box, mapping ESPN athlete ids to CBBD ids through the CBBD rosters' `source_id` (`--minutes-source box`). Fold 2 keeps the registered on-floor source. On fold 2 (S-1 = 2023-24) the box source maps 99.8% of player-game rows. Over 355 teams it shares 97.5% of the top-8 seeds with the on-floor source and the same top player for 83%. No fold-2 arm had been graded when this was written; fold-2 arm runs had started.
