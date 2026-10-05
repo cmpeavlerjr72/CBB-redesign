@@ -220,8 +220,61 @@ def stage_inputs(ctx, CD, a) -> dict:
                    diag_rc=r.returncode, _status="blocked")
         out["blocked_on"] = "own ratings + 2027 adapters + rosters + rules (day-1 list); nothing built"
         return out
+    return build_live_inputs(ctx, BL, slate, out)
+
+
+# Sealed-prior hard stops for the 2027 live build. Each entry: (label, path relative to REPO, what builds it). The 2025-26 season is
+# SEALED: nothing here reads it; these tables are produced AFTER the user lifts the seal (runbook docs/ops/readiness_gaps_2026-10-05.md
+# section 2, steps 5-6) and the chain refuses to continue without them. No zero prior, no carry-forward of 2025, no silent fallback.
+SEALED_PRIORS_2027 = [
+    ("shot-block anchor prior (2025-26 end-of-season block rate by miss type, K2_Ocell)",
+     "data/processed/models/engine/shot_block_prior_2027_v1.parquet",
+     "versioned sibling of build_shot_block_lut_live_v1.py (runbook step 6)"),
+    ("R9ao3 team-prior table with season 2027 rows (needs 2025-26 and-one design)",
+     None, "ao_team_prior_v2.parquet via train_foul_r9_v1.team_prior_table (runbook step 5)"),
+]
+
+
+def missing_sealed_priors(season: int, repo: Path = REPO, r9_seasons=None) -> list[str]:
+    """Names of the missing seal-gated prior tables for `season` (empty = all present). Only season 2027 has the list; the R9ao3 check
+    asks the served table which seasons it holds (`r9_seasons` injectable for tests)."""
+    if int(season) != 2027:
+        return []
+    miss = []
+    for label, rel, how in SEALED_PRIORS_2027:
+        if rel is not None:
+            if not (repo / rel).exists():
+                miss.append(f"{label}: {rel} missing; {how}")
+            continue
+        have = r9_seasons
+        if have is None:
+            from cbb_sim.engine import foul_r9 as FR9
+            have = FR9.table_seasons("R9ao3")
+        if have is not None and int(season) not in have:
+            miss.append(f"{label}: table has seasons {sorted(have)}; {how}")
+    return miss
+
+
+def build_live_inputs(ctx, BL, slate, out: dict) -> dict:
+    """Live 2027 branch: hard-stop on any missing sealed prior table, else build the slate's EngineInputs (as of the chain clock) and
+    save to data/processed/models/engine_live/. Nothing is simulated here."""
+    season = int(slate["season"].iloc[0])
+    miss = missing_sealed_priors(season)
+    if not ctx.state.get("ratings_dir"):
+        miss.insert(0, "own ratings as of the slate date (ratings stage blocked)")
+    if not (REPO / f"data/processed/models/engine/names_F2_{season}_v2.json").exists():
+        miss.insert(0, f"rule-constants template names_F2_{season}_v2.json")
+    if miss:
+        return {**out, "_status": "blocked", "blocked_on": miss, "built": False}
+    import numpy as np
     with unsealed():                                          # prior-season carry reads the 2026 tables
-        raise NotImplementedError("live 2027 build needs adapters / rules for 2027 (lane G remaining work 1); not exercised")
+        inp, diag = BL.build_live(slate, getattr(ctx, "now", None) or pd.Timestamp.now("UTC"), season, "F2", created_at=pd.Timestamp.now("UTC"),
+                                  ratings_dir=ctx.state["ratings_dir"])
+    tag = f"LIVE_F2_{season}_{ctx.slate_date}"
+    out_dir = REPO / "data/processed/models/engine_live"
+    inp.save(str(out_dir), tag)
+    (out_dir / f"build_diag_{tag}.json").write_text(json.dumps(diag, indent=2, default=str), encoding="utf-8")
+    return {**out, "_status": "ok", "built": True, "tag": tag, "n_games": int(len(slate))}
 
 
 def stage_reuse(CD, fn_name):

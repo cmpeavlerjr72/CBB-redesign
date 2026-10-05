@@ -157,3 +157,31 @@ def test_sim_prereqs_after_artifacts_only_ratings_block_and_rosters_warn():
         assert "PLAYER layer" in warn[0]
         assert any("rosters" in m for m in C3.sim_prereqs(2027, "F2", "2026-11-02", "x", require_rosters=True))
     assert C3.sim_warnings(2026) == []
+
+
+def test_missing_sealed_priors_2027_hard_stop_names_each_table(tmp_path):
+    import chain_daily_v2 as C2
+    miss = C2.missing_sealed_priors(2027, repo=tmp_path, r9_seasons=[2023, 2024, 2025, 2026])
+    assert len(miss) == 2
+    assert any("shot_block_prior_2027_v1.parquet" in m for m in miss) and any("R9ao3" in m for m in miss)
+    assert C2.missing_sealed_priors(2025, repo=tmp_path) == []          # only 2027 carries the sealed-prior list
+
+
+def test_missing_sealed_priors_clear_when_tables_present(tmp_path):
+    import chain_daily_v2 as C2
+    f = tmp_path / "data/processed/models/engine/shot_block_prior_2027_v1.parquet"
+    f.parent.mkdir(parents=True)
+    f.write_bytes(b"x")
+    assert C2.missing_sealed_priors(2027, repo=tmp_path, r9_seasons=[2026, 2027]) == []
+
+
+def test_build_live_inputs_blocks_without_priors_never_builds(tmp_path):
+    import chain_daily_v2 as C2
+    slate = pd.DataFrame({"game_id": [1], "season": [2027], "game_date": [pd.Timestamp("2026-11-02")]})
+    ctx = SimpleNamespace(slate_date=pd.Timestamp("2026-11-02").date(), dry_run=False, state={})
+
+    class NoBuild:
+        def build_live(self, *a, **k):
+            raise AssertionError("must not build when a sealed prior table is missing")
+    r = C2.build_live_inputs(ctx, NoBuild(), slate, {})
+    assert r["_status"] == "blocked" and r["built"] is False and any("own ratings" in m for m in r["blocked_on"])
