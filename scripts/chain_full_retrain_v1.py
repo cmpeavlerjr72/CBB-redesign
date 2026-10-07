@@ -26,6 +26,9 @@ an unfinished checkpointed trainer stage resumes in place, an unfinished builder
   foul_state      lane A's replay on the v4 machine + the in_bonus overlay keyed on po_design
   po_train        PO S1 (12 fits) with the in_bonus overlay [+ E3 table]; anchor O -> anchored trainer
   clock           served clock spec (srfloor_P3 S1 + v5b sigma) on v4 + ratings C
+  clock_k2        served clock since 2026-10-07 (round 8 K2, `v5b_r8K2_glat_pmean`) on the clock stage's design + the
+                  chance tables of the same possessions version (scripts/train_clock_k2_chain_v1.py); DEFAULT ON, the
+                  gate then serves K2 from this root (--no-clock-k2: the L2 refit, the pre-2026-10-07 behaviour)
   fg_design       fg_make design with the four rating columns from ratings C
   fg_train        fg_make round-4 B1 S1 (18 fits) [+ E3 table, fresh shooter extra cache]
   rb_design       rebound round-3 design with ratings C
@@ -63,19 +66,21 @@ FG_DESIGN = "data/processed/models/fg_make/design_v2_shotshooter.parquet"
 RB_DESIGN = "data/processed/models/rebound/round3/design_round3.parquet"
 SAMPLE500 = "data/processed/truth/stride500_verified_v1_F2_2025.parquet"
 SEASONS = [2022, 2023, 2024, 2025]
-STAGES = ["possessions_v4", "rotation", "po_design", "foul_state", "po_train", "clock", "otc_designs", "fg_design", "fg_train",
+STAGES = ["possessions_v4", "rotation", "po_design", "foul_state", "po_train", "clock", "clock_k2", "otc_designs", "fg_design", "fg_train",
           "rb_design", "rb_train", "ft_train", "inputs_base", "inputs", "parity", "gate"]
 #: stages that exist only under --ot-foul-carry (lane F, 2026-10-01): the carried fg / rebound / FT tables and the FT S1 retrain
 #: (free_throw is otherwise served unchanged). Without the flag they are not in the plan, so the default plan is unchanged.
 CARRY_ONLY = {"otc_designs", "ft_train"}
+#: stages that exist only under --clock-k2 (DEFAULT ON since served stack v3, 2026-10-07)
+K2_ONLY = {"clock_k2"}
 CHECKPOINTED = {"po_train", "fg_train", "rb_train"}          # resume in place
 #: stages whose output does not depend on --variant (F_T can --reuse-from an F_R tag's finished ones)
-SHARED = {"rotation", "po_design", "foul_state", "clock", "fg_design", "rb_design", "inputs_base", "otc_designs", "ft_train"}
+SHARED = {"rotation", "po_design", "foul_state", "clock", "clock_k2", "fg_design", "rb_design", "inputs_base", "otc_designs", "ft_train"}
 #: independent training branches (--parallel runs them at once)
-BRANCHES = [["po_design", "foul_state", "po_train"], ["clock"], ["fg_design", "fg_train"], ["rb_design", "rb_train"], ["ft_train"]]
+BRANCHES = [["po_design", "foul_state", "po_train"], ["clock", "clock_k2"], ["fg_design", "fg_train"], ["rb_design", "rb_train"], ["ft_train"]]
 #: --gate-stack (lane D, 2026-10-01): the loop-level switches the gate serves on top of the chain's artifacts, set
 #: EXPLICITLY so the read does not depend on the caller's environment. `adopted` = served stack v2's four loop-level
-#: members (the fifth, clock L2, is the chain's own clock stage; the event team block is the chain's own inputs
+#: members, unchanged in served stack v3 (the clock, L2 in v2 and K2 in v3, is the chain's own clock stage; the event team block is the chain's own inputs
 #: block through the private ENGINE_DIR). `served_v1` = the switches of last night's laneD_2 / laneD_3 reads
 #: (made before the 02:06 adoption). Gate tags carry a suffix so the two never share a results dir.
 GATE_STACKS = {
@@ -290,6 +295,30 @@ class Chain:
                            "--poss-version", self.pv, "--ratings-dir", self.ratings])
         return {"root": self.s(self.d("clock") / "root")}
 
+    def st_clock_k2(self):
+        self.run("clock_k2", [PY, "scripts/train_clock_k2_chain_v1.py", "--design-root", self.s(self.d("clock") / "root"),
+                              "--root", self.s(self.d("clock_k2") / "root"), "--poss-version", self.pv])
+        return {"root": self.s(self.d("clock_k2") / "root")}
+
+    def gate_overrides(self, inp: dict) -> str:
+        """--clock-k2: the inputs stage's overrides with the three clock keys re-pointed at the K2 chain root (the inputs
+        stage keeps the L2 root, which its own checks need); written next to the gate reports."""
+        if not getattr(self.a, "clock_k2", False):
+            return inp["overrides"]
+        out = self.d("gate") / "overrides_clock_k2.json"
+        if self.a.dry_run:
+            return self.s(out)
+        ov = json.loads((ROOT / inp["overrides"]).read_text(encoding="utf-8"))
+        kr = self.d("clock_k2") / "root"
+        for need in ("r8_K2/F2/manifest.json", "r8_K2/v5b_bakeoff/v5b_bakeoff_report.json", "v5_bakeoff/v5_bakeoff_report.json"):
+            if not (kr / need).exists():
+                raise SystemExit(f"--clock-k2: {kr} lacks {need} (run the clock_k2 stage)")
+        ov.update({"clock_adapter_v3.CK_DIR": self.s(kr), "adapters.CK_DIR": self.s(kr),
+                   "clock_adapter_v3.V5_PARAMS": self.s(kr / "v5_bakeoff/v5_bakeoff_report.json")})
+        self.d("gate").mkdir(parents=True, exist_ok=True)
+        out.write_text(json.dumps(ov, indent=1), encoding="utf-8")
+        return self.s(out)
+
     def otc_dir(self) -> Path:
         return self.d("otc_designs") / "out"
 
@@ -467,8 +496,13 @@ class Chain:
         # V5_PARAMS rebound to it that key serves the chain's v4 refit, which IS the adopted L2 clock (six S1 pickles
         # byte-equal to clock/r6_L2, same B1 sigma; scripts/diag_chain_clock_vs_L2_v1.py). The L2 KEY would resolve
         # <chain root>/r6_L2/... and fail: there is no second clock layer to double-apply.
-        env = {"ENGINE_EVENT": "round2_s1", "ENGINE_CLOCK": "v5b_glat_pmean", "ENGINE_ROTATION": "reference",
-               "ENGINE_FG3": "decision8", "CBB_TRUTH": "verified_v1", **GATE_STACKS[self.a.gate_stack]}
+        # --clock-k2 (DEFAULT ON, served stack v3 2026-10-07): the K2 KEY with the clock overrides re-pointed at the
+        # clock_k2 root (gate_overrides), which has the r8_K2/ layout that key resolves.
+        k2 = getattr(self.a, "clock_k2", False)
+        env = {"ENGINE_EVENT": "round2_s1", "ENGINE_CLOCK": "v5b_r8K2_glat_pmean" if k2 else "v5b_glat_pmean",
+               "ENGINE_ROTATION": "reference", "ENGINE_FG3": "decision8", "CBB_TRUTH": "verified_v1",
+               **GATE_STACKS[self.a.gate_stack]}
+        overrides = self.gate_overrides(inp)
         if self.a.anchor:
             env["ENGINE_SEASON_ANCHOR"] = inp.get("anchor_offsets", "<offsets>")
         sample = self.a.gate_sample
@@ -481,7 +515,7 @@ class Chain:
         runs = []
         for off in [int(x) for x in self.a.gate_offsets.split(",") if x]:
             tag = f"fr1_{self.a.tag}_{self.a.gate_mode}_s{self.a.gate_seeds}_o{off}" + \
-                ("_ev4" if self.a.inputs_event_layer == "v4" else "") + GATE_STACK_SUFFIX[self.a.gate_stack]
+                ("_ev4" if self.a.inputs_event_layer == "v4" else "") + self.gate_suffix()
             if (ROOT / "results/engine_v0" / tag / "run_meta.json").exists():
                 print(f"[{now()}] gate: {tag} exists, skipped", flush=True)
             else:
@@ -490,15 +524,15 @@ class Chain:
                              "--seeds", str(self.a.gate_seeds), "--seed-offset", str(off),
                              "--workers", str(self.a.gate_workers), "--tag", tag, "--results-dir", "results/engine_v0"]
                     if self.a.gate_stack == "adopted":
-                        # the sample runner's served-stack check compares the clock KEY with the default (L2); the
-                        # chain pins the base-layout key that serves the chain's L2 refit (see env above): recorded
+                        # the sample runner's served-stack check compares the clock KEY with the default; without
+                        # --clock-k2 the chain pins the base-layout key that serves the chain's L2 refit: recorded
                         rargs.append("--allow-drift")
                 else:
                     rargs = ["--fold", "F2", "--season", "2025", "--seeds", str(self.a.gate_seeds),
                              "--seed-offset", str(off), "--workers", str(self.a.gate_workers),
                              "--games-per-block", "60", "--seeds-per-block", "25", "--tag", tag,
                              "--results-dir", "results/engine_v0", "--input-dir", inp["input_dir"]]
-                self.run("gate", [PY, "scripts/run_engine_overlay_v1.py", "--overrides", inp["overrides"],
+                self.run("gate", [PY, "scripts/run_engine_overlay_v1.py", "--overrides", overrides,
                                   "--runner", self.a.gate_mode if self.a.gate_mode == "sample" else "full",
                                   "--", *rargs], extra_env=env)
             md = self.d("gate") / f"{tag}__verified.md"
@@ -521,6 +555,12 @@ class Chain:
                 pairs.append({"noise": nz, "out": self.s(out)})
         return {"runs": runs, "pairs": pairs, "sample": sample if self.a.gate_mode == "sample" else "full 5,710",
                 "seeds": self.a.gate_seeds, "truth": "verified_v1"}
+
+    def gate_suffix(self) -> str:
+        """adopted stack + K2 clock = served v3 (_sv3); the old tags (_sv2 / none) stay for --no-clock-k2"""
+        if getattr(self.a, "clock_k2", False):
+            return "_sv3" if self.a.gate_stack == "adopted" else "_k2"
+        return GATE_STACK_SUFFIX[self.a.gate_stack]
 
     # -------------------------------------------------------------- preflight
     def preflight(self) -> list[str]:
@@ -573,7 +613,8 @@ class Chain:
     def plan(self) -> list[str]:
         only = [s for s in self.a.stages.split(",") if s] if self.a.stages else STAGES
         carry = getattr(self.a, "ot_foul_carry", False)
-        return [s for s in STAGES if s in only and (carry or s not in CARRY_ONLY)]
+        k2 = getattr(self.a, "clock_k2", False)
+        return [s for s in STAGES if s in only and (carry or s not in CARRY_ONLY) and (k2 or s not in K2_ONLY)]
 
     def go(self) -> int:
         try:
@@ -623,8 +664,9 @@ class Chain:
                                            indent=1, default=str))
             else:
                 old = json.loads(meta.read_text())["args"]
-                for k in ("variant", "anchor", "ratings_dir", "team_rate_table", "smoke", "inputs_event_layer", "ot_foul_carry"):
-                    if k not in old and k in ("inputs_event_layer", "ot_foul_carry"):
+                for k in ("variant", "anchor", "ratings_dir", "team_rate_table", "smoke", "inputs_event_layer", "ot_foul_carry",
+                          "clock_k2"):
+                    if k not in old and k in ("inputs_event_layer", "ot_foul_carry", "clock_k2"):
                         continue          # a run started before this switch existed (laneD_1): --redo covers it
                     if old.get(k) != getattr(self.a, k):
                         raise SystemExit(f"tag {self.a.tag} was started with {k}={old.get(k)!r}; refusing to "
@@ -722,6 +764,12 @@ def main() -> int:
                          "scripts/build_possessions_v4otc_v1.py (docs/tests/ot_team_foul_state_audit_2026-10-01.md)")
     ap.add_argument("--no-ot-foul-carry", dest="ot_foul_carry", action="store_false",
                     help="opt out of the OT foul carry (the pre-2026-10-07 behaviour: possessions v4, no carried tables)")
+    ap.add_argument("--clock-k2", dest="clock_k2", action="store_true", default=True,
+                    help="DEFAULT ON (served stack v3, 2026-10-07, docs/tests/adoption_clock_K2_2026-10-07.md). Stage clock_k2 refits "
+                         "the served K2 clock on the chain's clock design (scripts/train_clock_k2_chain_v1.py) and the gate serves "
+                         "ENGINE_CLOCK=v5b_r8K2_glat_pmean from it (gate tag suffix _sv3 on the adopted stack)")
+    ap.add_argument("--no-clock-k2", dest="clock_k2", action="store_false",
+                    help="opt out: no clock_k2 stage, the gate serves the chain's L2 refit (the pre-2026-10-07 behaviour, tag _sv2)")
     ap.add_argument("--redo", default="",
                     help="comma list of THIS tag's stages to rebuild (the old output is archived, not deleted), "
                          "e.g. inputs,gate after the inputs switch")

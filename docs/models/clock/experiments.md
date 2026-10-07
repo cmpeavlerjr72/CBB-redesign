@@ -4584,3 +4584,16 @@ K1 removes the OREB dependence only; K2 and K2M remove most of all four (|residu
 **Wiring.** `ENGINE_CLOCK=v5b_r8{K1,K2,K2M}_glat_pmean` (`clock_adapter_v3`: `cont_mode`, `redraw_end`, `draw_cont` on both adapter classes, mode keys). `loop.py`, behind `cont_mode` (None for every other mode): the chance-1 end class is read after chance 1 (event class + offence points in chance 1), and after the cascade `_clock_cont` replaces the consumed time with min(d1' + continuations, time left), d1' = the K2 re-draw at the same uniform (K1: the pre-cascade draw); continuations draw from their own stream family `clock_cont` (a new StreamBook), so the `clock` stream stays aligned with the control. The game latent scales d1' and every continuation. KD is unchanged (section 38). Flag-off parity 60 x 5 vs v9: **PASS bit-identical** (after the edit). Smokes 30 x 2: K2 67.7 possessions, K2M 65.8, K1 68.2. Latent (first-chance law): K1/K2 sigma 0.04710, K2M 0.04220. Artifacts: K1 F2 9.1 MB and K2M F2 16 MB tracked; **K2 F2 49 MB is gitignored** (HF bulk key `model_artifacts`; not pushed; rebuild: `train_clock_r8_chance_v1.py --arm K2 --fold F2`, 75 s).
 
 **Closed-loop lines (as section 38), arm vs the served default:** within-game possessions on (OREB, FGM, TOV, FTA) vs the actual; pace x makes and pace x OREB rows (`diag_g5_channels_v1.py`, full size); G1 count - v4; pooled possession SD and the possession SD ratio; sim team slope and game elasticity ratio; G5 corr and total SD ratio; G9 total / margin bias and slope; OT rate. Local taps (500 x 25, direction only): K2 and K2M. Box: K2M 5,710 x 200 (`docs/ops/box_queue/d1001_H_2.md`).
+
+
+## 40. ADOPTED 2026-10-07 -- round 8 arm K2 (`v5b_r8K2_glat_pmean`) is the served clock (served stack v3)
+
+PM decision 2026-10-07 (`docs/tests/adoption_clock_K2_2026-10-07.md`): paired 200-seed full-size reads on both folds, seeds 0-199 shared with served v2. G5 total SD ratio F2 0.925 -> 0.973, F1 0.918 -> 0.961; home/away corr F2 0.126 -> 0.170, F1 0.147 -> 0.188; no gate status regressed on either fold. Ledger row of the same date.
+
+- `adapters.CLOCK_DEFAULT` (the `ENGINE_CLOCK` default) = `v5b_r8K2_glat_pmean`; `clock_adapter_v3.ADOPTED_MODES` gains it (label only, `provisional_clock` False).
+- `v5b_r6L2_glat_pmean` (round 6 L2) stays selectable and is the SERVED_V2 clock (`adapters.SERVED_V2`, the full served-v2 env; reproduces parity v9 bit-identically). `v5b_glat_pmean` stays the SERVED_V1 clock.
+- Parity reference v10 (`docs/ops/parity_reference_windows_v10.json`) = the new default; v9 kept.
+- Artifacts: `data/processed/models/clock/r8_K2/F2/` (gitignored, on HF `model_artifacts`), `r8_K2/v5b_bakeoff/v5b_bakeoff_report.json` (tracked).
+- Retrain chain: stage `clock_k2` (`scripts/train_clock_k2_chain_v1.py`, default on) refits K2 on the chain's clock design; the gate serves the K2 key from that root.
+- 2026-27 serving: the last fold-2 refit (2025-04-01) is carried forward, as for every dated-refit family; no 2025-26 refit (sealed; PM retrain-set decision).
+- The Decision 11 caveat carried by the adoption doc stands: the shared-PPP gap (FT block, OT rate) is not closed here.

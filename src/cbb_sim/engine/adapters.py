@@ -117,6 +117,15 @@ SERVED_V1: dict[str, str] = {
     "ENGINE_CLOCK": "v5b_glat_pmean", "ENGINE_SHOT_BLOCK": "reference",
     "ENGINE_FOUL_JOINT": "reference", "ENGINE_SHARED_SHOOTING": "reference",
     "ENGINE_CHANCE_TIME": "reference", "ENGINE_EVENT_TEAM_BLOCK": "v1"}
+# SERVED STACK v3, ADOPTED 2026-10-07 (PM; docs/tests/adoption_clock_K2_2026-10-07.md): the
+# ENGINE_CLOCK default is clock round 8 arm K2 (`v5b_r8K2_glat_pmean`, outcome-conditioned
+# possession time). SERVED_V2 is the explicit env that reproduces served stack v2 (parity v9).
+SERVED_V2: dict[str, str] = {
+    "ENGINE_CLOCK": "v5b_r6L2_glat_pmean", "ENGINE_SHOT_BLOCK": "K2_Ocell",
+    "ENGINE_FOUL_JOINT": "R9ao3", "ENGINE_SHARED_SHOOTING": "G3",
+    "ENGINE_CHANCE_TIME": "KD", "ENGINE_EVENT_TEAM_BLOCK": "v3"}
+#: The served ENGINE_CLOCK default (read in Adapters.load; also by the seal-week serving check).
+CLOCK_DEFAULT = "v5b_r8K2_glat_pmean"
 
 # EVENT TEAM BLOCK, 2026-10-01 (PM ruling; docs/tests/adoption_served_v2_2026-10-01.md):
 # the inputs-v3 replay block (sha 228794fc, what the box's S0 overlay served and what the
@@ -1107,7 +1116,9 @@ class Adapters:
         # DEFAULT, 2026-10-01 (PM decision under user delegation, Decision 11
         # set ADOPTED as one served stack; docs/tests/adoption_served_v2_2026-10-01.md):
         # clock round 6 arm L2. `v5b_glat_pmean` stays selectable (SERVED_V1).
-        ck_mode = os.environ.get("ENGINE_CLOCK", "v5b_r6L2_glat_pmean")
+        # DEFAULT, 2026-10-07 (PM; served stack v3, docs/tests/adoption_clock_K2_2026-10-07.md):
+        # clock round 8 arm K2. L2 stays selectable (SERVED_V2).
+        ck_mode = os.environ.get("ENGINE_CLOCK", CLOCK_DEFAULT)
         rot_mode = os.environ.get("ENGINE_ROTATION", "reference")
         fg3 = os.environ.get("ENGINE_FG3", "decision8")
         # DEFAULT, 2026-09-10 (PM decision recorded in L29 and the change

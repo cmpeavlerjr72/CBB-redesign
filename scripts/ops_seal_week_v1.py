@@ -12,6 +12,11 @@ stage today and with which message), (4) the stage's own safe check command (a r
 Status: OK = checks pass, no seal involved; SEAL_OK = checks pass AND the seal hard stop fires as designed (stage runnable after the lift);
 MISSING = a script the runbook needs does not exist yet; MANUAL = human / PM action, never automated; FAIL = a check failed.
 
+Stage 1 is the served-default parity smoke (parity v10, served stack v3, 2026-10-07; the rehearsal of that day found it was a
+manual step): its safe check RUNS it (60 games x 5 seeds, fold-2 2025 backtest inputs, ~30 s) and writes only its own gitignored
+results/engine_v0/parity_smoke_* dir. Stage clock_serving checks that the served clock (K2) resolves a complete artifact set for
+the first slate (carried-forward fold-2 refits, the same mechanism as every dated-refit family; --execute pulls a missing set).
+
 --execute is REFUSED unless data/overrides/ratings_day1_choices.json has seal_lift_approved true. This script never writes that flag
 (user / PM only, in either direction); the re-seal stage prints the instruction instead. 2025-26 data is never read in a dry run.
 """
@@ -54,6 +59,10 @@ class Stage:
 def stages(slate: str, as_of: str, tip_to: str, roster_season: int = 2027) -> list[Stage]:
     sd = slate
     return [
+        Stage("parity_v10", "served-default parity smoke: run_engine F2 2025 60 games x 5 seeds on engine_v3, digest vs parity v10 (bit-identical)",
+              "scripts/run_parity_smoke_v1.py", ["--ref", "docs/ops/parity_reference_windows_v10.json"], tokens=["--ref", "--keep-env", "--workers"],
+              safe_check=["scripts/run_parity_smoke_v1.py", "--ref", "docs/ops/parity_reference_windows_v10.json"],
+              note="served stack v3 (clock K2, docs/tests/adoption_clock_K2_2026-10-07.md); v9 = SERVED_V2 (--keep-env with the SERVED_V2 values)"),
         Stage("preflight", "pyarrow imports; smoke tests (daily chain v3, hard stops, day-1)", "tests/test_daily_chain_v3.py", runner="pytest",
               args=["tests/test_daily_chain_v3.py", "tests/test_hard_stops_2027.py", "tests/test_day1_2027.py", "-q"],
               tokens=["def test"]),
@@ -104,6 +113,11 @@ def stages(slate: str, as_of: str, tip_to: str, roster_season: int = 2027) -> li
               safe_check=["scripts/pull_tip_times_v1.py", "--season", "2027", "--from", sd, "--to", tip_to, "--dry-run"]),
         Stage("injuries_parse", "league-wide ESPN injuries -> player_out_{date}.csv", "scripts/pull_injuries_player_out_v1.py", [],
               tokens=["--date", "--dry-run"], safe_check=["scripts/pull_injuries_player_out_v1.py", "--dry-run"]),
+        Stage("clock_serving", "served clock (adapters.CLOCK_DEFAULT = K2) artifact set present and selected for the first slate",
+              "scripts/diag_clock_serving_2027_v1.py", ["--slate-date", sd, "--pull"], tokens=["--slate-date", "--pull", "CLOCK_DEFAULT"],
+              safe_check=["scripts/diag_clock_serving_2027_v1.py", "--slate-date", sd],
+              note="clock/r8_K2 is gitignored (HF model_artifacts); a 2026-27 game is served by the last fold-2 refit (carried forward, "
+                   "not refit through 2025-26; a 2025-26 refit is a PM retrain-set decision)"),
         Stage("chain_dry_run", "chain_daily_v3 dry run on the first slate until sim_prereqs is empty", "scripts/chain_daily_v3.py",
               ["--dry-run", "--slate-date", sd], tokens=["--dry-run", "--slate-date"],
               safe_check=["scripts/chain_daily_v3.py", "--dry-run", "--slate-date", sd, "--no-probe-hoopr"]),
@@ -244,7 +258,7 @@ def main(argv=None) -> int:
             rc_all = 1
         if st == "MISSING":
             print(f"{'':36}note: {s.note}")
-    print("=== end (dry run: nothing written beyond the chain's own dry-run json)" if not a.execute else "=== end ===")
+    print("=== end (dry run: nothing written beyond the chain's own dry-run json and the parity smoke's results dir)" if not a.execute else "=== end ===")
     return rc_all
 
 

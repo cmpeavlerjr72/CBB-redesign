@@ -34,7 +34,7 @@ GAMES_PER_BLOCK=60
 SEEDS_PER_BLOCK=25
 MAX_GAMES=0             # 0 = all games in the fold
 ENGINE_EVENT="round2_s1"
-ENGINE_CLOCK="v5b_r6L2_glat_pmean"   # 2026-10-01: the adopted served-v2 clock (adapters.py default).
+ENGINE_CLOCK="v5b_r8K2_glat_pmean"   # 2026-10-07: the adopted served-v3 clock (adapters.py default; was L2, served v2).
                                 # lane J 2026-09-30: was "reference", which the always-set env prefix
                                 # used to force over the adapter's adopted default (09-18 gotcha)
 PARITY_INPUT_DIR=""     # parity gate only; empty = default inputs. v8 needs data/processed/models/engine_v3
@@ -69,8 +69,8 @@ Usage: run_aws_sweep.sh --tag TAG [options]
   --max-games N           0 = all games (default). Set for a smoke subset.
   --engine-event MODE     reference | round2_s1 (default round2_s1, the
                          adopted round-2 winners)
-  --engine-clock MODE     v5b_r6L2_glat_pmean (adopted 2026-10-01, default) | v5b_glat_pmean
-                         (SERVED_V1) | reference | reference_empirical
+  --engine-clock MODE     v5b_r8K2_glat_pmean (adopted 2026-10-07, default) | v5b_r6L2_glat_pmean
+                         (SERVED_V2) | v5b_glat_pmean (SERVED_V1) | reference | reference_empirical
                          | any ENGINE_CLOCK arm name run_engine understands
   --input-dir DIR         sweep chunks only: run_engine.py --input-dir DIR (e.g.
                          data/processed/models/engine_v3). The parity gate never uses it: the
@@ -90,8 +90,10 @@ Usage: run_aws_sweep.sh --tag TAG [options]
                          --emit)
   --parity-input-dir DIR  parity smoke only: run_engine.py --input-dir DIR (default: the
                          default inputs). The adopted-stack reference
-                         parity_reference_windows_v9.json (v8 = same with
-                         ENGINE_EVENT_TEAM_BLOCK=v1) is on data/processed/models/engine_v3;
+                         parity_reference_windows_v10.json (served v3, 2026-10-07) is on
+                         data/processed/models/engine_v3; v9 = served v2 (SERVED_V2 env:
+                         --engine-clock v5b_r6L2_glat_pmean), v8 = v9 with
+                         ENGINE_EVENT_TEAM_BLOCK=v1;
                          v6 (default inputs) and v7 (engine_v3) need the SERVED_V1 env
                          (docs/tests/adoption_served_v2_2026-10-01.md).
   --parity-games N        smoke game count (default 60)

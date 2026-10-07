@@ -10,7 +10,9 @@ import ops_seal_week_v1 as O  # noqa: E402
 
 def test_stage_order_and_names():
     names = [s.name for s in O.stages("2026-11-02", "2026-11-02", "2026-11-15")]
-    assert names[0] == "preflight" and names[-1] == "reseal"
+    # 2026-10-07 (served stack v3): the parity v10 smoke is stage 1, before the preflight tests
+    assert names[0] == "parity_v10" and names[1] == "preflight" and names[-1] == "reseal"
+    assert names.index("clock_serving") < names.index("chain_dry_run")
     for need in ("rosters", "a3_day1_priors", "ratings", "tip_times", "sim_4seed"):
         assert need in names
     assert names.index("rosters") < names.index("a3_day1_priors") < names.index("sim_4seed")

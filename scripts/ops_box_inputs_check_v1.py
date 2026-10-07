@@ -41,7 +41,11 @@ JOBS = {
         "data/processed/models/engine_v3/games_F2_2025.parquet",
         "data/processed/models/engine_v3/arrays_F2_2025.npz",
         "data/processed/models/engine_v3/names_F2_2025.json",
-        "docs/ops/parity_reference_windows_v6.json"],
+        "docs/ops/parity_reference_windows_v6.json",
+        # served v3 (2026-10-07): v10 = default (clock K2), v9 = SERVED_V2
+        "docs/ops/parity_reference_windows_v9.json", "docs/ops/parity_reference_windows_v10.json",
+        "data/processed/models/clock/r8_K2/F2/manifest.json",
+        "data/processed/models/clock/r8_K2/v5b_bakeoff/v5b_bakeoff_report.json"],
 }
 
 

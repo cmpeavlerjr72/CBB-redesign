@@ -696,7 +696,9 @@ V5_MODES: dict[str, dict] = {
 #: RNG stream, so it cannot change a single simulated number.
 #: 2026-10-01: round 6 arm L2 (`v5b_r6L2_glat_pmean`) ADOPTED as part of the
 #: Decision 11 served set (docs/tests/adoption_served_v2_2026-10-01.md).
-ADOPTED_MODES: frozenset[str] = frozenset({"v5b_glat_pmean", "v5b_r6L2_glat_pmean"})
+#: 2026-10-07: round 8 arm K2 (`v5b_r8K2_glat_pmean`) ADOPTED as the served clock (served stack v3,
+#: docs/tests/adoption_clock_K2_2026-10-07.md).
+ADOPTED_MODES: frozenset[str] = frozenset({"v5b_glat_pmean", "v5b_r6L2_glat_pmean", "v5b_r8K2_glat_pmean"})
 
 # ---------------------------------------------------------------------------
 # Clock round 6 (experiments.md section 28; lane B 2026-09-30): the SERVED v5b
