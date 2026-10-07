@@ -7,7 +7,7 @@ Run: `results/engine_v0/f1c_K2_full_s200_o0` (5,635 games x 200 seeds 0-199, ver
 | gate | served v2 F1 | K2 F1 | real |
 |---|---|---|---|
 | G1 possessions/game mean / SD | 69.271 / 5.584 PASS | 69.229 / 5.681 PASS | 68.391 / 5.480 |
-| G1 by month (powered months inside, mean) | 4/6 (months 1, 2 FAIL) | 4/6 (months 1, 2 FAIL) | |
+| G1 by month (5 powered months, mean status) | 3/5 inside (months 1, 2 FAIL) | 3/5 inside (months 1, 2 FAIL) | |
 | G2 PPP cells inside +/-0.02 | 3/9 FAIL | 4/9 FAIL | |
 | G4 pooled tov / oreb / ft_rate / eFG | 0.1797 / 0.2849 / 0.3198 / 0.5024 | 0.1800 / 0.2848 / 0.3234 / 0.5042 | 0.1724 / 0.2899 / 0.3281 / 0.5047 |
 | G5 margin SD ratio | 1.0425 PASS | 1.0395 PASS | 1.0 |
