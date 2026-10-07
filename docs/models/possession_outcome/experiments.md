@@ -4033,3 +4033,75 @@ The F1 likelihood gain is about 1.7 floors (the T1 reseed alone moves F1 TOV LL 
 **Open.**
 - `cont` is not anchored; its F1 step is -0.33 pp.
 - F1 jump2 make and early-season FTA rate have the same structure and are not run.
+
+## 32. Foul-accrual calendar round: a days-since-start term in the non-trip accrual LUT `A2` (PO worker, 2026-10-07; written and COMMITTED BEFORE any arm was fitted or run)
+
+**Nothing is adopted; no served default changes; the PM decides.** Owner evidence: `docs/tests/early_fta_rate_diag_2026-10-07.md` (commit 841563a).
+The served foul joint `R9ao3` uses the round-7 accrual LUT `lut_acc_A2_F2` (state only: period, sec_rem, margin, abs_margin, game_seconds,
+true def/off counts, bonus flags, `site_home`, `site_away`, is_ot). In every season 2022-25 the first-half share of possessions with the offence in the
+bonus is 0.28-0.31 in week 0 vs about 0.20 from day 46, within team; the sim is flat (F2 0.214 / 0.210 / 0.204 by d0-14 / d15-45 / d46+ vs actual 0.284 /
+0.227 / 0.196). Offline on the true state A2's first-half rel bias drifts from -5.4% (d0-6) to +10.1% (d46+). Context explains at most 0.002.
+
+### 32.1 Data, folds, target
+
+- Rows: `train_foul_joint_v1.possession_design()` imported unedited (round-6 `foul_accrual_poss_v2` + round-7 targets); target `y_nt`.
+- Fit mask `in_fit_window == 1` (regulation, outside the final 2:00), train seasons F1 2022-2023, F2 2022-2024; test 2024 / 2025. Fold 2 selects;
+  fold 1 must have the same sign. 2025-26 sealed (`assert_not_sealed`).
+- Calendar input `dss` = `days_since_start` (days since the season's first D-I game; pregame schedule quantity, no result content, so no leak test
+  beyond the definition). Checked pre-run: identical to the engine inputs' `team_static` column `days_since_start` on every matched game of
+  `engine_v3` (F2, 5,593 games) and `engine_v3_f1` (F1, 5,553), max |diff| 0.0.
+- Buckets for the bucket arm and every segment: d0-7 / d8-14 / d15-30 / d31-45 / d46+ (index 0-4).
+- Home/away/neutral: `site_home` / `site_away` (neutral = reference) are in `STATE_T` and therefore in EVERY arm (checked: the served LUT has a 3-level site axis).
+
+### 32.2 Arms (complexity order, simplest first)
+
+| arm | form | params beyond A2 |
+|---|---|---|
+| `A2` control | round-7 GBM (`GBM_KW`, n_jobs=1) on `STATE_T`, seed 0 (the served LUT's source fit) | 0 |
+| `A2s7` noise floor | spec-identical retrain, seed 7 | 0 |
+| `A2dec` | `logit p = logit p_A2(x) + b * exp(-dss / tau)`; `p_A2` is the arm's own seed's A2 fit (fixed offset, its in-sample train prediction); (b, tau) by maximum likelihood on the fold's train fit rows, tau bounded to [1, 150] days | 2 |
+| `A2decH` | as `A2dec` with `b_H1` (period 1) and `b_H2` (period >= 2, OT included), shared tau | 3 |
+| `A2dbk` | GBM on `STATE_T + [dss_bkt]` (ordinal 0-4), same `GBM_KW`; the LUT gains a 5-level days axis | GBM refit |
+
+Every arm is fitted under seeds 0 and 7 (`A2dec*` seed 7 sits on the seed-7 A2 offset), so each has its own reseed spread.
+
+### 32.3 Primary, floor, decision rule (offline)
+
+- **Primary:** Bernoulli log loss of `y_nt` on fold-2 test possessions with `in_fit_window == 1`, true state (round-7 convention). All test rows reported too.
+- **Floor:** `max(|LL(seed 0) - LL(seed 7)|` of the control, `2 x` the game-block bootstrap SE of the paired per-row delta arm - control (200 reps, games resampled, seed 20261007)).
+  The round-7 applied floor 0.000804 (a round-4b six-class PO floor) is NOT carried: from the diag the expected whole-test gain of a calendar term is of order
+  5e-5 (about a +-8% p shift on the roughly 10% of rows in d0-14), so the carried floor would make the round untestable by construction. Deltas are also
+  printed in units of 0.000804 for transparency.
+- **Beats control:** `LL(A2) - LL(arm) > floor` on F2, same sign on F1. **Winner:** among the arms that beat control, the simplest within one floor of the
+  best (order `A2dec` < `A2decH` < `A2dbk`). Ties go to the simpler arm; no arm beating control means REFUTED, `A2` stands.
+- **Offline gates (all must hold for the winner):**
+  - O1 responsiveness: team quintiles of the prior-season (s-1) defence non-trip rate `y_nt` per possession, centred on that season's league mean; slope ratio
+    (OLS of team mean predicted on team mean realised over the five quintile means, test fit rows) not below control's minus the control's seed 0-vs-7 spread
+    (and also reported on the offence side);
+  - O2 no d46+ regression: d46+ log loss not worse than control by more than its own bucket floor (same construction restricted to d46+ rows), and the d46+
+    first-half rel bias (mean p / mean y - 1) not more than 1 pp further from zero than control's;
+  - O3 the d0-14 first-half rel bias moves toward zero.
+- **Segments (every arm):** half x days bucket rel bias and log loss; site (home / away / neutral offence); true defence count 0-5 / 6+; per-team quintiles;
+  cells under 2,000 rows labelled underpowered.
+- One grader, blind to arm identity beyond the pre-registered complexity order: `scripts/grade_foul_cal_v1.py` reading
+  `round10cal/preds_{F1,F2}_seed{0,7}.parquet` written by `scripts/train_foul_cal_v1.py`.
+
+### 32.4 Closed loop (only if an offline winner exists)
+
+- **Flag:** new `ENGINE_FOUL_CAL=<arm>`, default off; unset means the served path is taken with no extra computation and no RNG change (the accrual keeps its
+  single `foul_accrual` uniform; the calendar term only moves `p_def`). Flag-off parity: `scripts/run_parity_smoke_v1.py` vs parity v10 must PASS bit-identically.
+  Tables from the fold's TRAIN fits only (F2 2022-24 for 2025 runs; F1 2022-23 for 2024 runs, reached through the fold-1 overlay like `lut_acc_A2_F1`).
+- **Runs:** paired served v3 vs served v3 + winner, same seeds, F2 (2025, `engine_v3`) and F1 (2024, `engine_v3_f1` + the `d1007_K2F1` overlay, static rotation as in
+  `f1c_K2_full_s200_o0`), every game of the slate, seeds 0-49, home box at <= 8 workers, through an in-process accrual tap that records the half state
+  (the round-9 tap pattern; the tap's control `games.parquet` is compared with seeds 0-49 of `laneH_v3full_K2_s200_o0` / `f1c_K2_full_s200_o0` to prove the
+  tap and box agree before any line is read). 200 seeds on AWS only if a gate line is unresolved at 50 seeds (SE of the paired move larger than half its tolerance).
+- **Lines (truth = verified finals; floors = paired game-bootstrap SE of the arm - control difference, 200 reps):**
+  - L1 first-half in-bonus share by days bucket vs actual (`off_in_bonus_true`): d0-14 and d46+ both within 0.02 of actual (the diag's closure line),
+    and d46+ not further from actual than control by more than 2 SE;
+  - L2 total bias by days bucket d0-14 / d15-45 / d46+: d0-14 moves toward zero; d46+ does not move away from zero by more than 2 paired SE;
+  - L3 G5 (total SD ratio, margin SD ratio, home/away score corr), G9 (total bias, total slope), G4 ft_rate (FTA/FGA) from `eval_gates.py`: no PASS -> FAIL,
+    and no primary moving away from real by more than 2 paired SE;
+  - reported, not gates: H2 bonus trips per in-bonus possession (the diag's +6% all-season caveat; read with L1 so a compensation is not mistaken for a fix),
+    FTA/possession by half x bucket, per-team (prior FT-rate quintile) window FTA/P slope.
+- **Verdict:** offline winner + every L line holds on both folds = VALIDATED-PENDING-PM; otherwise the failing line is named. No served default changes here.
+- Results: appended section here + `docs/tests/foul_accrual_calendar_2026-10-07.md`; ledger row status RUN.
