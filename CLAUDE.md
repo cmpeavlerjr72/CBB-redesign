@@ -78,6 +78,11 @@ Remote: `https://github.com/cmpeavlerjr72/CBB-redesign.git`, branch `main`. Comm
 ## Worker discipline
 
 Workers run concurrently on one machine. Never kill, restart, or signal a process you did not start (`Stop-Process python` is banned); restart only your own PID. Never overwrite a data file another worker may be reading; write a versioned sibling and let the PM switch. Report any interruption you caused.
+Every PM wake re-reads the whole PM context, so (user rule, 2026-10-07):
+- A worker never ends its turn while its own job is still running. It waits in-turn: a blocking foreground wait with a timeout of at most 10 min, repeated.
+- Before reporting, it stops every background child it started (watchers, SSH tails), so exactly one completion notice reaches the PM.
+- Workers never edit a doc the PM wrote this session; they write a sibling file instead.
+- The PM chains follow-up steps into one brief instead of launching a series of workers.
 
 ## Windows
 
