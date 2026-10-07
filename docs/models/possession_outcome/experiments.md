@@ -4253,3 +4253,50 @@ binned export becomes a follow-up item; it is never the winner here.
   $20 cap if needed.
 - Verdict: eligible winner + every L line on both folds = VALIDATED-PENDING-PM; otherwise the failing line is named. Results: appended section +
   `docs/tests/foul_accrual_round2_2026-10-07.md`; ledger row status RUN.
+
+## 35. Section 34 RESULTS -- foul-accrual round 2 (PO worker, 2026-10-07; run after commit 0f83dee; NOTHING ADOPTED)
+
+Report: `docs/tests/foul_accrual_round2_2026-10-07.md`.
+- Builder `scripts/build_foul_team_feats_v1.py`: leak check clean, change entering game g vs own margin -0.020 / +0.010.
+- Trainer `scripts/train_foul_team_v1.py`.
+- One blind grader `scripts/grade_foul_team_v1.py` (`results/foul_r2/grade_v1.json`).
+- Flag `ENGINE_FOUL_TEAM` default off; flag-off parity v10 PASS.
+
+**34.0 pass-through.** About 0.25 points per extra FTA in the loop (0.31 in this round's arms): bonus trips displace shots, FGA -0.24 per +0.59 FTA.
+The diag's FTA attribution overstated the points at stake; the whole d0-14 FTA gap is worth about 0.7-0.9 of the -5.2 points.
+
+**Offline (fold 2 selects).**
+
+| arm | F2 floors | F1 floors | F2 H1 rel d0-14 / d46+ | F1 H1 rel d0-14 / d46+ | resp def/off F2 | resp def/off F1 | failed |
+|---|---:|---:|---|---|---|---|---|
+| `A2` | -- | -- | -3.8% / +10.5% | -0.6% / +13.6% | -0.32 / -0.12 | -0.19 / -0.14 | |
+| `A2t` | +4.56 | +3.57 | -3.9% / +10.5% | -0.6% / +14.0% | 0.41 / 0.31 | 0.45 / 0.56 | O3 spread (both) |
+| `A2tn` | +6.32 | +3.56 | -8.5% / +1.7% | -0.7% / +14.0% | 0.39 / 0.29 | 0.45 / 0.54 | F2 O3 d0-14, F1 O3 spread |
+| `A2tnc` | +6.52 | +4.20 | -2.9% / +1.4% | +5.9% / +12.4% | 0.39 / 0.30 | 0.45 / 0.54 | F1 O3 d0-14 |
+| `A2tG` (ceiling) | +8.76 | -8.44 | +1.1% / +0.2% | +17.5% / +20.6% | 0.30 / 0.25 | 0.38 / 0.59 | F1 confirm / O2 / O3 |
+
+- **No eligible arm: `A2` stands.**
+- The team priors are a stable gain (+4.4e-4 / +4.1e-4) and fix the responsiveness sign on both sides and both folds.
+- The level term (Lv coefficient +1.02 on F2; inert on F1, n0 = 3.2e5) helps only where the test level moved (2025).
+- F1's late over-prediction sits in the defence count 6+ cell (A2 rel +55%), not in the league level.
+
+**Closed loop, DESCRIPTIVE, 50 paired seeds, full slates** (`A2tnc` as s34.4; `A2t` extra, not pre-registered).
+The control is round 1's v3 taps.
+
+| line | F2 v3 -> `A2tnc` / `A2t` | F1 v3 -> `A2tnc` / `A2t` |
+|---|---|---|
+| total bias d0-14 | -5.16 -> -5.17 / -5.23 | -4.93 -> -4.74 / -4.91 |
+| total bias d15-45 | -0.13 -> -0.32 / -0.11 | -1.80 -> -1.78 / -1.76 |
+| total bias d46+ | +0.67 -> +0.45 / +0.69 | -0.65 -> -0.69 (2.9 SE away) / -0.66 |
+| G9 total bias all | -0.14 -> -0.33 (16 SE away) / -0.12 | -1.42 -> -1.42 / -1.42 |
+| G4 ft_rate (actual 0.3295 / 0.3281) | 0.3307 -> 0.3252 / 0.3311 | 0.3234 -> 0.3238 / 0.3239 |
+| H1 in-bonus d0-14 (actual 0.268) | 0.215 -> 0.219 / 0.216 | 0.208 -> 0.227 / 0.210 |
+| loop team resp, all-season FTA/FGA, off / def | 0.45 / 0.49 -> 0.69 / 0.64 ; 0.70 / 0.65 | 0.37 / 0.51 -> 0.62 / 0.67 ; 0.63 / 0.67 |
+
+- L1 d0-14 fails in every run.
+- `A2tnc`: L2 fails on F1 (d46+); L3 fails on F2 (G9, G4 move away; H2 in-bonus d46+ 0.356 vs 0.374).
+- `A2t`: L3 passes on both folds and no gate status changes; L2 d0-14 F2 moves 2.1 SE away (-0.07 pts).
+- 200 seeds not triggered (largest d0-14 move +0.19 pts < 1.0). AWS $0.
+
+Reading: the accrual channel is not the early-total lever. `A2t` is a clean responsiveness fix (standing matchup rule) that fails only the
+pre-registered O3 spread gate. The next accrual defect is A2's in-bonus (count 6+) non-trip over-prediction. PM decides.
