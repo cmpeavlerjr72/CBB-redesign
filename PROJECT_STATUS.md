@@ -24,7 +24,9 @@ Next (in order):
    - possessions: -0.9 / -0.5, though they run +0.8 / +0.6 on d46+, so clock pace has a calendar shape;
    - jump2 make: -0.7 / -0.4.
    Every piece is a flat level offset across team-prior quintiles.
-   Next: measure the d0-14 gap under the LIVE serving path (A3 day-1 priors + R1) on a fold-2 replay before any new round. The replays above use historical priors.
+   LIVE path measured (`docs/tests/early_gap_live_path_2026-10-07.md`, 50 seeds): A3+R1 closes only +0.38 (F2) / +0.67 (F1), so d0-14 totals stay -4.8 / -4.3. Margins are unaffected (+0.11).
+   PM proposal (pending user): early-season games get a known-bias label on the totals market in publish, with no totals edge actioned before day 15. Margins and props are unaffected. This is a decision-layer policy, not an output adjustment.
+   Post-freeze round: every channel is a flat league-level early offset, which points to one shared cause. Pre-register a cross-model early-season league-level anchor (PO TOV, FT, clock pace, fg_make jump2) rather than five separate rounds.
 5. Lines re-probe Oct 26.
 
 ## SESSION 2026-10-05 (day; PM Opus 5.5): readiness track + pre-freeze modeling. Read this block first.
