@@ -154,7 +154,7 @@ class Chain:
             e[v] = "1"
         e["PYTHONIOENCODING"] = "utf-8"
         e["CBB_TRUTH"] = "verified_v1"
-        if getattr(self.a, "ot_foul_carry", False):          # DEFAULT OFF: event-stream consumers carry team fouls into overtime
+        if getattr(self.a, "ot_foul_carry", False):          # DEFAULT ON (opt out --no-ot-foul-carry): event-stream consumers carry team fouls into overtime
             e["CBB_OT_FOUL_CARRY"] = "1"
         if extra:
             e.update(extra)
@@ -162,7 +162,7 @@ class Chain:
 
     @property
     def pv(self) -> str:
-        """possessions / machine version the foul-state consumers read: v4, or v4otc (--ot-foul-carry, default off)"""
+        """possessions / machine version the foul-state consumers read: v4, or v4otc (--ot-foul-carry, default ON)"""
         return "v4otc" if getattr(self.a, "ot_foul_carry", False) else "v4"
 
     def n(self, stage: str) -> int:
@@ -716,10 +716,12 @@ def main() -> int:
     ap.add_argument("--inputs-event-layer", choices=["v2", "v4"], default="v4",
                     help="event layer of the PO round-2 event block in the engine inputs (v4 = matches the retrained "
                          "PO; v2 = engine_v3 as built)")
-    ap.add_argument("--ot-foul-carry", action="store_true",
-                    help="DEFAULT OFF. Retrain on the OVERTIME TEAM-FOUL CARRY sibling (possessions_v4otc, foul state machine v4otc, "
-                         "CBB_OT_FOUL_CARRY=1 for event-stream consumers). Needs the sibling built: scripts/build_possessions_v4otc_v1.py. "
-                         "Not wired: prebuilt fg / rebound / free-throw designs (docs/tests/ot_team_foul_state_audit_2026-10-01.md)")
+    ap.add_argument("--ot-foul-carry", dest="ot_foul_carry", action="store_true", default=True,
+                    help="DEFAULT ON (ledger 08531a2, 2026-10-07). Retrain on the OVERTIME TEAM-FOUL CARRY sibling (possessions_v4otc, foul state "
+                         "machine v4otc, CBB_OT_FOUL_CARRY=1 for event-stream consumers, carried fg / rebound / FT tables). Needs the sibling built: "
+                         "scripts/build_possessions_v4otc_v1.py (docs/tests/ot_team_foul_state_audit_2026-10-01.md)")
+    ap.add_argument("--no-ot-foul-carry", dest="ot_foul_carry", action="store_false",
+                    help="opt out of the OT foul carry (the pre-2026-10-07 behaviour: possessions v4, no carried tables)")
     ap.add_argument("--redo", default="",
                     help="comma list of THIS tag's stages to rebuild (the old output is archived, not deleted), "
                          "e.g. inputs,gate after the inputs switch")

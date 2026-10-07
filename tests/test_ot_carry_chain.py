@@ -1,4 +1,4 @@
-"""Chain wiring of --ot-foul-carry (lane F, 2026-10-01): default plan unchanged, carry plan has the extra stages and the sibling versions."""
+"""Chain wiring of --ot-foul-carry (lane F, 2026-10-01): default is carry ON (2026-10-07), --no-ot-foul-carry keeps the old plan, carry plan has the extra stages and the sibling versions."""
 import subprocess
 import sys
 from pathlib import Path
@@ -13,13 +13,13 @@ def _plan(*extra):
     return r.stdout
 
 
-def test_default_plan_has_no_carry_stages():
-    out = _plan()
+def test_no_carry_plan_has_no_carry_stages():
+    out = _plan("--no-ot-foul-carry")
     assert "otc_designs" not in out and "ft_train" not in out and "v4otc" not in out
 
 
-def test_carry_plan_wires_every_consumer():
-    out = _plan("--ot-foul-carry")
+def test_default_plan_is_carry_and_wires_every_consumer():
+    out = _plan()
     for needle in ("build_possessions_v4otc_v1.py", "--poss-version v4otc", "--machine v4otc", "build_ot_carry_designs_v1.py",
                    "train_free_throw_s1_fold_v1.py", "--attempts", "diag_ot_carry_parity_v1.py", "otc_designs/out/fg_make/design_v2_shotshooter.parquet",
                    "otc_designs/out/rebound/round3/design_round3.parquet", "--ft-manifest"):
