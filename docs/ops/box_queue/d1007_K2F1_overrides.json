@@ -1,0 +1,43 @@
+{
+ "adapters.ENGINE_DIR": "data/processed/models/fold1_v1/engine_scratch",
+ "adapters.FG_DIR": "data/processed/models/fold1_v1/fg_root",
+ "adapters.RB_S1_MANIFEST": "data/processed/models/fold1_v1/rb/artifacts/s2_F1_A0B0C0_seed0/manifest.json",
+ "adapters.FT_S1_MANIFEST": "data/processed/models/fold1_v1/ft/S1_conf_aligned/F1/manifest.json",
+ "adapters.CK_DIR": "data/processed/models/clock",
+ "clock_adapter_v3.CK_DIR": "data/processed/models/clock",
+ "clock_adapter_v3.PARAMS_FOLD": {
+  "str": "F1"
+ },
+ "shot_block.LUT_DIR": "data/processed/models/fold1_v1/loop",
+ "foul_joint.LUT_DIR": "data/processed/models/fold1_v1/loop",
+ "foul_joint.ARMS": {
+  "items": {
+   "R8b": {
+    "accrual": "lut_acc_A2_F1",
+    "trip": "lut_trip_T2c_F1"
+   }
+  }
+ },
+ "foul_r9.LUT_DIR": "data/processed/models/fold1_v1/loop",
+ "foul_r9.ARMS": {
+  "items": {
+   "R9ao3": [
+    "R8b",
+    "lut_ao_AO3_F1"
+   ]
+  }
+ },
+ "shared_shooting.PARAMS": "data/processed/models/fold1_v1/loop/params_G3_F1.json",
+ "chance_time.LUT3": {
+  "path_str": "data/processed/models/chance_time/F1/lut_v3.npz"
+ },
+ "clock_adapter_v3.V3C_MODES": {
+  "items": {
+   "v3c_r8K2_P3_s1": {
+    "manifest": "r8_K2/F1/manifest.json",
+    "base_arm": "clock_r8_K2",
+    "parametrisation": "P3"
+   }
+  }
+ }
+}
