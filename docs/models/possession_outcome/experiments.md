@@ -4150,3 +4150,106 @@ Loop lines:
 Reading: the calendar is a real accrual effect. It halves the window's H1 bonus-state gap, but it is worth only +0.15 points of the -5 point d0-14 total gap
 and 17-22% of the window FTA/FGA gap. Candidate next arms are an as-of level term plus team foul priors in accrual; any calendar term would be re-entered on top
 of them. PM decides.
+
+## 34. Foul-accrual round 2: team foul priors, an as-of sample-size / league-level term, and the calendar term on top of `A2` (PO worker, 2026-10-07; written and COMMITTED BEFORE any arm was fitted or run)
+
+**Nothing is adopted; no served default changes; the PM decides.** Follows section 33 (round 1: no eligible arm). Round 1 found two A2 defects that
+interact with any calendar term: (i) A2 over-predicts both test seasons late (H1 d46+ rel +10.5% F2 / +13.6% F1), a season-level drift, so a train-fitted
+calendar term lifts early rows that were near calibration; (ii) A2 has no team term, so its prior-quintile slope is negative (-0.32 F2 / -0.19 F1).
+Round-7 evidence: team as-of foul rates on top of A2 (`A2_D9a`, opponent-adjusted) moved log loss by +0.48 x 0.000804 = +3.9e-4, a tie only under the
+carried floor; under the round-1 measured floor (about 2e-5 to 4e-5) that size would be roughly ten floors.
+
+### 34.0 Points at stake (computed before design, from round 1's paired tap runs; `scripts/diag_foul_passthrough_v1.py`, `results/foul_r2/passthrough_F2.txt`)
+
+F2 d0-14, 621 games x 50 paired seeds, `A2dbk` minus served v3, per game, both teams:
+- H1 in-bonus possessions +1.82 (share 0.215 -> 0.241) -> H1 bonus trips +0.28 (0.154 per extra in-bonus possession), H2 bonus trips +0.15,
+  shooting trips -0.18 -> FTA +0.59, FTM +0.39 (FT% 0.67);
+- but every bonus trip ends a possession that would otherwise have gone on to a shot: FGA -0.24, FGM -0.10, field-goal points -0.24 (TOV -0.04);
+- net points +0.150 (identity dFTM + 2 dFGM2 + 3 dFGM3 = +0.150, exact). **About 0.25 points per extra FTA, not the 0.67-0.72 of an FT make.**
+- Consequence: the whole d0-14 FTA/FGA gap (0.3204 vs 0.3454, about 2.9 FTA/game) is worth about 0.7 points at this rate; the diag's "74% / 58% of the
+  window FTA gap" (FTA units, about 2.2 / 1.7 FTA/game) is worth about 0.55 / 0.45 points of the -5.2 point d0-14 total deficit. The diag's attribution
+  was correct in FTA units but overstated the points at stake if read as a share of the early total deficit. This round can recover at most
+  about 0.5-0.7 points of d0-14 total through the accrual channel; its main value is calibration and team responsiveness of the foul state.
+
+### 34.1 Data, folds, target (as section 32.1 unless stated)
+
+- Rows: `train_foul_joint_v1.possession_design()` unedited; target `y_nt`; fit mask `in_fit_window == 1`; F1 train 2022-23 / test 2024, F2 train 2022-24 /
+  test 2025; fold 2 selects, fold 1 confirms; 2025-26 sealed (`assert_not_sealed`).
+- **Team foul priors (new builder `scripts/build_foul_team_feats_v1.py`, one function for training rows and engine slates).** From the team-game
+  history of `foul_accrual_poss_v2` (all possessions of the game): defence committing rate = (def_silent + def_trip) per defensive possession;
+  offence drawn rate = (the opposing defence's def_silent + def_trip) per offensive possession; x100.
+  - as-of = games with `game_date` strictly before the query date, same season;
+  - centred on its own snapshot: the in-season part minus the strictly-before league mean of the same rate (pooled possessions); the prior part = the
+    team's previous-season final rate minus that season's league mean (2022 has no previous season in the panel -> prior part 0);
+  - combined `D = (P_in * r_in + k * r_prior) / (P_in + k)`, `P_in` = the team's as-of possessions, `k` = 5 x the panel mean possessions per team-game
+    (round-6 `prior_games = 5` convention; fixed, not tuned); a team with nothing gets exactly 0 (league mean). `D` = committing prior of the
+    defence, `O` = drawn prior of the offence.
+  - sample size: `u_d = 1 / (1 + n_d)`, `u_o = 1 / (1 + n_o)`, `n` = the team's as-of in-season games.
+  - leak check (own pbp, not an external feed, so reported, not a gate): corr of the change in `D` (resp. `O`) entering game g with game g's own margin
+    and with game g's own team foul rate; strictly-before is also asserted in code (the as-of sums exclude the query date).
+- **League level term (PO s30 `T1` pattern).** `L(s,t) = (N_y,before + n0 * prior) / (N_before + n0)` over fit-window rows of season s dated strictly before t,
+  `prior` = season s-1's realised fit-window `y_nt` rate (2022: the fold's pooled train rate `Lbar`); `n0` chosen inside the fold's train seasons that have a
+  previous season (F1: 2023; F2: 2023-24) by maximising the binomial likelihood of `y_nt` under `L` alone over the grid {0, 1e1, 3e1, 1e2, ..., 1e8, inf}
+  (n0 = 0 with no rows before falls back to the prior). Feature `Lv = logit L(s,t) - logit Lbar`.
+- Calendar: `dss_bkt` as section 32 (d0-7 / d8-14 / d15-30 / d31-45 / d46+). Round 1 favoured the bucket form (`A2dbk` +3.5 floors; both decay arms lost),
+  so the calendar arm uses bucket offsets.
+- Home/away/neutral: `site_home` / `site_away` are in `STATE_T` and therefore in every arm; site segments are reported for every arm. The team priors are
+  pooled over the team's home, away and neutral games (a site-split prior is not an arm).
+
+### 34.2 Arms (complexity order, simplest first)
+
+Offset family (the round-1 `A2dec` construction: `logit p = logit p_A2(x) + f(z)`, `p_A2` = the arm's own seed's A2 fit, its in-sample train prediction as a
+fixed offset; the parameters of `f` by maximum likelihood on the fold's train fit rows, L-BFGS, no penalty). Every arm is fitted on the seed-0 and the
+seed-7 A2 offsets, so each has its own reseed spread.
+
+| arm | `f(z)` | params |
+|---|---|---|
+| `A2` control | 0 (round-7 GBM on `STATE_T`, seed 0 = the served LUT's source fit) | 0 |
+| `A2s7` noise floor | spec-identical A2 retrain, seed 7 | 0 |
+| `A2t` | `a + b_d D + b_o O` | 3 |
+| `A2tn` | `A2t` + `c_d D u_d + c_o O u_o + g Lv` | 6 |
+| `A2tnc` | `A2tn` + `e_k` for days buckets d0-7, d8-14, d15-30, d31-45 (d46+ reference) | 10 |
+| `A2tG` (diagnostic ceiling, NOT eligible) | GBM (`GBM_KW`) on `STATE_T + [D, O, u_d, u_o, Lv, dss_bkt]` | GBM refit |
+
+`A2tG` is motivated by round 6 (`F5` GBM beat its linear twin by 36 floors because foul effects are state-dependent). It cannot be served on the current
+LUT grid (continuous team axes), so it is graded as a ceiling: if it beats the best offset arm by more than one floor on both folds, the round says so and a
+binned export becomes a follow-up item; it is never the winner here.
+
+### 34.3 Primary, floor, decision rule, gates (offline)
+
+- **Primary:** Bernoulli log loss of `y_nt`, F2 test fit-window rows, true state. All test rows reported.
+- **Floor** (section 32.3 construction): `max(|LL(A2 seed 0) - LL(A2 seed 7)|, 2 x game-block bootstrap SE of the paired per-row delta arm - control)`,
+  200 reps, seed 20261007. Deltas also printed in units of 0.000804.
+- **Gates (all must hold on BOTH folds for an arm to be eligible):**
+  - O1 responsiveness: team quintiles of the prior-season (s-1) league-centred `y_nt` rate (the section 32 grader's construction, teams >= 300 rows),
+    slope of the five quintile means predicted on realised, on the DEFENCE side and the OFFENCE side: each slope > 0 and above the control's by more than
+    the control's seed 0-vs-7 slope spread.
+  - O2 no d46+ regression: d46+ log loss not worse than control by more than its own d46+ floor; |H1 rel d46+| not more than 1 pp further from zero than the
+    control's (rel = mean p / mean y - 1).
+  - O3 early calibration: |H1 rel d0-14| not more than 1 pp further from zero than the control's, AND the H1 calendar spread
+    |rel(H1 d46+) - rel(H1 d0-14)| smaller than the control's. (Changed from round 1's "moves toward zero": the control's F1 d0-14 rel is -0.6%, so "toward
+    zero" there tests noise in the sign; the defect is the spread. Written before any round-2 fit.)
+  - F1 confirmation: F1 delta vs control > 0.
+- **Decision rule (mechanical):** eligible = beats control on F2 (delta > floor) + all gates. Winner = among eligible offset arms, the simplest within one F2
+  floor of the best eligible (order `A2t` < `A2tn` < `A2tnc`). No eligible arm -> `A2` stands.
+- **Segments (every arm):** half x days bucket rel and log loss; site home / away / neutral offence rel; defence count 0-5 / 6+; team quintiles both sides;
+  cells under 2,000 rows labelled underpowered. Fitted coefficients printed per fold and seed.
+- One blind grader `scripts/grade_foul_team_v1.py` over `round11team/preds_{F1,F2}_seed{0,7}.parquet` from `scripts/train_foul_team_v1.py`.
+
+### 34.4 Closed loop (eligible winner only; else the best-F2 offset arm DESCRIPTIVE, s31/s33 precedent)
+
+- **Flag:** new `ENGINE_FOUL_TEAM=<stem>` (module `src/cbb_sim/engine/foul_team.py`), default off; unset = served path, no extra computation, no RNG change.
+  The arm only adds `f(z)` to `logit p_def` of the served accrual table (the same single `foul_accrual` uniform). Stems are fold-specific coefficient files
+  (`round11team/coef_<arm>_F2.json` from F2 TRAIN fits; `_F1` from F1 train fits, read with the fold-1 overlay that loads `lut_acc_A2_F1`); per-game team
+  priors and `Lv` for the slate come from the same builder (`round11team/slate_feats_{2024,2025}.parquet`), as-of the game date. Not combinable with
+  `ENGINE_FOUL_CAL` (raises). Flag-off parity: `scripts/run_parity_smoke_v1.py` vs parity v10 must PASS bit-identically.
+- **Runs:** arm only, seeds 0-49, every game of the slate, home box <= 8 workers, `scripts/run_foul_cal_tap_v1.py` (unchanged tap). The control is
+  round 1's served-v3 tap runs `fcal_F2_ctrl_s50` / `fcal_F1_ctrl_s50` (same seeds, same code path; proven identical to the box reads in s33), valid
+  because no served default changed since (HEAD 0cd0ab4 is docs only); re-checked by engine provenance in run_meta.
+- **Lines:** section 32.4 L1-L3 unchanged (grader `scripts/grade_foul_cal_closed_loop_v1.py`), plus reported: the pass-through table of 34.0 for the arm,
+  and per-team responsiveness in the loop: teams in quintiles of the prior-season centred committing rate (defence) and drawn rate (offence),
+  sim vs actual team FTA per possession (all season and d0-14), slope of sim on actual quintile means.
+- **200 seeds** only if the 50-seed d0-14 total-bias move is at least 1.0 point on either fold (34.0 predicts it will not be). AWS spot allowed at a
+  $20 cap if needed.
+- Verdict: eligible winner + every L line on both folds = VALIDATED-PENDING-PM; otherwise the failing line is named. Results: appended section +
+  `docs/tests/foul_accrual_round2_2026-10-07.md`; ledger row status RUN.
