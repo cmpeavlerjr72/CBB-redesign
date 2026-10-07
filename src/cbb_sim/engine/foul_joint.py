@@ -130,9 +130,10 @@ class FoulJoint:
         """(defence foul mask, offence foul mask) for this possession.
 
         `cal` = (foul_cal.FoulCal, game index per row) or None (default: the served path, unchanged);
-        when given, the calendar arm's table replaces the defence accrual probability (PO s32)."""
+        when given, the calendar arm's table replaces the defence accrual probability (PO s32);
+        `cal` = (foul_team.FoulTeam, game index, defence side) adds the round-2 team / level offset (PO s34)."""
         ix = self._idx(self.acc, period, sec_rem, margin, def_f, off_f, site)
-        p_def = self.acc["lut"][ix] if cal is None else cal[0].p_def(ix, cal[1])
+        p_def = self.acc["lut"][ix] if cal is None else cal[0].p_def(ix, *cal[1:])
         if self.off is not None:
             p_off = self.off["lut"][ix + (ended_tov.astype(np.int64),)]
         else:
