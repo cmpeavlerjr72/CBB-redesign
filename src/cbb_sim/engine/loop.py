@@ -55,6 +55,7 @@ import pandas as pd
 from cbb_sim.engine import andone_label as AL
 from cbb_sim.engine import chance_time as CT
 from cbb_sim.engine import foul_joint as FJ
+from cbb_sim.engine import foul_cal as FCAL
 from cbb_sim.engine import rotation_adapter as RA
 from cbb_sim.engine import shared_shooting as SSL
 from cbb_sim.engine import shot_block as SBK
@@ -289,6 +290,8 @@ def simulate_chunk(inp: EngineInputs, ad: Adapters, game_index: np.ndarray,
     # Round 7 (experiments.md s20): joint foul accrual + FT-trip offsets.
     # SERVED DEFAULT `FJ.DEFAULT` (R9ao3, adopted 2026-10-01); `reference` -> None (served-v1).
     fj = FJ.load(os.environ.get("ENGINE_FOUL_JOINT", FJ.DEFAULT))
+    # PO s32 foul-accrual calendar term: DEFAULT OFF (ENGINE_FOUL_CAL unset -> None, served path unchanged).
+    fcal = FCAL.load(inp, fj) if (os.environ.get("ENGINE_FOUL_CAL", "off") or "off") != "off" else None
     # shot_block section 5: drawn block flag. SERVED DEFAULT `SBK.DEFAULT` (K2_Ocell,
     # adopted 2026-10-01); `reference` -> None, no "shot_block" draw (served-v1).
     sbk = SBK.load(os.environ.get("ENGINE_SHOT_BLOCK", SBK.DEFAULT), inp)
@@ -723,8 +726,12 @@ def simulate_chunk(inp: EngineInputs, ad: Adapters, game_index: np.ndarray,
         # ---- non-shooting foul that awards no attempt (measured gap) ------
         u_sf = book.draw("foul_accrual", act)
         if fj is not None:
-            sf, of_ = fj.accrual(u_sf, per0, sec0, sd0, tf_def0, tf_off0, site0,
-                                 end_code == PREV["TOV"], rows=act, def_side=dfn)
+            if fcal is None:
+                sf, of_ = fj.accrual(u_sf, per0, sec0, sd0, tf_def0, tf_off0, site0,
+                                     end_code == PREV["TOV"], rows=act, def_side=dfn)
+            else:
+                sf, of_ = fj.accrual(u_sf, per0, sec0, sd0, tf_def0, tf_off0, site0,
+                                     end_code == PREV["TOV"], rows=act, def_side=dfn, cal=(fcal, gidx))
             if of_.any():
                 ro = np.flatnonzero(of_)
                 st.team_fouls[act[ro], off[ro]] += 1
