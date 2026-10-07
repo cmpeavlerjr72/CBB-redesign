@@ -4105,3 +4105,48 @@ Every arm is fitted under seeds 0 and 7 (`A2dec*` seed 7 sits on the seed-7 A2 o
     FTA/possession by half x bucket, per-team (prior FT-rate quintile) window FTA/P slope.
 - **Verdict:** offline winner + every L line holds on both folds = VALIDATED-PENDING-PM; otherwise the failing line is named. No served default changes here.
 - Results: appended section here + `docs/tests/foul_accrual_calendar_2026-10-07.md`; ledger row status RUN.
+
+## 33. Section 32 RESULTS -- foul-accrual calendar round (PO worker, 2026-10-07; run after commit 3337d13; NOTHING ADOPTED)
+
+Report: `docs/tests/foul_accrual_calendar_2026-10-07.md`. Trainer `scripts/train_foul_cal_v1.py`, one blind grader `scripts/grade_foul_cal_v1.py`
+(`results/foul_cal/grade_v1.json`), LUT export `scripts/build_foul_cal_lut_v1.py` (the seed-0 A2 refit reproduces the served `lut_acc_A2_F2` and `lut_acc_A2_F1`
+exactly).
+
+**Offline (fold 2 selects).**
+
+| arm | F2 floors vs A2 | F1 floors | F2 H1 rel d0-14 / d46+ | F1 H1 rel d0-14 / d46+ |
+|---|---:|---:|---|---|
+| `A2` | -- (reseed floor 6.0e-6) | -- | -3.8% / +10.5% | -0.6% / +13.6% |
+| `A2dec` | -1.08 | -2.79 | +2.5% / +10.5% | +5.0% / +13.6% |
+| `A2decH` | -1.09 | -2.47 | +4.9% / +10.5% | +7.2% / +13.7% |
+| `A2dbk` | **+3.52** (delta 1.30e-4, floor 3.7e-5) | **+3.61** | +5.7% / +8.1% | +8.2% / +11.6% |
+
+- `A2dbk` beats the control, but it fails O3 on both folds: the d0-14 H1 rel bias moves from near zero to +6% / +8%.
+- It also fails O1 on F1: the defence prior-quintile slope goes -0.191 -> -0.199, against a reseed spread of 0.001.
+- **No eligible arm: REFUTED for this round; `A2` stands.**
+- Mechanism: A2 over-predicts both test seasons late (+10% to +14%), a season-level downward drift. A train-fitted calendar term therefore lifts
+  early rows that were near calibration. `A2dbk`'s gain is in d46+ (a lower late level).
+- Every arm's team slope is negative (A2 has no team term): a standing responsiveness defect of A2, reported and not fixed here.
+
+**Closed loop, DESCRIPTIVE** (`A2dbk` is not eligible; precedent s31).
+- Wiring: default-off `ENGINE_FOUL_CAL=A2dbk`; flag-off parity v10 PASS.
+- Design: paired vs served v3, seeds 0-49, full slates. F2 5,705 graded games; F1 5,635 (fold-1 overlay, static rotation).
+- Tap control identical to the box reads: F1 281,750 / 281,750; F2 285,499 / 285,500 (one cross-platform game-seed).
+
+| line | F2 v3 -> A2dbk (actual) | F1 v3 -> A2dbk (actual) |
+|---|---|---|
+| total bias d0-14 / d15-45 / d46+ | -5.16 -> -5.01 / -0.13 -> -0.17 / +0.67 -> +0.63 | -4.93 -> -4.77 / -1.80 -> -1.80 / **-0.65 -> -0.69 (4.4 SE away)** |
+| H1 in-bonus d0-14 / d46+ | 0.215 -> 0.241 (0.268) / 0.206 -> 0.198 (0.182) | 0.208 -> 0.233 (0.268) / 0.209 -> 0.203 (0.187) |
+| FTA/FGA d0-14 | 0.3204 -> 0.3260 (0.3454) | 0.3092 -> 0.3138 (0.3365) |
+| G5 total SD / corr | 0.9627 -> 0.9632 / 0.1701 -> 0.1693 | 0.9515 -> 0.9521 / 0.1892 -> 0.1882 |
+| G9 total bias / slope | -0.137 -> -0.150 / 0.9275 -> 0.9276 | -1.423 -> -1.427 / 0.9122 -> 0.9137 |
+| G4 ft_rate | 0.3307 -> 0.3304 (0.3295) | 0.3234 -> 0.3231 (0.3281) |
+
+Loop lines:
+- L1 d0-14 FAILS on both folds (still 0.026 / 0.035 short).
+- L2 d46+ FAILS on F1.
+- L3: no status change.
+
+Reading: the calendar is a real accrual effect. It halves the window's H1 bonus-state gap, but it is worth only +0.15 points of the -5 point d0-14 total gap
+and 17-22% of the window FTA/FGA gap. Candidate next arms are an as-of level term plus team foul priors in accrual; any calendar term would be re-entered on top
+of them. PM decides.
