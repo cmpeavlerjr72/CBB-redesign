@@ -16,7 +16,15 @@ Next (in order):
 1. Oct 10: run `ops_seal_week_v1.py` (seal lift per user ruling).
 2. Seal-week build to the first 2026-27 live build, target Oct 17.
 3. Register the scheduler; at least 5 unattended passes before Nov 2.
-4. Accrual round 2: add an as-of level term and team foul priors to A2, plus a calendar term. Pre-register; it rides the post-freeze retrain if it wins.
+4. Accrual round 2 RAN: no eligible arm (`docs/tests/foul_accrual_round2_2026-10-07.md`). A2t fails O3 by 0.001, and the gate is not waived. Round 3 = A2t + the in-bonus over-prediction (+40-55%), with floor-based tolerances, post-freeze.
+   The early gap in POINTS (`docs/tests/early_total_points_decomp_2026-10-07.md`, Shapley) has no single owner. F2 / F1 d0-14:
+   - FT%: -1.4 / -1.1, of which 55-65% is anonymous slots;
+   - TOV: -0.6 / -2.2;
+   - FTA: -0.7 / -0.9;
+   - possessions: -0.9 / -0.5, though they run +0.8 / +0.6 on d46+, so clock pace has a calendar shape;
+   - jump2 make: -0.7 / -0.4.
+   Every piece is a flat level offset across team-prior quintiles.
+   Next: measure the d0-14 gap under the LIVE serving path (A3 day-1 priors + R1) on a fold-2 replay before any new round. The replays above use historical priors.
 5. Lines re-probe Oct 26.
 
 ## SESSION 2026-10-05 (day; PM Opus 5.5): readiness track + pre-freeze modeling. Read this block first.
