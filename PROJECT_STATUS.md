@@ -1,6 +1,23 @@
 # PROJECT_STATUS.md
 
-Last updated: 2026-10-05 (day session wrap-up). Season tips Nov 2, 2026.
+Last updated: 2026-10-07 (day session). Season tips Nov 2, 2026.
+
+## SESSION 2026-10-07 (day; PM Opus 5.5): K2 clock ADOPTED (served stack v3). Read this block first.
+
+Usage reading 25% of weekly allowance by Wed midday (user: "plenty of room"). AWS this week ~$11 of $60.
+- **SERVED STACK v3:** clock round-8 K2 `v5b_r8K2_glat_pmean` is the engine default (ce25650). F1 read confirmed the F2 read: G5 SD ratio 0.918 -> 0.961 PASS, corr 0.147 -> 0.188, no gate status regressed (`docs/tests/adoption_clock_K2_2026-10-07.md`). `adapters.SERVED_V2` reproduces parity v9; new parity reference v10. Retrain chain stage `clock_k2` (default on). 2026-27 serves the 2025-04-01 refit, carried forward.
+- **OT foul carry:** now the retrain-chain default (`--no-ot-foul-carry` opts out). Suite 748 passed.
+- **Oct 10 runbook rehearsal** (`docs/ops/runbook_rehearsal_2026-10-07.md`): 19 stages, 14 OK, 4 SEAL_OK, 1 MANUAL, 0 FAIL. `parity_v10` is stage 1. 2027 rosters 307/365 (R1 covers 58). On the day: seal flag (user ruling 10-01: lift in the Oct 10-17 window), roster re-pull, switch `preseason_dir.json`.
+- **Early-season totals** (d0-14 -4.5 / -5.2) are not touched by K2 (`docs/tests/early_total_bias_K2_2026-10-07.md`). They are broad (about 2/3 of teams), not prior-concentrated.
+- **Owner found** (`docs/tests/early_fta_rate_diag_2026-10-07.md`): the foul accrual LUT A2 (R9ao3) has no calendar input. The real H1 in-bonus share is 0.28-0.31 in week 0 vs 0.20 from d46, every season, within team. The bonus channel is about 74% of the FTA/P gap.
+- **Calendar-term round** (spec 3337d13; `docs/tests/foul_accrual_calendar_2026-10-07.md`): NOT ADOPTED. `A2dbk` wins the primary but fails the d0-14 calibration and F1 responsiveness gates, and is worth only +0.15 pts in the loop. A2 over-predicts late season by 10-14% and ignores team foul style.
+
+Next (in order):
+1. Oct 10: run `ops_seal_week_v1.py` (seal lift per user ruling).
+2. Seal-week build to the first 2026-27 live build, target Oct 17.
+3. Register the scheduler; at least 5 unattended passes before Nov 2.
+4. Accrual round 2: add an as-of level term and team foul priors to A2, plus a calendar term. Pre-register; it rides the post-freeze retrain if it wins.
+5. Lines re-probe Oct 26.
 
 ## SESSION 2026-10-05 (day; PM Opus 5.5): readiness track + pre-freeze modeling. Read this block first.
 
