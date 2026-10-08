@@ -18,8 +18,8 @@ class _Inp:
 def test_r9ao3_missing_season_raises_and_names_seal(monkeypatch):
     monkeypatch.chdir(REPO)
     fr = FR9.load("R9ao3")
-    with pytest.raises(RuntimeError, match="SEAL"):
-        fr._team_term(_Inp(2027))
+    with pytest.raises(RuntimeError, match="no rows for season"):
+        fr._team_term(_Inp(2099))     # 2027 rows exist in served v2 since 2026-10-08
 
 
 def test_r9ao3_present_season_does_not_raise(monkeypatch):
@@ -31,19 +31,20 @@ def test_r9ao3_present_season_does_not_raise(monkeypatch):
 def test_table_seasons_has_2025_not_2027(monkeypatch):
     monkeypatch.chdir(REPO)
     have = FR9.table_seasons("R9ao3")
-    assert 2025 in have and 2027 not in have
+    assert 2025 in have and 2027 in have and 2099 not in have
 
 
 def test_shot_block_live_prior_missing_names_file_and_seal():
+    # 2027 prior now exists (seal-week build d7a4798); the hard stop is exercised on a season with no file
     import build_shot_block_lut_live_v1 as SBL
-    with pytest.raises(RuntimeError, match="SEAL"):
-        SBL.load_prior(2027)
+    with pytest.raises(RuntimeError, match="shot_block_prior_2099_v1.parquet"):
+        SBL.load_prior(2099)
 
 
 def test_chain_prereqs_block_2027_on_team_prior():
     import chain_daily_v3 as C
     m = C.sim_prereqs(2027, "F2", "2026-11-02", None)
-    assert any("R9ao3 team-prior table" in x and "SEAL" in x for x in m)
+    assert not any("R9ao3 team-prior" in x for x in m)     # served v2 carries 2027 (override 2026-10-08)
     assert not any("R9ao3 team-prior" in x for x in C.sim_prereqs(2025, "F2", "2025-02-11", "x"))
 
 

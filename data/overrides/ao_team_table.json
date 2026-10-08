@@ -1,0 +1,1 @@
+{"team_table": "ao_team_prior_v2.parquet", "note": "PM ruling 2026-10-08: served and-one team table switches v1 -> v2 (v2 equals v1 on 2023-2026, adds 2027). npz and v1 untouched; delete this file to revert."}

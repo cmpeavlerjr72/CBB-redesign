@@ -40,13 +40,25 @@ def missing_season_message(missing, table, have) -> str:
     return f"R9ao3 team-prior table {table} has no rows for season(s) {missing} (has {have}).{seal}"
 
 
+def served_team_table(npz_value) -> str:
+    """Served and-one team table name: PM override file data/overrides/ao_team_table.json when present (and the named table
+    exists in LUT_DIR), else the npz `team_table` field. Every reader of the served table goes through here."""
+    import json
+    f = Path(__file__).resolve().parents[3] / "data" / "overrides" / "ao_team_table.json"
+    if f.exists():
+        name = str(json.loads(f.read_text(encoding="utf-8"))["team_table"])
+        if (LUT_DIR / name).exists():
+            return name
+    return str(npz_value)
+
+
 def table_seasons(arm: str = "R9ao3") -> list[int] | None:
     """Seasons present in the arm's team-prior table (None when the arm has no team part). Used by the daily chain's prerequisites."""
     import pandas as pd
     z = np.load(LUT_DIR / f"{ARMS[arm][1]}.npz")
     if "team_b" not in z.files:
         return None
-    return sorted(set(pd.read_parquet(LUT_DIR / str(z["team_table"]), columns=["season"])["season"].astype(int)))
+    return sorted(set(pd.read_parquet(LUT_DIR / served_team_table(z["team_table"]), columns=["season"])["season"].astype(int)))
 
 
 def _logit(p):
@@ -70,14 +82,14 @@ class FoulR9(FJ.FoulJoint):
             t = np.zeros((n, 2))
             if "team_b" in self.ao:
                 import pandas as pd
-                tab = pd.read_parquet(LUT_DIR / str(self.ao["team_table"]))
+                tab = pd.read_parquet(LUT_DIR / served_team_table(self.ao["team_table"]))
                 key = dict(zip(zip(tab["season"].astype(int), tab["team_id"].astype(int)),
                                zip(tab["ao_off_prior_c"].astype(float), tab["ao_def_prior_c"].astype(float))))
                 b_off, b_def = (float(x) for x in self.ao["team_b"])
                 seas = g["season"].to_numpy().astype(int)
                 missing = sorted(set(seas.tolist()) - set(tab["season"].astype(int).tolist()))
                 if missing:     # hard stop, never a silent zero prior term (lane F, 2026-10-01, PM ruling)
-                    raise RuntimeError(missing_season_message(missing, str(self.ao["team_table"]), sorted(set(tab["season"].astype(int)))))
+                    raise RuntimeError(missing_season_message(missing, served_team_table(self.ao["team_table"]), sorted(set(tab["season"].astype(int)))))
                 home = g["home_team_id"].to_numpy().astype(int)
                 away = g["away_team_id"].to_numpy().astype(int)
                 for i in range(n):

@@ -149,8 +149,8 @@ def test_sim_prereqs_after_artifacts_only_ratings_block_and_rosters_warn():
     if not (REPO / "data/processed/models/engine/names_F2_2027_v2.json").exists():
         pytest.skip("artifacts not built")
     miss = C3.sim_prereqs(2027, "F2", "2026-11-02", None)
-    # R9ao3 team-prior hard stop (seal-gated, added after this test was written) is an expected second blocker
-    assert len(miss) == 2 and "own ratings" in miss[0] and "R9ao3" in miss[1]
+    # served ao table v2 carries 2027 (override 2026-10-08): only the ratings blocker remains
+    assert len(miss) == 1 and "own ratings" in miss[0]
     assert [m for m in C3.sim_prereqs(2027, "F2", "2026-11-02", "x") if "R9ao3" not in m] == []
     warn = C3.sim_warnings(2027)                       # empty rosters today; if CBBD fills them in this branch is vacuous
     if warn:
