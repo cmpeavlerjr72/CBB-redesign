@@ -1,0 +1,253 @@
+{
+  "stages": [
+    {
+      "name": "schedule",
+      "status": "ok",
+      "detail": {
+        "cbbd_games_today": 0,
+        "cbbd_games_yesterday": 0,
+        "hoopr_games_today": 0,
+        "hoopr_games_yesterday": 0,
+        "id_overlap_today": 0,
+        "output": "C:\\Users\\devuser\\CBB-clean-sheet\\data\\raw\\schedule_daily\\2026-10-08.parquet"
+      },
+      "error": null,
+      "seconds": 1.7339999999967404
+    },
+    {
+      "name": "tips",
+      "status": "ok",
+      "detail": {
+        "season": 2027,
+        "window": [
+          "2026-11-02",
+          "2026-11-02"
+        ],
+        "n_games": 174,
+        "n_placeholder": 123,
+        "n_real": 51,
+        "by_source": {
+          "cbbd_placeholder_midnight_et": 123,
+          "cbbd": 43,
+          "cbbd+hoopr_min": 8
+        },
+        "n_real_sources_disagree_gt5min": 0,
+        "hoopr_available": true,
+        "fetched_at": "2026-10-08 12:50:18.222285+00:00",
+        "latest": "C:\\Users\\devuser\\CBB-clean-sheet\\data\\processed\\ingest\\tip_times_2027.parquet"
+      },
+      "error": null,
+      "seconds": 0.9529999999795109
+    },
+    {
+      "name": "lines",
+      "status": "ok",
+      "detail": {
+        "open_rows": 0,
+        "close_rows": 0,
+        "output": "C:\\Users\\devuser\\CBB-clean-sheet\\data\\raw\\lines_daily\\2026-10-08.parquet",
+        "total_rows_in_file_after_run": 0
+      },
+      "error": null,
+      "seconds": 0.875
+    },
+    {
+      "name": "lines_snapshot",
+      "status": "ok",
+      "detail": {
+        "snapshot": {
+          "rc": 0,
+          "out": "{\"date\": \"2026-11-02\", \"captured_at\": \"2026-10-08 12:50:19+00:00\", \"espn_events\": 182, \"espn_rows\": 0, \"cbbd_games\": 156, \"cbbd_rows\": 0, \"rows_added\": 0}\n"
+        },
+        "open_close": {
+          "rc": 0,
+          "out": "no snapshots or no tip table; nothing built\n"
+        }
+      },
+      "error": null,
+      "seconds": 2.172000000020489
+    },
+    {
+      "name": "lines_probe",
+      "status": "skipped",
+      "detail": {
+        "why": "probe starts Oct 20"
+      },
+      "error": null,
+      "seconds": 0.0
+    },
+    {
+      "name": "ingest",
+      "status": "ok",
+      "detail": {
+        "rc": 0,
+        "season": 2027,
+        "date": "2026-10-07",
+        "verified_finals": 0,
+        "pending_list": 0,
+        "schedule_rows_for_date": 0,
+        "hoopr_schedule_download": {
+          "source": "https://raw.githubusercontent.com/sportsdataverse/hoopR-mbb-data/main/mbb/schedules/parquet/mbb_schedule_2027.parquet",
+          "bytes": 133247,
+          "etag": "W/\"3ac0bd4f0c1a34cb94b5ebe7ad15282b650822e65eb7b9a0098b0acdc627e5bb\"",
+          "rows": 1629,
+          "fetched_at": "2026-10-08 12:50:21.818030+00:00"
+        },
+        "hoopr_dataset_http_status": {
+          "schedules": 200,
+          "team_box": 404,
+          "player_box": 404,
+          "pbp": 404,
+          "shots": 404
+        },
+        "ingest_cbbd_calls": 0
+      },
+      "error": null,
+      "seconds": 2.5
+    },
+    {
+      "name": "ratings",
+      "status": "ok",
+      "detail": {
+        "rows": 365,
+        "policy": "manifest_uniform",
+        "out": "C:\\Users\\devuser\\CBB-clean-sheet\\data\\processed\\ratings_asof\\2026-11-02",
+        "dry_run": false
+      },
+      "error": null,
+      "seconds": 9.311999999976251
+    },
+    {
+      "name": "kenpom",
+      "status": "skipped",
+      "detail": {
+        "why": "audit gap 10: PM decision"
+      },
+      "error": null,
+      "seconds": 0.0
+    },
+    {
+      "name": "rosters",
+      "status": "skipped",
+      "detail": {
+        "why": "not due: last pull 2026-10-08 (0 d ago, cadence 7 d)"
+      },
+      "error": null,
+      "seconds": 0.0
+    },
+    {
+      "name": "injuries",
+      "status": "ok",
+      "detail": {
+        "espn_teams_checked": 0,
+        "espn_output": "C:\\Users\\devuser\\CBB-clean-sheet\\data\\raw\\injuries\\espn\\2026-10-08.json",
+        "covers_status": "parsed_table",
+        "covers_rows_parsed": 0,
+        "covers_output": "C:\\Users\\devuser\\CBB-clean-sheet\\data\\raw\\injuries\\covers\\2026-10-08.html"
+      },
+      "error": null,
+      "seconds": 0.9850000000442378
+    },
+    {
+      "name": "injuries_parse",
+      "status": "ok",
+      "detail": {
+        "rows": 0,
+        "players_out": 0,
+        "unmapped_to_cbbd": 0,
+        "output": "C:\\Users\\devuser\\CBB-clean-sheet\\data\\processed\\injuries\\player_out_2026-10-08.csv",
+        "note": "ESPN college injury coverage is sparse; zero rows means 'no reported injuries', not 'everyone healthy'. No engine consumer yet."
+      },
+      "error": null,
+      "seconds": 0.5149999999557622
+    },
+    {
+      "name": "overrides",
+      "status": "ok",
+      "detail": {
+        "exists": true,
+        "n_rows": 0,
+        "n_for_today": 0,
+        "path": "C:\\Users\\devuser\\CBB-clean-sheet\\data\\overrides\\availability.csv"
+      },
+      "error": null,
+      "seconds": 0.0
+    },
+    {
+      "name": "inputs",
+      "status": "ok",
+      "detail": {
+        "slate_date": "2026-11-02",
+        "pass": "evening",
+        "clock": "2026-10-08 12:50:15.601351+00:00",
+        "slate_games_mapped": 118,
+        "slate_games_unmapped_non_d1": 38,
+        "would_simulate": 118,
+        "would_refuse": 0,
+        "placeholder_tips_in_simulate": 91,
+        "inputs_built": true,
+        "n_games": 118,
+        "rotation_fallback_team_games": 236,
+        "candidates_per_team_game_mean": 0.0,
+        "share_zero_team_static_cells": 0.6707,
+        "ratings_dir": "C:\\Users\\devuser\\CBB-clean-sheet\\data\\processed\\ratings_asof\\2026-11-02"
+      },
+      "error": null,
+      "seconds": 4.219000000040978
+    },
+    {
+      "name": "grade",
+      "status": "skipped",
+      "detail": {
+        "why": "no published slate in the retry window (season not running)"
+      },
+      "error": null,
+      "seconds": 0.0
+    },
+    {
+      "name": "bias_clv",
+      "status": "skipped",
+      "detail": {
+        "why": "no grade ledger yet"
+      },
+      "error": null,
+      "seconds": 0.0
+    },
+    {
+      "name": "sim",
+      "status": "blocked",
+      "detail": {
+        "slate_date": "2026-11-02",
+        "pass": "evening",
+        "clock": "2026-10-08 12:50:15.601351+00:00",
+        "slate_games_mapped": 118,
+        "slate_games_unmapped_non_d1": 38,
+        "would_simulate": 118,
+        "would_refuse_already_tipped": 0,
+        "tip_sources": {
+          "cbbd_placeholder_midnight_et": 91,
+          "cbbd": 19,
+          "cbbd+hoopr_min": 8
+        },
+        "placeholder_tips": 91,
+        "blocked_on": [
+          "R9ao3 team-prior table R9ao3 has no rows for season(s) [2027] (has [2023, 2024, 2025, 2026]). Season 2027 rows hold 2025-26 and-one rates, which need the SEALED 2025-26 events: BLOCKED ON THE 2025-26 SEAL (user decision, holds until the Oct 10-17 audit window). Build a versioned sibling table (docs/ops/day1_readiness_2027_2026-10-01.md section 4a); there is no silent fallback to a zero prior term."
+        ],
+        "engine_run": false
+      },
+      "error": null,
+      "seconds": 0.046999999962281436
+    },
+    {
+      "name": "publish",
+      "status": "skipped",
+      "detail": {
+        "why": "no finished sim for 2026-11-02 s200_o0"
+      },
+      "error": null,
+      "seconds": 0.0
+    }
+  ],
+  "cbbd_calls_chain": 5,
+  "clock": "2026-10-08 12:50:15.601351+00:00"
+}

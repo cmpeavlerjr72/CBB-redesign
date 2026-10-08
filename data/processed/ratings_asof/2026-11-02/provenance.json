@@ -1,0 +1,39 @@
+{
+  "season": 2027,
+  "as_of": "2026-11-02",
+  "hyperparameters": {
+    "lambda_eff": 5.0,
+    "prior_weight_eff": 0.8,
+    "rmse_eff": 13.706121477651656,
+    "lambda_tempo": 5.0,
+    "prior_weight_tempo": 0.8,
+    "rmse_tempo": 4.73196792399146,
+    "selection_seasons": [
+      2022,
+      2023
+    ]
+  },
+  "teams_source": "cbbd:C:\\Users\\devuser\\CBB-clean-sheet\\data\\raw\\preseason\\2027_v2_20260930\\games_2027.parquet|C:\\Users\\devuser\\CBB-clean-sheet\\data\\reference\\team_crosswalk_v2.parquet",
+  "n_teams": 365,
+  "n_source_games_in_season": 0,
+  "latest_source_game_date": null,
+  "prior_chain_seasons": [
+    2022,
+    2023,
+    2024,
+    2025,
+    2026
+  ],
+  "chain_start": 2022,
+  "prior_carry": "season-1 FINAL fit, weight 0.80 (eff) / 0.80 (tempo)",
+  "seconds": 9.3,
+  "policy": "manifest_uniform",
+  "choices": {
+    "seal_lift_approved": true,
+    "teams_source": "cbbd",
+    "prior_weight_policy": "manifest_uniform",
+    "new_team_prior": "league_mean",
+    "fixed_term_prior": "previous_final",
+    "early_season_d1_rule": "provisional_union"
+  }
+}

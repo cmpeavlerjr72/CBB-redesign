@@ -67,7 +67,7 @@ def season_teams(source: str, tg_s: pd.DataFrame, season: int, root: Path) -> np
         s = s[s["home_conference_id"].notna() & s["away_conference_id"].notna()]
         return np.sort(np.union1d(s["home_id"].dropna().astype("int64").unique(), s["away_id"].dropna().astype("int64").unique()))
     if source.startswith("cbbd:"):              # cbbd:<CBBD /games parquet>:<team crosswalk parquet>
-        gp, cp = source[5:].rsplit(":", 1) if source[5:].count(":") > 1 else source[5:].split("|")
+        gp, cp = source[5:].split("|") if "|" in source[5:] else source[5:].rsplit(":", 1)   # "|" first: Windows drive colons break the ":" split
         g = pd.read_parquet(gp)
         cw = pd.read_parquet(cp)
         cb = "cbbd_team_id" if "cbbd_team_id" in cw.columns else "cbbd_id"
