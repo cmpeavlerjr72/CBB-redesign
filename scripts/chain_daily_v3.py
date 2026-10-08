@@ -243,6 +243,11 @@ def run_replay(a) -> int:
     return 0
 
 
+def exit_code(results) -> int:
+    """Nonzero when any stage crashed (status 'error'); 'blocked' / 'skipped' are not crashes."""
+    return 1 if any(r.status == "error" for r in results) else 0
+
+
 def main(argv=None) -> int:
     logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s", datefmt="%H:%M:%S")
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -314,7 +319,8 @@ def main(argv=None) -> int:
         ("publish", lambda: stage_publish(ctx, a, CD)),
     ]
     for name, fn in stages:
-        V2.run_stage(name, fn, results)
+        if V2.run_stage(name, fn, results).status == "error" and not a.dry_run:
+            break                                                      # a crashed stage stops a live chain (no downstream stage on a bad base)
     calls = cctx.tracker.count
     print(f"\n=== chain_daily_v3 {'DRY RUN' if a.dry_run else 'LIVE RUN'} date={today} slate={slate_date} clock={now} ===")
     for r in results:
@@ -328,7 +334,7 @@ def main(argv=None) -> int:
         d = REPO / "data/processed/ingest/chain_v3"
         d.mkdir(parents=True, exist_ok=True)
         (d / f"{today}.json").write_text(out.read_text(encoding="utf-8"), encoding="utf-8")
-    return 0
+    return exit_code(results)
 
 
 if __name__ == "__main__":

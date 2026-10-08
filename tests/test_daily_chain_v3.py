@@ -179,3 +179,17 @@ def test_chain_v3_prereqs_list_day1_gaps():
     # the 2027 adapter / names keys exist after scripts/build_season_2027_artifacts_v1.py (lane F2); before it they are listed
     have = (C3.ENGINE_DIR / "event_round2_s1_F2_2027").exists() and (C3.ENGINE_DIR / "names_F2_2027_v2.json").exists()
     assert have != any("adapter" in m for m in miss)
+
+
+def test_chain_exit_code_is_nonzero_when_a_stage_crashes():
+    import chain_daily_v2 as V2
+    import chain_daily_v3 as C3
+    res = []
+    V2.run_stage("ok", lambda: {}, res)
+    V2.run_stage("blocked", lambda: {"_status": "blocked"}, res)
+    assert C3.exit_code(res) == 0
+
+    def boom():
+        raise OSError("disk")
+    assert V2.run_stage("ratings", boom, res).status == "error"
+    assert C3.exit_code(res) == 1

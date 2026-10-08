@@ -395,7 +395,7 @@ def main(argv=None) -> int:
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(json.dumps({"stages": [r.__dict__ for r in results], "cbbd_calls_chain": calls, "cbbd_calls_ingest": ing},
                               indent=2, default=str), encoding="utf-8")
-    return 0
+    return 1 if any(r.status == "error" for r in results) else 0
 
 
 if __name__ == "__main__":
