@@ -14,7 +14,14 @@ Usage reading 67% overall at session start (weekly reset Fri AM).
 - Early-anchor round spec drafted at `docs/models/early_anchor/experiments_DRAFT.md`. PM rulings on its Q1-Q5: accrual optional/not counted; 14 d fixed; no compound arm; live-path confirmation; no F1 exemption. Commit as experiments.md before it runs.
 - Totals early-season label policy still pending the user.
 
-Next: (1) check the preseason roster consumers, then switch the dir; (2) a real 4-seed 2027 sim; (3) make the chain fail loudly on a stage crash; (4) register the scheduler.
+- Follow-up (`050b936`, `docs/ops/seal_followup_2026-10-08.md`):
+  - CBBD preseason rosters were empty in BOTH pulls and are harmless (ESPN + R1 feed the sim). `preseason_dir` stays on 0930.
+  - Rotation prior 0/236 is expected on opening day.
+  - Chain exit codes fixed.
+  - LAUNCH BLOCKER: `build_live` reads the prior-season (2025-26) tables, so the sealed daily chain fails, and `sim_4seed` always ran as a dry run.
+- PM RULING (user delegated, 2026-10-08): the live serving path gets a scoped seal exemption for prior-season tables. The seal stays for experiments and training.
+
+Next: (0) next session, one Sonnet job: (a) a serving-only seal exemption; (b) a test proving training/experiment entry points still raise; (c) make `sim_4seed` real under --execute; (d) a real 4-seed 2026-11-02 sim with sanity numbers. (1) [done] preseason roster consumers checked; (2) a real 4-seed 2027 sim; (3) make the chain fail loudly on a stage crash; (4) register the scheduler.
 
 ## SESSION 2026-10-07 (day; PM Opus 5.5): K2 clock ADOPTED (served stack v3). Read this block first.
 
