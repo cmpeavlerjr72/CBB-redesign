@@ -1,6 +1,20 @@
 # PROJECT_STATUS.md
 
-Last updated: 2026-10-07 (day session). Season tips Nov 2, 2026.
+Last updated: 2026-10-08 (short session). Season tips Nov 2, 2026.
+
+## SESSION 2026-10-08 (short; PM Opus 5.5): seal-week build moved up and executed. Read this block first.
+
+Usage reading 67% overall at session start (weekly reset Fri AM).
+- The user approved lifting the seal early, and the model freeze starts 2026-10-08. Build commit `d7a4798`: parity v10 bit-identical; all stages OK, apart from the preflight test that asserts the flag is false.
+- Fix: the ratings stage crashed on the Windows drive colon in the `cbbd:` source path, yet the chain returned exit 0. The one-line fix is in `build_own_ratings_asof_v1.py`. The masked exit code is still open.
+- RESEALED the same day (flag false, `test_day1_2027` 14 passed).
+- Fresh preseason pull `2027_v2_20261008`: 5286 games and 365 teams/season, but its CBBD rosters are EMPTY (0 teams with players). `preseason_dir.json` NOT switched and stays on `2027_v2_20260930` until a worker checks which consumers read those rosters.
+- ESPN rosters: 307/365; 36 slate teams on R1.
+- Open: `sim_4seed` only dry-ran (no real 2027 sim yet). A3 build logged "0 of 236 slate team-games have a rotation prior" (check whether that is expected with rotation parked).
+- Early-anchor round spec drafted at `docs/models/early_anchor/experiments_DRAFT.md`. PM rulings on its Q1-Q5: accrual optional/not counted; 14 d fixed; no compound arm; live-path confirmation; no F1 exemption. Commit as experiments.md before it runs.
+- Totals early-season label policy still pending the user.
+
+Next: (1) check the preseason roster consumers, then switch the dir; (2) a real 4-seed 2027 sim; (3) make the chain fail loudly on a stage crash; (4) register the scheduler.
 
 ## SESSION 2026-10-07 (day; PM Opus 5.5): K2 clock ADOPTED (served stack v3). Read this block first.
 

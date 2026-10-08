@@ -1,5 +1,6 @@
 {
  "seal_lift_approved": false,
+ "_seal_lift": "PM set true 2026-10-08 on user approval (\"im fine lifting the seal now\"); model freeze effective 2026-10-08; resealed by PM 2026-10-08 after build d7a4798; re-lift is a one-line edit if a sealed stage must rebuild",
  "teams_source": "cbbd",
  "prior_weight_policy": "manifest_uniform",
  "new_team_prior": "league_mean",
