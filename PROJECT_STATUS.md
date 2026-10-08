@@ -21,7 +21,15 @@ Usage reading 67% overall at session start (weekly reset Fri AM).
   - LAUNCH BLOCKER: `build_live` reads the prior-season (2025-26) tables, so the sealed daily chain fails, and `sim_4seed` always ran as a dry run.
 - PM RULING (user delegated, 2026-10-08): the live serving path gets a scoped seal exemption for prior-season tables. The seal stays for experiments and training.
 
-Next: (0) next session, one Sonnet job: (a) a serving-only seal exemption; (b) a test proving training/experiment entry points still raise; (c) make `sim_4seed` real under --execute; (d) a real 4-seed 2026-11-02 sim with sanity numbers. (1) [done] preseason roster consumers checked; (2) a real 4-seed 2027 sim; (3) make the chain fail loudly on a stage crash; (4) register the scheduler.
+- DONE later 10-08 (`f230636`, `0c95944`, `37bbb56`):
+  - The serving seal exemption now covers all 9 daily-path gates; seal-week builders, training and experiments still raise.
+  - The served ao team table is v2 via `data/overrides/ao_team_table.json` (v2 = v1 + 2027 rows; parity bit-identical).
+  - Suite: 759 passed, 0 failed.
+  - FIRST REAL 2027 LIVE SIM: 118 games, 0 failed, 38 non-D1 skipped. Mean total 139.1 (SD 10.3); |margin| 15.3; NaN 0. 91 of 118 tips are midnight placeholders.
+- LAUNCH GAP: the daily sim never applies the selected A3 day-1 player prior / R1 (no `seed_fn` in `run_daily_sim_v1` / day-1 inputs), so 100% of slots are anonymous. Wiring it implements the already-selected A3+R1 config. The check is that the daily output must match the live-path harness of `docs/tests/early_gap_live_path_2026-10-07.md` on the same seeds; there is no new bake-off.
+- Tip placeholders: check that the `created_at < tipoff` guard handles midnight tips (it must not pass a same-day pre-tip build as leak-safe by accident, nor block real ones).
+
+SUPERSEDED next (0): (a) a serving-only seal exemption; (b) a test proving training/experiment entry points still raise; (c) make `sim_4seed` real under --execute; (d) a real 4-seed 2026-11-02 sim with sanity numbers. (1) [done] preseason roster consumers checked; (2) a real 4-seed 2027 sim; (3) make the chain fail loudly on a stage crash; (4) register the scheduler.
 
 ## SESSION 2026-10-07 (day; PM Opus 5.5): K2 clock ADOPTED (served stack v3). Read this block first.
 
