@@ -30,14 +30,15 @@ REPO = V2.REPO
 CHOICES_PATH = V2.CHOICES_PATH
 PRESEASON = V2.PRESEASON
 OPTIONS = {**V2.DAY1_CHOICES, "prior_weight_policy": ["manifest_uniform", "arm_C_conference"]}
+from cbb_sim.data.seal import SERVING_SEASON  # noqa: E402
 POLICY_DIR = {"manifest_uniform": "ratings_asof", "arm_C_conference": "ratings_asof_C"}
 
 
 def check_choices(path: Path = CHOICES_PATH, season: int = 2027) -> tuple[dict, list]:
     have = json.loads(path.read_text(encoding="utf-8")) if path.exists() else {}
     need = dict(OPTIONS)
-    if season < 2026:                       # the chain does not reach the sealed season
-        need.pop("seal_lift_approved")
+    if season < 2026 or season == SERVING_SEASON:   # pre-2026: the chain does not reach the sealed season; 2027 serving: PM ruling
+        need.pop("seal_lift_approved")                # 2026-10-08, the live serving path reads 2025-26 as the PRIOR season via the exemption
     miss = [k for k in need if have.get(k) not in need[k]]
     return have, miss
 
@@ -59,15 +60,11 @@ def stage_ratings(ctx, CD, a, season: int | None = None, choices_path: Path = CH
            "schedule": "schedule", "tg": "tg"}[have["teams_source"]]
     if policy == "manifest_uniform":
         import build_own_ratings_asof_v1 as E
-        fn = lambda: E.asof_ratings(season, str(ctx.slate_date), root, src, 2022, {})      # noqa: E731
+        fn = lambda: E.asof_ratings(season, str(ctx.slate_date), root, src, 2022, {}, serving=(season == SERVING_SEASON))      # noqa: E731
     else:
         import build_own_ratings_asof_C_v1 as EC
-        fn = lambda: EC.asof_ratings_C(season, str(ctx.slate_date), root, src, 2022, {})   # noqa: E731
-    if season >= 2026:
-        with V2.unsealed():
-            out, prov = fn()
-    else:
-        out, prov = fn()
+        fn = lambda: EC.asof_ratings_C(season, str(ctx.slate_date), root, src, 2022, {}, serving=(season == SERVING_SEASON))   # noqa: E731
+    out, prov = fn()                        # 2027 serving reads 2025-26 through assert_not_sealed_serving (serving=True above); no env var
     d = ratings_out_dir(ctx.slate_date, policy, ctx.dry_run, root)
     d.mkdir(parents=True, exist_ok=True)
     out = out.assign(created_at=pd.Timestamp.now("UTC"))
@@ -98,12 +95,10 @@ def stage_inputs(ctx, CD, a, SIM, season: int | None = None, pass_name: str = "e
         return {**out, "_status": "blocked",
                 "blocked_on": ["own ratings as of the slate date (ratings stage blocked; see its missing_or_invalid)"]}
     cols = ["game_id", "cbbd_game_id", "season", "game_date", "tipoff_utc", "home_team_id", "away_team_id", "neutral"]
-    import contextlib
-    cm = V2.unsealed() if season >= 2027 else contextlib.nullcontext()
-    with cm:                                  # the prior-season carry reads the 2026 tables (needs seal_lift_approved, checked by the ratings stage)
-        inp, diag = BL.build_live(ok[cols], ctx.now, season, a.fold, created_at=ctx.now,
-                                  season_start=SIM.season_start_of(season, "cbbd", str(PRESEASON / "games_2027.parquet")),
-                                  strict_finish=True, ratings_dir=rd)
+    # the prior-season carry reads the 2026 tables through build_live's assert_not_sealed_serving (no env var, no unsealed())
+    inp, diag = BL.build_live(ok[cols], ctx.now, season, a.fold, created_at=ctx.now,
+                              season_start=SIM.season_start_of(season, "cbbd", str(PRESEASON / "games_2027.parquet")),
+                              strict_finish=True, ratings_dir=rd)
     ts = inp.team_static
     out.update(inputs_built=True, n_games=int(inp.n_games), rotation_fallback_team_games=int(diag.get("rotation_fallback_team_games", -1)),
                candidates_per_team_game_mean=round(float(diag.get("candidates_per_team_game_mean", 0.0)), 2),

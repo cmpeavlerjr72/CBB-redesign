@@ -120,7 +120,8 @@ def test_choices_file_gates_on_seal_and_policy(tmp_path):
     p.write_text(json.dumps({**good, "prior_weight_policy": "arm_C_conference"}))
     assert DAY1.check_choices(p, 2027)[1] == []
     p.write_text(json.dumps({**good, "prior_weight_policy": "nonsense", "seal_lift_approved": False}))
-    assert set(DAY1.check_choices(p, 2027)[1]) == {"prior_weight_policy", "seal_lift_approved"}
+    assert DAY1.check_choices(p, 2027)[1] == ["prior_weight_policy"]                    # 2027 serving: the seal flag is not needed (PM ruling 2026-10-08)
+    assert set(DAY1.check_choices(p, 2026)[1]) == {"prior_weight_policy", "seal_lift_approved"}   # reaching 2026 as a TARGET still needs it
     assert DAY1.check_choices(p, 2025)[1] == ["prior_weight_policy"]                    # a pre-2026 rehearsal does not need the seal flag
 
 
@@ -139,7 +140,7 @@ def test_stage_ratings_blocked_without_seal(tmp_path):
     p = tmp_path / "c.json"
     p.write_text(json.dumps({"seal_lift_approved": False}))
     ctx = SimpleNamespace(slate_date=pd.Timestamp("2026-11-02").date(), dry_run=True, state={})
-    r = DAY1.stage_ratings(ctx, None, None, season=2027, choices_path=p)
+    r = DAY1.stage_ratings(ctx, None, None, season=2026, choices_path=p)      # a 2026 target is still seal-gated
     assert r["_status"] == "blocked" and "seal_lift_approved" in r["missing_or_invalid"]
     assert "ratings_dir" not in ctx.state
 

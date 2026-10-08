@@ -30,7 +30,7 @@ import pandas as pd
 REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO / "src"))
 sys.path.insert(0, str(REPO / "scripts"))
-from cbb_sim.data.seal import assert_not_sealed  # noqa: E402
+from cbb_sim.data.seal import assert_not_sealed, assert_not_sealed_serving  # noqa: E402
 from cbb_sim.ratings import own_ratings as orat  # noqa: E402
 import build_own_ratings_asof_v1 as B  # noqa: E402
 import build_own_ratings_C_v1 as C  # noqa: E402
@@ -39,11 +39,13 @@ SIBLING = REPO / "data/processed/ratings_C_v1"
 
 
 def asof_ratings_C(season: int, as_of: str, root: Path = REPO, teams_source: str = "tg", chain_start: int = 2022,
-                   cache: dict | None = None) -> tuple[pd.DataFrame, dict]:
+                   cache: dict | None = None, serving: bool = False) -> tuple[pd.DataFrame, dict]:
     t0 = time.time()
     D = pd.Timestamp(as_of)
     if any(s >= 2026 for s in range(chain_start, season + 1)):
-        assert_not_sealed(list(range(max(chain_start, 2026), season + 1)), context="own ratings C chain through 2025-26")
+        _yrs = list(range(max(chain_start, 2026), season + 1))
+        _ctx = "own ratings C chain through 2025-26"
+        assert_not_sealed_serving(_yrs, season, context=_ctx) if serving else assert_not_sealed(_yrs, context=_ctx)
     hoopr_dir = root / "data/raw/hoopr"
     uni = orat.load_universe(root / "data/processed/games_universe.parquet")
     seasons = [s for s in range(chain_start, season + 1)

@@ -12,7 +12,7 @@
         "output": "C:\\Users\\devuser\\CBB-clean-sheet\\data\\raw\\schedule_daily\\2026-10-08.parquet"
       },
       "error": null,
-      "seconds": 1.7339999999967404
+      "seconds": 1.8599999999860302
     },
     {
       "name": "tips",
@@ -33,11 +33,11 @@
         },
         "n_real_sources_disagree_gt5min": 0,
         "hoopr_available": true,
-        "fetched_at": "2026-10-08 12:50:18.222285+00:00",
+        "fetched_at": "2026-10-08 14:23:04.669935+00:00",
         "latest": "C:\\Users\\devuser\\CBB-clean-sheet\\data\\processed\\ingest\\tip_times_2027.parquet"
       },
       "error": null,
-      "seconds": 0.9529999999795109
+      "seconds": 0.8900000000139698
     },
     {
       "name": "lines",
@@ -49,7 +49,7 @@
         "total_rows_in_file_after_run": 0
       },
       "error": null,
-      "seconds": 0.875
+      "seconds": 0.9059999999590218
     },
     {
       "name": "lines_snapshot",
@@ -57,7 +57,7 @@
       "detail": {
         "snapshot": {
           "rc": 0,
-          "out": "{\"date\": \"2026-11-02\", \"captured_at\": \"2026-10-08 12:50:19+00:00\", \"espn_events\": 182, \"espn_rows\": 0, \"cbbd_games\": 156, \"cbbd_rows\": 0, \"rows_added\": 0}\n"
+          "out": "{\"date\": \"2026-11-02\", \"captured_at\": \"2026-10-08 14:23:05+00:00\", \"espn_events\": 182, \"espn_rows\": 0, \"cbbd_games\": 156, \"cbbd_rows\": 0, \"rows_added\": 0}\n"
         },
         "open_close": {
           "rc": 0,
@@ -65,7 +65,7 @@
         }
       },
       "error": null,
-      "seconds": 2.172000000020489
+      "seconds": 2.0630000000237487
     },
     {
       "name": "lines_probe",
@@ -91,19 +91,13 @@
           "bytes": 133247,
           "etag": "W/\"3ac0bd4f0c1a34cb94b5ebe7ad15282b650822e65eb7b9a0098b0acdc627e5bb\"",
           "rows": 1629,
-          "fetched_at": "2026-10-08 12:50:21.818030+00:00"
+          "fetched_at": "2026-10-08 14:23:08.272150+00:00"
         },
-        "hoopr_dataset_http_status": {
-          "schedules": 200,
-          "team_box": 404,
-          "player_box": 404,
-          "pbp": 404,
-          "shots": 404
-        },
+        "hoopr_dataset_http_status": {},
         "ingest_cbbd_calls": 0
       },
       "error": null,
-      "seconds": 2.5
+      "seconds": 0.5619999999762513
     },
     {
       "name": "ratings",
@@ -115,7 +109,7 @@
         "dry_run": false
       },
       "error": null,
-      "seconds": 9.311999999976251
+      "seconds": 8.297000000020489
     },
     {
       "name": "kenpom",
@@ -146,7 +140,7 @@
         "covers_output": "C:\\Users\\devuser\\CBB-clean-sheet\\data\\raw\\injuries\\covers\\2026-10-08.html"
       },
       "error": null,
-      "seconds": 0.9850000000442378
+      "seconds": 0.9529999999795109
     },
     {
       "name": "injuries_parse",
@@ -159,7 +153,7 @@
         "note": "ESPN college injury coverage is sparse; zero rows means 'no reported injuries', not 'everyone healthy'. No engine consumer yet."
       },
       "error": null,
-      "seconds": 0.5149999999557622
+      "seconds": 0.40700000000651926
     },
     {
       "name": "overrides",
@@ -179,7 +173,7 @@
       "detail": {
         "slate_date": "2026-11-02",
         "pass": "evening",
-        "clock": "2026-10-08 12:50:15.601351+00:00",
+        "clock": "2026-10-08 14:23:01.990358+00:00",
         "slate_games_mapped": 118,
         "slate_games_unmapped_non_d1": 38,
         "would_simulate": 118,
@@ -193,7 +187,7 @@
         "ratings_dir": "C:\\Users\\devuser\\CBB-clean-sheet\\data\\processed\\ratings_asof\\2026-11-02"
       },
       "error": null,
-      "seconds": 4.219000000040978
+      "seconds": 3.6560000000172295
     },
     {
       "name": "grade",
@@ -215,11 +209,11 @@
     },
     {
       "name": "sim",
-      "status": "blocked",
+      "status": "ok",
       "detail": {
         "slate_date": "2026-11-02",
         "pass": "evening",
-        "clock": "2026-10-08 12:50:15.601351+00:00",
+        "clock": "2026-10-08 14:23:01.990358+00:00",
         "slate_games_mapped": 118,
         "slate_games_unmapped_non_d1": 38,
         "would_simulate": 118,
@@ -230,24 +224,32 @@
           "cbbd+hoopr_min": 8
         },
         "placeholder_tips": 91,
-        "blocked_on": [
-          "R9ao3 team-prior table R9ao3 has no rows for season(s) [2027] (has [2023, 2024, 2025, 2026]). Season 2027 rows hold 2025-26 and-one rates, which need the SEALED 2025-26 events: BLOCKED ON THE 2025-26 SEAL (user decision, holds until the Oct 10-17 audit window). Build a versioned sibling table (docs/ops/day1_readiness_2027_2026-10-01.md section 4a); there is no silent fallback to a zero prior term."
-        ],
-        "engine_run": false
+        "cached": false,
+        "out": "C:\\Users\\devuser\\CBB-clean-sheet\\results\\daily\\sim\\2026-11-02\\s4_o0",
+        "n_games": 118,
+        "n_rows": 472,
+        "skipped_tipped": 0,
+        "runtime_s": 67.3
       },
       "error": null,
-      "seconds": 0.046999999962281436
+      "seconds": 67.40600000001723
     },
     {
       "name": "publish",
-      "status": "skipped",
+      "status": "ok",
       "detail": {
-        "why": "no finished sim for 2026-11-02 s200_o0"
+        "cached": false,
+        "publish_id": "18f0a7fa18",
+        "out": "C:\\Users\\devuser\\CBB-clean-sheet\\results\\daily\\publish\\2026-11-02\\s4_o0\\18f0a7fa18",
+        "n_games": 118,
+        "n_refused_tipped": 0,
+        "n_with_spread": 0,
+        "n_with_ml": 0
       },
       "error": null,
-      "seconds": 0.0
+      "seconds": 0.625
     }
   ],
-  "cbbd_calls_chain": 5,
-  "clock": "2026-10-08 12:50:15.601351+00:00"
+  "cbbd_calls_chain": 6,
+  "clock": "2026-10-08 14:23:01.990358+00:00"
 }

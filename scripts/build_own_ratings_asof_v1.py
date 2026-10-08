@@ -49,7 +49,7 @@ import pandas as pd
 REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO / "src"))
 
-from cbb_sim.data.seal import assert_not_sealed  # noqa: E402
+from cbb_sim.data.seal import assert_not_sealed, assert_not_sealed_serving  # noqa: E402
 from cbb_sim.ratings import own_ratings as orat  # noqa: E402
 
 
@@ -101,13 +101,15 @@ def stub_games(teams: np.ndarray, date: pd.Timestamp, season: int) -> pd.DataFra
 
 
 def asof_ratings(season: int, as_of: str, root: Path, teams_source: str = "tg", chain_start: int = 2022,
-                 tg_cache: dict | None = None) -> tuple[pd.DataFrame, dict]:
+                 tg_cache: dict | None = None, serving: bool = False) -> tuple[pd.DataFrame, dict]:
     t0 = time.time()
     D = pd.Timestamp(as_of)
     hp = _hp(root)
     if any(s >= 2026 for s in range(chain_start, season + 1)):
-        assert_not_sealed(list(range(max(chain_start, 2026), season + 1)),
-                          context="own ratings chain through the sealed 2025-26 season")
+        # serving=True only from the daily 2027 ratings stage
+        _ctx = "own ratings chain through the sealed 2025-26 season"
+        _yrs = list(range(max(chain_start, 2026), season + 1))
+        assert_not_sealed_serving(_yrs, season, context=_ctx) if serving else assert_not_sealed(_yrs, context=_ctx)
     hoopr_dir = root / "data/raw/hoopr"
     uni = orat.load_universe(root / "data/processed/games_universe.parquet")
     seasons = [s for s in range(chain_start, season + 1)

@@ -86,12 +86,15 @@ def prev_minutes(season: int, source: str) -> pd.DataFrame:
 
 
 def tables(season: int, need_roster: bool, roster_path: str | None = None, minutes_source: str = "onfloor",
-           need_prev_roster: bool = False) -> dict:
-    key = (season, need_roster, roster_path, minutes_source, need_prev_roster)
+           need_prev_roster: bool = False, serving: bool = False) -> dict:
+    key = (season, need_roster, roster_path, minutes_source, need_prev_roster, serving)
     if key in _C:
         return _C[key]
-    from cbb_sim.data.seal import assert_not_sealed
-    assert_not_sealed([season - 1], context="day-1 player priors (reads season S-1 minutes)")
+    from cbb_sim.data.seal import assert_not_sealed, assert_not_sealed_serving
+    if serving:                       # explicit argument from the live serving call site only (daily chain); never defaulted on
+        assert_not_sealed_serving([season - 1, season], season, context="day-1 player priors (reads season S-1 minutes)")
+    else:
+        assert_not_sealed([season - 1], context="day-1 player priors (reads season S-1 minutes)")
     pgm = prev_minutes(season, minutes_source)
     if not len(pgm):
         raise SourceMissing(f"no S-1 player minutes ({minutes_source})")
@@ -168,7 +171,7 @@ def seeds_for(arm: str, T: dict, team: int, withheld: frozenset = frozenset(), f
 
 
 def make_seed_fn(arm: str, roster_path: str | None = None, minutes_source: str = "onfloor", fallback: str | None = None,
-                 withheld: frozenset = frozenset()):
+                 withheld: frozenset = frozenset(), serving: bool = False):
     if arm not in ARMS:
         raise KeyError(arm)
     if fallback not in FALLBACKS:
@@ -176,7 +179,7 @@ def make_seed_fn(arm: str, roster_path: str | None = None, minutes_source: str =
     used: set = set()
 
     def seed_fn(ctx, games, tg, roster_cbbd, roster_valid, S, diag) -> dict:
-        T = tables(int(ctx.season), arm in ("A1", "A2", "A3"), roster_path, minutes_source, need_prev_roster=bool(fallback))
+        T = tables(int(ctx.season), arm in ("A1", "A2", "A3"), roster_path, minutes_source, need_prev_roster=bool(fallback), serving=serving)
         gpos = {int(g): i for i, g in enumerate(games["game_id"])}
         seed_fn.shares = {}
         n_tg = n_slots = 0

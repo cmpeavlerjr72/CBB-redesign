@@ -293,7 +293,7 @@ def fallback_line(teams) -> str:
 def day1_player_prior_seed(season: int, repo: Path = REPO):
     """(module, seed_fn): the A3 `seed_fn` for `build_live(..., seed_fn=...)` (`build_engine_inputs_day1prior_v1.make_seed_fn('A3')`, called, not edited)."""
     import build_engine_inputs_day1prior_v1 as D1P
-    return D1P, D1P.make_seed_fn("A3", roster_path=str(repo / f"data/raw/cbbd/rosters/roster_{season}.parquet"), fallback=LIVE_ROSTER_FALLBACK)
+    return D1P, D1P.make_seed_fn("A3", roster_path=str(repo / f"data/raw/cbbd/rosters/roster_{season}.parquet"), fallback=LIVE_ROSTER_FALLBACK, serving=True)
 
 
 def build_live_inputs(ctx, BL, slate, out: dict) -> dict:
@@ -310,7 +310,7 @@ def build_live_inputs(ctx, BL, slate, out: dict) -> dict:
     import numpy as np
     avail = load_availability(ctx)
     D1P, seed_fn = day1_player_prior_seed(season)             # live 2027 only; historical build_live runs keep seed_fn=None
-    with unsealed():                                          # prior-season carry and the A3 S-1 minutes read the 2026 tables
+    if True:                                                  # prior-season carry and the A3 S-1 minutes read 2026 via the serving exemption (no unsealed())
         inp, diag = BL.build_live(slate, getattr(ctx, "now", None) or pd.Timestamp.now("UTC"), season, "F2", created_at=pd.Timestamp.now("UTC"),
                                   ratings_dir=ctx.state["ratings_dir"], availability=avail, seed_fn=seed_fn)
     D1P.post(inp, seed_fn)

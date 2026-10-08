@@ -115,10 +115,8 @@ def stage_sim(ctx, a, CD) -> dict:
     dry_sim = ctx.dry_run and getattr(a, "dry_run_sim", False)
     if (ctx.dry_run and not dry_sim) or miss:
         return {**census, "_status": "blocked", "blocked_on": miss or ["dry run"], "engine_run": False}
-    import contextlib
     root = (REPO / "results/daily_dry") if dry_sim else ctx.root
-    cm = V2.unsealed() if season >= 2027 else contextlib.nullcontext()   # the 2026 prior tables; the ratings stage already required seal_lift_approved
-    with cm:
+    if True:                                                             # serving exemption lives in build_live; no env var / unsealed() here
         r = SIM.run_sim_stage(str(ctx.slate_date), season, a.fold, a.seeds, 0, ctx.now, root, None, "cbbd", str(SCHED_2027),
                               str(CROSSWALK), tips, strict=False, pass_name=pass_name, ratings_dir=ctx.state.get("ratings_dir"))
     ctx.state["sim_run_id"] = D.default_run_id(a.seeds, 0) + ("_morning" if pass_name == "morning" else "")

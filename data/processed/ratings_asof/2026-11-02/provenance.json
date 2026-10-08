@@ -26,10 +26,10 @@
   ],
   "chain_start": 2022,
   "prior_carry": "season-1 FINAL fit, weight 0.80 (eff) / 0.80 (tempo)",
-  "seconds": 9.3,
+  "seconds": 8.3,
   "policy": "manifest_uniform",
   "choices": {
-    "seal_lift_approved": true,
+    "seal_lift_approved": false,
     "teams_source": "cbbd",
     "prior_weight_policy": "manifest_uniform",
     "new_team_prior": "league_mean",
