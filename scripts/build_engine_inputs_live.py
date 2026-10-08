@@ -176,8 +176,8 @@ def build_live(slate: pd.DataFrame, as_of, season: int, fold: str, created_at=No
     u = pd.read_parquet(UNIVERSE)
     ctx = LF.build_ctx(slate, as_of, season, u, season_start=season_start, strict_finish=strict_finish,
                        **({"ratings_dir": str(ratings_dir)} if ratings_dir else {}))   # None = the stored batch ratings (unchanged)
-    from cbb_sim.data.seal import assert_not_sealed
-    assert_not_sealed(ctx.seasons, context="live inputs (prior-season carry reads season-1 tables)")
+    from cbb_sim.data.seal import assert_not_sealed_serving
+    assert_not_sealed_serving(ctx.seasons, season, context="live inputs (prior-season carry reads season-1 tables)")
     created_at = pd.Timestamp(created_at) if created_at is not None else pd.Timestamp.now("UTC")
     created_at = created_at.tz_localize("UTC") if created_at.tzinfo is None else created_at.tz_convert("UTC")
     if not created_at < pd.to_datetime(ctx.slate["tipoff_utc"], utc=True).min():

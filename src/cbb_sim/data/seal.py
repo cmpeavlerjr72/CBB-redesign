@@ -34,6 +34,7 @@ for routine development convenience.
 
 from __future__ import annotations
 
+import logging
 import os
 from collections.abc import Iterable
 
@@ -96,3 +97,30 @@ def assert_not_sealed(df_or_season, context: str = "") -> None:
             f"training/selection step{where}. Set {UNSEAL_ENV_VAR}=1 to override deliberately "
             f"once fold-2 model selection is complete (FRAMEWORK_PLAN.md section 7, week 6)."
         )
+
+
+SERVING_SEASON = 2027
+log = logging.getLogger("cbb_sim.seal")
+
+
+def assert_not_sealed_serving(df_or_season, serving_season, context: str = "") -> None:
+    """Scoped serving exemption (PM ruling 2026-10-08, docs/ops/serving_seal_exemption_2026-10-08.md).
+
+    Called ONLY by the live serving entry point (`build_live`). When the live season being served is
+    SERVING_SEASON (2027), reading the sealed 2025-26 prior-season tables is allowed (the exemption is logged);
+    the sealed season is the PRIOR season there, not a target. For any other serving season it falls through to
+    `assert_not_sealed`. No env var, no global state: training and experiment code never calls this function.
+    """
+    if int(serving_season) == SERVING_SEASON and not _is_unsealed():
+        try:
+            touched = {int(s) for s in df_or_season}
+        except TypeError:
+            touched = {int(df_or_season)}
+        prior = touched - {int(serving_season)}
+        if prior and max(prior) <= SEALED_SEASON:
+            if SEALED_SEASON in touched:
+                log.warning("SEAL EXEMPTION USED: serving season %s reads sealed %s prior-season tables (%s); "
+                            "serving path only, seal flag unchanged", serving_season, SEALED_SEASON, context)
+                print(f"[seal] EXEMPTION USED: serving {serving_season} live reads sealed {SEALED_SEASON} prior-season tables ({context})", flush=True)
+            return
+    assert_not_sealed(df_or_season, context=context)

@@ -243,7 +243,7 @@ def main(argv=None) -> int:
             if s.name == "ratings":                                    # real run: the live chain, not its dry run
                 cmd = [PY, s.script, "--slate-date", a.slate_date]
             if s.name in ("sim_4seed",):
-                cmd = [PY, s.script, "--dry-run", "--dry-run-sim", "--seeds", "4", "--slate-date", a.slate_date]
+                cmd = [PY, s.script, "--seeds", "4", "--slate-date", a.slate_date]   # REAL under --execute (2026-10-08); the dry run stays the default
             print(f"[{i:2}] [RUNNING  ] {s.name:18} {' '.join(cmd)[:230]}", flush=True)
             e = dict(os.environ, PYTHONIOENCODING="utf-8", **({"CBB_UNSEAL": "1"} if s.unseal else {}))
             rc = subprocess.run(cmd, cwd=REPO, env=e).returncode
