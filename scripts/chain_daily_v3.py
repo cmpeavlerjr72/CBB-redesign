@@ -178,10 +178,23 @@ def stage_lines_snapshot(ctx, a) -> dict:
 
 
 def stage_lines_probe(ctx, a) -> dict:
-    """Daily source probe from Oct 20 (dry-run safe: --dry-run prints the plan, no network)."""
-    if ctx.today < date(ctx.today.year, 10, 20) and ctx.today.month >= 5:
-        return {"_status": "skipped", "why": "probe starts Oct 20"}
-    return _run_script([str(REPO / "scripts" / "probe_lines_sources_v1.py"), *(["--dry-run"] if a.dry_run else [])])
+    """Free lines-source probe (`probe_lines_sources_v1.py`; always exits 0, writes data/processed/lines/probe_lines_sources_v1_<date>.json).
+    EVENING PASS ONLY, default on (`--no-lines-probe` turns it off), runs after the `lines` / `lines_snapshot` steps, window = the slate date
+    + 7 days. NEVER FATAL: any failure (non-zero rc, timeout, exception) is reported as status `failed_nonfatal` and the chain goes on;
+    the probe feeds no sim or publish number. Dry run: the script's own `--dry-run` (prints the plan, no network)."""
+    if a.pass_name != "evening":
+        return {"_status": "skipped", "why": "lines probe runs in the evening pass only"}
+    if not getattr(a, "lines_probe", True):
+        return {"_status": "skipped", "why": "--no-lines-probe"}
+    try:
+        args = [str(REPO / "scripts" / "probe_lines_sources_v1.py"), "--start", str(ctx.slate_date),
+                "--end", str(ctx.slate_date + timedelta(days=7))]
+        r = _run_script([*args, *(["--dry-run"] if a.dry_run else [])])
+    except Exception as e:  # noqa: BLE001  (a probe must never stop the chain)
+        return {"_status": "failed_nonfatal", "why": f"{type(e).__name__}: {e}"[:300]}
+    if r.get("rc") != 0:
+        return {"_status": "failed_nonfatal", **r}
+    return r
 
 
 def stage_publish(ctx, a, CD) -> dict:
@@ -272,6 +285,8 @@ def main(argv=None) -> int:
                          "(evening 20:00 ET the day before, morning 09:00 ET the slate date).")
     ap.add_argument("--replay-pass", dest="replay_pass", choices=("evening", "morning"), default=None,
                     help="with --replay-season: replay the sim / publish stages as the evening (20:00 ET the day before) or morning (09:00 ET) pass")
+    ap.add_argument("--no-lines-probe", dest="lines_probe", action="store_false",
+                    help="skip the evening-pass free lines-source probe stage (default: on; never fatal)")
     ap.add_argument("--require-rosters", action="store_true", help="block the sim on empty 2027 rosters instead of warning")
     ap.add_argument("--dry-run-sim", action="store_true", help="in a dry run, still run the (tiny) sim into results/daily_dry when nothing blocks")
     a = ap.parse_args(argv)
