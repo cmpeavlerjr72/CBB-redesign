@@ -155,7 +155,10 @@ def run_sim_stage(slate_date: str, season: int, fold: str = "F2", seeds: int = 2
                   schedule_path: str | None = None, crosswalk: str | None = None, tips: str | None = None,
                   strict: bool = False, force: bool = False, replay: bool = False, players: bool = False,
                   max_games: int = 0, pass_name: str | None = None, ratings_dir: str | None = None,
-                  day1_prior: str | None = "auto", extra_input_files: dict | None = None, tip_table: str | None = None) -> dict:
+                  day1_prior: str | None = "auto", extra_input_files: dict | None = None, tip_table: str | None = None,
+                  trajectory_seeds: int = 0) -> dict:
+    # trajectory_seeds > 0 (DEFAULT 0 = off) also writes results/trajectories/daily_<date>_<run_id>/trajectory.parquet for seeds < N.
+    # It is a side-channel: it is NOT part of the config / inputs hash, and game / player output is identical with it on or off.
     t0 = time.time()
     now = D.utc(now) if now is not None else pd.Timestamp.now("UTC")
     run_id = run_id or D.default_run_id(seeds, seed_offset) + (f"_{pass_name}" if pass_name == "morning" else "")
@@ -177,7 +180,8 @@ def run_sim_stage(slate_date: str, season: int, fold: str = "F2", seeds: int = 2
         prev = json.loads(done.read_text(encoding="utf-8"))
         if prev.get("config_hash") != h:
             raise SystemExit(f"{out} exists with a different config ({prev.get('config_hash')} vs {h}); use another --run-id or --force")
-        return {"_status": "ok", "cached": True, "out": str(out), "n_rows": prev.get("n_rows"), "n_games": prev.get("n_games")}
+        return {"_status": "ok", "cached": True, "out": str(out), "n_rows": prev.get("n_rows"), "n_games": prev.get("n_games"),
+                "trajectory": ("NOT WRITTEN: cached run (rerun with --force)" if trajectory_seeds else None)}
     if int(season) == 2026 and os.environ.get("CBB_UNSEAL") != "1":
         raise SystemExit("season 2026 is SEALED; the daily chain never sets CBB_UNSEAL for the sim stage")
 
@@ -205,7 +209,7 @@ def run_sim_stage(slate_date: str, season: int, fold: str = "F2", seeds: int = 2
             prev = json.loads(done.read_text(encoding="utf-8"))
             if prev.get("config_hash") == h and prev.get("inputs_hash") == ihash:
                 return {"_status": "ok", "cached": True, "out": str(out), "n_rows": prev.get("n_rows"), "n_games": prev.get("n_games"),
-                        "inputs_hash": ihash}
+                        "inputs_hash": ihash, "trajectory": ("NOT WRITTEN: cached run (rerun with --force)" if trajectory_seeds else None)}
             changed = sorted(k for k in icomp if (prev.get("inputs_components") or {}).get(k) != icomp[k])
             supersedes = {"config_hash": prev.get("config_hash"), "inputs_hash": prev.get("inputs_hash"),
                           "finished_at": prev.get("finished_at"), "components_changed": changed if prev.get("inputs_components") else ["(no prior inputs key)"]}
@@ -255,7 +259,17 @@ def run_sim_stage(slate_date: str, season: int, fold: str = "F2", seeds: int = 2
     import build_shot_block_lut_live_v1 as SBL
     SBL.attach(inp, out / "_adapter", as_of=now, seeded_sides=getattr(seed_fn, "seeded", None))   # seeded slots: known / shooter zero (harness parity)
     seed_arr = np.arange(seed_offset, seed_offset + seeds, dtype=np.int64)
-    games, pl, ad = RL.simulate(inp, fold, season, seed_arr, keep_players=players, adapter_dir=adir)
+    tw = None
+    if trajectory_seeds:
+        from cbb_sim.engine.trajectory import TrajectoryWriter
+        tw = TrajectoryWriter(Path("results/trajectories") / f"daily_{slate_date}_{run_id}" / "trajectory.parquet", seed_limit=int(trajectory_seeds))
+    games, pl, ad = RL.simulate(inp, fold, season, seed_arr, keep_players=players, adapter_dir=adir, trajectory_writer=tw)
+    traj_meta = None
+    if tw is not None:
+        tw.close()
+        traj_meta = {"path": str(tw.path), "rows": tw.rows, "game_seeds": tw.pairs, "seed_limit": int(trajectory_seeds),
+                     "bytes": tw.path.stat().st_size if tw.path.exists() else 0}
+        print(f"[sim] trajectory: {traj_meta}", flush=True)
     games = RL.stamp_rows(games, inp, now, per_game=False)         # created_at + tipoff_utc, asserts created_at < tipoff
     G.assert_created_before_tipoff(games)
     if pass_name or not replay:                     # every live row: placeholder tips never certify a row as pre-tip (tips.stamp_pre_tip_basis)
@@ -271,14 +285,14 @@ def run_sim_stage(slate_date: str, season: int, fold: str = "F2", seeds: int = 2
             "runtime_s": round(time.time() - t0, 1), "created_at_before_tipoff_asserted": True, "config_hash": h,
             "inputs_hash": ihash, "inputs_components": icomp, "supersedes": supersedes,
             "build_diag": {k: v for k, v in diag.items() if not isinstance(v, (dict, list))}, "day1_prior": d1p_meta, "injuries": inj_meta, **prov, "adapter_flags": ad.flags,
-            "engine_env": {k: v for k, v in os.environ.items() if k.startswith("ENGINE_")}}
+            "engine_env": {k: v for k, v in os.environ.items() if k.startswith("ENGINE_")}, "trajectory": traj_meta}
     (out / "run_meta.json").write_text(json.dumps(meta, indent=2, default=str), encoding="utf-8")
     done.write_text(json.dumps({"config_hash": h, "inputs_hash": ihash, "inputs_components": icomp,
                                 "n_rows": int(len(games)), "n_games": int(inp.n_games), "finished_at": str(pd.Timestamp.now("UTC"))}), encoding="utf-8")
     return {"_status": "ok", "cached": False, "out": str(out), "n_games": int(inp.n_games), "n_rows": int(len(games)),
             "skipped_tipped": int(len(late)), "runtime_s": round(time.time() - t0, 1),
             "day1_prior": d1p_meta["day1_prior"], "anon_slot_share": d1p_meta["anon_slot_share"],
-            "d1p_team_games": d1p_meta["d1p_team_games"], "fallback_roster_line": d1p_meta["d1p_fallback_line"],
+            "d1p_team_games": d1p_meta["d1p_team_games"], "fallback_roster_line": d1p_meta["d1p_fallback_line"], "trajectory": traj_meta,
             "injuries_players_applied": inj_meta["players_applied_distinct"], "injuries_out_rows": inj_meta.get("out_rows")}
 
 
@@ -303,6 +317,8 @@ def main(argv=None) -> int:
     ap.add_argument("--force", action="store_true")
     ap.add_argument("--replay", action="store_true", help="past slate with a pretend clock (strict_finish off, recorded)")
     ap.add_argument("--players", action="store_true")
+    ap.add_argument("--trajectory-seeds", type=int, default=0,
+                    help="DEFAULT 0 = off. N > 0 also writes results/trajectories/daily_<date>_<run_id>/trajectory.parquet (seeds < N); side-channel, outputs unchanged")
     ap.add_argument("--max-games", type=int, default=0)
     ap.add_argument("--ratings-dir", default=None, help="dir holding own_ratings_{season}.parquet with the as-of row (default: the stored batch ratings)")
     ap.add_argument("--no-day1-prior", action="store_true",
@@ -310,7 +326,7 @@ def main(argv=None) -> int:
     a = ap.parse_args(argv)
     r = run_sim_stage(a.slate_date, a.season, a.fold, a.seeds, a.seed_offset, a.now, Path(a.root), a.run_id, a.schedule_source,
                       a.schedule_path, a.crosswalk, a.tips, a.strict, a.force, a.replay, a.players, a.max_games, a.pass_name, a.ratings_dir,
-                      day1_prior=None if a.no_day1_prior else "auto")
+                      day1_prior=None if a.no_day1_prior else "auto", trajectory_seeds=a.trajectory_seeds)
     print(json.dumps(r, default=str))
     return 0
 

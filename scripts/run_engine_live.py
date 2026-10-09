@@ -107,7 +107,8 @@ def prepare_from_overlay(overlay: Path, fold: str, season: int, dest: Path, n_ro
 
 
 def simulate(inp: EngineInputs, fold: str, season: int, seeds, keep_players=True, games_per_block=20,
-             flags: dict | None = None, adapter_dir: Path | None = None, attr_overrides: dict | None = None):
+             flags: dict | None = None, adapter_dir: Path | None = None, attr_overrides: dict | None = None,
+             trajectory_writer=None):
     from cbb_sim.engine import adapters as AD
     from cbb_sim.engine import loop as L
     from cbb_sim.engine.adapters import Adapters
@@ -124,7 +125,7 @@ def simulate(inp: EngineInputs, fold: str, season: int, seeds, keep_players=True
         rows = np.arange(g0, min(g0 + games_per_block, n))
         gi = np.repeat(rows, len(seeds))
         sd = np.tile(np.asarray(seeds, dtype=np.int64), len(rows))
-        res = L.simulate_chunk(inp, ad, gi, sd, keep_players=keep_players)
+        res = L.simulate_chunk(inp, ad, gi, sd, keep_players=keep_players, trajectory_writer=trajectory_writer)   # writer None = off
         gframes.append(res.games)
         if len(res.players):
             pframes.append(res.players)

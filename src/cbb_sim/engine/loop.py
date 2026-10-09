@@ -62,6 +62,7 @@ from cbb_sim.engine import shared_shooting as SSL
 from cbb_sim.engine import shot_block as SBK
 from cbb_sim.engine import state as S
 from cbb_sim.engine import team_rate_draw as TRD
+from cbb_sim.engine import trajectory as TJ
 from cbb_sim.engine.adapters import STATE_INDEX, Adapters
 from cbb_sim.engine.inputs import EngineInputs
 from cbb_sim.engine.rng import StreamBook, categorical
@@ -177,6 +178,7 @@ class ChunkResult:
     diag: dict
     n_possessions: int
     seconds: float
+    trajectory: pd.DataFrame | None = None   # opt-in per-possession side-channel (CBB_TRAJECTORY / trajectory_writer)
 
 
 # ---------------------------------------------------------------------------
@@ -250,7 +252,7 @@ def _ot_snap_take(snap: dict, st: S.GameState, rows: np.ndarray) -> None:
 
 def simulate_chunk(inp: EngineInputs, ad: Adapters, game_index: np.ndarray,
                    seeds: np.ndarray, keep_players: bool = True,
-                   progress: int = 0) -> ChunkResult:
+                   progress: int = 0, trajectory_writer=None) -> ChunkResult:
     """Simulate the cross product already expanded into (game_index, seeds).
 
     `game_index[i]` and `seeds[i]` together identify simulation `i`. Both arrays
@@ -276,6 +278,7 @@ def simulate_chunk(inp: EngineInputs, ad: Adapters, game_index: np.ndarray,
 
     st = S.new_state(game_index, seeds, seasons, inp.n_slots,
                      S.load_bonus_era(), first_off)
+    rec = TJ.make_recorder(st, gids, trajectory_writer)      # None unless opted in; read-only side-channel
     ot_snap = _ot_snap_init(n) if os.environ.get("ENGINE_OT_STATS") == "1" else None
     rules = inp.rules
     dead_share = np.array([rules["dead_share"][m] for m in RB.MISS_TYPES], dtype=np.float64)
@@ -444,6 +447,8 @@ def simulate_chunk(inp: EngineInputs, ad: Adapters, game_index: np.ndarray,
         off = st.off[act].astype(np.int64)
         kk = None if ksim is None else ksim[act]
         dfn = 1 - off
+        if rec is not None:
+            rec.open(st, act, off)
         off_sd = st.off_score_diff()
         bonus = st.in_bonus()
         dbonus = st.in_double_bonus()
@@ -543,6 +548,8 @@ def simulate_chunk(inp: EngineInputs, ad: Adapters, game_index: np.ndarray,
                 period=st.period[a_rows], chance_number=st.chance_number[a_rows])
             pick = categorical(book.draw("usage", a_rows), usage_probs)
             shooter = five[np.arange(len(rows)), pick]
+            if rec is not None:
+                rec.note_shooter(rows, shooter)
 
             cont = np.zeros(m, dtype=bool)       # step-space: chance continues on an OREB
             # ================= turnovers =================================
@@ -767,6 +774,8 @@ def simulate_chunk(inp: EngineInputs, ad: Adapters, game_index: np.ndarray,
         st.off[act] = dfn.astype(np.int8)
         st.chance_number[act] = 1
         st.seconds_remaining[act] = (left - used).astype(np.int16)
+        if rec is not None:
+            rec.close(st, used, end_code, chance)
         st.player_seconds[act[:, None], off[:, None], st.on_floor[act, off]] += \
             used[:, None].astype(np.float32)
         st.player_seconds[act[:, None], dfn[:, None], st.on_floor[act, dfn]] += \
@@ -842,7 +851,12 @@ def simulate_chunk(inp: EngineInputs, ad: Adapters, game_index: np.ndarray,
 
     games, players = _finalise(inp, st, gids, seeds, keep_players, ot_snap)
     n_poss = int(st.poss_count.sum())
-    return ChunkResult(games, players, diag, n_poss, time.time() - t_start)
+    traj = None
+    if rec is not None:
+        traj = rec.frame(st, inp)
+        if trajectory_writer is not None:
+            trajectory_writer.write(traj)
+    return ChunkResult(games, players, diag, n_poss, time.time() - t_start, traj)
 
 
 # ---------------------------------------------------------------------------

@@ -119,7 +119,8 @@ def stage_sim(ctx, a, CD) -> dict:
     if True:                                                             # serving exemption lives in build_live; no env var / unsealed() here
         r = SIM.run_sim_stage(str(ctx.slate_date), season, a.fold, a.seeds, 0, ctx.now, root, None, "cbbd", str(SCHED_2027),
                               str(CROSSWALK), tips, strict=False, players=True, pass_name=pass_name,
-                              ratings_dir=ctx.state.get("ratings_dir"))        # player rows are a deliverable (props): PM ruling 2026-10-09
+                              ratings_dir=ctx.state.get("ratings_dir"),
+                              trajectory_seeds=int(getattr(a, "trajectory_seeds", 0) or 0))        # player rows are a deliverable (props): PM ruling 2026-10-09
     ctx.state["sim_run_id"] = D.default_run_id(a.seeds, 0) + ("_morning" if pass_name == "morning" else "")
     return {**census, **r}
 
@@ -234,7 +235,8 @@ def run_replay(a) -> int:
     gnow = pd.Timestamp(d, tz="UTC") + pd.Timedelta(days=1, hours=14)
     res = []
     run_id = D.default_run_id(a.seeds, 0) + ("_morning" if rp == "morning" else "")
-    V2.run_stage("sim", lambda: SIM.run_sim_stage(d, S, "F2", a.seeds, 0, now, root, None, "universe", replay=True, pass_name=rp), res)
+    V2.run_stage("sim", lambda: SIM.run_sim_stage(d, S, "F2", a.seeds, 0, now, root, None, "universe", replay=True, pass_name=rp,
+                                                  trajectory_seeds=int(getattr(a, "trajectory_seeds", 0) or 0)), res)
     V2.run_stage("publish", lambda: PUB.run_publish_stage(d, run_id, now, root, "replay_open", S), res)
     V2.run_stage("grade", lambda: GR.run_grade_stage(d, S, gnow, root, "truth"), res)
     V2.run_stage("bias_clv", lambda: MON.run_monitor_stage(S, gnow, root, "replay_close"), res)
@@ -256,6 +258,8 @@ def main(argv=None) -> int:
     ap.add_argument("--slate-date", default=None)
     ap.add_argument("--now", default=None, help="injected clock (ISO UTC) for sim / publish / grade / monitor")
     ap.add_argument("--seeds", type=int, default=200)
+    ap.add_argument("--trajectory-seeds", type=int, default=0,
+                    help="DEFAULT 0 = off. N > 0 writes a per-possession trajectory for seeds < N to results/trajectories/daily_<date>_<run_id>/ (e.g. 20); side-channel, sim outputs unchanged")
     ap.add_argument("--fold", default="F2")
     ap.add_argument("--root", default=str(D.DAILY_ROOT))
     ap.add_argument("--replay-season", type=int, default=None)

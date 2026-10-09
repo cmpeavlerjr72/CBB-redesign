@@ -109,10 +109,19 @@ def _init_worker(tag: str, fold: str, season: int, input_dir: str, flags: dict) 
 def _run_block(job: tuple) -> tuple:
     """One (game block, seed block) batch."""
     from cbb_sim.engine import loop as L
-    game_rows, seeds, keep_players = job
+    game_rows, seeds, keep_players = job[:3]
+    traj_seeds = job[3] if len(job) > 3 else 0          # --trajectory-seeds N (default 0 = off)
     inp, ad = _W["inp"], _W["ad"]
     gi = np.repeat(np.asarray(game_rows, dtype=np.int64), len(seeds))
     sd = np.tile(np.asarray(seeds, dtype=np.int64), len(game_rows))
+    if traj_seeds and int(np.min(seeds)) < traj_seeds:
+        os.environ["CBB_TRAJECTORY"], os.environ["CBB_TRAJECTORY_SEEDS"] = "1", str(traj_seeds)
+        try:
+            res = L.simulate_chunk(inp, ad, gi, sd, keep_players=keep_players)
+        finally:
+            os.environ.pop("CBB_TRAJECTORY", None)
+            os.environ.pop("CBB_TRAJECTORY_SEEDS", None)
+        return res.games, res.players, res.diag, res.n_possessions, res.seconds, res.trajectory
     res = L.simulate_chunk(inp, ad, gi, sd, keep_players=keep_players)
     return res.games, res.players, res.diag, res.n_possessions, res.seconds
 
@@ -134,6 +143,9 @@ def main() -> int:
     ap.add_argument("--input-dir", default=str(INPUT_DIR))
     ap.add_argument("--tag", default=None)
     ap.add_argument("--no-players", action="store_true")
+    ap.add_argument("--trajectory-seeds", type=int, default=0,
+                    help="DEFAULT OFF. N > 0 writes results/trajectories/<tag>/trajectory.parquet with one row per "
+                         "possession for seeds < N (side-channel; game/player outputs are unchanged)")
     args = ap.parse_args()
 
     if int(args.season) >= 2026 and os.environ.get("CBB_UNSEAL") != "1":
@@ -182,7 +194,7 @@ def main() -> int:
     for s0 in range(0, len(seeds), args.seeds_per_block):
         sb = seeds[s0:s0 + args.seeds_per_block]
         for g0 in range(0, n_games, args.games_per_block):
-            jobs.append((game_rows[g0:g0 + args.games_per_block], sb, not args.no_players))
+            jobs.append((game_rows[g0:g0 + args.games_per_block], sb, not args.no_players, int(args.trajectory_seeds)))
     print(f"  {len(jobs)} blocks of <= {args.games_per_block} games x "
           f"{args.seeds_per_block} seeds")
 
@@ -190,7 +202,7 @@ def main() -> int:
     out = Path(args.results_dir) / tag
     out.mkdir(parents=True, exist_ok=True)
 
-    gframes, pframes = [], []
+    gframes, pframes, tframes = [], [], []
     diag: dict = {}
     n_poss = 0
     done = 0
@@ -203,8 +215,11 @@ def main() -> int:
             pass
         from concurrent.futures import as_completed
         for fut in as_completed(futs):
-            g, p, d, np_, _ = fut.result()
+            g, p, d, np_, _, *tj = fut.result()
+            tj = tj[0] if tj else None          # 6th element only when --trajectory-seeds is on
             gframes.append(g)
+            if tj is not None and len(tj):
+                tframes.append(tj)
             if len(p):
                 pframes.append(p)
             for k, v in d.items():
@@ -237,6 +252,20 @@ def main() -> int:
     partial = bool(stopped_early or len(seeds_written) < args.seeds)
 
     games.to_parquet(out / "games.parquet", index=False)
+    traj_meta = None
+    if tframes:
+        from cbb_sim.engine.trajectory import TrajectoryWriter
+        tdir = Path("results/trajectories") / tag
+        tw = TrajectoryWriter(tdir / "trajectory.parquet", seed_limit=int(args.trajectory_seeds))
+        keep_seeds = set(seeds_written)
+        for tf in sorted(tframes, key=lambda f: (int(f.seed.iloc[0]), int(f.game_id.iloc[0]))):
+            tw.write(tf[tf["seed"].isin(keep_seeds)])
+        tw.close()
+        nbytes = tw.path.stat().st_size
+        traj_meta = {"path": str(tw.path), "rows": tw.rows, "game_seeds": tw.pairs, "bytes": nbytes,
+                     "bytes_per_game_seed": round(nbytes / max(tw.pairs, 1), 1), "seed_limit": int(args.trajectory_seeds)}
+        print(f"trajectory: {tw.rows:,} rows, {tw.pairs:,} game-seeds, {nbytes / 1e6:.1f} MB "
+              f"({traj_meta['bytes_per_game_seed']:,.0f} B/game-seed) -> {tw.path}")
     if players is not None:
         players.to_parquet(out / "players.parquet", index=False)
 
@@ -272,6 +301,7 @@ def main() -> int:
         "engine_rules_from_data": inp.rules,
         "inputs_meta": inp.meta,
         "diagnostics": diag,
+        **({"trajectory": traj_meta} if traj_meta else {}),
     }
     (out / "run_meta.json").write_text(json.dumps(meta, indent=2, default=str), encoding="utf-8")
     print(f"wrote {out}/games.parquet ({len(games):,} rows), "
