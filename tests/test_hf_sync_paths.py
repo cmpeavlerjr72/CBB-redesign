@@ -40,7 +40,7 @@ import hf_sync_data as HF  # noqa: E402
 
 ALL_KEYS = list(HF.BULK_DIRS)
 assert ALL_KEYS == ["raw", "results", "engine_inputs", "model_artifacts", "engine_inputs_v3",
-                     "team_rate_tables"]
+                     "team_rate_tables", "results_daily"]
 
 # A handful of representative relative paths: a top-level file, a nested
 # file, and a deeply nested one (mirrors real shapes, e.g.
@@ -105,6 +105,7 @@ def test_root_for_default_matches_known_layout():
     assert HF._root_for("results") == HF.ROOT / "results"
     assert HF._root_for("engine_inputs") == HF.DATA_DIR / "processed" / "models" / "engine"
     assert HF._root_for("model_artifacts") == HF.DATA_DIR / "processed" / "models"
+    assert HF._root_for("results_daily") == HF.ROOT / "results" / "daily"       # served daily output only (subset of `results`)
 
 
 def test_root_for_dest_root_override_preserves_relative_layout(tmp_path):

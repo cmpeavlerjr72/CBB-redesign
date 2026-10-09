@@ -62,8 +62,12 @@ DATA_DIR = ROOT / "data"
 REPO_ID = "mvpeav/cbb-sim-data"
 # `engine_inputs_v3` (lane J 2026-09-30): the fold-2 engine inputs v3 sibling directory
 # built by scripts/build_engine_inputs_v3_replay.py (docs/ops/aws_launch_chain.md section 17).
+# `results_daily` (2026-10-09): only the served daily chain output `results/daily/{sim,publish,...}` (written by
+# chain_daily_v3 -> run_daily_sim_v1 / run_daily_publish_v1, `cbb_sim.live.daily.DAILY_ROOT`; ~49 files, ~41 MB). It is a SUBSET of the
+# `results` key and is pushed again under its own `results_daily/` prefix so the served output can be mirrored (and pulled) without the
+# multi-GB `results` tree. The `results` key is unchanged.
 BULK_DIRS = ["raw", "results", "engine_inputs", "model_artifacts", "engine_inputs_v3",
-             "team_rate_tables"]
+             "team_rate_tables", "results_daily"]
 
 # Path each bulk key resolves to, relative to whatever root it's rooted at
 # (the repo by default; see `_root_for`'s `dest_root` param). This is also
@@ -78,13 +82,14 @@ _REL_ROOT = {
     # only `team_rate_features_*.parquet` directly under data/processed (see TEAM_RATE_GLOB):
     # the estimator feature tables the Stage B trainers read via cbb_sim.team_rate_adapter.
     "team_rate_tables": Path("data") / "processed",
+    "results_daily": Path("results") / "daily",
 }
 TEAM_RATE_GLOB = "team_rate_features_*.parquet"
 
 # Single wave -- unlike CFB there is no multi-wave priority split here yet.
 PUSH_WAVES = [
     ("wave1-all", ["raw/**", "results/**", "engine_inputs/**", "model_artifacts/**",
-                   "engine_inputs_v3/**", "team_rate_tables/**"]),
+                   "engine_inputs_v3/**", "team_rate_tables/**", "results_daily/**"]),
 ]
 
 
