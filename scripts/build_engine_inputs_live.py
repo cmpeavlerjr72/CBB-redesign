@@ -156,6 +156,30 @@ def apply_availability(priors: dict, availability, created_at, diag: dict) -> di
     return new
 
 
+def espn_map_uncrosswalked(cw: pd.DataFrame, season: int) -> tuple[dict, str]:
+    """{cbbd_player_id: espn_athlete_id} for a season the player crosswalk does not cover yet (2027 serving, 2026-10-09,
+    docs/ops/a3_seed_wiring_2026-10-09.md). Only labels which player rows the engine emits (loop.py keeps espn > 0); no simulated
+    quantity reads it. Season-S roster file (`espn_player_id`, from the ESPN puller) first, then the latest crosswalk season < S
+    (R1 fallback players are S-1 players). Seasons IN the crosswalk never reach this function."""
+    out: dict = {}
+    src = []
+    prev = cw.loc[(cw["season"] < int(season)) & cw["espn_athlete_id"].notna(), "season"]
+    if len(prev):
+        ps = int(prev.max())
+        g = cw[(cw["season"] == ps) & cw["espn_athlete_id"].notna()]
+        out.update(zip(g["cbbd_player_id"].astype("int64"), g["espn_athlete_id"].astype("int64")))
+        src.append(f"crosswalk season {ps}: {len(g)}")
+    rp = ROOT / f"data/raw/cbbd/rosters/roster_{int(season)}.parquet"
+    if rp.exists():
+        r = pd.read_parquet(rp)
+        col = "espn_player_id" if "espn_player_id" in r.columns else "source_id"
+        r = r[["cbbd_player_id", col]].dropna()
+        r = r[pd.to_numeric(r[col], errors="coerce").notna()]
+        out.update(zip(r["cbbd_player_id"].astype("int64"), pd.to_numeric(r[col]).astype("int64")))     # season-S roster wins
+        src.append(f"{rp.name} {col}: {len(r)}")
+    return out, "; ".join(src) or "none"
+
+
 def build_live(slate: pd.DataFrame, as_of, season: int, fold: str, created_at=None,
                season_start=None, template_tag: str | None = None, families: str = "all",
                t0: float | None = None, strict_finish: bool = True,
@@ -396,6 +420,8 @@ def build_live(slate: pd.DataFrame, as_of, season: int, fold: str, created_at=No
         from cbb_sim.data import player_ids as PID
         cw = pd.read_parquet(CROSSWALK)
         mp = PID.cbbd_to_espn_map(cw, season)
+        if not len(mp):                                             # season not in the crosswalk (2027 serving): roster-file ids
+            mp, diag["espn_map_source"] = espn_map_uncrosswalked(cw, season)
         lut = pd.Series(mp) if not isinstance(mp, pd.Series) else mp
         mapped = pd.Series(roster_cbbd.reshape(-1)).map(lut).to_numpy()
         roster_espn = np.where(pd.isna(mapped), -1, mapped).astype(np.int64).reshape(Gn, 2, S)

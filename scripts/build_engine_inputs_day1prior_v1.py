@@ -218,9 +218,10 @@ def post(inp, seed_fn) -> None:
 
 
 def build(slate, as_of, season, fold, arm, season_start=None, roster_path=None, anon=False, minutes_source="onfloor",
-          fallback=None, withheld=frozenset(), **kw):
-    """`build_live` with the arm's seed (and, for the bake-off window, the in-season rotation prior suppressed)."""
-    fn = make_seed_fn(arm, roster_path, minutes_source, fallback, withheld)
+          fallback=None, withheld=frozenset(), serving=False, **kw):
+    """`build_live` with the arm's seed (and, for the bake-off window, the in-season rotation prior suppressed). `serving` (default False)
+    is passed to `make_seed_fn` for the 2027 serving-parity check only (docs/ops/a3_seed_wiring_2026-10-09.md); experiments keep False."""
+    fn = make_seed_fn(arm, roster_path, minutes_source, fallback, withheld, serving=serving)
     orig = LF.rotation_priors
     if anon:
         LF.rotation_priors = lambda ctx, fit, min_prior_games=1: {}

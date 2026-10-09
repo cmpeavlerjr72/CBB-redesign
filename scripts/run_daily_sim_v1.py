@@ -107,6 +107,25 @@ def season_start_of(season: int, source: str, schedule_path: str | None):
     return str(d.min().date())
 
 
+def day1_prior_applies(season: int, replay: bool, day1_prior: str | None = "auto") -> bool:
+    """The selected A3 day-1 player prior + R1 roster fallback (A3 selected 2026-10-05, R1 selected 2026-10-05) applies to LIVE
+    serving seasons (>= 2027) only. Replay / past seasons never take it (their inputs stay bit-identical). `day1_prior=None` turns it
+    off explicitly (tests, paired checks); "auto" = the served rule above."""
+    if day1_prior is None:
+        return False
+    return int(season) >= 2027 and not replay
+
+
+def day1_prior_seed(season: int):
+    """(module, seed_fn) for the served A3+R1 seed, through the ONE definition the chain uses (`chain_daily_v2.day1_player_prior_seed`,
+    serving=True tables). Hard stop (RuntimeError naming each table) when a source table is missing; never a silent anonymous build."""
+    import chain_daily_v2 as V2
+    miss = V2.day1_player_prior_missing(int(season))
+    if miss:
+        raise RuntimeError("A3 day-1 player prior sources missing: " + "; ".join(miss))
+    return V2.day1_player_prior_seed(int(season))
+
+
 def config_hash(cfg: dict) -> str:
     return hashlib.sha1(json.dumps(cfg, sort_keys=True, default=str).encode()).hexdigest()[:12]
 
@@ -115,7 +134,8 @@ def run_sim_stage(slate_date: str, season: int, fold: str = "F2", seeds: int = 2
                   root: Path = D.DAILY_ROOT, run_id: str | None = None, schedule_source: str = "universe",
                   schedule_path: str | None = None, crosswalk: str | None = None, tips: str | None = None,
                   strict: bool = False, force: bool = False, replay: bool = False, players: bool = False,
-                  max_games: int = 0, pass_name: str | None = None, ratings_dir: str | None = None) -> dict:
+                  max_games: int = 0, pass_name: str | None = None, ratings_dir: str | None = None,
+                  day1_prior: str | None = "auto") -> dict:
     t0 = time.time()
     now = D.utc(now) if now is not None else pd.Timestamp.now("UTC")
     run_id = run_id or D.default_run_id(seeds, seed_offset) + (f"_{pass_name}" if pass_name == "morning" else "")
@@ -127,6 +147,9 @@ def run_sim_stage(slate_date: str, season: int, fold: str = "F2", seeds: int = 2
         cfg["pass"] = pass_name
     if ratings_dir:
         cfg["ratings_dir"] = str(ratings_dir)
+    use_d1p = day1_prior_applies(season, replay, day1_prior)
+    if use_d1p:                                    # absent for replay / past seasons, so their config hashes are unchanged
+        cfg["day1_prior"] = "A3+R1"
     h = config_hash(cfg)
     done = out / "_DONE.json"
     if done.exists() and not force:
@@ -164,9 +187,19 @@ def run_sim_stage(slate_date: str, season: int, fold: str = "F2", seeds: int = 2
     import build_engine_inputs_live as BL
     import run_engine_live as RL
     slate_cols = ["game_id", "cbbd_game_id", "season", "game_date", "tipoff_utc", "home_team_id", "away_team_id", "neutral"]
+    D1P, seed_fn = day1_prior_seed(season) if use_d1p else (None, None)
     inp, diag = BL.build_live(ok[slate_cols], now, season, fold, created_at=now,
                               season_start=season_start_of(season, schedule_source, schedule_path), t0=t0,
-                              strict_finish=not replay, ratings_dir=ratings_dir)
+                              strict_finish=not replay, ratings_dir=ratings_dir, seed_fn=seed_fn)
+    if seed_fn is not None:                         # A2-only share rewrite; a no-op for A3 (kept so the call matches build_live_inputs)
+        D1P.post(inp, seed_fn)
+        import chain_daily_v2 as V2
+        diag["d1p_fallback_line"] = V2.fallback_line(diag.get("d1p_fallback_teams"))
+    named = (inp.roster_cbbd > 0)
+    d1p_meta = {"day1_prior": "A3+R1" if use_d1p else None, "d1p_team_games": diag.get("d1p_team_games"),
+                "d1p_slots": diag.get("d1p_slots"), "d1p_fallback_teams": [int(t) for t in (diag.get("d1p_fallback_teams") or [])],
+                "d1p_fallback_line": diag.get("d1p_fallback_line"), "anon_slot_share": round(float(1.0 - named.mean()), 4),
+                "team_games_all_anonymous": int((~named.any(axis=2)).sum())}
     import run_engine as RE
     prov = RE.engine_provenance()
     adir = RL.prepare_adapter_dir(inp.event_block, fold, season, out / "_adapter")
@@ -188,13 +221,15 @@ def run_sim_stage(slate_date: str, season: int, fold: str = "F2", seeds: int = 2
             "backtest": False, "sealed_touched": False, "live": True, "replay": bool(replay), "season": season,
             "slate_date": slate_date, "n_games": int(inp.n_games), "n_rows": int(len(games)), "n_skipped_tipped": int(len(late)),
             "runtime_s": round(time.time() - t0, 1), "created_at_before_tipoff_asserted": True, "config_hash": h,
-            "build_diag": {k: v for k, v in diag.items() if not isinstance(v, (dict, list))}, **prov, "adapter_flags": ad.flags,
+            "build_diag": {k: v for k, v in diag.items() if not isinstance(v, (dict, list))}, "day1_prior": d1p_meta, **prov, "adapter_flags": ad.flags,
             "engine_env": {k: v for k, v in os.environ.items() if k.startswith("ENGINE_")}}
     (out / "run_meta.json").write_text(json.dumps(meta, indent=2, default=str), encoding="utf-8")
     done.write_text(json.dumps({"config_hash": h, "n_rows": int(len(games)), "n_games": int(inp.n_games),
                                 "finished_at": str(pd.Timestamp.now("UTC"))}), encoding="utf-8")
     return {"_status": "ok", "cached": False, "out": str(out), "n_games": int(inp.n_games), "n_rows": int(len(games)),
-            "skipped_tipped": int(len(late)), "runtime_s": round(time.time() - t0, 1)}
+            "skipped_tipped": int(len(late)), "runtime_s": round(time.time() - t0, 1),
+            "day1_prior": d1p_meta["day1_prior"], "anon_slot_share": d1p_meta["anon_slot_share"],
+            "d1p_team_games": d1p_meta["d1p_team_games"], "fallback_roster_line": d1p_meta["d1p_fallback_line"]}
 
 
 def main(argv=None) -> int:
@@ -220,9 +255,12 @@ def main(argv=None) -> int:
     ap.add_argument("--players", action="store_true")
     ap.add_argument("--max-games", type=int, default=0)
     ap.add_argument("--ratings-dir", default=None, help="dir holding own_ratings_{season}.parquet with the as-of row (default: the stored batch ratings)")
+    ap.add_argument("--no-day1-prior", action="store_true",
+                    help="season >= 2027 only: build WITHOUT the served A3+R1 day-1 player prior (paired checks; not for serving)")
     a = ap.parse_args(argv)
     r = run_sim_stage(a.slate_date, a.season, a.fold, a.seeds, a.seed_offset, a.now, Path(a.root), a.run_id, a.schedule_source,
-                      a.schedule_path, a.crosswalk, a.tips, a.strict, a.force, a.replay, a.players, a.max_games, a.pass_name, a.ratings_dir)
+                      a.schedule_path, a.crosswalk, a.tips, a.strict, a.force, a.replay, a.players, a.max_games, a.pass_name, a.ratings_dir,
+                      day1_prior=None if a.no_day1_prior else "auto")
     print(json.dumps(r, default=str))
     return 0
 

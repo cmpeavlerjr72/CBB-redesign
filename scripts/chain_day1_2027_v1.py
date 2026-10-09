@@ -96,11 +96,23 @@ def stage_inputs(ctx, CD, a, SIM, season: int | None = None, pass_name: str = "e
                 "blocked_on": ["own ratings as of the slate date (ratings stage blocked; see its missing_or_invalid)"]}
     cols = ["game_id", "cbbd_game_id", "season", "game_date", "tipoff_utc", "home_team_id", "away_team_id", "neutral"]
     # the prior-season carry reads the 2026 tables through build_live's assert_not_sealed_serving (no env var, no unsealed())
+    use_d1p = SIM.day1_prior_applies(season, replay=False)        # the served A3+R1 day-1 player prior, same rule and seed as the sim stage
+    if use_d1p:
+        miss = V2.day1_player_prior_missing(season)
+        if miss:
+            return {**out, "_status": "blocked", "blocked_on": miss}
+    D1P, seed_fn = SIM.day1_prior_seed(season) if use_d1p else (None, None)
     inp, diag = BL.build_live(ok[cols], ctx.now, season, a.fold, created_at=ctx.now,
                               season_start=SIM.season_start_of(season, "cbbd", str(PRESEASON / "games_2027.parquet")),
-                              strict_finish=True, ratings_dir=rd)
+                              strict_finish=True, ratings_dir=rd, seed_fn=seed_fn)
+    if seed_fn is not None:
+        D1P.post(inp, seed_fn)
     ts = inp.team_static
+    named = inp.roster_cbbd > 0
     out.update(inputs_built=True, n_games=int(inp.n_games), rotation_fallback_team_games=int(diag.get("rotation_fallback_team_games", -1)),
                candidates_per_team_game_mean=round(float(diag.get("candidates_per_team_game_mean", 0.0)), 2),
-               share_zero_team_static_cells=round(float((ts == 0).mean()), 4), ratings_dir=rd)
+               share_zero_team_static_cells=round(float((ts == 0).mean()), 4), ratings_dir=rd,
+               day1_prior="A3+R1" if use_d1p else None, d1p_team_games=diag.get("d1p_team_games"), d1p_slots=diag.get("d1p_slots"),
+               anon_slot_share=round(float(1.0 - named.mean()), 4), team_games_all_anonymous=int((~named.any(axis=2)).sum()),
+               fallback_roster_line=V2.fallback_line(diag.get("d1p_fallback_teams")) if use_d1p else None)
     return out
