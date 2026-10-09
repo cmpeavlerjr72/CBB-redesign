@@ -1,0 +1,20 @@
+{
+  "source": "https://site.api.espn.com/apis/site/v2/sports/basketball/mens-college-basketball/injuries",
+  "snapshot_date": "2026-10-09",
+  "pulled_at": "2026-10-09 13:59:44.891244+00:00",
+  "rows": 0,
+  "parquet": "C:\\Users\\devuser\\CBB-clean-sheet\\data\\processed\\injuries\\injuries_2026-10-09.parquet",
+  "sha1": "80e8ff794a3035fba502589681313caf52791baa",
+  "by_status": {},
+  "applied_statuses": [
+    "out",
+    "out for season"
+  ],
+  "out_rows": 0,
+  "out_rows_unmapped_to_cbbd": 0,
+  "entries_raw": 0,
+  "entries_without_athlete_id": 0,
+  "payload_season": 2027,
+  "payload_status": "success",
+  "terms": "ESPN public JSON; see docs/ops/injury_feed_2026-10-09.md"
+}
