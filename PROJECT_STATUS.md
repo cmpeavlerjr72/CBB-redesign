@@ -17,7 +17,17 @@ PM rulings (2026-10-09):
 
 USER DECISIONS NEEDED: (1) the tasks run only while `devuser` is logged on; running through logoff needs a stored password (`schtasks /ru /rp`). (2) Injuries never reach the sim (an untracked `data/processed/injuries/player_out_2026-10-09.csv` exists but nothing consumes it). Decide whether a free source is worth a Sonnet job or injuries stay manual.
 
-Next: one chained Sonnet brief: cache key fix + `players=True` + `known` flag alignment (re-verify harness match and parity), then restart the 5-pass count. Early-anchor round stays post-freeze.
+SUPERSEDED next: the Sonnet brief below ran the same day.
+
+- **Later 10-09 (Sonnet, `79af602` `d727cbb` `9633a57` `b7da528`; docs `docs/ops/cache_players_known_2026-10-09.md`, `scheduler_match_2026-10-09.md`, `injury_feed_2026-10-09.md`):** all three rulings implemented.
+  - Sim cache key now hashes rosters, R1 feed, tip-times rows, ratings snapshot, served-stack code + `ENGINE_*` env, seed count, injury Out set. Proof: run 1 re-ran (72.6 s), run 2 cache hit (0.5 s), a one-tip change on a sibling table forced a re-run. Pre-10-09 `_DONE` markers count as misses.
+  - Served chain passes `players=True`: 11-02 slate, 200 seeds, 118 games, 422,860 player rows, anon slot share 23.67% (unchanged).
+  - Shot-block `shooter`/`known` zeroed on seeded sides as in the harness. Daily vs harness (118 games, seeds 0-3): max abs diff 0.0, game output identical. Parity v10 bit-identical (twice). Suite 798 passed, 1 skipped.
+  - Scheduler re-registered to match the machine's 78 other user tasks (55 S4U/Limited): both `\CBB\` tasks are S4U, Limited, StartWhenAvailable on, WakeToRun off. Runs logged off; no password needed. Two on-demand passes rc 0 (720 s, 794 s). **Unattended pass count restarts at 0 from here**; need 5 scheduled passes before Nov 2.
+  - Injury feed: CBBD has no injury endpoint (9 routes 404), hoopR none. `pull_injuries_v1.py` reads ESPN's league-wide injuries JSON; new `injuries_feed` stage before inputs; only Out / Out For Season applied (player removed from the day-1 seed or rotation prior, same path as a missing roster player; Questionable/Doubtful recorded, not applied). Test: synthetic Out row -> 0 minutes, shares re-close. Preseason payload is empty (0 pulled, 0 applied, rc 0). College status vocabulary unverified until real entries appear. The old `player_out_2026-10-09.csv` puller (`de00bab`) had no consumer and would have crashed on a real payload.
+  - PM RULING on ESPN robots: `www.espn.com/robots.txt` disallows AI crawlers; `site.api.espn.com/robots.txt` is unreadable. The injury pull is a scripted JSON API call by the user's own tooling against the same endpoint family the roster pull (`pull_rosters_espn_v1.py`) already uses, and hoopR itself is ESPN-derived. Treat it like the roster pull: allowed, low volume (one call per pass), user informed 2026-10-09.
+
+Next: watch the scheduled passes (need 5 clean, logs in `results\ops\`); verify the injury status vocabulary once ESPN posts real college entries; switch `preseason_dir.json` only if a fuller roster pull lands. Early-anchor round stays post-freeze.
 
 
 ## SESSION 2026-10-08 (short; PM Opus 5.5): seal-week build moved up and executed. Read this block first.
