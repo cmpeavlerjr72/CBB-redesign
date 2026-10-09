@@ -85,16 +85,43 @@ def select_for_pass(slate: pd.DataFrame, now, pass_name: str = "evening") -> tup
     if pass_name not in ("evening", "morning"):
         raise ValueError(pass_name)
     now = _utc(now)
-    tip = pd.to_datetime(slate["tipoff_utc"], utc=True)
+    tip = effective_tip(slate)                      # a placeholder proves only "not before 00:00 ET of the game date"
     ph = slate["tip_time_is_placeholder"].fillna(True).astype(bool) if "tip_time_is_placeholder" in slate.columns \
         else pd.Series(True, index=slate.index)
     tipped = tip.isna() | ~(now < tip)
     reason = pd.Series("", index=slate.index, dtype=object)
-    reason[tipped] = "tipoff <= clock (or no tip time)"
+    reason[tipped] = late_reasons(slate[tipped])
     if pass_name == "morning":
         reason[ph] = "placeholder tip time (not real); morning pass needs a real tip"     # priority: a placeholder is never judged "tipped"
     refuse = reason != ""
     return slate[~refuse].reset_index(drop=True), slate[refuse].assign(refuse_reason=reason[refuse]).reset_index(drop=True)
+
+
+#: refuse reason for a placeholder tip the clock has passed (2026-10-09, docs/ops/tip_guard_2026-10-09.md): the game has NOT been shown to
+#: have tipped; its tip time is unknown, so created_at < tipoff cannot be proven. Refused (never simulated) and labelled as such.
+TIP_UNKNOWN = "tip time unknown: placeholder 00:00 ET already passed, real tip not yet published; cannot prove pre-tip"
+TIPPED = "tipoff <= clock (or no tip time)"
+
+
+def effective_tip(slate: pd.DataFrame) -> pd.Series:
+    """The latest clock at which a row can still be PROVEN pre-tip: the tip itself when real; for a placeholder (feed flag or midnight ET)
+    the earlier of the placeholder and 00:00 ET of the game date (`game_date` when present, else the placeholder's own ET date)."""
+    tip = pd.to_datetime(slate["tipoff_utc"], utc=True, errors="coerce")
+    if not len(slate):
+        return tip
+    ph = flag_placeholders(slate)["tip_time_is_placeholder"].to_numpy()
+    base = slate["game_date"] if "game_date" in slate.columns else tip.dt.tz_convert(ET).dt.tz_localize(None)
+    bound = earliest_possible_tips(pd.Series(base, index=slate.index))
+    return tip.where(~ph | tip.isna() | (tip <= bound), bound)
+
+
+def late_reasons(late: pd.DataFrame) -> pd.Series:
+    """Refuse reason per row of a slate subset the clock has passed: TIP_UNKNOWN for a placeholder (feed flag or midnight ET), else TIPPED."""
+    if not len(late):
+        return pd.Series([], index=late.index, dtype=object)
+    ph = flag_placeholders(late)["tip_time_is_placeholder"].to_numpy()
+    tip = pd.to_datetime(late["tipoff_utc"], utc=True, errors="coerce")
+    return pd.Series([TIP_UNKNOWN if p and pd.notna(t) else TIPPED for p, t in zip(ph, tip)], index=late.index, dtype=object)
 
 
 def default_clock(slate_date, pass_name: str = "evening") -> pd.Timestamp:
@@ -141,4 +168,57 @@ def stamp_pre_tip_basis(games: pd.DataFrame, slate: pd.DataFrame, slate_date) ->
     bad = ph & ~(pd.to_datetime(out["created_at"], utc=True) < bound)
     if bad.any():
         raise LeakGuardError(f"{int(bad.sum())} row(s) rest on a placeholder tip time with created_at >= {bound} (earliest possible tip of {slate_date})")
+    return out
+
+
+def earliest_possible_tips(game_date: pd.Series) -> pd.Series:
+    """Vector form of `earliest_possible_tip`: 00:00 America/New_York of each row's game date, in UTC."""
+    d = pd.to_datetime(game_date)
+    if getattr(d.dt, "tz", None) is not None:
+        d = d.dt.tz_convert(ET).dt.tz_localize(None)
+    return d.dt.normalize().dt.tz_localize(ET).dt.tz_convert("UTC")
+
+
+def stamp_pre_tip_rows(rows: pd.DataFrame, created_col: str, date_col: str = "game_date") -> pd.DataFrame:
+    """In-place-style variant of `stamp_pre_tip_basis` for a frame that already carries `tipoff_utc` (and, if known, the feed's
+    `tip_time_is_placeholder`) per row, e.g. the publish rows. Same rule: a placeholder row is accepted only when `created_col` is before the
+    earliest possible tip of its game date, and it is flagged `pre_tip_verified` False; a real-tip row is verified by created < tip."""
+    from cbb_sim.live.guards import LeakGuardError
+    out = flag_placeholders(rows)
+    ph = out["tip_time_is_placeholder"].astype(bool)
+    out["pre_tip_basis"] = ph.map({True: "placeholder_lower_bound", False: "real_tip"})
+    out["pre_tip_verified"] = ~ph
+    bad = ph & ~(pd.to_datetime(out[created_col], utc=True) < earliest_possible_tips(out[date_col]))
+    if bad.any():
+        raise LeakGuardError(f"{int(bad.sum())} row(s) rest on a placeholder tip time with {created_col} at or after 00:00 ET of the game date")
+    return out
+
+
+PRE_TIP_STATUS = ("real_tip", "placeholder_reverified", "placeholder_unverified", "violated")
+
+
+def reverify_pre_tip(rows: pd.DataFrame, tip_table: pd.DataFrame | None, created_col: str = "published_at") -> pd.DataFrame:
+    """Grade-time re-check (2026-10-09). Rows certified only by a placeholder lower bound are checked against the latest REAL tip
+    (`tip_table`: game_id, tipoff_utc, tip_time_is_placeholder; the tips stage's latest table) once one exists:
+      real_tip                the row's own tip was real at build time (already verified by created < tip)
+      placeholder_reverified  a real tip is now known and created < real tip
+      placeholder_unverified  still no real tip: the row stays flagged (pre-tip status unknown, not assumed)
+      violated                a real tip is known and created >= real tip: NOT pre-tip; the caller must not grade it
+    Adds `pre_tip_status` and `real_tipoff_utc`."""
+    out = flag_placeholders(rows)
+    ph = out["tip_time_is_placeholder"].astype(bool)
+    real = pd.Series(pd.NaT, index=out.index, dtype="datetime64[ns, UTC]")
+    if tip_table is not None and len(tip_table):
+        t = tip_table[~tip_table["tip_time_is_placeholder"].fillna(True).astype(bool)]
+        t = t.assign(_t=pd.to_datetime(t["tipoff_utc"], utc=True))
+        t = t[~is_midnight_et(t["_t"])].drop_duplicates("game_id", keep="last").set_index("game_id")["_t"]
+        real = out["game_id"].map(t)
+        real = pd.to_datetime(real, utc=True)
+    created = pd.to_datetime(out[created_col], utc=True)
+    status = pd.Series("real_tip", index=out.index, dtype=object)
+    status[ph & real.isna()] = "placeholder_unverified"
+    status[ph & real.notna() & (created < real)] = "placeholder_reverified"
+    status[ph & real.notna() & ~(created < real)] = "violated"
+    out["pre_tip_status"] = status
+    out["real_tipoff_utc"] = real.where(ph, pd.to_datetime(out["tipoff_utc"], utc=True))
     return out

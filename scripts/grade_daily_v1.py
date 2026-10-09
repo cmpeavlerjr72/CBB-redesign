@@ -128,6 +128,14 @@ def run_grade_stage(slate_date: str, season: int, now=None, root: Path = D.DAILY
     fin = fin[fin["game_id"].isin(set(pub["game_id"]))]
     if not (D.utc(now) > pd.to_datetime(pub["tipoff_utc"], utc=True).min()):
         return {"_status": "skipped", "why": "grade clock is not after the first tip; nothing can be final"}
+    # pre-tip re-check (2026-10-09, docs/ops/tip_guard_2026-10-09.md): rows published on a placeholder tip are checked against the latest
+    # REAL tip; 'violated' rows are never graded (pending, reason created_after_real_tip); unresolved ones stay flagged in the ledger
+    from cbb_sim.live import tips as TP
+    tt = REPO / f"data/processed/ingest/tip_times_{int(season)}.parquet"
+    pub = TP.reverify_pre_tip(pub, pd.read_parquet(tt) if tt.exists() else None, "published_at")
+    viol = pub[pub["pre_tip_status"] == "violated"]
+    pub = pub[pub["pre_tip_status"] != "violated"]
+    fin = fin[fin["game_id"].isin(set(pub["game_id"]))]
     led_new = D.settle(pub, fin, now)
     if len(led_new) and not (pd.to_datetime(led_new["tipoff_utc"], utc=True) < D.utc(now)).all():
         raise RuntimeError("a final exists for a game that has not tipped by the grade clock")
@@ -137,6 +145,9 @@ def run_grade_stage(slate_date: str, season: int, now=None, root: Path = D.DAILY
     led_new = D.attach_truth_box(led_new, truth_box)
     pend = pub[~pub["game_id"].isin(set(led_new["game_id"]))][["game_id", "cbbd_game_id", "tipoff_utc", "run_id", "publish_id"]].copy()
     pend["reason"] = "no_verified_final"
+    if len(viol):
+        pend = pd.concat([pend, viol[["game_id", "cbbd_game_id", "tipoff_utc", "run_id", "publish_id"]].assign(
+            reason="created_after_real_tip")], ignore_index=True)
     gdir = Path(root) / "grade"
     led, n_new = D.ledger_upsert(gdir / "ledger.parquet", led_new) if len(led_new) else (
         pd.read_parquet(gdir / "ledger.parquet") if (gdir / "ledger.parquet").exists() else led_new, 0)
@@ -153,6 +164,7 @@ def run_grade_stage(slate_date: str, season: int, now=None, root: Path = D.DAILY
     summary = {k: v for k, v in t_day.items() if not isinstance(v, (pd.DataFrame, dict))}
     (odir / "summary.json").write_text(json.dumps(summary, indent=2, default=str), encoding="utf-8")
     return {"_status": "ok", "graded": int(len(led_new)), "new_ledger_rows": int(n_new), "pending": int(len(pend)),
+            "pre_tip_status": pub["pre_tip_status"].value_counts().to_dict() | ({"violated": int(len(viol))} if len(viol) else {}),
             "ledger_rows": int(len(led)), "margin_mae": t_day["margin_mae"], "total_mae": t_day["total_mae"], "report": str(odir / "report.md")}
 
 

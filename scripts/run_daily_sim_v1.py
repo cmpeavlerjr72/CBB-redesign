@@ -171,7 +171,8 @@ def run_sim_stage(slate_date: str, season: int, fold: str = "F2", seeds: int = 2
         ok, late = TP.select_for_pass(slate, now, pass_name)
     else:
         ok, late = D.split_tipped(slate, now)
-        late = late.assign(refuse_reason="tipoff <= created_at (or no tip time): refused, not simulated")
+        from cbb_sim.live import tips as TP
+        late = late.assign(refuse_reason=TP.late_reasons(late).to_numpy() if len(late) else [])   # placeholder past 00:00 ET -> TIP_UNKNOWN
     out.mkdir(parents=True, exist_ok=True)
     skipped = {"clock": str(now), "pass": pass_name, "already_tipped": [
         {"game_id": int(r.game_id), "tipoff_utc": str(r.tipoff_utc), "tip_source": r.tip_source,
@@ -210,7 +211,7 @@ def run_sim_stage(slate_date: str, season: int, fold: str = "F2", seeds: int = 2
     games, pl, ad = RL.simulate(inp, fold, season, seed_arr, keep_players=players, adapter_dir=adir)
     games = RL.stamp_rows(games, inp, now, per_game=False)         # created_at + tipoff_utc, asserts created_at < tipoff
     G.assert_created_before_tipoff(games)
-    if pass_name:                                   # two-pass chain: placeholder tips never certify a row as pre-tip (tips.stamp_pre_tip_basis)
+    if pass_name or not replay:                     # every live row: placeholder tips never certify a row as pre-tip (tips.stamp_pre_tip_basis)
         from cbb_sim.live import tips as TP
         games = TP.stamp_pre_tip_basis(games, ok, slate_date)
     games.to_parquet(out / "games.parquet", index=False)

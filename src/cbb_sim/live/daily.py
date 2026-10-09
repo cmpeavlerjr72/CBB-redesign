@@ -54,7 +54,8 @@ def default_run_id(seeds: int, seed_offset: int = 0) -> str:
 def split_tipped(slate: pd.DataFrame, now) -> tuple[pd.DataFrame, pd.DataFrame]:
     """(not yet tipped, already tipped) by the injected clock. A game with no usable tip time counts as tipped (cannot be proven pregame)."""
     now = utc(now)
-    tip = pd.to_datetime(slate["tipoff_utc"], utc=True)
+    from cbb_sim.live import tips as TP
+    tip = TP.effective_tip(slate)                  # placeholder tip (midnight ET / feed flag): provable only before 00:00 ET of the game date
     late = tip.isna() | ~(now < tip)
     return slate[~late].reset_index(drop=True), slate[late].reset_index(drop=True)
 
@@ -120,7 +121,10 @@ def build_publish(games: pd.DataFrame, slate: pd.DataFrame, lines: pd.DataFrame 
     neutral (and optionally home_name / away_name). A game that has tipped by `now` is refused. Asserts published_at < tipoff."""
     now = utc(now)
     ok, late = split_tipped(slate, now)
-    refused = late.assign(refused_reason="already_tipped_at_publish", published_at=now)
+    from cbb_sim.live import tips as TP
+    lr = TP.late_reasons(late)
+    refused = late.assign(refused_reason=np.where(lr == TP.TIP_UNKNOWN, "tip_time_unknown_placeholder", "already_tipped_at_publish"),
+                          published_at=now)
     summ = sim_game_summary(games[games["game_id"].isin(set(ok["game_id"]))])
     pub = ok.merge(summ, on="game_id", how="inner")
     if sim_created_at is None and "created_at" in games.columns:
@@ -158,6 +162,8 @@ def build_publish(games: pd.DataFrame, slate: pd.DataFrame, lines: pd.DataFrame 
     if (pub.loc[has_ln, "line_fetched_at"] > now).any():
         raise G.LeakGuardError("a line is stamped after the publish clock")
     G.assert_created_before_tipoff(pub.assign(created_at=pub["published_at"]))      # published_at < tipoff
+    if "game_date" in pub.columns:                 # placeholder rows: accepted only before 00:00 ET of the game date, flagged unverified
+        pub = TP.stamp_pre_tip_rows(pub, "published_at")
     if pub["created_at"].notna().any() and (pub["created_at"] > pub["published_at"]).any():
         raise G.LeakGuardError("sim created_at is after published_at")
     pub["publish_id"] = publish_id(pub, run_id)
