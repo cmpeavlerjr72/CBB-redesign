@@ -34,10 +34,26 @@ from cbb_sim.live.preseason import preseason_dir as _preseason_dir, preseason_re
 from cbb_sim.live import daily as D  # noqa: E402
 
 TRUTH_BOX = REPO / "data/processed/truth/team_game_shots_v2.parquet"
+INGEST_DIR = REPO / "data/processed/ingest"
+
+
+def _ingest_path(season: int, ingest_dir: Path | None = None) -> Path:
+    return Path(ingest_dir or INGEST_DIR) / f"finals_verified_{int(season)}.parquet"
+
+
+def finals_ingest_disagree_ids(season: int, ingest_dir: Path | None = None) -> set:
+    """Games present in the finals table whose two sources do NOT agree on both scores (or lack one source). Never graded; used to label
+    the pending reason `finals_sources_disagree` instead of a generic no-final."""
+    p = _ingest_path(season, ingest_dir)
+    if not p.exists():
+        return set()
+    f = pd.read_parquet(p)
+    agree = (f["hoopr_home"] == f["cbbd_home"]) & (f["hoopr_away"] == f["cbbd_away"])
+    return set(f.loc[~agree, "game_id"].astype("int64"))
 
 
 def finals_ingest(season: int, ingest_dir: Path | None = None) -> pd.DataFrame:
-    p = Path(ingest_dir or REPO / "data/processed/ingest") / f"finals_verified_{int(season)}.parquet"
+    p = _ingest_path(season, ingest_dir)
     if not p.exists():
         return pd.DataFrame(columns=["game_id", "home_score", "away_score", "finals_source", "verified_at"])
     f = pd.read_parquet(p)
@@ -124,6 +140,11 @@ def run_grade_stage(slate_date: str, season: int, now=None, root: Path = D.DAILY
     if not len(pubs):
         return {"_status": "skipped", "why": f"no publication for {slate_date}"}
     pub = D.first_publication(pubs, publish_id)
+    if "early_season_totals_flag" not in pub.columns or pub["early_season_totals_flag"].isna().all():
+        try:                                   # publications written before the label existed: derive it from the same rule
+            pub["early_season_totals_flag"] = D.early_season_flag(pub["game_date"], season_start_of(season))
+        except Exception:  # noqa: BLE001
+            pub["early_season_totals_flag"] = pd.array([pd.NA] * len(pub), dtype="boolean")
     fin = finals_frame if finals_frame is not None else (finals_truth(season) if finals == "truth" else finals_ingest(season))
     fin = fin[fin["game_id"].isin(set(pub["game_id"]))]
     if not (D.utc(now) > pd.to_datetime(pub["tipoff_utc"], utc=True).min()):
@@ -145,6 +166,8 @@ def run_grade_stage(slate_date: str, season: int, now=None, root: Path = D.DAILY
     led_new = D.attach_truth_box(led_new, truth_box)
     pend = pub[~pub["game_id"].isin(set(led_new["game_id"]))][["game_id", "cbbd_game_id", "tipoff_utc", "run_id", "publish_id"]].copy()
     pend["reason"] = "no_verified_final"
+    if finals_frame is None and finals == "ingest":
+        pend.loc[pend["game_id"].isin(finals_ingest_disagree_ids(season)), "reason"] = "finals_sources_disagree"
     if len(viol):
         pend = pd.concat([pend, viol[["game_id", "cbbd_game_id", "tipoff_utc", "run_id", "publish_id"]].assign(
             reason="created_after_real_tip")], ignore_index=True)

@@ -115,8 +115,21 @@ def _ev_110(p_win, p_loss):
 
 
 # ------------------------------------------------------------------------------------------------ publish
+EARLY_SEASON_DAYS = 14        # PM decision 2026-10-08: totals in d0-14 carry a known-bias label (no numeric adjustment)
+
+
+def early_season_flag(game_date, season_start, days: int = EARLY_SEASON_DAYS) -> pd.Series:
+    """Boolean label: the game date is within `days` of the season's first game date (the d0-14 bucket of the early-season diagnostics).
+    LABEL ONLY: no number anywhere is changed by it. `season_start` None -> nullable NA (unknown, never silently False)."""
+    gd = pd.to_datetime(pd.Series(game_date)).dt.tz_localize(None).dt.normalize()
+    if season_start is None:
+        return pd.Series(pd.array([pd.NA] * len(gd), dtype="boolean"), index=gd.index)
+    d = (gd - pd.Timestamp(season_start).normalize()).dt.days
+    return ((d >= 0) & (d <= days)).astype("boolean")
+
+
 def build_publish(games: pd.DataFrame, slate: pd.DataFrame, lines: pd.DataFrame | None, now, run_id: str,
-                  sim_created_at=None) -> tuple[pd.DataFrame, pd.DataFrame]:
+                  sim_created_at=None, season_start=None, build_ids: dict | None = None) -> tuple[pd.DataFrame, pd.DataFrame]:
     """Returns (published rows, refused rows). `slate` carries game_id, cbbd_game_id, game_date, tipoff_utc, home/away team ids,
     neutral (and optionally home_name / away_name). A game that has tipped by `now` is refused. Asserts published_at < tipoff."""
     now = utc(now)
@@ -132,6 +145,10 @@ def build_publish(games: pd.DataFrame, slate: pd.DataFrame, lines: pd.DataFrame 
     pub["created_at"] = pd.to_datetime(sim_created_at, utc=True) if sim_created_at is not None else pd.NaT
     pub["published_at"] = now
     pub["run_id"] = run_id
+    # traceability + label columns (additive; publish_id and every number are unchanged)
+    pub["early_season_totals_flag"] = early_season_flag(pub["game_date"], season_start) if "game_date" in pub.columns else pd.array([pd.NA] * len(pub), dtype="boolean")
+    for k in ("inputs_hash", "config_hash", "engine_tag"):
+        pub[k] = (build_ids or {}).get(k)
     if lines is not None and len(lines):
         ln = lines.rename(columns={"cbbd_game_id": "cbbd_game_id"})
         pub = pub.merge(ln, on="cbbd_game_id", how="left")
@@ -200,6 +217,9 @@ def slate_markdown(pub: pd.DataFrame, refused: pd.DataFrame, slate_date, run_id:
     kinds = sorted({str(k) for k in pub["line_kind"].dropna().unique()})
     L_ += ["", f"Lines: kind {kinds or 'none'}; {int(pub['spread'].notna().sum())} of {len(pub)} games have a spread, "
            f"{int(pub['home_ml'].notna().sum())} a moneyline. Line timestamps are stored in the parquet (`line_fetched_at`)."]
+    if "early_season_totals_flag" in pub.columns and pub["early_season_totals_flag"].fillna(False).any():
+        L_ += ["", "Early-season totals label: this slate is within 14 days of the season's first game; sim totals in this window carry a known "
+               "bias (diagnosed, not adjusted). Column `early_season_totals_flag` is true on every row."]
     return "\n".join(L_) + "\n"
 
 
@@ -321,6 +341,11 @@ def grade_tables(led: pd.DataFrame, n_boot: int = 1000) -> dict:
         out["market_brier"] = float(((c["market_p_home_devig"] - c["is_home_win"]) ** 2).mean())
         if len(c) >= 50:
             out["calibration"] = M.calibration_deciles(c["p_home"], c["market_p_home_devig"], c["is_home_win"])
+    if "early_season_totals_flag" in led.columns and len(led):      # label split only; nothing is adjusted
+        fl = led["early_season_totals_flag"].fillna(False).astype(bool)
+        out["n_early_season_totals_flag"] = int(fl.sum())
+        out["total_bias_early_flagged"] = float(led.loc[fl, "total_err"].mean()) if fl.any() else np.nan
+        out["total_bias_unflagged"] = float(led.loc[~fl, "total_err"].mean()) if (~fl).any() else np.nan
     out["brier_all_games"] = float(((led["p_home"] - led["is_home_win"]) ** 2).mean()) if len(led) else np.nan
     return out
 

@@ -53,7 +53,15 @@ def run_publish_stage(slate_date: str, run_id: str, now=None, root: Path = D.DAI
     else:
         lines = pd.DataFrame(columns=L.LINE_COLS)
     lines = lines[lines["cbbd_game_id"].isin(set(slate["cbbd_game_id"].astype("int64")))] if len(lines) else lines
-    pub, refused = D.build_publish(games, slate, lines, now, run_id)
+    import grade_daily_v1 as GR
+    meta_p = sd / "run_meta.json"
+    rm = json.loads(meta_p.read_text(encoding="utf-8")) if meta_p.exists() else {}
+    build_ids = {k: rm.get(k) for k in ("inputs_hash", "config_hash", "engine_tag")}
+    try:
+        season_start = GR.season_start_of(int(slate["season"].iloc[0] if "season" in slate.columns else season))
+    except Exception:  # noqa: BLE001  (label unknown -> NA, never a crash and never a silent False)
+        season_start = None
+    pub, refused = D.build_publish(games, slate, lines, now, run_id, season_start=season_start, build_ids=build_ids)
     if not len(pub):
         return {"_status": "skipped", "why": "no unplayed game left at publish time", "refused": int(len(refused))}
     pid = pub["publish_id"].iloc[0]
@@ -72,6 +80,8 @@ def run_publish_stage(slate_date: str, run_id: str, now=None, root: Path = D.DAI
             "providers": pub["provider"].value_counts().to_dict(), "line_kinds": pub["line_kind"].dropna().unique().tolist(),
             "line_fetched_at": sorted({str(x) for x in pub["line_fetched_at"].dropna().unique()}),
             "spread_total_price_assumption": "-110 (CBBD carries no price for spreads / totals)",
+            "inputs_hash": build_ids["inputs_hash"], "config_hash": build_ids["config_hash"], "season_start": str(season_start),
+            "early_season_totals_flag_games": int(pub["early_season_totals_flag"].fillna(False).sum()),
             "adjustments_to_sim_output": "none"}
     (out / "publish_meta.json").write_text(json.dumps(meta, indent=2, default=str), encoding="utf-8")
     return {"_status": "ok", "cached": False, "publish_id": pid, "out": str(out), "n_games": int(len(pub)),
