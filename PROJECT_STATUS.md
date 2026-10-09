@@ -1,6 +1,24 @@
 # PROJECT_STATUS.md
 
-Last updated: 2026-10-08 (short session). Season tips Nov 2, 2026.
+Last updated: 2026-10-09 (short session). Season tips Nov 2, 2026.
+
+## SESSION 2026-10-09 (short; PM Fable 5.1): A3+R1 wired into the daily chain; tip guard; scheduler registered. Read this block first.
+
+One Opus worker, three chained steps, all DONE (`2e0b3a5`, `0076872`, `40a460b`). Evidence: `docs/ops/a3_seed_wiring_2026-10-09.md`, `docs/ops/tip_guard_2026-10-09.md`, `docs/ops/scheduler_registration_2026-10-09.md`; ledger row added.
+- **Launch gap closed.** `chain_daily_v3` (`run_daily_sim_v1.run_sim_stage`, `chain_day1_2027_v1.stage_inputs`) now passes the A3+R1 seed for season >= 2027 live runs; replay untouched. Second gap fixed: `player_crosswalk.parquet` has no 2027 rows, so 2027 players were dropped from player output; fallback takes ESPN ids from the 2027 roster file (affects only which rows are written).
+- Real 4-seed 11-02 run, rc 0: team-games seeded 0/236 -> 236/236; anonymous slot share 100% -> 23.7% (25.6% on the 200 ESPN-roster teams, 13.1% on the 36 R1 teams); anonymous minutes share 4.3%; worst team Idaho State 0.80. Daily path vs live-path harness, 118 games, seeds 0-3: 8,487 = 8,487 player rows, max abs diff on per-player minutes/points means 0.0, 0 mismatched slots, identical game output. Suite 776 passed; parity v10 bit-identical; 20 seal tests pass (training/experiments still raise).
+- **Tip guard:** a 00:00 placeholder tip now bounds the build at 00:00 ET of the game date; a later build is refused as "tip time unknown" rather than mislabelled; real same-day tips pass. Live sim and publish rows carry a pre-tip-verified flag; grading re-checks placeholder rows against the real tip. 10 new tests. `tip_times_2027.parquet` has 50 real tips of 173 for 11-02 (the `tip_times/` dir holds audit snapshots).
+- **Scheduler:** `\CBB\DailyChain_Evening` 20:00 ET and `\CBB\DailyChain_Morning` 09:00 ET, 200 seeds, logs in `results\ops\daily_chain_<pass>_<date>.log`. On-demand evening pass rc 0 in 13 min; unattended morning pass rc 0 in 3.8 min. 2 of 5 required passes.
+
+PM rulings (2026-10-09):
+- Shot-block `known` flag: the harness zeroes it on seeded sides, the served path keeps it at 1 (0.05 pts/game). RULING: align the served path to the harness. The harness produced the selection evidence; a seeded player has no known block rate. Wiring, not a model change.
+- The sim cache ignores the run date, so every pre-11-02 pass re-serves the 10-09 sim. RULING: the cache key must include the inputs hash (rosters, tips, ratings snapshot) so each pass runs the pipeline. Passes before this fix do NOT count toward the 5.
+- The chain writes no player output (`players=True` not passed). RULING: pass it; props are a deliverable.
+
+USER DECISIONS NEEDED: (1) the tasks run only while `devuser` is logged on; running through logoff needs a stored password (`schtasks /ru /rp`). (2) Injuries never reach the sim (an untracked `data/processed/injuries/player_out_2026-10-09.csv` exists but nothing consumes it). Decide whether a free source is worth a Sonnet job or injuries stay manual.
+
+Next: one chained Sonnet brief: cache key fix + `players=True` + `known` flag alignment (re-verify harness match and parity), then restart the 5-pass count. Early-anchor round stays post-freeze.
+
 
 ## SESSION 2026-10-08 (short; PM Opus 5.5): seal-week build moved up and executed. Read this block first.
 
