@@ -12,7 +12,8 @@ Jobs (machine time zone is Eastern; times are ET):
 Settings: StartWhenAvailable, WakeToRun, 3 h limit, no parallel instances, run only when logged on (LIMITED, no stored password).
 -Seeds default 200 is the chain default, not a recommendation (seed-count study: daily_chain doc section 3).
 #>
-param([switch]$Register, [switch]$Unregister, [switch]$Force, [int]$Seeds = 200,
+#   -SkipLines: leave \CBB\LinesSnapshot_GameDay alone (registration of the two chain passes only; 2026-10-09).
+param([switch]$Register, [switch]$Unregister, [switch]$Force, [switch]$SkipLines, [int]$Seeds = 200,
       [string]$Repo = "C:\Users\devuser\CBB-clean-sheet")
 $ErrorActionPreference = "Stop"
 $wrapper = Join-Path $Repo "scripts\run_daily_chain_pass_v1.ps1"
@@ -40,6 +41,7 @@ foreach ($d in $defs) {
     -RunLevel Limited -Force | Out-Null
 }
 # Hourly game-day lines snapshot (own open/close capture). Same WHATIF default; -Unregister handled below.
+if ($SkipLines) { Write-Host "SKIP \CBB\LinesSnapshot_GameDay (-SkipLines)"; exit 0 }
 $py = Join-Path $Repo ".venv\Scripts\python.exe"
 $snapCmd = "& `"$py`" scripts\pull_espn_odds_snapshot_v1.py; if (`$?) { & `"$py`" scripts\build_lines_open_close_v1.py }"
 $snapArg = "-NoProfile -ExecutionPolicy Bypass -Command `"`$env:PYTHONIOENCODING='utf-8'; $snapCmd`""

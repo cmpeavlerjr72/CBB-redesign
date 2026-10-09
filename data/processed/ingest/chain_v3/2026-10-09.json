@@ -12,7 +12,7 @@
         "output": "C:\\Users\\devuser\\CBB-clean-sheet\\data\\raw\\schedule_daily\\2026-10-09.parquet"
       },
       "error": null,
-      "seconds": 1.7349999999860302
+      "seconds": 2.9839999999385327
     },
     {
       "name": "tips",
@@ -33,11 +33,11 @@
         },
         "n_real_sources_disagree_gt5min": 0,
         "hoopr_available": true,
-        "fetched_at": "2026-10-09 12:13:50.120510+00:00",
+        "fetched_at": "2026-10-09 13:00:05.896719+00:00",
         "latest": "C:\\Users\\devuser\\CBB-clean-sheet\\data\\processed\\ingest\\tip_times_2027.parquet"
       },
       "error": null,
-      "seconds": 0.9220000000204891
+      "seconds": 1.1570000000065193
     },
     {
       "name": "lines",
@@ -49,7 +49,7 @@
         "total_rows_in_file_after_run": 0
       },
       "error": null,
-      "seconds": 0.8900000000139698
+      "seconds": 0.9209999999729916
     },
     {
       "name": "lines_snapshot",
@@ -57,7 +57,7 @@
       "detail": {
         "snapshot": {
           "rc": 0,
-          "out": "{\"date\": \"2026-11-02\", \"captured_at\": \"2026-10-09 12:13:51+00:00\", \"espn_events\": 182, \"espn_rows\": 0, \"cbbd_games\": 155, \"cbbd_rows\": 0, \"rows_added\": 0}\n"
+          "out": "{\"date\": \"2026-11-02\", \"captured_at\": \"2026-10-09 13:00:07+00:00\", \"espn_events\": 182, \"espn_rows\": 0, \"cbbd_games\": 155, \"cbbd_rows\": 0, \"rows_added\": 0}\n"
         },
         "open_close": {
           "rc": 0,
@@ -65,7 +65,7 @@
         }
       },
       "error": null,
-      "seconds": 2.0320000000065193
+      "seconds": 2.3290000000270084
     },
     {
       "name": "lines_probe",
@@ -91,13 +91,19 @@
           "bytes": 133247,
           "etag": "W/\"3ac0bd4f0c1a34cb94b5ebe7ad15282b650822e65eb7b9a0098b0acdc627e5bb\"",
           "rows": 1629,
-          "fetched_at": "2026-10-09 12:13:53.609108+00:00"
+          "fetched_at": "2026-10-09 13:00:09.650500+00:00"
         },
-        "hoopr_dataset_http_status": {},
+        "hoopr_dataset_http_status": {
+          "schedules": 200,
+          "team_box": 404,
+          "player_box": 404,
+          "pbp": 404,
+          "shots": 404
+        },
         "ingest_cbbd_calls": 0
       },
       "error": null,
-      "seconds": 0.5150000000139698
+      "seconds": 2.4209999999729916
     },
     {
       "name": "ratings",
@@ -109,7 +115,7 @@
         "dry_run": false
       },
       "error": null,
-      "seconds": 8.562999999965541
+      "seconds": 9.125
     },
     {
       "name": "kenpom",
@@ -127,7 +133,7 @@
         "why": "not due: last pull 2026-10-08 (1 d ago, cadence 7 d)"
       },
       "error": null,
-      "seconds": 0.015000000013969839
+      "seconds": 0.0
     },
     {
       "name": "injuries",
@@ -140,7 +146,7 @@
         "covers_output": "C:\\Users\\devuser\\CBB-clean-sheet\\data\\raw\\injuries\\covers\\2026-10-09.html"
       },
       "error": null,
-      "seconds": 1.062999999965541
+      "seconds": 0.9690000000409782
     },
     {
       "name": "injuries_parse",
@@ -153,7 +159,7 @@
         "note": "ESPN college injury coverage is sparse; zero rows means 'no reported injuries', not 'everyone healthy'. No engine consumer yet."
       },
       "error": null,
-      "seconds": 0.48400000005494803
+      "seconds": 0.4059999999590218
     },
     {
       "name": "overrides",
@@ -172,28 +178,28 @@
       "status": "ok",
       "detail": {
         "slate_date": "2026-11-02",
-        "pass": "evening",
-        "clock": "2026-10-09 12:13:47.508120+00:00",
+        "pass": "morning",
+        "clock": "2026-10-09 13:00:01.824328+00:00",
         "slate_games_mapped": 118,
         "slate_games_unmapped_non_d1": 38,
-        "would_simulate": 118,
-        "would_refuse": 0,
-        "placeholder_tips_in_simulate": 91,
+        "would_simulate": 27,
+        "would_refuse": 91,
+        "placeholder_tips_in_simulate": 0,
         "inputs_built": true,
-        "n_games": 118,
-        "rotation_fallback_team_games": 236,
-        "candidates_per_team_game_mean": 11.45,
-        "share_zero_team_static_cells": 0.6707,
+        "n_games": 27,
+        "rotation_fallback_team_games": 54,
+        "candidates_per_team_game_mean": 11.56,
+        "share_zero_team_static_cells": 0.6818,
         "ratings_dir": "C:\\Users\\devuser\\CBB-clean-sheet\\data\\processed\\ratings_asof\\2026-11-02",
         "day1_prior": "A3+R1",
-        "d1p_team_games": 236,
-        "d1p_slots": 2702,
-        "anon_slot_share": 0.2367,
+        "d1p_team_games": 54,
+        "d1p_slots": 624,
+        "anon_slot_share": 0.2296,
         "team_games_all_anonymous": 0,
-        "fallback_roster_line": "36 teams on fallback roster: 36, 56, 147, 195, 198, 236, 288, 290, 295, 311, 324, 349, 357, 526, 2016, 2031, 2065, 2115, 2193, 2197, 2210, 2241, 2296, 2348, 2379, 2405, 2433, 2453, 2466, 2546, 2635, 2643, 2698, 2803, 2885, 112358"
+        "fallback_roster_line": "7 teams on fallback roster: 198, 290, 2031, 2065, 2433, 2466, 112358"
       },
       "error": null,
-      "seconds": 7.530999999959022
+      "seconds": 7.704000000027008
     },
     {
       "name": "grade",
@@ -218,12 +224,12 @@
       "status": "ok",
       "detail": {
         "slate_date": "2026-11-02",
-        "pass": "evening",
-        "clock": "2026-10-09 12:13:47.508120+00:00",
+        "pass": "morning",
+        "clock": "2026-10-09 13:00:01.824328+00:00",
         "slate_games_mapped": 118,
         "slate_games_unmapped_non_d1": 38,
-        "would_simulate": 118,
-        "would_refuse_already_tipped": 0,
+        "would_simulate": 27,
+        "would_refuse_already_tipped": 91,
         "tip_sources": {
           "cbbd_placeholder_midnight_et": 91,
           "cbbd": 19,
@@ -231,35 +237,35 @@
         },
         "placeholder_tips": 91,
         "cached": false,
-        "out": "results\\a3_wiring_chain_2026-10-09\\sim\\2026-11-02\\s4_o0",
-        "n_games": 118,
-        "n_rows": 472,
-        "skipped_tipped": 0,
-        "runtime_s": 71.7,
+        "out": "C:\\Users\\devuser\\CBB-clean-sheet\\results\\daily\\sim\\2026-11-02\\s200_o0_morning",
+        "n_games": 27,
+        "n_rows": 5400,
+        "skipped_tipped": 91,
+        "runtime_s": 197.3,
         "day1_prior": "A3+R1",
-        "anon_slot_share": 0.2367,
-        "d1p_team_games": 236,
-        "fallback_roster_line": "36 teams on fallback roster: 36, 56, 147, 195, 198, 236, 288, 290, 295, 311, 324, 349, 357, 526, 2016, 2031, 2065, 2115, 2193, 2197, 2210, 2241, 2296, 2348, 2379, 2405, 2433, 2453, 2466, 2546, 2635, 2643, 2698, 2803, 2885, 112358"
+        "anon_slot_share": 0.2296,
+        "d1p_team_games": 54,
+        "fallback_roster_line": "7 teams on fallback roster: 198, 290, 2031, 2065, 2433, 2466, 112358"
       },
       "error": null,
-      "seconds": 71.84400000004098
+      "seconds": 197.4529999999795
     },
     {
       "name": "publish",
       "status": "ok",
       "detail": {
         "cached": false,
-        "publish_id": "18f0a7fa18",
-        "out": "results\\a3_wiring_chain_2026-10-09\\publish\\2026-11-02\\s4_o0\\18f0a7fa18",
-        "n_games": 118,
+        "publish_id": "f4d200824a",
+        "out": "C:\\Users\\devuser\\CBB-clean-sheet\\results\\daily\\publish\\2026-11-02\\s200_o0_morning\\f4d200824a",
+        "n_games": 27,
         "n_refused_tipped": 0,
         "n_with_spread": 0,
         "n_with_ml": 0
       },
       "error": null,
-      "seconds": 0.7349999999860302
+      "seconds": 0.5620000000344589
     }
   ],
   "cbbd_calls_chain": 6,
-  "clock": "2026-10-09 12:13:47.508120+00:00"
+  "clock": "2026-10-09 13:00:01.824328+00:00"
 }

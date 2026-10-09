@@ -26,7 +26,7 @@
   ],
   "chain_start": 2022,
   "prior_carry": "season-1 FINAL fit, weight 0.80 (eff) / 0.80 (tempo)",
-  "seconds": 8.6,
+  "seconds": 9.1,
   "policy": "manifest_uniform",
   "choices": {
     "seal_lift_approved": false,
