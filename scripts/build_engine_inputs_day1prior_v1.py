@@ -182,6 +182,7 @@ def make_seed_fn(arm: str, roster_path: str | None = None, minutes_source: str =
         T = tables(int(ctx.season), arm in ("A1", "A2", "A3"), roster_path, minutes_source, need_prev_roster=bool(fallback), serving=serving)
         gpos = {int(g): i for i, g in enumerate(games["game_id"])}
         seed_fn.shares = {}
+        seed_fn.seeded = set()                             # (game row, side) filled by this seed: the shot-block table zeroes them (served path)
         n_tg = n_slots = 0
         for g, t, h in zip(tg["game_id"], tg["team_id"], tg["is_home"]):
             i, side = gpos[int(g)], (0 if bool(h) else 1)
@@ -192,6 +193,7 @@ def make_seed_fn(arm: str, roster_path: str | None = None, minutes_source: str =
             if not k:
                 continue
             roster_cbbd[i, side, :k] = pids[:k]
+            seed_fn.seeded.add((i, side))
             n_tg += 1; n_slots += k
             if arm == "A2":
                 tm = T["team_min"].get(int(t), 0.0)
@@ -202,6 +204,7 @@ def make_seed_fn(arm: str, roster_path: str | None = None, minutes_source: str =
                 for g, t, h in zip(tg["game_id"], tg["team_id"], tg["is_home"])}
 
     seed_fn.shares = {}
+    seed_fn.seeded = set()
     return seed_fn
 
 

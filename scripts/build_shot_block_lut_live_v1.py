@@ -117,8 +117,19 @@ def build_table(inp, arm: str = "K2_Ocell", as_of=None, ev: pd.DataFrame | None 
             "anchor": anchor, "coef": ref["coef"], "mu": ref["mu"], "sd": ref["sd"], "features": ref["features"]}
 
 
-def attach(inp, dest: Path, as_of=None, arm: str | None = None) -> Path | None:
+def zero_seeded_sides(tab: dict, seeded_sides) -> dict:
+    """PM ruling 2026-10-09 (docs/ops/): a slot filled by the A3+R1 day-1 seed has no known block rate, so the shooter term and the `known`
+    flag are zeroed on every seeded (game row, side), exactly as the live-path harness does (`diag_a3_seed_wiring_v1.harness_arm`). Wiring, not a
+    model change: the harness produced the selection evidence. Sides with an in-season prior (not seeded) are untouched."""
+    for i, side in seeded_sides:
+        tab["shooter"][i, side, :] = 0
+        tab["known"][i, side, :] = 0
+    return tab
+
+
+def attach(inp, dest: Path, as_of=None, arm: str | None = None, seeded_sides=None) -> Path | None:
     """Build the served arm's table for `inp`, write it under `dest`, point `inp.meta` at it.
+    `seeded_sides` (default None = unchanged): iterable of (game row, side) filled by the day-1 seed; see `zero_seeded_sides`.
     No-op (None) when the shot block is switched off (`ENGINE_SHOT_BLOCK=reference`)."""
     import os
 
@@ -127,6 +138,8 @@ def attach(inp, dest: Path, as_of=None, arm: str | None = None) -> Path | None:
     if not arm or arm == "reference":
         return None
     tab = build_table(inp, arm, as_of=as_of)
+    if seeded_sides:
+        zero_seeded_sides(tab, seeded_sides)
     dest = Path(dest)
     dest.mkdir(parents=True, exist_ok=True)
     path = dest / f"shot_block_{arm}_live.npz"
