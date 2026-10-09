@@ -33,6 +33,12 @@ def test_applies_only_to_live_serving_seasons():
     assert not SIM.day1_prior_applies(2027, replay=False, day1_prior=None)
 
 
+@pytest.fixture(autouse=True)
+def _no_live_injury_files(monkeypatch):
+    """These tests are about the seed wiring; the injury feed has its own tests (test_injury_feed.py) and must not read today's real files."""
+    monkeypatch.setattr(SIM, "injuries_for", lambda now, season, replay: (None, frozenset(), {}, "none"))
+
+
 def _capture(monkeypatch, tmp_path, season, replay, **kw):
     seen = {}
     monkeypatch.setattr(SIM, "load_slate", lambda *a, **k: _slate().assign(season=season))

@@ -133,10 +133,11 @@ def stage_rosters(ctx, a, CD) -> dict:
     return PR.run_roster_stage(ctx.today, season, ctx.dry_run)
 
 
-def stage_injuries_parse(ctx, a) -> dict:
-    """ESPN league-wide injuries -> data/processed/injuries/player_out_{today}.csv (override format). Consumed by chain_daily_v2.load_availability -> build_live(availability=...) on live runs."""
-    import pull_injuries_player_out_v1 as PI
-    return PI.run_injury_parse_stage(ctx.today, ctx.dry_run, now=str(ctx.now))
+def stage_injuries_feed(ctx, a) -> dict:
+    """Free injury feed (ESPN league-wide JSON) -> data/processed/injuries/injuries_{today}.parquet + manifest. The sim and inputs stages read the Out rows
+    (status Out only; plus manual availability.csv 'out' rows) and remove those players from the available roster. docs/ops/injury_feed_2026-10-09.md."""
+    import pull_injuries_v1 as IJ
+    return IJ.run_injury_feed_stage(ctx.today, ctx.dry_run, now=str(ctx.now))
 
 
 def stage_tips(ctx, a, CD, cctx) -> dict:
@@ -309,7 +310,7 @@ def main(argv=None) -> int:
         ("kenpom", (lambda: CD.step_kenpom(cctx)) if a.with_kenpom else (lambda: {"_status": "skipped", "why": "audit gap 10: PM decision"})),
         ("rosters", lambda: stage_rosters(ctx, a, CD)),
         ("injuries", lambda: CD.step_injuries(cctx)),
-        ("injuries_parse", lambda: stage_injuries_parse(ctx, a)),
+        ("injuries_feed", lambda: stage_injuries_feed(ctx, a)),
         ("overrides", lambda: CD.step_overrides(cctx)),
         ("inputs", (lambda: DAY1.stage_inputs(ctx, CD, a, SIM, pass_name=a.pass_name)) if day1 else (lambda: V2.stage_inputs(v2ctx, CD, a))),
         ("grade", lambda: stage_grade(ctx, a, CD)),

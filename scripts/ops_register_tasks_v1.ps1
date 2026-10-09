@@ -9,13 +9,15 @@ Jobs (machine time zone is Eastern; times are ET):
   CBB\DailyChain_Morning  09:00 daily, run_daily_chain_pass_v1.ps1 -Pass morning  (re-publishes TODAY once tips are real)
   CBB\LinesSnapshot_GameDay  hourly 10:00-23:00 ET (14 runs/day, repeat 1 h for 13 h), pull_espn_odds_snapshot_v1.py for today's ET slate
                               (ESPN current line + CBBD /lines, appended with captured_at to data/raw/lines_snapshots; then the open/close builder)
-Settings: StartWhenAvailable, WakeToRun, 3 h limit, no parallel instances, run only when logged on (LIMITED, no stored password).
+Settings (2026-10-09, matched to the machine's other daily tasks, docs/ops/scheduler_match_2026-10-09.md): principal = current user, LogonType S4U
+(runs whether or not the user is logged on, no stored password), RunLevel Limited; StartWhenAvailable, no WakeToRun, 3 h limit, no parallel instances.
 -Seeds default 200 is the chain default, not a recommendation (seed-count study: daily_chain doc section 3).
 #>
 #   -SkipLines: leave \CBB\LinesSnapshot_GameDay alone (registration of the two chain passes only; 2026-10-09).
 param([switch]$Register, [switch]$Unregister, [switch]$Force, [switch]$SkipLines, [int]$Seeds = 200,
       [string]$Repo = "C:\Users\devuser\CBB-clean-sheet")
 $ErrorActionPreference = "Stop"
+$principal = New-ScheduledTaskPrincipal -UserId ([System.Security.Principal.WindowsIdentity]::GetCurrent().Name) -LogonType S4U -RunLevel Limited
 $wrapper = Join-Path $Repo "scripts\run_daily_chain_pass_v1.ps1"
 if (-not (Test-Path $wrapper)) { throw "wrapper missing: $wrapper" }
 $defs = @(
@@ -35,10 +37,10 @@ foreach ($d in $defs) {
   if (-not $Register) { continue }
   $action   = New-ScheduledTaskAction -Execute "powershell.exe" -Argument $arg -WorkingDirectory $Repo
   $trigger  = New-ScheduledTaskTrigger -Daily -At $d.At
-  $settings = New-ScheduledTaskSettingsSet -StartWhenAvailable -WakeToRun -MultipleInstances IgnoreNew `
+  $settings = New-ScheduledTaskSettingsSet -StartWhenAvailable -MultipleInstances IgnoreNew `
                 -ExecutionTimeLimit (New-TimeSpan -Hours 3)
   Register-ScheduledTask -TaskName $d.Name -TaskPath "\CBB\" -Action $action -Trigger $trigger -Settings $settings `
-    -RunLevel Limited -Force | Out-Null
+    -Principal $principal -Force | Out-Null
 }
 # Hourly game-day lines snapshot (own open/close capture). Same WHATIF default; -Unregister handled below.
 if ($SkipLines) { Write-Host "SKIP \CBB\LinesSnapshot_GameDay (-SkipLines)"; exit 0 }
@@ -55,7 +57,7 @@ if ($Unregister) {
     $trigger  = New-ScheduledTaskTrigger -Daily -At "10:00" -RepetitionInterval (New-TimeSpan -Hours 1) -RepetitionDuration (New-TimeSpan -Hours 13)
     $settings = New-ScheduledTaskSettingsSet -StartWhenAvailable -MultipleInstances IgnoreNew -ExecutionTimeLimit (New-TimeSpan -Minutes 20)
     Register-ScheduledTask -TaskName "LinesSnapshot_GameDay" -TaskPath "\CBB\" -Action $action -Trigger $trigger -Settings $settings `
-      -RunLevel Limited -Force | Out-Null
+      -Principal $principal -Force | Out-Null
   }
 }
 if (-not $Register -and -not $Unregister) { Write-Host "(preview only; nothing created. Re-run with -Register after PM go-ahead.)" }

@@ -171,7 +171,10 @@ def seeds_for(arm: str, T: dict, team: int, withheld: frozenset = frozenset(), f
 
 
 def make_seed_fn(arm: str, roster_path: str | None = None, minutes_source: str = "onfloor", fallback: str | None = None,
-                 withheld: frozenset = frozenset(), serving: bool = False):
+                 withheld: frozenset = frozenset(), serving: bool = False, out_pids: frozenset = frozenset()):
+    """`out_pids` (default empty = unchanged; ops 2026-10-09, docs/ops/injury_feed_2026-10-09.md): CBBD player ids reported OUT. They are removed from
+    the seeded candidate list exactly as a player missing from the roster file would be, before the slots are assigned; the remaining players keep
+    their own S-1 minutes order and `build_live` renormalises the rotation shares over the slots that remain. `seed_fn.out_removed` = {pid: team-games}."""
     if arm not in ARMS:
         raise KeyError(arm)
     if fallback not in FALLBACKS:
@@ -182,6 +185,7 @@ def make_seed_fn(arm: str, roster_path: str | None = None, minutes_source: str =
         T = tables(int(ctx.season), arm in ("A1", "A2", "A3"), roster_path, minutes_source, need_prev_roster=bool(fallback), serving=serving)
         gpos = {int(g): i for i, g in enumerate(games["game_id"])}
         seed_fn.shares = {}
+        seed_fn.out_removed = {}
         seed_fn.seeded = set()                             # (game row, side) filled by this seed: the shot-block table zeroes them (served path)
         n_tg = n_slots = 0
         for g, t, h in zip(tg["game_id"], tg["team_id"], tg["is_home"]):
@@ -189,6 +193,12 @@ def make_seed_fn(arm: str, roster_path: str | None = None, minutes_source: str =
             if (roster_cbbd[i, side] > 0).any():          # has an in-season prior: untouched
                 continue
             pids, mins = seeds_for(arm, T, int(t), withheld, fallback, used)
+            if out_pids and any(p in out_pids for p in pids):
+                for p in pids:
+                    if p in out_pids:
+                        seed_fn.out_removed[p] = seed_fn.out_removed.get(p, 0) + 1
+                keep = [j for j, p in enumerate(pids) if p not in out_pids]
+                pids, mins = [pids[j] for j in keep], [mins[j] for j in keep]
             k = min(len(pids), S)
             if not k:
                 continue
@@ -205,6 +215,7 @@ def make_seed_fn(arm: str, roster_path: str | None = None, minutes_source: str =
 
     seed_fn.shares = {}
     seed_fn.seeded = set()
+    seed_fn.out_removed = {}
     return seed_fn
 
 

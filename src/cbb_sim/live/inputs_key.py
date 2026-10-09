@@ -70,7 +70,8 @@ def stack_version() -> str:
 
 
 def inputs_hash(season: int, slate: pd.DataFrame, seeds: int, seed_offset: int = 0, ratings_dir: str | None = None,
-                extra_files: dict | None = None, repo: Path = REPO, tip_table: str | None = None) -> tuple[str, dict]:
+                extra_files: dict | None = None, repo: Path = REPO, tip_table: str | None = None,
+                extra_digests: dict | None = None) -> tuple[str, dict]:
     """(hash, components). `slate` = the frame of games this run will simulate (ids, tips, tip source / placeholder flag)."""
     season = int(season)
     rd = Path(ratings_dir) if ratings_dir else None
@@ -93,4 +94,5 @@ def inputs_hash(season: int, slate: pd.DataFrame, seeds: int, seed_offset: int =
     }
     for k, f in (extra_files or {}).items():
         comp[k] = file_digest(f)
+    comp.update({k: str(v) for k, v in (extra_digests or {}).items()})
     return _h(json.dumps(comp, sort_keys=True).encode()), comp

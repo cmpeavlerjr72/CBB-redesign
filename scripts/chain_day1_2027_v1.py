@@ -101,10 +101,11 @@ def stage_inputs(ctx, CD, a, SIM, season: int | None = None, pass_name: str = "e
         miss = V2.day1_player_prior_missing(season)
         if miss:
             return {**out, "_status": "blocked", "blocked_on": miss}
-    D1P, seed_fn = SIM.day1_prior_seed(season) if use_d1p else (None, None)
+    avail, out_pids, inj_meta, _ = SIM.injuries_for(ctx.now, season, replay=False)       # free injury feed, status Out only (same rule as the sim stage)
+    D1P, seed_fn = (SIM.day1_prior_seed(season, out_pids) if out_pids else SIM.day1_prior_seed(season)) if use_d1p else (None, None)
     inp, diag = BL.build_live(ok[cols], ctx.now, season, a.fold, created_at=ctx.now,
                               season_start=SIM.season_start_of(season, "cbbd", str(PRESEASON / "games_2027.parquet")),
-                              strict_finish=True, ratings_dir=rd, seed_fn=seed_fn)
+                              strict_finish=True, ratings_dir=rd, seed_fn=seed_fn, availability=avail)
     if seed_fn is not None:
         D1P.post(inp, seed_fn)
     ts = inp.team_static
@@ -114,5 +115,6 @@ def stage_inputs(ctx, CD, a, SIM, season: int | None = None, pass_name: str = "e
                share_zero_team_static_cells=round(float((ts == 0).mean()), 4), ratings_dir=rd,
                day1_prior="A3+R1" if use_d1p else None, d1p_team_games=diag.get("d1p_team_games"), d1p_slots=diag.get("d1p_slots"),
                anon_slot_share=round(float(1.0 - named.mean()), 4), team_games_all_anonymous=int((~named.any(axis=2)).sum()),
-               fallback_roster_line=V2.fallback_line(diag.get("d1p_fallback_teams")) if use_d1p else None)
+               fallback_roster_line=V2.fallback_line(diag.get("d1p_fallback_teams")) if use_d1p else None,
+               injuries_out_rows=inj_meta.get("out_rows"), injuries_out_mapped=inj_meta.get("out_mapped_to_cbbd"))
     return out

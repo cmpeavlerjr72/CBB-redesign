@@ -290,10 +290,12 @@ def fallback_line(teams) -> str:
     return f"{len(teams)} teams on fallback roster" + (": " + ", ".join(map(str, teams)) if teams else "")
 
 
-def day1_player_prior_seed(season: int, repo: Path = REPO):
-    """(module, seed_fn): the A3 `seed_fn` for `build_live(..., seed_fn=...)` (`build_engine_inputs_day1prior_v1.make_seed_fn('A3')`, called, not edited)."""
+def day1_player_prior_seed(season: int, repo: Path = REPO, out_pids=frozenset()):
+    """(module, seed_fn): the A3 `seed_fn` for `build_live(..., seed_fn=...)` (`build_engine_inputs_day1prior_v1.make_seed_fn('A3')`, called, not edited).
+    `out_pids` (default none): players reported Out are removed from the seeded candidates (injury feed, 2026-10-09)."""
     import build_engine_inputs_day1prior_v1 as D1P
-    return D1P, D1P.make_seed_fn("A3", roster_path=str(repo / f"data/raw/cbbd/rosters/roster_{season}.parquet"), fallback=LIVE_ROSTER_FALLBACK, serving=True)
+    return D1P, D1P.make_seed_fn("A3", roster_path=str(repo / f"data/raw/cbbd/rosters/roster_{season}.parquet"), fallback=LIVE_ROSTER_FALLBACK, serving=True,
+                                 **({"out_pids": frozenset(int(p) for p in out_pids)} if out_pids else {}))
 
 
 def build_live_inputs(ctx, BL, slate, out: dict) -> dict:

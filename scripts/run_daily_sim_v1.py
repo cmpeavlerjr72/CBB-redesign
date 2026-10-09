@@ -116,14 +116,34 @@ def day1_prior_applies(season: int, replay: bool, day1_prior: str | None = "auto
     return int(season) >= 2027 and not replay
 
 
-def day1_prior_seed(season: int):
+def injuries_for(now, season: int, replay: bool):
+    """(availability frame | None, out_pids frozenset, meta, digest) for a LIVE run: today's (ET) free-feed Out rows plus manual 'out' rows
+    (`pull_injuries_v1.out_players`). Replay / past seasons: none (their inputs stay bit-identical). Only status Out is applied; rows that cannot
+    be matched to a CBBD player id are reported, not applied. Leak guard: a row pulled after `now` raises."""
+    if replay:
+        return None, frozenset(), {"injuries": "replay: not applied"}, "replay"
+    import pull_injuries_v1 as IJ
+    t = pd.Timestamp(now)
+    t = t.tz_localize("UTC") if t.tzinfo is None else t.tz_convert("UTC")
+    day = t.tz_convert("America/New_York").date()
+    odf = IJ.out_players(day, t, season=int(season))
+    mapped = odf[odf["cbbd_player_id"].notna()].copy()
+    mapped["cbbd_player_id"] = mapped["cbbd_player_id"].astype("int64")
+    from cbb_sim.live import inputs_key as IK
+    meta = {"feed_date": str(day), "feed_file_exists": bool((IJ.OUT_DIR / f"injuries_{day.isoformat()}.parquet").exists()),
+            "out_rows": int(len(odf)), "out_mapped_to_cbbd": int(len(mapped)), "out_unmapped": int(len(odf) - len(mapped))}
+    dig = IK.frame_digest(odf[["cbbd_player_id", "espn_player_id"]].astype(str)) if len(odf) else "none"
+    return (mapped[["cbbd_player_id", "espn_player_id", "created_at"]] if len(mapped) else None),         frozenset(int(p) for p in mapped["cbbd_player_id"]), meta, dig
+
+
+def day1_prior_seed(season: int, out_pids=frozenset()):
     """(module, seed_fn) for the served A3+R1 seed, through the ONE definition the chain uses (`chain_daily_v2.day1_player_prior_seed`,
     serving=True tables). Hard stop (RuntimeError naming each table) when a source table is missing; never a silent anonymous build."""
     import chain_daily_v2 as V2
     miss = V2.day1_player_prior_missing(int(season))
     if miss:
         raise RuntimeError("A3 day-1 player prior sources missing: " + "; ".join(miss))
-    return V2.day1_player_prior_seed(int(season))
+    return V2.day1_player_prior_seed(int(season), out_pids=out_pids) if out_pids else V2.day1_player_prior_seed(int(season))
 
 
 def config_hash(cfg: dict) -> str:
@@ -175,10 +195,12 @@ def run_sim_stage(slate_date: str, season: int, fold: str = "F2", seeds: int = 2
         from cbb_sim.live import tips as TP
         late = late.assign(refuse_reason=TP.late_reasons(late).to_numpy() if len(late) else [])   # placeholder past 00:00 ET -> TIP_UNKNOWN
     ihash = icomp = supersedes = None
+    avail, out_pids, inj_meta, inj_dig = injuries_for(now, season, replay)       # injury feed (Out only), live runs
     if live_key:
         # 2026-10-09 PM ruling: the cache key includes the actual inputs, so a pass with changed rosters / tips / ratings / stack re-runs
         from cbb_sim.live import inputs_key as IK
-        ihash, icomp = IK.inputs_hash(season, ok, seeds, seed_offset, ratings_dir, extra_files=extra_input_files, tip_table=tip_table)
+        ihash, icomp = IK.inputs_hash(season, ok, seeds, seed_offset, ratings_dir, extra_files=extra_input_files, tip_table=tip_table,
+                                    extra_digests={"injuries_out": inj_dig})
         if done.exists() and not force:
             prev = json.loads(done.read_text(encoding="utf-8"))
             if prev.get("config_hash") == h and prev.get("inputs_hash") == ihash:
@@ -207,10 +229,10 @@ def run_sim_stage(slate_date: str, season: int, fold: str = "F2", seeds: int = 2
     import build_engine_inputs_live as BL
     import run_engine_live as RL
     slate_cols = ["game_id", "cbbd_game_id", "season", "game_date", "tipoff_utc", "home_team_id", "away_team_id", "neutral"]
-    D1P, seed_fn = day1_prior_seed(season) if use_d1p else (None, None)
+    D1P, seed_fn = (day1_prior_seed(season, out_pids) if out_pids else day1_prior_seed(season)) if use_d1p else (None, None)
     inp, diag = BL.build_live(ok[slate_cols], now, season, fold, created_at=now,
                               season_start=season_start_of(season, schedule_source, schedule_path), t0=t0,
-                              strict_finish=not replay, ratings_dir=ratings_dir, seed_fn=seed_fn)
+                              strict_finish=not replay, ratings_dir=ratings_dir, seed_fn=seed_fn, availability=avail)
     if seed_fn is not None:                         # A2-only share rewrite; a no-op for A3 (kept so the call matches build_live_inputs)
         D1P.post(inp, seed_fn)
         import chain_daily_v2 as V2
@@ -220,6 +242,12 @@ def run_sim_stage(slate_date: str, season: int, fold: str = "F2", seeds: int = 2
                 "d1p_slots": diag.get("d1p_slots"), "d1p_fallback_teams": [int(t) for t in (diag.get("d1p_fallback_teams") or [])],
                 "d1p_fallback_line": diag.get("d1p_fallback_line"), "anon_slot_share": round(float(1.0 - named.mean()), 4),
                 "team_games_all_anonymous": int((~named.any(axis=2)).sum())}
+    av = diag.get("availability") if isinstance(diag.get("availability"), dict) else {}
+    rem = dict(getattr(seed_fn, "out_removed", {}) or {})
+    prior_applied = set(out_pids) - set(av.get("unknown_pids") or []) if av else set()
+    inj_meta = {**inj_meta, "applied_status": "Out only", "seed_removed_players": len(rem), "seed_removed_team_games": int(sum(rem.values())),
+                "prior_team_games_affected": av.get("team_games_affected", 0), "prior_players_dropped": av.get("players_dropped", 0),
+                "players_applied_distinct": len(set(rem) | prior_applied), "applied_pids": sorted(set(rem) | prior_applied)[:200]}
     import run_engine as RE
     prov = RE.engine_provenance()
     adir = RL.prepare_adapter_dir(inp.event_block, fold, season, out / "_adapter")
@@ -242,7 +270,7 @@ def run_sim_stage(slate_date: str, season: int, fold: str = "F2", seeds: int = 2
             "slate_date": slate_date, "n_games": int(inp.n_games), "n_rows": int(len(games)), "n_skipped_tipped": int(len(late)),
             "runtime_s": round(time.time() - t0, 1), "created_at_before_tipoff_asserted": True, "config_hash": h,
             "inputs_hash": ihash, "inputs_components": icomp, "supersedes": supersedes,
-            "build_diag": {k: v for k, v in diag.items() if not isinstance(v, (dict, list))}, "day1_prior": d1p_meta, **prov, "adapter_flags": ad.flags,
+            "build_diag": {k: v for k, v in diag.items() if not isinstance(v, (dict, list))}, "day1_prior": d1p_meta, "injuries": inj_meta, **prov, "adapter_flags": ad.flags,
             "engine_env": {k: v for k, v in os.environ.items() if k.startswith("ENGINE_")}}
     (out / "run_meta.json").write_text(json.dumps(meta, indent=2, default=str), encoding="utf-8")
     done.write_text(json.dumps({"config_hash": h, "inputs_hash": ihash, "inputs_components": icomp,
@@ -250,7 +278,8 @@ def run_sim_stage(slate_date: str, season: int, fold: str = "F2", seeds: int = 2
     return {"_status": "ok", "cached": False, "out": str(out), "n_games": int(inp.n_games), "n_rows": int(len(games)),
             "skipped_tipped": int(len(late)), "runtime_s": round(time.time() - t0, 1),
             "day1_prior": d1p_meta["day1_prior"], "anon_slot_share": d1p_meta["anon_slot_share"],
-            "d1p_team_games": d1p_meta["d1p_team_games"], "fallback_roster_line": d1p_meta["d1p_fallback_line"]}
+            "d1p_team_games": d1p_meta["d1p_team_games"], "fallback_roster_line": d1p_meta["d1p_fallback_line"],
+            "injuries_players_applied": inj_meta["players_applied_distinct"], "injuries_out_rows": inj_meta.get("out_rows")}
 
 
 def main(argv=None) -> int:

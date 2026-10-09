@@ -73,6 +73,7 @@ def test_stack_version_changes_with_engine_env(monkeypatch):
 
 
 def _run(monkeypatch, tmp_path, ihash, **kw):
+    monkeypatch.setattr(SIM, "injuries_for", lambda now, season, replay: (None, frozenset(), {}, "none"))
     monkeypatch.setattr(SIM, "load_slate", lambda *a, **k: _slate())
     monkeypatch.setattr(SIM, "season_start_of", lambda *a, **k: "2026-11-02")
     monkeypatch.setattr(SIM, "day1_prior_seed", lambda s: (None, None))
