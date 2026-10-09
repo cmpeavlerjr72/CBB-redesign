@@ -58,7 +58,7 @@ def hoopr_tips(season: int, sched_dir: Path = HOOPR_SCHED) -> pd.DataFrame:
 
 
 def load_slate(slate_date: str, season: int, source: str, schedule_path: str | None, crosswalk: str | None,
-               tips: str | None) -> pd.DataFrame:
+               tips: str | None, tip_table: str | None = None) -> pd.DataFrame:
     import build_engine_inputs_live as BL
     if source == "universe":
         slate = BL.load_slate_from_universe(slate_date, season)
@@ -82,7 +82,7 @@ def load_slate(slate_date: str, season: int, source: str, schedule_path: str | N
         slate.loc[has, "tip_source"] = "hoopr_schedule"
         slate = slate.drop(columns="_hoopr_tip")
     if tips == "table":                       # tip-time refresh table (pull_tip_times_v1): source + placeholder flag per game
-        tt = pd.read_parquet(REPO / f"data/processed/ingest/tip_times_{int(season)}.parquet",
+        tt = pd.read_parquet(tip_table or REPO / f"data/processed/ingest/tip_times_{int(season)}.parquet",
                              columns=["game_id", "tipoff_utc", "tip_source", "tip_time_is_placeholder"])
         tt = tt.rename(columns={"tipoff_utc": "_t", "tip_source": "_s", "tip_time_is_placeholder": "_p"}).drop_duplicates("game_id", keep="last")
         slate = slate.merge(tt, on="game_id", how="left")
@@ -135,7 +135,7 @@ def run_sim_stage(slate_date: str, season: int, fold: str = "F2", seeds: int = 2
                   schedule_path: str | None = None, crosswalk: str | None = None, tips: str | None = None,
                   strict: bool = False, force: bool = False, replay: bool = False, players: bool = False,
                   max_games: int = 0, pass_name: str | None = None, ratings_dir: str | None = None,
-                  day1_prior: str | None = "auto") -> dict:
+                  day1_prior: str | None = "auto", extra_input_files: dict | None = None, tip_table: str | None = None) -> dict:
     t0 = time.time()
     now = D.utc(now) if now is not None else pd.Timestamp.now("UTC")
     run_id = run_id or D.default_run_id(seeds, seed_offset) + (f"_{pass_name}" if pass_name == "morning" else "")
@@ -152,7 +152,8 @@ def run_sim_stage(slate_date: str, season: int, fold: str = "F2", seeds: int = 2
         cfg["day1_prior"] = "A3+R1"
     h = config_hash(cfg)
     done = out / "_DONE.json"
-    if done.exists() and not force:
+    live_key = bool(pass_name or not replay)       # live runs cache on the INPUTS hash (below); replay keeps the config-only cache
+    if done.exists() and not force and not live_key:
         prev = json.loads(done.read_text(encoding="utf-8"))
         if prev.get("config_hash") != h:
             raise SystemExit(f"{out} exists with a different config ({prev.get('config_hash')} vs {h}); use another --run-id or --force")
@@ -160,7 +161,7 @@ def run_sim_stage(slate_date: str, season: int, fold: str = "F2", seeds: int = 2
     if int(season) == 2026 and os.environ.get("CBB_UNSEAL") != "1":
         raise SystemExit("season 2026 is SEALED; the daily chain never sets CBB_UNSEAL for the sim stage")
 
-    slate = load_slate(slate_date, season, schedule_source, schedule_path, crosswalk, tips)
+    slate = load_slate(slate_date, season, schedule_source, schedule_path, crosswalk, tips, tip_table)
     unmapped = slate.attrs.get("unmapped", [])
     if max_games:
         slate = slate.iloc[:max_games].reset_index(drop=True)
@@ -173,6 +174,23 @@ def run_sim_stage(slate_date: str, season: int, fold: str = "F2", seeds: int = 2
         ok, late = D.split_tipped(slate, now)
         from cbb_sim.live import tips as TP
         late = late.assign(refuse_reason=TP.late_reasons(late).to_numpy() if len(late) else [])   # placeholder past 00:00 ET -> TIP_UNKNOWN
+    ihash = icomp = supersedes = None
+    if live_key:
+        # 2026-10-09 PM ruling: the cache key includes the actual inputs, so a pass with changed rosters / tips / ratings / stack re-runs
+        from cbb_sim.live import inputs_key as IK
+        ihash, icomp = IK.inputs_hash(season, ok, seeds, seed_offset, ratings_dir, extra_files=extra_input_files, tip_table=tip_table)
+        if done.exists() and not force:
+            prev = json.loads(done.read_text(encoding="utf-8"))
+            if prev.get("config_hash") == h and prev.get("inputs_hash") == ihash:
+                return {"_status": "ok", "cached": True, "out": str(out), "n_rows": prev.get("n_rows"), "n_games": prev.get("n_games"),
+                        "inputs_hash": ihash}
+            changed = sorted(k for k in icomp if (prev.get("inputs_components") or {}).get(k) != icomp[k])
+            supersedes = {"config_hash": prev.get("config_hash"), "inputs_hash": prev.get("inputs_hash"),
+                          "finished_at": prev.get("finished_at"), "components_changed": changed if prev.get("inputs_components") else ["(no prior inputs key)"]}
+            print(f"[sim] cache MISS for {out.name}: re-running (changed: {supersedes['components_changed']})", flush=True)
+        if done.exists():
+            for f in ("_DONE.json", "games.parquet", "players.parquet"):   # never leave a half-new directory that still reads as finished
+                (out / f).unlink(missing_ok=True)
     out.mkdir(parents=True, exist_ok=True)
     skipped = {"clock": str(now), "pass": pass_name, "already_tipped": [
         {"game_id": int(r.game_id), "tipoff_utc": str(r.tipoff_utc), "tip_source": r.tip_source,
@@ -182,7 +200,8 @@ def run_sim_stage(slate_date: str, season: int, fold: str = "F2", seeds: int = 2
     for r in skipped["already_tipped"]:
         print(f"[sim] SKIP game {r['game_id']}: tipoff {r['tipoff_utc']} not after clock {now} ({r['tip_source']})", flush=True)
     if not len(ok):
-        done.write_text(json.dumps({"config_hash": h, "n_rows": 0, "n_games": 0, "note": "every game already tipped"}), encoding="utf-8")
+        done.write_text(json.dumps({"config_hash": h, "inputs_hash": ihash, "inputs_components": icomp, "n_rows": 0, "n_games": 0,
+                                    "note": "every game already tipped"}), encoding="utf-8")
         return {"_status": "skipped", "why": "every game already tipped or no slate", "out": str(out), "skipped": len(late)}
 
     import build_engine_inputs_live as BL
@@ -222,11 +241,12 @@ def run_sim_stage(slate_date: str, season: int, fold: str = "F2", seeds: int = 2
             "backtest": False, "sealed_touched": False, "live": True, "replay": bool(replay), "season": season,
             "slate_date": slate_date, "n_games": int(inp.n_games), "n_rows": int(len(games)), "n_skipped_tipped": int(len(late)),
             "runtime_s": round(time.time() - t0, 1), "created_at_before_tipoff_asserted": True, "config_hash": h,
+            "inputs_hash": ihash, "inputs_components": icomp, "supersedes": supersedes,
             "build_diag": {k: v for k, v in diag.items() if not isinstance(v, (dict, list))}, "day1_prior": d1p_meta, **prov, "adapter_flags": ad.flags,
             "engine_env": {k: v for k, v in os.environ.items() if k.startswith("ENGINE_")}}
     (out / "run_meta.json").write_text(json.dumps(meta, indent=2, default=str), encoding="utf-8")
-    done.write_text(json.dumps({"config_hash": h, "n_rows": int(len(games)), "n_games": int(inp.n_games),
-                                "finished_at": str(pd.Timestamp.now("UTC"))}), encoding="utf-8")
+    done.write_text(json.dumps({"config_hash": h, "inputs_hash": ihash, "inputs_components": icomp,
+                                "n_rows": int(len(games)), "n_games": int(inp.n_games), "finished_at": str(pd.Timestamp.now("UTC"))}), encoding="utf-8")
     return {"_status": "ok", "cached": False, "out": str(out), "n_games": int(inp.n_games), "n_rows": int(len(games)),
             "skipped_tipped": int(len(late)), "runtime_s": round(time.time() - t0, 1),
             "day1_prior": d1p_meta["day1_prior"], "anon_slot_share": d1p_meta["anon_slot_share"],

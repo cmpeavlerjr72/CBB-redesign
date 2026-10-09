@@ -118,7 +118,8 @@ def stage_sim(ctx, a, CD) -> dict:
     root = (REPO / "results/daily_dry") if dry_sim else ctx.root
     if True:                                                             # serving exemption lives in build_live; no env var / unsealed() here
         r = SIM.run_sim_stage(str(ctx.slate_date), season, a.fold, a.seeds, 0, ctx.now, root, None, "cbbd", str(SCHED_2027),
-                              str(CROSSWALK), tips, strict=False, pass_name=pass_name, ratings_dir=ctx.state.get("ratings_dir"))
+                              str(CROSSWALK), tips, strict=False, players=True, pass_name=pass_name,
+                              ratings_dir=ctx.state.get("ratings_dir"))        # player rows are a deliverable (props): PM ruling 2026-10-09
     ctx.state["sim_run_id"] = D.default_run_id(a.seeds, 0) + ("_morning" if pass_name == "morning" else "")
     return {**census, **r}
 
