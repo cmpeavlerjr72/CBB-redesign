@@ -64,6 +64,15 @@ def run_publish_stage(slate_date: str, run_id: str, now=None, root: Path = D.DAI
     pub, refused = D.build_publish(games, slate, lines, now, run_id, season_start=season_start, build_ids=build_ids)
     if not len(pub):
         return {"_status": "skipped", "why": "no unplayed game left at publish time", "refused": int(len(refused))}
+    pl_p = sd / "players.parquet"                  # explanation only (anonymous slots are absent from players.parquet); changes no number
+    if pl_p.exists():
+        try:
+            anon = D.anon_minutes_by_team_game(pd.read_parquet(pl_p, columns=["game_id", "seed", "team_id", "minutes"]), games, slate)
+            pub["notes"] = pub["game_id"].map(dict(zip(slate["game_id"], D.anon_minutes_note(anon, slate))))
+        except Exception as e:  # noqa: BLE001  (a note must never block a publish)
+            pub["notes"] = f"anon_minutes unavailable: {type(e).__name__}"
+    else:
+        pub["notes"] = ""
     pid = pub["publish_id"].iloc[0]
     out = D.pub_dir(root, slate_date, run_id) / pid
     if (out / "slate.parquet").exists():

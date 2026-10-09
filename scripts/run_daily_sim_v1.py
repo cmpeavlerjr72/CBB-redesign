@@ -277,7 +277,10 @@ def run_sim_stage(slate_date: str, season: int, fold: str = "F2", seeds: int = 2
         games = TP.stamp_pre_tip_basis(games, ok, slate_date)
     games.to_parquet(out / "games.parquet", index=False)
     if players and pl is not None:
-        RL.stamp_rows(pl, inp, now, per_game=False).to_parquet(out / "players.parquet", index=False)
+        plr = RL.stamp_rows(pl, inp, now, per_game=False)
+        an = D.anon_minutes_by_team_game(plr, games, ok)       # explanation column appended last; every existing column unchanged
+        plr = plr.merge(an, on=["game_id", "team_id"], how="left")
+        plr.to_parquet(out / "players.parquet", index=False)
     ok.to_parquet(out / "slate.parquet", index=False)
     meta = {"engine_tag": f"daily/{slate_date}/{run_id}", "created_at": str(now), "seeds": seed_arr.tolist(), "fold": fold,
             "backtest": False, "sealed_touched": False, "live": True, "replay": bool(replay), "season": season,

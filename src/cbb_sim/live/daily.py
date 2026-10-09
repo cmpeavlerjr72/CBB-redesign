@@ -186,6 +186,37 @@ def build_publish(games: pd.DataFrame, slate: pd.DataFrame, lines: pd.DataFrame 
     pub["publish_id"] = publish_id(pub, run_id)
     return pub, refused
 
+def anon_minutes_by_team_game(players: pd.DataFrame | None, games: pd.DataFrame, slate: pd.DataFrame) -> pd.DataFrame:
+    """Mean ANONYMOUS-slot minutes per (game_id, team_id) across seeds. `players.parquet` drops anonymous slots (athlete id <= 0), so named
+    minutes per team-game fall short of the game clock (5 players x (40 + 5 per OT period) = 200 in regulation). The shortfall IS the anonymous
+    allocation (the engine conserves court time exactly), so it is recovered as game minutes - named minutes, per seed, then averaged.
+    Explanation only: reads outputs, changes no number. Columns: game_id, team_id, team_anon_minutes."""
+    cols = ["game_id", "team_id", "team_anon_minutes"]
+    if players is None or not len(players) or not len(games):
+        return pd.DataFrame(columns=cols)
+    g = games[["game_id", "seed", "n_periods"]].copy()
+    g["game_min"] = 200.0 + 25.0 * (g["n_periods"].astype("int64") - 2).clip(lower=0)
+    sl = slate[["game_id", "home_team_id", "away_team_id"]].drop_duplicates("game_id")
+    side = pd.concat([sl.rename(columns={"home_team_id": "team_id"})[["game_id", "team_id"]],
+                      sl.rename(columns={"away_team_id": "team_id"})[["game_id", "team_id"]]], ignore_index=True)
+    base = g.merge(side, on="game_id", how="inner")
+    named = players.groupby(["game_id", "seed", "team_id"], as_index=False)["minutes"].sum().astype({"minutes": "float64"})
+    base = base.merge(named, on=["game_id", "seed", "team_id"], how="left")
+    base["anon"] = (base["game_min"] - base["minutes"].fillna(0.0)).clip(lower=0.0)
+    out = base.groupby(["game_id", "team_id"], as_index=False)["anon"].mean().rename(columns={"anon": "team_anon_minutes"})
+    out["team_anon_minutes"] = out["team_anon_minutes"].round(3)
+    return out[cols]
+
+
+def anon_minutes_note(anon: pd.DataFrame, slate: pd.DataFrame) -> pd.Series:
+    """Per slate game: 'anon_minutes home=X away=Y' (index = game_id); empty frame -> empty strings."""
+    key = anon.set_index(["game_id", "team_id"])["team_anon_minutes"].to_dict() if len(anon) else {}
+    def one(r):
+        h, a = key.get((r["game_id"], r["home_team_id"])), key.get((r["game_id"], r["away_team_id"]))
+        return "" if h is None or a is None else f"anon_minutes home={h:.1f} away={a:.1f}"
+    return slate.apply(one, axis=1) if len(slate) else pd.Series([], dtype=object)
+
+
 
 def publish_id(pub: pd.DataFrame, run_id: str) -> str:
     cols = ["game_id", "provider", "spread", "total", "home_ml", "away_ml", "line_kind"]
