@@ -158,7 +158,7 @@ def main() -> int:
             raise SystemExit(f"{f} exists; refusing to overwrite (EG_OVERWRITE=1 for an own rerun)")
         law.save(f)
         meta["artifact"] = str(f.relative_to(ROOT)).replace("\\", "/")
-    out = OFF / a.fold / "C"
+    out = (OFF if a.seed == 0 else OFF.parent / "offline_reseed") / a.fold / "C"
     out.mkdir(parents=True, exist_ok=True)
     name = a.arm if a.seed == 0 else f"{a.arm}_seed{a.seed}"
     np.savez_compressed(out / f"{name}.npz", game_id=te["game_id"].to_numpy(np.int64),

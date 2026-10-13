@@ -19,11 +19,20 @@ import numpy as np
 
 DIR = Path("data/processed/models/possession_outcome/late_foul")
 ARMS = ("LF1", "LF2")
+#: late-game round 7 (late_game/experiments.md s15, block F): the same section-29 law refitted by
+#: `scripts/train_endgame_foul_v1.py` into its own directory. `EG_FOLD` is the fold whose fit is served
+#: (an overlay may re-point it for a fold-1 run). DEFAULT OFF like every arm here.
+EG_DIR = Path("data/processed/models/late_game/endgame_v1")
+EG_FOLD = "F2"
+EG_ARMS = ("eg_LF1", "eg_LF2")
 
 
 class LateFoul:
     def __init__(self, arm: str):
-        d = json.loads((DIR / f"late_foul_{arm}_F2.json").read_text(encoding="utf-8"))
+        if arm in EG_ARMS:
+            d = json.loads((EG_DIR / EG_FOLD / f"late_foul_{arm[3:]}.json").read_text(encoding="utf-8"))
+        else:
+            d = json.loads((DIR / f"late_foul_{arm}_F2.json").read_text(encoding="utf-8"))
         self.arm = arm
         self.cdf = np.cumsum(np.asarray(d["probs"], dtype=np.float64), axis=-1)
         self.cdf[..., -1] = 1.0
@@ -55,6 +64,6 @@ def load():
     mode = os.environ.get("ENGINE_LATE_FOUL", "off") or "off"
     if mode == "off":
         return None
-    if mode not in ARMS:
-        raise ValueError(f"ENGINE_LATE_FOUL={mode!r}: expected one of {ARMS}")
+    if mode not in ARMS + EG_ARMS:
+        raise ValueError(f"ENGINE_LATE_FOUL={mode!r}: expected one of {ARMS + EG_ARMS}")
     return LateFoul(mode)

@@ -1183,6 +1183,13 @@ class Adapters:
         if lg_mode != "off":
             from cbb_sim.engine.late_game_adapter import wrap as _lg_wrap
             event, clock, lg_src = _lg_wrap(inp, event, clock, lg_mode)
+        # LATE-GAME ROUND 7 (late_game/experiments.md section 15): DEFAULT-OFF endgame window arms
+        # (GT1/GT2 clock, EV1 event). Unset/`off` never imports the module and adds no flag.
+        eg_mode = os.environ.get("ENGINE_ENDGAME", "off") or "off"
+        eg_src = None
+        if eg_mode != "off":
+            from cbb_sim.engine.endgame_adapter import wrap as _eg_wrap
+            event, clock, eg_src = _eg_wrap(event, clock, eg_mode, fold)
         # LATE-GAME ROUND 4 (late_game/experiments.md section 9): DEFAULT-OFF buzzer make law.
         lg_mk = os.environ.get("ENGINE_LG_MAKE", "off") or "off"
         lg_mk_src = None
@@ -1271,6 +1278,9 @@ class Adapters:
         if lg_src is not None:
             flags["ENGINE_LATE_GAME"] = lg_mode
             flags["sources"]["late_game"] = lg_src
+        if eg_src is not None:
+            flags["ENGINE_ENDGAME"] = eg_mode
+            flags["sources"]["endgame"] = eg_src
         if lg_mk_src is not None:
             flags["ENGINE_LG_MAKE"] = lg_mk
             flags["sources"]["late_game_make"] = lg_mk_src
