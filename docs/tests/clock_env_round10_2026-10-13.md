@@ -187,7 +187,7 @@ v3 with four control draws. After that the PM rules on adoption, with an explici
 ## 6. Parity, suite, artifacts, not done
 
 - Parity v10 (flags off, clean src): PASS bit-identical, twice.
-- Suite: 847 passed, 1 skipped (full pytest, 14:07-15:05 EDT, after every src-free change of this round; no file under src/ changed this round). A rerun at 16:16 was in progress at commit time.
+- Suite: 847 passed, 1 skipped (full pytest, 14:07-15:05 EDT, after every src-free change of this round; no file under src/ changed this round). Rerun at 16:16 EDT on the final tree: 847 passed, 1 skipped (295 s).
 - Artifacts: the round-9 E1 schedules are unchanged (49 MB each, gitignored, already on HF). The new latent report is a small
   tracked JSON. Loop outputs (`results/clock_env10/`, trajectories) are gitignored under `results/`. Nothing over 20 MB was added to git.
 - Not done:
