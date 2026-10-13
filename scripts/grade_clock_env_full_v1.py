@@ -16,6 +16,14 @@ Same lines, same decision code and same tables as the 500 x 25 read (`grade_cloc
 Floors: max(2 x SD of the four control draws, 2 x paired game-bootstrap SE), 200 bootstrap draws over the 5,710 games,
 numpy seed 12345. Cells under 150 games are UNDERPOWERED.
 
+AMENDMENT (2026-10-13 ~14:35 EDT, committed BEFORE the full-size E1 run started and before any full-size arm output existed):
+the four control floor draws are 5,710 x 50 seeds each (offsets 1000-4000, trajectories for all 50), not 5,710 x 200.
+Measured local throughput is ~120 game-seeds/s (2.6 h per 200-seed run), so six 200-seed runs would take ~15 h against the
+brief's ~1 h per run. Section 43 fixes "four control draws" but not their size. Every trajectory-based line (both primaries,
+the first-half env slope, the dispersion gates, the multi-level tables) is read on 50 seeds in the arm and the control, so
+50-seed draws are exactly matched to those lines. For the lines read on all 200 seeds (keys `r8_*` and `*_200`) the draws'
+SD is scaled by sqrt(50 / 200) (Monte Carlo SE scaling) before the floor is formed; the unscaled draw SD is written too.
+
     set CBB_TRUTH=verified_v1
     .venv/Scripts/python.exe scripts/grade_clock_env_full_v1.py
 writes results/clock_env10/grade_full_s200.json
@@ -47,7 +55,8 @@ R8.EV = FULL
 S_TRAJ, S_ALL = 50, 200
 CONTROL = "clk10full_ctrl_o0_s200"
 ARM = "clk10full_E1_o0_s200"
-DRAWS = [f"clk10full_ctrl_o{o}_s200" for o in (1000, 2000, 3000, 4000)]
+DRAWS = [f"clk10full_ctrl_o{o}_s50" for o in (1000, 2000, 3000, 4000)]
+S_DRAW = 50
 OFFSET = {CONTROL: 0, ARM: 0, **{d: int(d.split("_o")[1].split("_")[0]) for d in DRAWS}}
 CHUNKS = 6
 
@@ -55,7 +64,7 @@ CHUNKS = 6
 def load_tag(tag: str, ids: np.ndarray) -> tuple:
     o = OFFSET[tag]
     gm = pd.read_parquet(FULL / tag / "games.parquet")
-    if gm["seed"].nunique() != S_ALL or gm["game_id"].nunique() != len(ids):
+    if gm["seed"].nunique() != (S_DRAW if tag in DRAWS else S_ALL) or gm["game_id"].nunique() != len(ids):
         raise SystemExit(f"{tag}: {gm['seed'].nunique()} seeds / {gm['game_id'].nunique()} games")
     gmt = gm[gm["seed"] < o + S_TRAJ]
     dset = ds.dataset(ROOT / "results/trajectories" / tag / "trajectory.parquet", format="parquet")
@@ -122,7 +131,9 @@ def main() -> int:
     val = {t: {**LN.lines(*frames[t], one), **lines200(LN, frames[t][3], one), **GL.disp_values(t)} for t in tags}
     act = {k: v for k, v in val[CONTROL].items() if k.startswith("act_")}
     names = [k for k in val[CONTROL] if not k.startswith("act_")]
-    draw_sd = {k: float(np.nanstd([val[t][k] for t in DRAWS], ddof=1)) for k in names}
+    draw_sd_raw = {k: float(np.nanstd([val[t][k] for t in DRAWS], ddof=1)) for k in names}
+    s200 = lambda k: k.startswith("r8_") or k.endswith("_200")  # noqa: E731
+    draw_sd = {k: v * (np.sqrt(S_DRAW / S_ALL) if s200(k) else 1.0) for k, v in draw_sd_raw.items()}
     wb = EG.boot_weights(G)
     diffs = {k: [] for k in names}
     for b in range(EG.N_BOOT):
@@ -138,7 +149,7 @@ def main() -> int:
     for k in names:
         se = float(np.nanstd(diffs[k], ddof=1)) if diffs[k] else float("nan")
         rows[k] = {"arm": val[ARM][k], "ctrl": val[CONTROL][k], "delta": val[ARM][k] - val[CONTROL][k],
-                   "draw_sd": draw_sd[k], "boot_se": se, "floor": float(np.nanmax([2 * draw_sd[k], 2 * se]))}
+                   "draw_sd": draw_sd[k], "draw_sd_raw": draw_sd_raw[k], "boot_se": se, "floor": float(np.nanmax([2 * draw_sd[k], 2 * se]))}
     res = {"spec": "docs/models/clock/experiments.md section 43 (full-size read of a candidate)", "control": CONTROL,
            "draws": DRAWS, "arm": ARM, "n_games": int(G), "n_pbp_ok": int(LN.LL.ok.sum()), "n_r8_games": int(len(LN.T)),
            "seeds_traj": S_TRAJ, "seeds_all": S_ALL, "info": info, "actual": act, "rows": rows,
