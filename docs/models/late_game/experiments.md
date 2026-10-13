@@ -1274,3 +1274,45 @@ Home/away/neutral stays first-class in the base laws (audit every arm's feature 
 ##### 5. Order and cost
 
 Offline for C, E, F is cheap (deterministic fits, two folds). Closed loop: C alone, F alone, then compositions only for block winners. D3's per-state tables and D4's conversion table are rerun on each arm's taps with `scripts/diag_c4_d34_endgame_v1.py` (the trajectory recorder, `--trajectory-seeds`) so that the multi-level evidence (overall, per game, per team quintile, per possession type, per state) is on the same footing as the diagnostic. Open questions for the PM: Q1 whether section 29 (block F) should be committed and run first, since the bonus gap (about 5 pp) is the larger OT lever and the clock block mostly removes points in decided games; Q2 whether block E is wanted at all before C and F are read (its evidence is the leader TOV overshoot only); Q3 H1 window arms are reported only; a separate first-half round is needed if the PM wants the 0.15-0.56 H1 surplus owned.
+
+---
+
+## 16. RESULTS -- round 7 (endgame margin/clock/foul), RUN 2026-10-13 (Opus engine worker; status PROMOTED -> RUN; NO ARM ADOPTED, no served default changed, freeze ON)
+
+Full evidence: `docs/tests/endgame_round_2026-10-13.md`. Run exactly as section 15 with the PM rulings of 2026-10-13
+(Q1 block F committed as section 29, F alone first in the loop, then C, then compositions of block winners; Q2 E in
+the loop only if EV1 wins offline; Q3 period 1 reported only; local compute). ONE blind grader
+`scripts/grade_endgame_v1.py`, committed before any fit (`fe9ee15`); fits, artifacts and default-off wiring `f520692`
+(`ENGINE_ENDGAME=GT1|GT2|EV1`, `ENGINE_LATE_FOUL=eg_LF1|eg_LF2`; parity v10 bit-identical flags off); grader
+clarification before any loop arm ran `5ae0302` (E loop primary = leader TOV 13+ at 4:00/2:00, the only E targets
+15.A.3 quotes; 8-12 lines are move-away vetoes). Reseed floor 0 for every law (max abs diff 0.0); binding floors
+2 x paired game-block bootstrap SE (200 draws, seed 12345).
+
+**Offline (F2 selects; F1 same sign).**
+- C: NO WINNER. GT1 beats GT0 on deviance (-0.072, floor 0.015) and cell calibration (2.29 -> 0.34 s, floor 0.067),
+  slopes (a) 0.48 -> 1.03 (lead) and 0.53 -> 0.94 (trail), but FAILS mandatory slope (b): tempo slope 0.365 ->
+  -0.009 (floor 0.100). GT2 beats deviance (-0.022, floor 0.006) but not calibration (0.07 floors); its F1 fit is
+  b = 0 (sign not kept); team-trailer slope falls beyond its floor.
+- E: EV1 WINS: log loss 1.4865 -> 1.4854 (-0.0011, floor 0.0004; F1 -0.0013), slope (c) 1.177 -> 1.162 holds.
+- F: LF2 SELECTED (section 29.2): LF1 -0.0152 (13.3 floors), LF2 -0.0349 (9.7 floors) vs LF0; LF2 beats LF1 by 5.9
+  floors (F1 5.0); E[K] falls 4-5 -> 6-8 as in the data.
+- Finding: the served K2 law gives zero mass to 0.19% (F2) / 0.28% (F1) of window rows; those rows carry 0.106 /
+  0.156 of its deviance, and without them GT0 has the best deviance. The deviance wins of GT2 and part of GT1's are
+  smoothing of zero-mass bins.
+
+**Closed loop** (500 verified fold-2 games x 25 paired seeds, served v3, four control floor draws; seed-count check:
+every deciding line resolved at 25 seeds):
+
+| arm | block primary (floors toward real) | hard vetoes | MD1-MD6 | candidate |
+|---|---|---|---|---|
+| LF2 (F) | tie rate 3.62% -> 3.65% (+0.09; real 6.80% on the sample) | all pass | MD1-MD5 FAIL, MD6 pass | no |
+| EV1 (E) | leader TOV 13+ 0.222 -> 0.228 (-1.7) at 4:00, 0.254 -> 0.261 (-1.0) at 2:00 | all pass | MD1-MD5 FAIL | no |
+| EV1+LF2 (block winners) | tie rate +0.27 | all pass | MD1-MD5 FAIL | no |
+| GT1 (DIAGNOSTIC, not eligible) | MD4 +0.02, MD5 9.69 -> 9.02 (+3.3) | 8-12 TOV veto FAILS | MD3, MD5, MD6 pass; MD1, MD2, MD4 FAIL | not eligible |
+
+No clear best (no veto-passing eligible arm beats every other by more than one floor). **Decision: NO ARM ADOPTED.**
+No full-size read and no fold-1 confirmation (both reserved for candidates). LF2 moves the leader's bonus occupancy
+toward real (+0.9 to +1.2 pp, about 2 floors) but the tie rate does not follow; the OT gap is conversion inside the
+3-5 and 6-9 point states. The served K2 window law is miscalibrated by cell (13+ leaders in (30,60]: 9.0 s vs 17.1 s
+real), which a pooled cell law fixes only at the cost of the tempo response; leader TOV responsiveness to team
+strength is compressed in the sim (0.232 -> 0.195 vs 0.278 -> 0.161 real across quintiles).
