@@ -11,8 +11,14 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
 from cbb_sim.models import clock as ck  # noqa: E402
-from cbb_sim.models import clock_env as CE  # noqa: E402
-from cbb_sim.models import clock_r8 as r8  # noqa: E402
+
+# clock_env imports clock_r8, which registers extra cell grids in clock.EMPIRICAL_DIMS at import time; importing it at
+# collection would change what tests/test_clock.py's fixtures iterate over, so every test imports it lazily.
+
+
+def _CE():
+    from cbb_sim.models import clock_env
+    return clock_env
 
 
 def _df(n=6):
@@ -22,6 +28,7 @@ def _df(n=6):
 
 
 def test_raw_env_definitions():
+    CE = _CE()
     d = _df()
     e, g = CE.raw_env(d)
     assert np.allclose(e, d["off_rating_off_c"] + d["def_rating_def_c"])
@@ -40,6 +47,7 @@ class _Flat:
 
 
 def test_zero_coef_is_identity_and_positive_coef_lengthens():
+    CE = _CE()
     norms = {"sd_off": 8.0, "mu_gap": 5.0, "sd_gap": 4.0}
     d = _df()
     for arm in CE.ARM_SPEC:
@@ -56,6 +64,8 @@ def test_zero_coef_is_identity_and_positive_coef_lengthens():
 
 
 def test_cond_cell_key_separates_end_class():
+    CE = _CE()
+    from cbb_sim.models import clock_r8 as r8
     d = pd.DataFrame({"prev_end": ["DREB"] * 5, "seconds_remaining": [600.0] * 5, "period": [1] * 5,
                       "score_diff": [0.0] * 5, "tempo_prior_game": [68.0] * 5, "end1_code": np.arange(5)})
     k = CE.cond_cell_key(d, (67.0, 69.0))
@@ -70,3 +80,10 @@ def test_mode_keys_default_off():
         assert f"v3c_r8K2_env{a}_P3_s1" in CA.V3C_MODES
         assert f"v5b_r8K2_env{a}_glat_pmean" not in CA.ADOPTED_MODES
     assert adapters.CLOCK_DEFAULT == "v5b_r8K2_glat_pmean"
+
+
+def test_engine_frame_carries_the_rating_columns():
+    """The adapter's frame is built from TEAM_COLS plus prev_end; the env law reads only those."""
+    from cbb_sim.engine import clock_adapter_v3 as CA
+    CE = _CE()
+    assert set(CE.RATING_COLS) <= set(CA.TEAM_COLS)

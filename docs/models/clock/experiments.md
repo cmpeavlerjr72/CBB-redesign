@@ -4694,3 +4694,24 @@ Offline about the cost of round 8 (deterministic fits, two folds, five arms); sc
 - E0 offline (F2 / F1): env ratio 0.163 / 0.004 (actual slope +0.080 / +0.050 implied possessions per team per env unit), gap ratio -0.63 / -0.84, offence-tempo quintile slope **0.405 / 0.472**, game tempo elasticity ratio **0.724 / 0.808**, E0 zero-mass rows 311 (0.12%) / 301 (0.13%).
 - **Three lines of the registered rule cannot be met as written, by any arm that does not also change the tempo response.** (i) Rule (c)(a) requires the offence-tempo slope in [0.85, 1.15]; the served control is at 0.405 (the draft's "stay in" assumed a value the served K2 does not have; K2M, the tempo law, is at 0.888). (ii) The game tempo elasticity ratio "within [0.9, 1.1]": E0 is 0.724. (iii) Rule (b)'s gap line: the offline actual gap slope on 1,916 clock-complete games is +0.023 with a floor on |ratio - 1| differences of 3.9 (F2) and 1.7 (F1) for K2M vs E0, so "moves toward 1 by more than its floor" is not resolvable offline at this sample.
 - These are recorded, not changed: the grader applies section 5 literally (`decide`). It also writes two REPORTED-ONLY readings that select nothing: (R1) the two absolute ranges (i)-(ii) read relative to E0 (not worse than E0 beyond the floor), and (R2) the env and gap model slopes as differences from E0 with floors (direction toward the actual slope). The PM rules on these; the worker does not.
+
+## 42. Round 9 RESULTS: REFUTED by the literal rule, NO ARM ADOPTED (2026-10-13, Opus engine worker; registration section 41)
+
+Evidence: `docs/tests/clock_env_round_2026-10-13.md`. Grader `scripts/grade_clock_env_v1.py` (committed with 41.B in `cd6f941` before any fit) -> `results/clock_env/offline_grade.json`, `offline_tables.md` (coded). Q1 pre-check PASS (41.B). Fits: `scripts/train_clock_env_v1.py`, E1/E2/E3 x F1/F2 and F2 `--seed 1` (13:20-13:23 EDT). Reseed proof: max abs pmf diff 0.0 for E0 vs E0s1 and for every arm vs its seed-1 refit; the floor is 2 x SD of the paired game bootstrap (200 draws, seed 12345). Parity v10 with flags off: PASS bit-identical (60 x 5). Artifacts `data/processed/models/clock/r9_env_*` (49 MB per schedule, gitignored, HF `model_artifacts/clock/r9_env_*`).
+
+| fold | arm | deviance (d; floor) | deviance on E0 > 0 rows (d; floor) | env ratio | gap ratio | offence-tempo q | z_off q | elasticity ratio | count gap |
+|---|---|---|---|---:|---:|---:|---:|---:|---:|
+| F2 | E0 | 6.7436 | 6.6851 (0.121% rows excluded) | 0.163 | -0.635 | 0.405 | 0.197 | 0.724 | +0.452 |
+| F2 | E1 | -0.0229 (0.0039) | +0.0006 (0.0017) | 1.299 | -0.736 | 0.405 | 0.894 | 0.742 | +0.475 |
+| F2 | E2 | -0.0236 (0.0043) | +0.0015 (0.0018) | 1.317 | 1.785 | 0.405 | 0.894 | 0.740 | +0.348 |
+| F2 | E3 | -0.0245 (0.0042) | -0.0001 (0.0017) | 1.303 | 1.752 | 0.406 | 0.889 | 0.741 | +0.350 |
+| F1 | E0 | 6.7525 | 6.6880 (0.133%) | 0.004 | -0.841 | 0.472 | 0.193 | 0.808 | +0.219 |
+| F1 | E1 | -0.0307 (0.0053) | -0.0000 (0.0016) | 1.779 | -0.898 | 0.481 | 1.014 | 0.822 | +0.236 |
+| F1 | E2 | -0.0295 (0.0053) | +0.0002 (0.0017) | 1.814 | 0.822 | 0.480 | 1.031 | 0.820 | +0.134 |
+| F1 | E3 | -0.0278 (0.0051) | +0.0007 (0.0018) | 1.796 | 0.803 | 0.481 | 1.026 | 0.821 | +0.136 |
+
+Floors on the |ratio - 1| deltas (F2): env 0.47-0.48 (every arm moves toward 1 beyond it); gap 1.7 (E1), 11.3-11.8 (E2, E3), so the gap line is unresolvable offline at 1,916 clock-complete games.
+
+**Decision (41.A section 5 with 41.0 item 2, literal): REFUTED; no arm wins.** Every arm fails four checks: (a') the dual-deviance gate (the full-set gain is entirely the smoothing of E0's zero-mass rows); (b) the gap line; (c)(a), the offence-tempo slope in [0.85, 1.15] (E0 0.405); (c), the elasticity ratio in [0.9, 1.1] (E0 0.724). E2 and E3 also exceed 1.3 on env, and E1 loses the F1 gap sign. No veto fires. The reported-only relative reading (41.B R1) also has no winner. No closed loop, no dispersion gates, no seed-count check and no full-size read: section 6 is for an offline winner only. The default-off keys `ENGINE_CLOCK=v5b_r8K2_env{E1,E2,E3}_glat_pmean` stay unfitted for the latent (no params file), so they are not runnable until a candidate exists. Nothing adopted; served defaults unchanged; freeze ON.
+
+Finding (not a proposal): the env AFT term does reproduce the missing responsiveness offline. On F2 the env ratio goes 0.16 -> 1.30, the team-game x_off ratio 0.20 -> 0.90 and the z_off-quintile slope 0.20 -> 0.89, the effect appears in the first half (H1 env ratio 0.13 -> 1.20), and no veto fires. The registered rule cannot select it, because its deviance primary has no power for a ~2% per-SD scale and two of its ranges exclude the served control.
