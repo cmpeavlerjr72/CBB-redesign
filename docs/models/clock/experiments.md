@@ -4735,3 +4735,58 @@ Mandatory responsiveness tables (multi-level rule): game possessions and total b
 **Decision.** E1 is a CANDIDATE if both primaries clear their floors and every hard veto passes. A candidate gets parity v10 on a clean `src/` (flags off, bit-identical) and the full-size 5,710 x 200 paired read vs served v3 (local compute) with the same tables against four control draws; the PM then rules on adoption (explicit freeze lift per adoption). Otherwise NO ARM ADOPTED and the round is closed; a further pace-responsiveness round would need a new mechanism, not a re-run.
 
 No multiplier, cap, clip, offset, curve or blend on sim output: the scale enters the first-chance law's input only.
+
+
+## 44. Round 10 RESULTS: E1 is a CANDIDATE on the 500 x 25 closed loop; full-size read QUEUED, not run (PM time limit); NOT ADOPTED (2026-10-13, Opus engine worker; registration section 43)
+
+Evidence: `docs/tests/clock_env_round10_2026-10-13.md`. Grader `scripts/grade_clock_env_loop_v1.py` (committed `9d28d1a` before the E1 loop ran) -> `results/clock_env10/grade_s25.json`.
+
+**Pre-run checks.**
+- The E1 schedules are round 9's fit, unchanged: the sha256 of every F1 and F2 file equals the HF copy, and every refit coefficient equals its manifest row. No coefficient was refitted.
+- B1 latent sigma refitted on the E1 law with the unedited `exp_clk5b_mean_consistent.py --fit-only` (wrapper `exp_clk10_latent_env_v1.py`): F2 0.046788 vs served K2 0.047101; F1 0.046290 vs 0.046825.
+- Engine smoke of `v5b_r8K2_envE1_glat_pmean`: runs.
+- Parity v10 with flags off on a clean `src/`: PASS bit-identical, run twice.
+
+**Closed loop.**
+- 500 verified fold-2 games (`stride500_verified_minswap_v1`) x 25 paired seeds.
+- Control: served v3, `clk10_ctrl_o0_s25`. It is identical to the endgame round's `eg_ctrl_o0_s25`.
+- Four control floor draws at seed offsets 1000-4000. Only `ENGINE_CLOCK` differs between arm and control.
+- Floor = max(2 x draw SD, 2 x paired game-bootstrap SE).
+- Seed-count check: both primaries and the H1 line are RESOLVED at 25 seeds, so there is no 50-seed rerun.
+
+| line | actual (sample) | control | E1 | floor | result |
+|---|---:|---:|---:|---:|---|
+| PRIMARY game possessions on env | +0.124 | -0.012 | +0.184 | 0.007 | toward by 11.5 floors: PASS |
+| PRIMARY game total on env | 0.668 | 0.407 | 0.637 | 0.024 | toward by 9.6 floors: PASS |
+| G1 possession mean / SD | 68.31 / 5.20 | 68.88 / 5.66 | 68.85 / 5.64 | 0.10 / 0.11 | pass / pass |
+| half shares H1 / H2 | 0.4696 / 0.5179 | 0.4693 / 0.5247 | 0.4696 / 0.5250 | 0.0014 / 0.0009 | pass / pass |
+| G5 margin / total SD ratio | 1 | 0.978 / 0.925 | 0.979 / 0.924 | 0.021 / 0.017 | pass / pass |
+| G9 margin bias / slope | 0 / 1 | +0.020 / 1.002 | -0.041 / 0.992 | 0.198 / 0.035 | pass / pass |
+| tempo elasticity ratio / team pace slope | 1 | 0.918 / 0.810 | 0.923 / 0.806 | 0.039 / 0.034 | pass / pass |
+| within-game N on OREB / FGM / TOV / FTA | -0.074 / 0.367 / 0.408 / 0.191 | -0.012 / 0.355 / 0.471 / 0.213 | -0.010 / 0.356 / 0.469 / 0.211 | 0.017 / 0.010 / 0.009 / 0.006 | all pass |
+| OT (= regulation tie) rate | 0.068 | 0.0362 | 0.0329 | 0.0046 | pass |
+| D1 home margin bias (non-neutral) / eFG home-away gap | 0 / 0.0305 | 0.229 / 0.0312 | 0.250 / 0.0303 | 0.208 / 0.0018 | pass / pass |
+| DISP margin SD ratio overall (reg.) | 1 | 1.0031 | 1.0035 | 0.023 | pass (literal 0.009 band: pass) |
+| DISP margin ratio by |spread| Q1 ... Q5 | 1 | 1.172 / 0.970 / 0.997 / 1.046 / 0.968 | 1.149 / 1.000 / 1.043 / 1.046 / 0.927 | 0.075 / 0.057 / 0.073 / 0.069 / 0.048 | all pass on the floor band; Q3 and Q5 FAIL the literal 0.009 band |
+| DISP pace SD ratio overall / Q1 ... Q5 | 1, in [0.95, 1.05] | 1.022 / 0.972 / 1.081 / 1.015 / 0.981 / 1.029 | 1.026 / 0.979 / 1.086 / 1.006 / 1.003 / 1.035 | 0.018 / 0.038-0.062 | pass (overall in range) |
+| DISP regulation total SD ratio | holds | 0.948 | 0.951 | band 0.020 | pass (both outside the full-size interval [0.974, 1.014] on this sample) |
+| DISP pace share of margin variance | reported | 0.0019 | 0.0018 | | reported |
+| H1 game possessions on env | +0.040 | -0.010 | +0.084 | 0.011 | pass (direction); FLAG: overshoot, gain 0.007 is within one floor |
+| overall regulation margin SD ratio rise | | 1.0031 | 1.0035 | 0.023 | pass |
+| reported: possessions on gap; lead-change / time-of-decision slope on |spread| | +0.085; -0.065 / -32.9 | +0.008; -0.098 / -30.5 | +0.001; -0.098 / -30.9 | 0.024; 0.012 / 1.5 | no move |
+| reported: G9 total bias (H1 / H2+OT) | 0 | -0.69 (-0.36 / -0.35) | -0.64 (-0.30 / -0.37) | 0.24 | reported |
+
+Per env quintile (UNDERPOWERED, 88-102 games each), total gap real - sim: control -1.58 / +1.07 / -1.57 / +1.44 / +2.85, E1 +0.98 / +2.07 / -1.50 / +0.52 / +0.19. Possession gap: control -1.77 ... -0.09, E1 +0.65 ... -2.17, so E1 overshoots at both ends. Start-type seconds per possession move by at most 0.04 s (`other` +0.22 s, 149 games, UNDERPOWERED). Mean per-game |possessions sim - real|: 7.380 -> 7.316 (floor 0.189). Team right-sign share 0.529 (346 teams).
+
+**Decision (section 43, literal):** "E1 is a CANDIDATE if both primaries clear their floors and every hard veto passes." Both clear (11.5 and 9.6 floors) and no hard veto fails. **E1 is a CANDIDATE.**
+
+For the PM:
+- The H1 line passes on direction only. E1 overshoots, and the gain is within one floor.
+- Two |spread| quintiles fail the literal 0.009 band but sit inside their floors.
+
+Parity v10 on a clean `src/`: PASS. The **full-size 5,710 x 200 paired read is QUEUED, not run (PM time limit)**:
+- It had been started. The worker stopped its own chain when the time-limit message arrived (control at 570 of 768 blocks) and kept no output.
+- Tooling is committed: `chain_clk10_env_full_v2.sh`, `chain_clk10_env_full_post_v1.sh`, `grade_clock_env_full_v1.py` (amended in `f9b7ea0` before any full-size E1 output: 50-seed draws, draw SD scaled for 200-seed lines).
+- Measured local cost: about 2.6 h per 200-seed run.
+
+NOT ADOPTED. No served default changed. Freeze ON. The PM decides.
