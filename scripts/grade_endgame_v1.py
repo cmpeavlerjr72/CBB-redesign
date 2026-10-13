@@ -76,7 +76,8 @@ Block primaries (toward the actual by more than one floor):
   F  `tie_rate` (regulation tie = OT rate, MD3). Reported with floors: P0/P1, leader bonus occupancy (offence
      leading 1-3 / 4-6, possessions starting <= 120 s in H2), trailing-team fouls per leader possession
      (trailing 1-3 / 4-6 / 7+; the engine definition on both sides: defence team-foul counter change).
-  E  leader TOV rate in the 8-12 and 13+ states at the 4:00 and 2:00 references (D3 (b) definition).
+  E  leader TOV rate in the 13+ state at the 4:00 and 2:00 references (D3 (b) definition); the 8-12 lines (already
+     on target) are move-away vetoes.
 Hard vetoes (any regression beyond its floor vs the control fails the arm; "regression" = |arm - target| exceeds
 |control - target| by more than the floor): G1 possession mean and SD; first-half and second-half points share;
 window possessions by k (round-3/4 reading: k = |home margin| at the first H2 possession starting <= 120 s, 0-6;
@@ -933,11 +934,15 @@ VETO_LINES = [("G1_poss_mean", "act_G1_poss_mean"), ("G1_poss_sd", "act_G1_poss_
               ("G9_margin_slope", 1.0), ("h1buz_ppp", "act_h1buz_ppp"), ("D1_home_margin_bias", 0.0),
               ("D1_efg_gap", "act_D1_efg_gap"), ("D2_poss_on_env", "act_D2_poss_on_env"),
               ("D2_poss_on_gap", "act_D2_poss_on_gap"), ("D2_total_on_env", "act_D2_total_on_env"),
-              ("D2_leadchg_on_spread", "act_D2_leadchg_on_spread"), ("tie_rate", "act_tie_rate")]
+              ("D2_leadchg_on_spread", "act_D2_leadchg_on_spread"), ("tie_rate", "act_tie_rate"),
+              ("ltov_r4_812", "act_ltov_r4_812"), ("ltov_r2_812", "act_ltov_r2_812")]
 PRIMARY = {"C": [("MD4_h2_last4_poss", "act_MD4_h2_last4_poss"), ("MD5_pts13_last2", "act_MD5_pts13_last2")],
            "F": [("tie_rate", "act_tie_rate")],
-           "E": [("ltov_r4_812", "act_ltov_r4_812"), ("ltov_r4_13p", "act_ltov_r4_13p"),
-                 ("ltov_r2_812", "act_ltov_r2_812"), ("ltov_r2_13p", "act_ltov_r2_13p")]}
+           # s15.A.3 quotes the E targets for the 13+ state only (19.0 / 21.1% real vs 22.1 / 25.4% served at the
+           # 4:00 / 2:00 references); the 8-12 leader TOV rate is already on target (D3: 17.9 vs 17.9, 16.4 vs 17.4),
+           # so it cannot move toward the actual by a floor and is read as a move-away veto instead (clarified
+           # 2026-10-13 BEFORE any closed-loop arm ran; control-only smoke showed the 8-12 gap ~0 on the sample).
+           "E": [("ltov_r4_13p", "act_ltov_r4_13p"), ("ltov_r2_13p", "act_ltov_r2_13p")]}
 REPORTED = ["P1", "P0_over_P1", "lead13_bonus", "lead46_bonus", "lead7p_bonus", "trail_fouls_13", "trail_fouls_46",
             "trail_fouls_7p", "lsec_r4_812", "lsec_r4_13p", "lsec_r2_812", "lsec_r2_13p", "share_st13",
             "G9_total_bias", "G9_total_bias_H1", "G9_total_bias_H2OT", "d13_ppp", "d13_3pa",
