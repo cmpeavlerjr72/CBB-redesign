@@ -990,3 +990,14 @@ for _k, _dss in (("K1", False), ("K2", False), ("K2M", True)):
         "base_mode": f"v3c_r8{_k}_P3_s1", "unit": "game", "param": "B1_sigma", "loc": "plus_half",
         "params_file": f"r8_{_k}/v5b_bakeoff/v5b_bakeoff_report.json"}
 del _k, _dss
+
+# Clock round 9 (experiments.md section 41; 2026-10-13): scoring-environment / mismatch AFT scale on the served
+# K2 law (`cbb_sim.models.clock_env`, a `clock_r8.KChanceArm` with cont_mode "K2" whose two first-chance laws
+# read the rating columns already in TEAM_COLS). DEFAULT-OFF: new keys only; not adopted.
+for _k in ("E1", "E2", "E3"):
+    V3C_MODES[f"v3c_r8K2_env{_k}_P3_s1"] = {
+        "manifest": f"r9_env_{_k}/F2/manifest.json", "base_arm": f"clock_env_{_k}", "parametrisation": "P3"}
+    V5_MODES[f"v5b_r8K2_env{_k}_glat_pmean"] = {
+        "base_mode": f"v3c_r8K2_env{_k}_P3_s1", "unit": "game", "param": "B1_sigma", "loc": "plus_half",
+        "params_file": f"r9_env_{_k}/v5b_bakeoff/v5b_bakeoff_report.json"}
+del _k
