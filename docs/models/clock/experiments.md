@@ -4790,3 +4790,61 @@ Parity v10 on a clean `src/`: PASS. The **full-size 5,710 x 200 paired read is Q
 - Measured local cost: about 2.6 h per 200-seed run.
 
 NOT ADOPTED. No served default changed. Freeze ON. The PM decides.
+
+## 45. Round 10 FULL-SIZE RESULTS: E1 is NOT A CANDIDATE by the literal section-43 rule at 5,710 x 200; full-size read complete, awaiting the PM adoption ruling (2026-10-14, Opus engine worker; registration section 43; closed loop section 44)
+
+Evidence: `docs/tests/clock_env_round10_full_2026-10-14.md`. Tables: `results/clock_env10/tables_full.md`. Grade files: `results/clock_env10/grade_full_s200_d200.json` (deciding) and `results/clock_env10/grade_full_s200_d50.json` (50-seed-draw read). The outputs are also on HF under `results/`.
+
+**Design.**
+- Fold 2, all 5,710 games x 200 paired seeds: served v3 control `o0` vs `ENGINE_CLOCK=v5b_r8K2_envE1_glat_pmean`.
+- Four served-v3 control draws at offsets 1000-4000, each at the full 200 seeds (PM ruling 2026-10-14).
+- Spot c7a.48xlarge, us-east-2b, engine SHA `060157f`.
+- Parity v10 PASS, bit-identical, on the box before any run.
+- The box reproduces the 500 x 25 grade to 2.7e-15.
+- Round-9 fit reused: 14 of 14 sha256 equal to section 44; no refit.
+
+**Grader.** `grade_clock_env_full_v2.py` is a parameterised sibling of v1, committed in `060157f` before any full-size arm output existed. Its grading logic is unchanged; the diff is in the evidence doc. The two reads:
+- Deciding read: every line at 200 vs 200; floor = max(2 x SD of the four 200-seed draws, 2 x paired game-bootstrap SE).
+- 50-seed-draw read: v1's definition, reported beside it.
+
+**Result (deciding read; the 50-seed-draw read in brackets).**
+
+| line | actual | control | E1 | floor | result |
+|---|---:|---:|---:|---:|---|
+| PRIMARY game possessions on env | 0.156 | 0.015 | 0.207 | 0.002 | PASS, 40.7 floors toward [21.5]; E1 overshoots the actual |
+| PRIMARY game total on env | 0.607 | 0.410 | 0.628 | 0.003 | PASS, 53.1 floors toward [24.9] |
+| G1 possession SD | 5.474 | 5.629 | 5.650 | 0.014 | **FAIL**, away 1.5 floors [FAIL, 1.4] |
+| half share H1 | 0.4671 | 0.4694 | 0.4696 | 0.0001 | **FAIL**, away 1.5 floors [pass] |
+| G9 margin slope | 1 | 0.957 | 0.949 | 0.0035 | **FAIL**, away 2.3 floors [pass] |
+| D1 eFG home-away gap | 0.0293 | 0.0292 | 0.0296 | 0.0002 | **FAIL**, away 1.2 floors [pass] |
+| DISP pace SD ratio, abs-spread Q2 | 1 | 1.029 | 1.054 | 0.013 | **FAIL**, away 2.0 floors [FAIL, 2.0] |
+| every other hard veto (G1 mean, H2 share, G5, G9 bias, elasticity, team pace slope, OREB/FGM/TOV/FTA slopes, OT/tie, D1 margin, margin SD overall and by abs-spread Q1-Q5, pace overall and Q1/Q3/Q4/Q5, regulation total SD, H1 direction, margin SD rise) | | | | | pass [pass] |
+
+**Literal section-43 verdict: NOT A CANDIDATE** in both reads. Section 43 says "E1 is a CANDIDATE if both primaries clear their floors and every hard veto passes." Both primaries clear, but five hard vetoes fail in the deciding read and two in the 50-seed read. G1 SD and pace Q2 fail in both reads.
+
+**PM rulings (2026-10-13 items 2-4) on top of the literal verdict.**
+- R2, first-half magnitude: PASS in both reads. Actual 0.080, control 0.008, E1 0.101; closer by 0.051 (floor 0.0007). The overshoot of 0.021 is less than the control's shortfall of 0.072.
+- R3, dispersion abs-spread Q3/Q5: PASS in both reads. Both are inside the literal 0.009 band; the 500 x 25 literal-band fails do not reproduce.
+- R4, env-quintile possession gap (1,077-1,100 games per cell): PASS at the boundary. Q4 and Q5 are further from 0 beyond floor (Q5 -0.27 -> -2.44); Q1 and Q2 improve (Q1 -3.30 -> -1.05). Two quintiles worse is not "more than two".
+
+**Multi-level evidence.**
+- Per game:
+  - Mean per-game |possessions sim - real| moves 7.20 -> 7.13, 1.8 floors toward the actual.
+  - Within-game possession SD rises, away from the actual; this is the G1 SD fail.
+- Env-quintile total gap spread: 4.45 -> 1.0 points.
+- Per team (364 teams):
+  - Right-sign share is 0.574.
+  - It is 0.84 and 0.74 in the low-offence quintiles and 0.45 and 0.38 in the high-offence quintiles.
+  - E1 turns the possessions-by-offence slope from -0.20 to +0.89; the real slope is +0.35.
+- Per possession type: no start-type mean moves beyond 0.01 s, except `other` (+0.28 s, away from the actual).
+- No cell is underpowered.
+
+**Discrepancy with section 44.**
+- 500 x 25 said CANDIDATE with no veto failing. Full size says NOT A CANDIDATE.
+- The full-size floors are 5-20 times narrower. The two robust fails, G1 SD and pace Q2, were inside the 500 x 25 floors; G1 SD even had the opposite sign on that sample.
+- The env-quintile possession overshoot was UNDERPOWERED at 500 x 25 and is resolved here at the high-env end.
+
+**Status.**
+- Full-size read complete; awaiting the PM adoption ruling.
+- No served default changed. Freeze ON. Nothing under `src/` changed.
+- Suite: 847 passed, 1 skipped. Parity v10: PASS, bit-identical.
