@@ -4989,3 +4989,65 @@ Planning cap about $15 for the round if each block yields one candidate and the 
 10. Compute: full reads on the box. Offline fits and screens run locally only when under about 2 h wall clock; anything longer also goes to the box (user authorisation 2026-10-14). The "bounded by construction" claims in block C are hypotheses; C-pre is their test and the section must say which arms it rejected.
 
 Status: DRAFT with rulings. Promote verbatim (plus rulings) into experiments.md in the commit before the first fit runs. Nothing in this file has run.
+
+## 47. Section 46 blocks A and B RESULTS: both REFUTED offline by the literal s46 4.1 rule; no screen, no full-size read; blocks A+B run, awaiting PM ruling (2026-10-14, Opus engine worker; registration section 46)
+
+Evidence: `docs/tests/endgame_clock_followup_AB_2026-10-14.md` (every table, commands, artifact sha256, disclosures).
+- The ONE blind grader, `scripts/grade_endgame_clock_v2.py`, was committed in `bf83e6e` before any s46 fit output existed.
+- Fits are in `8eddd85`: law module `cbb_sim.models.endgame_v2` (not imported by the engine, no flag) and trainer `train_endgame_clock_v2.py`.
+- Artifacts: `data/processed/models/late_game/endgame_clock_v2/` (gitignored; HF `model_artifacts`).
+- Local compute only; AWS not used ($0).
+- Parity v10: PASS, bit-identical. Suite: 856 passed, 1 skipped.
+
+**Shrink grid (ruling 7).** Chosen on fold 1 only, by `dev_pos`, taking the largest m within one floor of the best. Frozen before any F2 fit.
+- CA1: m = 100 (F1 dev_pos 6.46306 / 6.46318 / 6.46376 for m = 20 / 50 / 100, floor 0.0055).
+- CA2: m = 100 (6.68069 / 6.68039 / 6.68029, floor 0.0123).
+
+**Reseed floor.** The reseed term is 0 everywhere: CA0 vs CA0s1 0.0; FP1/FP2 seed 1 vs seed 0 0.0; CA1 6e-8 (float32 cache rounding). The binding floor is 2 x the paired game-block bootstrap SE.
+
+**Block A, F2 period 2 (74,164 rows, 5,110 games; 45 of 45 cells powered).** Each cell: value (delta vs control; floor). F1 = the fold-1 delta and floor.
+
+| line | role | CA0 | CA1 | CA2 | CA3 |
+|---|---|---:|---:|---:|---:|
+| dev_pos (142 zero-mass rows = 0.19% excluded) | PRIMARY | 6.5967 | 6.4488 (-0.1479; 0.0049) PASS; F1 -0.1471 (0.0053) | 6.6763 (+0.0796; 0.0110) FAIL | 6.7163 (+0.1196; 0.0202) FAIL |
+| cal (45 cells, s) | PRIMARY | 2.2936 | 0.4030 (-1.8907; 0.0374) PASS; F1 -1.8327 (0.0467) | 1.9686 (-0.3250; 0.0730) PASS | 2.1801 (-0.1135; 0.0364) PASS |
+| dev (all rows) | reported | 6.6899 | 6.5423 (-0.1476; 0.0049) | 6.6985 (+0.0086; 0.0166) | 6.7633 (+0.0734; 0.0225) |
+| slope_tempo | HARD gate | 0.3649 | 0.4025 (+0.0377; 0.0480) hold | 0.4339 hold | 0.3771 hold |
+| slope_zoff / slope_defz | gate (not below) | 0.688 / 0.786 | 2.095 / 3.037 hold | 2.937 / 4.387 hold | 1.090 / 1.543 hold |
+| slope_team_lead | gate | 0.5700 | 0.9238 hold | 0.7711 hold | 0.4609 (-0.1091; 0.0869) **FAIL** |
+| slope_team_trail | gate | 0.0248 | -0.1201 (-0.1449; 0.0842) **FAIL**; F1 0.107 -> -0.035 (0.072) | -0.1151 **FAIL** | -0.2568 **FAIL** |
+| slope_lead / slope_trail (target 1) | gate | 0.480 / 0.535 | 1.038 / 0.903 hold | 0.450 / 0.971 hold | 0.442 **FAIL** / 0.580 |
+
+(30,60] cells, actual / CA0 / CA1:
+- leader 13+: 17.08 / 9.02 / 16.96 s.
+- tied: 20.89 / 11.42 / 19.78 s.
+- leader 0-3: 17.71 / 11.32 / 16.76 s.
+- trailer 13+: 11.69 / 9.36 / 10.97 s.
+
+**Decision, block A (s46 4.1, literal): REFUTED, no winner.**
+- CA1 clears both primaries (30.2 and 50.6 floors). Its dual-deviance gain survives on positive-mass rows. It holds the tempo hard gate, and F1 keeps both signs.
+- CA1 FAILS the team-prior trailer slope gate, on both folds.
+- CA2 and CA3 fail `dev_pos` (worse than the control) and the trailer gate.
+
+**Block B, F2 period 2, trailing 1-3, start <= 30 s (1,521 rows, 989 shot rows; slopes UNDERPOWERED).** FP3 = FP2 offline (max abs diff 0.0).
+
+| line | role | actual | FP0 | FP1 | FP2 |
+|---|---|---:|---:|---:|---:|
+| mll | PRIMARY | | 1.4956 | 1.4949 (-0.0007; 0.0010) FAIL; F1 -0.0002 (0.0013) | same as FP1 FAIL |
+| make_dev | PRIMARY | | 1.1807 | 1.1807 (0; 0) FAIL | 1.1718 (-0.0089; 0.0117) FAIL; F1 -0.0095 (0.0113) |
+| 3PA / 2PA share | reported | 0.350 / 0.301 | 0.358 / 0.318 | 0.361 / 0.311 | 0.361 / 0.311 |
+| make rate | reported | 0.330 | 0.372 | 0.372 | 0.331 |
+| slope_team_3pa / slope_team_make | gate (UNDERPOWERED) | | 0.144 / 0.073 | hold | hold |
+
+**Decision, block B (s46 4.1, literal): REFUTED, no winner.** No arm clears either primary's floor. The reported-only changed-law reading also has no winner.
+
+Findings, reported and selecting nothing:
+- The offline class law is near-calibrated on these possessions. The finding-(3) mix gap was measured sim vs real in the loop, so it comes from the sim's state feed, not from the class law.
+- The served fg_make law over-predicts the trailing-1-3 make rate by about 4 pp on both folds (UNDERPOWERED).
+
+**NOT RUN:**
+- Closed-loop screens and the seed-count check: s46 4.2 screens offline winners only, and there are none.
+- The full-size box read and the ruling-1 control-draw reuse check: no box was launched, so there is no instance to terminate.
+- Blocks C and D: a later day (ruling 2).
+
+Nothing adopted. No served default changed. Freeze ON. Status: blocks A+B run, awaiting PM ruling.
