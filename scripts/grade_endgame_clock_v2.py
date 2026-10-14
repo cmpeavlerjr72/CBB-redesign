@@ -114,6 +114,11 @@ Full verdict (`full`, s46 4.3): CANDIDATE iff the same conditions hold at 5,710 
         --arm <tag> --loop-dir results/endgame_clock_v2/loop --disp-dir results/endgame_clock_v2/dispersion --out <json>
     .venv/Scripts/python.exe scripts/grade_endgame_clock_v2.py full --block A --control <tag> --draws <4 tags> \
         --arm <tag> --full-dir <dir> --disp-dir <dir> --out <json>
+    # s49 (added 2026-10-14 BEFORE any s49 fit; definitions in the SECTION 49 comment block above `main`):
+    .venv/Scripts/python.exe scripts/grade_endgame_clock_v2.py s49-select-m
+    .venv/Scripts/python.exe scripts/grade_endgame_clock_v2.py s49-offline
+    .venv/Scripts/python.exe scripts/grade_endgame_clock_v2.py loop --spec s49 --block A ...   (screen: proceed / stop)
+    .venv/Scripts/python.exe scripts/grade_endgame_clock_v2.py full --spec s49 --block A ...   (CANDIDATE / NOT A CANDIDATE)
 """
 from __future__ import annotations
 
@@ -1011,19 +1016,23 @@ def _finish(a, LN, val: dict, frames: dict, info: dict, lines_fn, mode: str) -> 
     out.with_name(out.stem + "_coded.json").write_text(json.dumps(res, indent=1, default=float), encoding="utf-8")
     res["arm"] = a.arm
     res["seed_check"] = seed_check_loop(a.block, val[a.control], act, draw_sd)
-    v = judge_loop(a.block, rows, act, val[a.control])
-    if mode == "loop":
-        v["screen"] = "proceed to full size" if v["passes"] else "stop"
+    if getattr(a, "spec", "s46") == "s49":
+        v = s49_judge(rows, act, val[a.control], mode)
+        res["spec"] = "docs/models/clock/experiments.md s49"
     else:
-        v["full_verdict"] = "CANDIDATE" if v["passes"] else "NOT A CANDIDATE"
+        v = judge_loop(a.block, rows, act, val[a.control])
+        if mode == "loop":
+            v["screen"] = "proceed to full size" if v["passes"] else "stop"
+        else:
+            v["full_verdict"] = "CANDIDATE" if v["passes"] else "NOT A CANDIDATE"
     res["verdict"] = v
     res["quintiles_env"] = [{"q": k, **{f"poss_gap_{x}": rows[f"envq{k}_poss_gap"][x] for x in ("ctrl", "arm", "floor")}}
                             for k in range(1, 6)]
     res["written_at"] = datetime.now(UTC).isoformat()
     out.write_text(json.dumps(res, indent=1, default=float), encoding="utf-8")
-    print(mode, a.arm, v.get("screen", v.get("full_verdict")), "| primary_moves", v["primary_moves"],
+    print(mode, a.arm, v.get("screen", v.get("full_verdict")), "| primary_moves", v.get("primary_moves"),
           "| vetoes failing", v["vetoes_failing"], "| md failing", v["md_failing"], flush=True)
-    for k, x in v["primary"].items():
+    for k, x in v.get("primary", v.get("full_primaries", v.get("proceed_lines", {}))).items():
         print(f"  {k}: act {x['target']:.4f} ctrl {x['ctrl']:.4f} arm {x['arm']:.4f} floor {x['floor']:.4f} "
               f"floors {x['floors']}", flush=True)
     print("seed check:", json.dumps(res["seed_check"]), flush=True)
@@ -1111,6 +1120,412 @@ def full(a) -> int:
     return _finish(a, LN, val, frames, info, lambda t, w: LN.lines(*frames[t], w), "full")
 
 
+# =====================================================================================================================
+# SECTION 49 extension (clock experiments.md s49, PRE-REGISTERED by PM Fable 5.1 2026-10-14 ~12:00 ET).
+# Added 2026-10-14 by the Opus engine worker and COMMITTED BEFORE ANY s49 FIT OUTPUT EXISTED (no file under
+# results/endgame_clock_v2/offline_s49 at commit time). Arms CA0 (served K2, control), CA0s1 (K2 seed-1 refit, noise
+# floor, never selectable), CA1 (ratio cell law, m re-chosen on fold 1), CA1E (within-cell env scale + CA1 ratio on
+# the de-scaled baseline). Inputs `results/endgame_clock_v2/offline_s49/<fold>/A/<arm>.npz` (same keys as s46 A).
+#
+# Primaries (unchanged s46 block A lines, F2 period 2): P1 = `dev_pos`, P2 = `cal` (powered cells; `cal45` reported).
+# ACTUAL-REFERENCED responsiveness lines (each has an actual value: the same statistic on the realised seconds y,
+# the model's on E[min(T, R)]; period-2 window rows; per-game sufficient statistics so the game-block bootstrap applies):
+#   tempo / zoff / defz   OLS slope of quintile mean seconds on quintile mean feature (s per unit), quintiles of the
+#                         offence tempo / z_off = off_c + def_c / defence def_c over all period-2 rows.
+#   team_trail / team_lead  the same over offence prior-strength quintiles (`off_rating_off_c`, quintiles over all
+#                         period-2 rows), trailer rows / leader rows (s per rating point; the diagnostic's line (a)).
+#   band_lead             leader bands 1-3/4-7/8-12/13+: OLS slope of band mean seconds on band mean margin (s/pt).
+#   band_trail            the same over the four trailer bands on band mean |margin|. s49's "trailer strength slope"
+#                         in the first list is read as THIS line (the s46 `slope_trail` band gate it replaces; the
+#                         team-prior trailer line is listed separately and the within-cell trailer-strength line is
+#                         in the within-cell group), so the seven s46 gates map one-to-one onto s49 lines.
+#   wc_zoff / wc_defz / wc_trail  within-cell Q5 - Q1 (the diagnostic's part (c)): total Q5 - Q1 of mean seconds
+#                         minus between = sum_c (share(Q5,c) - share(Q1,c)) x actual cell mean (pooled over the five
+#                         quintiles; the same weights for every source). Cells = 45 (margin bucket x time bucket).
+#                         z_off and defence-z over all period-2 rows; trailer strength over trailer rows.
+# Gate (every line; s49): |L_arm - L_act| - |L_ctrl - L_act| <= floor, floor = sqrt(paired^2 + SE(L_act)^2),
+#   paired = max(|L_CA0s1 - L_CA0| (reseed), 2 x SD of the paired bootstrap of L_arm - L_ctrl), SE(L_act) = SD of the
+#   bootstrap of L_act (200 game-block draws, numpy seed 12345, the same weights for every source).
+# G1 possession SD (registered line, loop translation): per test game, implied regulation possessions
+#   N_g - n_w + n_w x A_w / E_w (N_g regulation possessions of the game from possessions_v4, n_w its window rows of
+#   both halves, A_w their realised first-chance seconds, E_w the model's expected seconds), so only the window law
+#   moves it; translation T = sqrt(5.629^2 + var_arm - var_ctrl) (5.629 = the full-set control loop SD, 5.474 the
+#   full-set actual). Gate: |T_arm - 5.474| - |5.629 - 5.474| <= max(|T_CA0s1 - 5.629|, 2 x SD of the bootstrap T_arm).
+# REPORTED: per-cell trailer and leader strength slopes (row-level OLS of seconds on `off_rating_off_c` within the
+#   cell) and within-cell Q5 - Q1 (actual / control / each arm), the two early trailer-13+ cells and the nine (30,60]
+#   cells flagged `explicit`; cells < 3,000 rows UNDERPOWERED for slopes, < 200 rows UNDERPOWERED as cells; the s46
+#   lines (dev, dev_end, cal45, pergame_abs_err), start-type table, team right-sign share, fold 1 every line.
+# Decision (s49, literal): an arm WINS if on F2 it beats CA0 by more than one floor on P1 AND P2, F1 keeps the sign of
+#   both deltas, and no gate fails (the ten lines + G1 SD). If CA1 and CA1E both win, CA1E is preferred ONLY if it
+#   beats CA1 on P1 by more than the floor (max(P1 reseed diff, 2 x SD of the paired bootstrap CA1E - CA1)) AND is
+#   closer to actual than CA1 on at least two of wc_zoff / wc_defz / wc_trail beyond floor (the gate form with CA1 as
+#   the reference); otherwise CA1 (ties to the simpler model). No winner: "offline refuted".
+# m selection (`s49-select-m`, fold 1 only, the ruling-7 rule unchanged): per arm in {CA1, CA1E}, lowest F1 period-2
+#   dev_pos over m in {20, 50, 100}; among m within one F1 floor of the best, the largest m. Frozen to
+#   `results/endgame_clock_v2/grade/s49_m_selection.json` before any fold-2 fit.
+# Screen (`loop --spec s49`, 500 x 25, four control draws): "proceed" iff at least one of {MD5 13+ last-2-min
+#   points, tie rate, leader seconds at 2:00 13+ (`lsec_r2_13p`)} is closer to actual beyond floor, no s45 veto fails
+#   (the s46 list incl. R2/R4 no-regression) and MD1-MD6 do not regress (|arm - target| - |ctrl - target| <= floor;
+#   targets MD1 gap 0, MD2 q1-q5 1, MD3 actual tie rate, MD4/MD5 actual, MD6 ratio 1); else "stop". Seed check: if no
+#   proceed line moves beyond floor but one moves toward actual inside its floor, the verdict reads
+#   "stop (rerun at 50 seeds)" and the screen is re-run at 50 seeds.
+# Full (`full --spec s49`, 5,710 x 200): CANDIDATE iff MD5 and `lsec_r2_13p` are each closer to actual beyond floor
+#   and not past it (an arm on the far side of actual by more than the floor fails), MD4 (H2 36-40 possessions) and tie
+#   rate do not regress beyond floor, every s45 veto passes (hard) and MD1-MD6 do not regress; else NOT A CANDIDATE.
+# =====================================================================================================================
+S49_DIR = OUT / "offline_s49"
+S49_ARMS = ("CA0", "CA0s1", "CA1", "CA1E")
+S49_SLOPES = ("tempo", "zoff", "defz", "team_trail", "team_lead", "band_lead", "band_trail")
+S49_WC = ("wc_zoff", "wc_defz", "wc_trail")
+S49_LINES = S49_SLOPES + S49_WC
+G1_LOOP_ACT = 5.474
+P4_DIR = ROOT / "data/processed/possessions_v4"
+
+
+def load_pred_s49(fold: str, arm: str, t: pd.DataFrame) -> dict:
+    z = np.load(S49_DIR / fold / "A" / f"{arm}.npz", allow_pickle=False)
+    k = pd.DataFrame({"game_id": z["game_id"].astype(np.int64), "period": z["period"].astype(np.int64),
+                      "poss_index": z["poss_index"].astype(np.int64), "_r": np.arange(len(z["game_id"]))})
+    j = t[["game_id", "period", "poss_index"]].merge(k, on=["game_id", "period", "poss_index"], how="left",
+                                                     validate="1:1")
+    if j["_r"].isna().any() or len(k) != len(t):
+        raise SystemExit(f"s49 {fold}/{arm}: prediction rows do not cover the test rows exactly")
+    r = j["_r"].to_numpy(np.int64)
+    out = {kk: np.asarray(z[kk])[r] for kk in z.files if kk not in ("game_id", "period", "poss_index", "meta")}
+    out["meta"] = json.loads(str(z["meta"])) if "meta" in z.files else {}
+    return out
+
+
+class LinesS49:
+    """Actual-referenced s49 lines on one period's window rows. `lines(s, w, sa)`: s = `sums(v)` for any source's row
+    values v (the realised seconds y or a model's E[min(T, R)]), sa = `sums(y)` (the actual cell means)."""
+
+    def __init__(self, t: pd.DataFrame, period: int):
+        sel = t["period"].to_numpy() == period
+        self.sel = sel
+        tt = t[sel].reset_index(drop=True)
+        self.t = tt
+        _, self.gi = np.unique(tt["game_id"].to_numpy(), return_inverse=True)
+        self.G = int(self.gi.max()) + 1
+        one = np.ones(len(tt))
+        gs = EG.gsum
+        role = W.role(tt["m"].to_numpy())
+        rb, tb = tt["rb"].to_numpy(), tt["tb"].to_numpy()
+        self.cell = rb * W.N_TB + tb
+        am = np.abs(tt["m"].to_numpy()).astype(float)
+        st = tt["strength"].to_numpy(float)
+        sq = quintile(st)
+        qz, qd = quintile(tt["zoff"].to_numpy()), quintile(tt["defz"].to_numpy())
+        self.groups = {
+            "tempo": (quintile(tt["tempo"].to_numpy()), 5, tt["tempo"].to_numpy(float), 5),
+            "zoff": (qz, 5, tt["zoff"].to_numpy(float), 5),
+            "defz": (qd, 5, tt["defz"].to_numpy(float), 5),
+            "team_trail": (np.where(role < 0, sq, 5), 6, st, 5),
+            "team_lead": (np.where(role > 0, sq, 5), 6, st, 5),
+            "band_lead": (np.where(rb < 4, rb, 4), 5, am, 4),
+            "band_trail": (np.where((rb >= 4) & (rb < 8), rb - 4, 4), 5, am, 4)}
+        self.gn, self.gx = {}, {}
+        for nm, (key, K, x, _) in self.groups.items():
+            self.gn[nm] = gs(self.gi, key, one, self.G, K)
+            self.gx[nm] = gs(self.gi, key, x, self.G, K)
+        self.wc = {"wc_zoff": qz * 45 + self.cell, "wc_defz": qd * 45 + self.cell,
+                   "wc_trail": np.where(role < 0, sq * 45 + self.cell, 225)}
+        self.wn = {k: gs(self.gi, v, one, self.G, 226) for k, v in self.wc.items()}
+        self.st = st
+        self.cn = gs(self.gi, self.cell, one, self.G, 45)
+        self.cx = gs(self.gi, self.cell, st, self.G, 45)
+        self.cxx = gs(self.gi, self.cell, st * st, self.G, 45)
+        self.cq_key = sq * 45 + self.cell
+        self.cqn = gs(self.gi, self.cq_key, one, self.G, 225)
+
+    def sums(self, v_full: np.ndarray) -> dict:
+        v = np.asarray(v_full, float)[self.sel]
+        gs = EG.gsum
+        s = {nm: gs(self.gi, key, v, self.G, K) for nm, (key, K, _, _) in self.groups.items()}
+        for k, key in self.wc.items():
+            s[k] = gs(self.gi, key, v, self.G, 226)
+        s["cv"] = gs(self.gi, self.cell, v, self.G, 45)
+        s["cxv"] = gs(self.gi, self.cell, self.st * v, self.G, 45)
+        s["cqv"] = gs(self.gi, self.cq_key, v, self.G, 225)
+        return s
+
+    def lines(self, s: dict, w: np.ndarray, sa: dict) -> dict:
+        out = {}
+        for nm, (_, _, _, k) in self.groups.items():
+            n = w @ self.gn[nm]
+            with np.errstate(invalid="ignore", divide="ignore"):
+                out[nm] = EG.ols_slope(((w @ self.gx[nm]) / n)[:k], ((w @ s[nm]) / n)[:k])
+        for k in self.wc:
+            n = (w @ self.wn[k])[:225].reshape(5, 45)
+            ca = (w @ sa[k])[:225].reshape(5, 45).sum(0) / np.maximum(n.sum(0), 1e-12)
+            sh = n / np.maximum(n.sum(1, keepdims=True), 1e-12)
+            m = (w @ s[k])[:225].reshape(5, 45)
+            qm = m.sum(1) / np.maximum(n.sum(1), 1e-12)
+            out[k] = float((qm[4] - qm[0]) - ((sh[4] - sh[0]) * ca).sum())
+        return {k: float(v) for k, v in out.items()}
+
+    def cell_lines(self, s: dict) -> dict:
+        """Per-cell strength slope (row OLS of seconds on strength) and within-cell strength Q5 - Q1, (45,) each."""
+        n, x, xx = self.cn.sum(0), self.cx.sum(0), self.cxx.sum(0)
+        v, xv = s["cv"].sum(0), s["cxv"].sum(0)
+        with np.errstate(invalid="ignore", divide="ignore"):
+            slope = (xv - x * v / n) / (xx - x * x / n)
+            qn = self.cqn.sum(0).reshape(5, 45)
+            qv = s["cqv"].sum(0).reshape(5, 45) / qn
+        return {"slope": slope, "q5_q1": qv[4] - qv[0], "n": n, "n_q1": qn[0], "n_q5": qn[4]}
+
+
+def g1_frame(fold: str, t: pd.DataFrame) -> tuple:
+    """(game index per window row over both halves, N_g regulation possessions, n_w, A_w) for the G1 SD line."""
+    season = int(W.split(W.clock_window(), fold)[1]["season"].iloc[0])
+    p4 = pd.read_parquet(P4_DIR / f"possessions_{season}.parquet", columns=["game_id", "period"])
+    N = p4[p4["period"] <= 2].groupby("game_id").size()
+    g, gi = np.unique(t["game_id"].to_numpy(), return_inverse=True)
+    Ng = N.reindex(g).to_numpy(float)
+    if np.isnan(Ng).any():
+        raise SystemExit(f"G1 frame {fold}: {int(np.isnan(Ng).sum())} games without a possessions_v4 count")
+    nw = np.bincount(gi, minlength=len(g)).astype(float)
+    Aw = np.bincount(gi, weights=t["y"].to_numpy(float), minlength=len(g))
+    return gi, Ng, nw, Aw
+
+
+def g1_var(gi, Ng, nw, Aw, e: np.ndarray, w: np.ndarray) -> float:
+    Ew = np.bincount(gi, weights=e, minlength=len(Ng))
+    x = Ng - nw + nw * Aw / Ew
+    mu = np.average(x, weights=w)
+    return float(np.average((x - mu) ** 2, weights=w))
+
+
+def s49_gate(La, Lc, Lact, Ls1, Ba, Bc, Bact) -> dict:
+    """The s49 actual-referenced gate for one line (module comment)."""
+    paired = max(abs(Ls1 - Lc), 2 * float(np.nanstd(np.asarray(Ba) - np.asarray(Bc), ddof=1)))
+    se_act = float(np.nanstd(np.asarray(Bact), ddof=1))
+    floor = float(np.sqrt(paired ** 2 + se_act ** 2))
+    excess = abs(La - Lact) - abs(Lc - Lact)
+    return {"actual": Lact, "ctrl": Lc, "arm": La, "arm_minus_act": La - Lact, "ctrl_minus_act": Lc - Lact,
+            "excess": excess, "paired_floor": paired, "se_actual": se_act, "floor": floor,
+            "pass": bool(excess <= floor)}
+
+
+def s49_fold(fold: str, arms: list[str], periods=(2, 1)) -> dict:
+    t = truth_A(fold)
+    rows = {a: rows_A(t, load_pred_s49(fold, a, t)) for a in arms}
+    pos = rows["CA0"]["raw"] > EPS
+    gi1, Ng, nw, Aw = g1_frame(fold, t)
+    wg = EG.boot_weights(len(Ng))
+    v1 = {a: g1_var(gi1, Ng, nw, Aw, rows[a]["e"], np.ones(len(Ng))) for a in arms}
+    vb = {a: np.array([g1_var(gi1, Ng, nw, Aw, rows[a]["e"], wg[b]) for b in range(N_BOOT)]) for a in arms}
+    g1 = {"act_offline_sd": float(np.std(Ng)), "ctrl_offline_sd": float(np.sqrt(v1["CA0"])), "n_games": int(len(Ng))}
+    for a in arms:
+        if a == "CA0":
+            continue
+        T = float(np.sqrt(G1_LOOP_CTRL ** 2 + v1[a] - v1["CA0"]))
+        Tb = np.sqrt(np.maximum(G1_LOOP_CTRL ** 2 + vb[a] - vb["CA0"], 0.0))
+        Ts1 = float(np.sqrt(G1_LOOP_CTRL ** 2 + v1["CA0s1"] - v1["CA0"])) if "CA0s1" in v1 else G1_LOOP_CTRL
+        fl = max(abs(Ts1 - G1_LOOP_CTRL), 2 * float(np.std(Tb, ddof=1)))
+        ex = abs(T - G1_LOOP_ACT) - abs(G1_LOOP_CTRL - G1_LOOP_ACT)
+        g1[a] = {"offline_sd": float(np.sqrt(v1[a])), "loop_translation": T, "ctrl_loop": G1_LOOP_CTRL,
+                 "act_loop": G1_LOOP_ACT, "excess": ex, "floor": fl, "pass": bool(ex <= fl)}
+    res = {"n_rows": int(len(t)), "g1_sd": g1, "periods": {}}
+    for per in periods:
+        LA = LinesA(t, per, pos)
+        wb = EG.boot_weights(LA.G)
+        one = np.ones(LA.G)
+        sums = {a: LA.sums(r) for a, r in rows.items()}
+        val = {a: LA.lines(s, one) for a, s in sums.items()}
+        boot = {a: [LA.lines(s, wb[b]) for b in range(N_BOOT)] for a, s in sums.items()}
+        comp = compare(val, boot, "CA0", "CA0s1", arms)
+        L = LinesS49(t, per)
+        if L.G != LA.G:
+            raise SystemExit("game index mismatch")
+        sa = L.sums(t["y"].to_numpy(float))
+        ss = {a: L.sums(r["e"]) for a, r in rows.items()}
+        lv = {"act": L.lines(sa, one, sa), **{a: L.lines(s, one, sa) for a, s in ss.items()}}
+        lb = {"act": [L.lines(sa, wb[b], sa) for b in range(N_BOOT)],
+              **{a: [L.lines(s, wb[b], sa) for b in range(N_BOOT)] for a, s in ss.items()}}
+        gates = {}
+        for a in arms:
+            if a == "CA0":
+                continue
+            gates[a] = {k: s49_gate(lv[a][k], lv["CA0"][k], lv["act"][k], lv["CA0s1"][k], [x[k] for x in lb[a]],
+                                    [x[k] for x in lb["CA0"]], [x[k] for x in lb["act"]]) for k in S49_LINES}
+        cl = {"act": L.cell_lines(sa), **{a: L.cell_lines(s) for a, s in ss.items()}}
+        cells = []
+        for c in range(45):
+            n = int(cl["act"]["n"][c])
+            if n == 0:
+                continue
+            rb, tb = divmod(c, W.N_TB)
+            r = {"cell": f"{W.ROLEBAND_LABELS[rb]} | {W.BUCKET_LABELS[tb]}", "n": n,
+                 "n_q1": int(cl["act"]["n_q1"][c]), "n_q5": int(cl["act"]["n_q5"][c]),
+                 "slope_power": "ok" if n >= MIN_SLOPE else "UNDERPOWERED",
+                 "cell_power": "ok" if n >= MIN_CELL else "UNDERPOWERED",
+                 "explicit": bool((rb == 7 and tb in (0, 1)) or tb == 3)}
+            for s in cl:
+                r[f"slope_{s}"] = float(cl[s]["slope"][c])
+                r[f"q5_q1_{s}"] = float(cl[s]["q5_q1"][c])
+            cells.append(r)
+        res["periods"][str(per)] = {
+            "n_rows": int(LA.sel.sum()), "n_games": int(LA.G), "excluded_zero_mass_rows": int((~LA.pos).sum()),
+            "compare": comp, "s49_lines": lv, "s49_gates": gates, "cells_s49": cells,
+            "cells": cell_table_A(t, rows, per), "start_types": start_table_A(t, rows, per),
+            "team_sign": team_sign_A(t, rows, "CA0", per)}
+        if per == 2 and "CA1" in arms and "CA1E" in arms:
+            d = np.array([x["dev_pos"] for x in boot["CA1E"]]) - np.array([x["dev_pos"] for x in boot["CA1"]])
+            rs = abs(val["CA0s1"]["dev_pos"] - val["CA0"]["dev_pos"]) if "CA0s1" in val else 0.0
+            wc = {k: s49_gate(lv["CA1E"][k], lv["CA1"][k], lv["act"][k], lv["CA0s1"][k], [x[k] for x in lb["CA1E"]],
+                              [x[k] for x in lb["CA1"]], [x[k] for x in lb["act"]]) for k in S49_WC}
+            res["periods"][str(per)]["ca1e_vs_ca1"] = {
+                "dev_pos_delta": val["CA1E"]["dev_pos"] - val["CA1"]["dev_pos"],
+                "dev_pos_floor": float(max(rs, 2 * float(np.std(d, ddof=1)))),
+                "wc_closer_beyond_floor": {k: bool(-x["excess"] > x["floor"]) for k, x in wc.items()}, "wc": wc}
+    return res
+
+
+def s49_decide(F: dict, arms: list[str]) -> dict:
+    p2 = F["F2"]["periods"]["2"]
+    p1 = F["F1"]["periods"]["2"] if "F1" in F else None
+    out = {"per_arm": {}}
+    winners = []
+    for a in arms:
+        if a in ("CA0", "CA0s1"):
+            continue
+        d = p2["compare"][a]
+        beats = {p: bool(d[p]["delta"] < -d[p]["floor"]) for p in ("dev_pos", "cal")}
+        f1 = {p: (bool(np.sign(p1["compare"][a][p]["delta"]) == np.sign(d[p]["delta"])) if p1 else None)
+              for p in ("dev_pos", "cal")}
+        gates = {k: p2["s49_gates"][a][k]["pass"] for k in S49_LINES}
+        gates["g1_sd"] = F["F2"]["g1_sd"][a]["pass"]
+        win = all(beats.values()) and all(v is not False for v in f1.values()) and all(gates.values())
+        out["per_arm"][a] = {"beats_ctrl_by_floor": beats, "f1_keeps_sign": f1, "gates_pass": gates,
+                             "gates_failing": [k for k, v in gates.items() if not v],
+                             "primary_floors": {p: -d[p]["delta"] / d[p]["floor"] if d[p]["floor"] else None
+                                                for p in ("dev_pos", "cal")}, "wins": bool(win)}
+        if win:
+            winners.append(a)
+    sel = None
+    if len(winners) == 1:
+        sel = winners[0]
+    elif set(winners) == {"CA1", "CA1E"}:
+        c = p2["ca1e_vs_ca1"]
+        pref = (c["dev_pos_delta"] < -c["dev_pos_floor"]) and sum(c["wc_closer_beyond_floor"].values()) >= 2
+        sel = "CA1E" if pref else "CA1"
+        out["ca1e_preference"] = {**c, "ca1e_preferred": bool(pref)}
+    out.update({"winners": winners, "selected": sel, "verdict": f"offline winner {sel}" if sel else "offline refuted",
+                "rule": "s49: beats CA0 by > 1 floor on dev_pos AND cal (F2 period 2), F1 keeps both signs, no "
+                        "actual-referenced gate fails (ten lines + G1 SD loop translation); both win -> CA1E only if "
+                        "it beats CA1 on P1 beyond floor AND is closer to actual on >= 2 within-cell lines beyond "
+                        "floor, else CA1"})
+    return out
+
+
+def s49_offline(arms: list[str] | None) -> int:
+    arms = arms or [a for a in S49_ARMS if (S49_DIR / "F2" / "A" / f"{a}.npz").exists()]
+    if "CA0" not in arms or "CA0s1" not in arms:
+        raise SystemExit("s49: CA0 and CA0s1 prediction files are required")
+    codes = code_arms("A", arms)
+    F = {}
+    for fold in ("F2", "F1"):
+        have = [a for a in arms if (S49_DIR / fold / "A" / f"{a}.npz").exists()]
+        F[fold] = s49_fold(fold, have)
+        print(f"s49 graded {fold}", flush=True)
+    GRADE_DIR.mkdir(parents=True, exist_ok=True)
+    (GRADE_DIR / "s49_offline_coded.json").write_text(json.dumps(recode(F, codes), indent=1, default=float),
+                                                      encoding="utf-8")
+    key = {c: a for a, c in codes.items()}
+    (GRADE_DIR / "s49_offline_key.json").write_text(json.dumps(key, indent=1), encoding="utf-8")
+    dec = s49_decide(F, arms)
+    rep = {"spec": "docs/models/clock/experiments.md s49", "arms": arms, "key": key, "folds": F, "decision": dec,
+           "written_at": datetime.now(UTC).isoformat()}
+    (GRADE_DIR / "s49_offline.json").write_text(json.dumps(rep, indent=1, default=float), encoding="utf-8")
+    print(json.dumps(dec, indent=1, default=float))
+    return 0
+
+
+def s49_select_m() -> int:
+    out = {"rule": "s49 (ruling-7 rule unchanged): lowest F1 period-2 dev_pos; among m within one F1 floor of the "
+                   "best, the largest m", "arms": {}}
+    t = truth_A("F1")
+    base = {n: rows_A(t, load_pred_s49("F1", n, t)) for n in ("CA0", "CA0s1")}
+    for arm in ("CA1", "CA1E"):
+        names = [f"{arm}_m{m}" for m in M_GRID]
+        have = [n for n in names if (S49_DIR / "F1" / "A" / f"{n}.npz").exists()]
+        if len(have) != len(M_GRID):
+            raise SystemExit(f"{arm}: fold-1 grid incomplete ({have})")
+        rows = {**base, **{n: rows_A(t, load_pred_s49("F1", n, t)) for n in have}}
+        L = LinesA(t, 2, rows["CA0"]["raw"] > EPS)
+        wb = EG.boot_weights(L.G)
+        sums = {n: L.sums(r) for n, r in rows.items()}
+        val = {n: L.lines(s, np.ones(L.G)) for n, s in sums.items()}
+        boot = {n: [L.lines(s, wb[b]) for b in range(N_BOOT)] for n, s in sums.items()}
+        c = compare(val, boot, "CA0", "CA0s1", list(rows))
+        best = min(have, key=lambda n: c[n]["dev_pos"]["arm"])
+        ok = [n for n in have if c[n]["dev_pos"]["arm"] - c[best]["dev_pos"]["arm"] <= c[best]["dev_pos"]["floor"]]
+        chosen = max(ok, key=lambda n: int(n.split("_m")[1]))
+        out["arms"][arm] = {"m": int(chosen.split("_m")[1]), "best_by_dev_pos": best, "within_floor": ok,
+                            "f1_dev_pos": {n: c[n]["dev_pos"] for n in have}}
+        print(arm, "->", out["arms"][arm]["m"], {n: round(c[n]["dev_pos"]["arm"], 5) for n in have}, flush=True)
+    out["written_at"] = datetime.now(UTC).isoformat()
+    p = GRADE_DIR / "s49_m_selection.json"
+    if p.exists() and os.environ.get("EGC_OVERWRITE") != "1":
+        raise SystemExit(f"{p} exists (frozen)")
+    GRADE_DIR.mkdir(parents=True, exist_ok=True)
+    p.write_text(json.dumps(out, indent=1, default=float), encoding="utf-8")
+    return 0
+
+
+S49_PROCEED = (("MD5_pts13_last2", "act_MD5_pts13_last2"), ("tie_rate", "act_tie_rate"),
+               ("lsec_r2_13p", "act_lsec_r2_13p"))
+
+
+def s49_md_noreg(rows: dict, act: dict) -> dict:
+    import grade_clock_env_loop_v1 as GL
+    tg = {"MD1_gap": 0.0, **{f"MD2_q{i}": 1.0 for i in range(1, 6)}, "tie_rate": act["act_tie_rate"],
+          "MD4_h2_last4_poss": act["act_MD4_h2_last4_poss"], "MD5_pts13_last2": act["act_MD5_pts13_last2"],
+          "MD6_margin_sd_ratio": 1.0}
+    out = {}
+    for k, tv in tg.items():
+        x = GL.toward(rows[k], tv)
+        out[k] = {**x, "pass": not x["away_by_floor"]}
+    return out
+
+
+def s49_judge(rows: dict, act: dict, ctrl_lines: dict, mode: str) -> dict:
+    import grade_clock_env_loop_v1 as GL
+    base = judge_loop("A", rows, act, ctrl_lines)
+    vet = base["vetoes"]
+    md = s49_md_noreg(rows, act)
+    v = {"spec": "s49", "vetoes": vet, "vetoes_failing": [k for k, x in vet.items() if not x["pass"]],
+         "md_noreg": md, "md_failing": [k for k, x in md.items() if not x["pass"]], "reported": base["reported"],
+         "s46_md_block_reported": base["md"]}
+    pl = {k: GL.toward(rows[k], act[t]) for k, t in S49_PROCEED}
+    v["proceed_lines"] = pl
+    clean = not v["vetoes_failing"] and not v["md_failing"]
+    if mode == "loop":
+        moves = any(x["toward_by_floor"] for x in pl.values())
+        inside = any((0 < x["improve"] <= x["floor"]) for x in pl.values())
+        v["seed_check_s49"] = {"rerun_at_50": bool((not moves) and inside)}
+        v["screen"] = ("proceed" if (moves and clean) else
+                       ("stop (rerun at 50 seeds)" if v["seed_check_s49"]["rerun_at_50"] and clean else "stop"))
+        v["passes"] = v["screen"] == "proceed"
+        return v
+    prim = {}
+    for k, t in (("MD5_pts13_last2", "act_MD5_pts13_last2"), ("lsec_r2_13p", "act_lsec_r2_13p")):
+        x = GL.toward(rows[k], act[t])
+        past = bool(np.sign(x["arm"] - x["target"]) != np.sign(x["ctrl"] - x["target"])
+                    and abs(x["arm"] - x["target"]) > x["floor"])
+        prim[k] = {**x, "past_actual_beyond_floor": past, "pass": bool(x["toward_by_floor"] and not past)}
+    nr = {}
+    for k, t in (("MD4_h2_last4_poss", "act_MD4_h2_last4_poss"), ("tie_rate", "act_tie_rate")):
+        x = GL.toward(rows[k], act[t])
+        nr[k] = {**x, "pass": not x["away_by_floor"]}
+    v.update({"full_primaries": prim, "must_not_regress": nr})
+    ok = all(x["pass"] for x in prim.values()) and all(x["pass"] for x in nr.values()) and clean
+    v["full_verdict"] = "CANDIDATE" if ok else "NOT A CANDIDATE"
+    v["passes"] = bool(ok)
+    return v
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     sub = ap.add_subparsers(dest="mode", required=True)
@@ -1118,6 +1533,9 @@ def main() -> int:
     o.add_argument("--block", choices=["A", "B", "C"], required=True)
     o.add_argument("--arms", nargs="*", default=None)
     sub.add_parser("select-m")
+    s9 = sub.add_parser("s49-offline")
+    s9.add_argument("--arms", nargs="*", default=None)
+    sub.add_parser("s49-select-m")
     for nm in ("loop", "full"):
         p = sub.add_parser(nm)
         p.add_argument("--block", choices=["A", "B"], required=True)
@@ -1127,6 +1545,7 @@ def main() -> int:
         p.add_argument("--seeds", type=int, default=25 if nm == "loop" else 200)
         p.add_argument("--disp-dir", required=True)
         p.add_argument("--out", required=True)
+        p.add_argument("--spec", choices=["s46", "s49"], default="s46")
         if nm == "loop":
             p.add_argument("--loop-dir", default="results/endgame_clock_v2/loop")
         else:
@@ -1136,6 +1555,10 @@ def main() -> int:
         return offline_C(a.arms) if a.block == "C" else offline(a.block, a.arms)
     if a.mode == "select-m":
         return select_m()
+    if a.mode == "s49-offline":
+        return s49_offline(a.arms)
+    if a.mode == "s49-select-m":
+        return s49_select_m()
     if os.environ["CBB_TRUTH"] != "verified_v1":
         raise SystemExit("set CBB_TRUTH=verified_v1")
     return loop(a) if a.mode == "loop" else full(a)
