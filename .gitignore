@@ -152,6 +152,9 @@ data/processed/models/possession_outcome/tovlevel/
 # clock round 9 env arms (K2 law family, ~49 MB per fold; scripts/train_clock_env_v1.py); HF: `model_artifacts` key
 data/processed/models/clock/r9_env_*/F1*/
 data/processed/models/clock/r9_env_*/F2*/
+# clock s46 block C env arms (K2 law family, ~49 MB per schedule; scripts/train_clock_env_v2.py); HF: `model_artifacts` key
+data/processed/models/clock/s46C_*/F1*/
+data/processed/models/clock/s46C_*/F2*/
 
 # Data triage 2026-10-14 (docs/ops/data_triage_2026-10-14.md). Model-artifact families over the 20 MB rule or derivable scratch.
 # Tracked files under these paths stay tracked; only new files are ignored. HF: `model_artifacts` key, pushed by scripts/ops_hf_push_paths_v1.py.
