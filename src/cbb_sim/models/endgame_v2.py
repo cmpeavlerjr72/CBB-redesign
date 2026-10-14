@@ -387,3 +387,53 @@ def fit_env_within(y, X, fe_key) -> tuple[np.ndarray, dict]:
 def descale(y, k) -> np.ndarray:
     """Durations (or censoring times) divided by k on the integer grid (rounded, clipped to 0..90)."""
     return np.clip(np.rint(np.asarray(y, dtype=np.float64) / np.asarray(k, dtype=np.float64)), 0, N_GRID - 1).astype(np.int64)
+
+
+# ---------------------------------------------------------------------------------------------------------------
+# CA1R (clock experiments.md s51, NOT ADOPTED, default off, not wired): role-split within-cell env scale
+# log k = c_role,off z_off + c_role,def z_def, role in {leader, trailer, tied} by the offence's margin, then the CA1
+# ratio on the de-scaled baseline. Six coefficients; both terms entered for every role, no inclusion screen.
+# ---------------------------------------------------------------------------------------------------------------
+ROLE_ORDER = (("lead", 1), ("trail", -1), ("tied", 0))
+CA1R_COLS = [f"{x}_{r}" for r, _ in ROLE_ORDER for x in ("zoff", "defz")]
+
+
+def env_design_role(df, m) -> np.ndarray:
+    """(n, 6) design [zoff_lead, defz_lead, zoff_trail, defz_trail, zoff_tied, defz_tied]; NaN ratings -> 0."""
+    base = env_design(df, ["zoff", "defz"])
+    r = np.sign(np.asarray(m)).astype(np.int64)
+    out = np.zeros((len(base), 6))
+    for j, (_, rv) in enumerate(ROLE_ORDER):
+        on = (r == rv)[:, None]
+        out[:, 2 * j:2 * j + 2] = np.where(on, base, 0.0)
+    return out
+
+
+@dataclass
+class CA1RLaw:
+    ca1: CA1Law
+    coef: np.ndarray        # (6,) in CA1R_COLS order
+    info: dict
+
+    def log_k(self, df, m) -> np.ndarray:
+        return env_design_role(df, m) @ self.coef
+
+    def apply(self, p0, period, sec, m, df=None, end1=None) -> np.ndarray:
+        return scale_pmf(self.ca1.apply(p0, period, sec, m), np.exp(self.log_k(df, m)))
+
+    def apply_end(self, p0, period, sec, m, df=None, end1=None) -> np.ndarray:
+        return scale_pmf(self.ca1.apply_end(p0, period, sec, m), np.exp(self.log_k(df, m)))
+
+    def save(self, d: Path) -> None:
+        d.mkdir(parents=True, exist_ok=True)
+        self.ca1.save(d / "ca1r_ratio.npz")
+        (d / "ca1r_env.json").write_text(json.dumps({"cols": CA1R_COLS, "coef": np.asarray(self.coef).tolist(),
+                                                      "info": self.info}, indent=1), encoding="utf-8")
+
+    @classmethod
+    def load(cls, d: Path) -> CA1RLaw:
+        e = json.loads((Path(d) / "ca1r_env.json").read_text(encoding="utf-8"))
+        if e["cols"] != CA1R_COLS:
+            raise ValueError("ca1r_env.json column order mismatch")
+        return cls(ca1=CA1Law.load(Path(d) / "ca1r_ratio.npz"), coef=np.asarray(e["coef"], dtype=np.float64),
+                   info=e.get("info", {}))
