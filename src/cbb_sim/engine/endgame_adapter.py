@@ -6,6 +6,9 @@ Otherwise a `+`-joined list of at most one clock arm and one event arm:
     GT1   block C cell law (role-band x time bucket KM, m = 50 hierarchy to the served law)
     GT2   block C smooth margin response (AFT scale on the served law, 2 parameters per half)
     EV1   block E class-probability ratio law on window FIRST chances (shrunk to the served law, m = 50)
+    CA1   clock s46 block A RATIO cell law on the served K2 window law (`endgame_v2.CA1Law`, m = 100 chosen on
+          fold 1). Added 2026-10-14 for the LABELLED DIAGNOSTIC loop on CA1 (PM ruling 10-14; block A was
+          REFUTED offline, s47): never a selection read, never adopted, default off.
 
 Block F is `ENGINE_LATE_FOUL=eg_LF1|eg_LF2` (`late_foul.py`), the section-29 count law refitted by this round.
 
@@ -32,7 +35,8 @@ from cbb_sim.models import clock as CK
 from cbb_sim.models import endgame as EG
 
 ART = Path("data/processed/models/late_game/endgame_v1")
-CLOCK_ARMS = ("GT1", "GT2")
+CLOCK_ARMS = ("GT1", "GT2", "CA1")
+ART_V2 = Path("data/processed/models/late_game/endgame_clock_v2")
 EVENT_ARMS = ("EV1",)
 PERIODS = (2,)
 
@@ -50,6 +54,10 @@ def parse_mode(mode: str) -> tuple[str | None, str | None]:
 
 def load_law(name: str, fold: str):
     d = ART / fold
+    if name == "CA1":
+        from cbb_sim.models import endgame_v2 as E2
+        q = ART_V2 / fold / "ca1_law.npz"
+        return E2.CA1Law.load(q), str(q)
     if name == "GT1":
         return EG.GT1Law.load(d / "gt1_law.npz"), str(d / "gt1_law.npz")
     if name == "GT2":
