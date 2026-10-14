@@ -5166,3 +5166,30 @@ The round-10 R4 rule allowed two quintiles further from 0 and was a closed-loop 
 - Suite: 862 passed, 1 skipped (856 + 3 CA1-wiring tests + 3 clock_env_v2 tests).
 
 Nothing adopted. No served default changed. Freeze ON. Status: block C offline + C-pre run, awaiting PM ruling.
+
+## 49. PRE-REGISTERED (PM Fable 5.1, 2026-10-14 ~12:00 ET, BEFORE any fit): cell term on the served K2 window law, round 2 -- `CA1` re-entered DISCLOSED + `CA1E` (baseline cell term with a within-cell env response), graded under actual-referenced responsiveness gates. NOT RUN at registration.
+
+Why (evidence only): s47 refuted `CA1` on a control-referenced trailer-slope gate; the diagnostic `docs/tests/ca1_trailer_slope_diag_2026-10-14.md` shows the actual trailer slope is negative, the control and `CA1` are equidistant from it inside the floor, the flip was composition from two over-predicted trailer-13+ cells, and the served window law has no within-cell env response (the control's apparent z_off / defence-z responses were cell miscalibration times composition). PM ruling: the "not below control" gate form is retired.
+
+Disclosure: `CA1` has been seen offline (s47) and in a labelled 500 x 25 diagnostic loop (diagnostic doc, part d). Those readings are NOT selection evidence; `CA1` is graded afresh here under the new gates. `CA1E` has not been fitted anywhere.
+
+| arm | definition | flag | fit |
+|---|---|---|---|
+| `CA0` | served K2 window law `v5b_r8K2_glat_pmean` | none | none |
+| `CA0s1` | spec-identical refit of the served law under seed 1 | default off | noise floor |
+| `CA1` | per-cell duration-bin ratio on the served row law, 45 cells (margin bucket x time bucket as s46), hierarchical shrink, m from {20,50,100} chosen on fold 1 only (frozen m = 100 from s47 is NOT reused; re-choose blind) | `ENGINE_CLOCK=..._CA1` default off | s47 trainer `train_endgame_clock_v2.py`, walk-forward |
+| `CA1E` | step 1: within-cell env scale c * z_off (and a defence-z term if fold 1 supports it) by the round-8 M2 estimator with fixed effects = 45 window cells x K2 conditional cell, so c comes only from within-cell variation; step 2: the `CA1` ratio fitted on durations divided by that scale, so the cell term carries only the baseline; served as corrected baseline x the row's env factor | `ENGINE_CLOCK=..._CA1E` default off | new trainer version, walk-forward; no coefficient is shrunk or capped by hand |
+
+Folds: fold 1 trains through 2022-23 tests 2023-24 (confirm); fold 2 trains through 2023-24 tests 2024-25 (selects). 2025-26 sealed. Every row `created_at < tipoff` asserted. Grader: `scripts/grade_endgame_clock_v2.py` extended with the actual-referenced lines below (extension committed BEFORE any fit; blind; one script scores every arm).
+
+Primaries (fold 2, period 2, late-game window; same as s46 block A): (P1) first-chance duration deviance on control-positive-mass rows (all-rows deviance reported); (P2) cell calibration (mean |cell mean sim - actual| in s over the 45 cells, every cell's count shown, underpowered cells labelled).
+
+Responsiveness gates, ALL actual-referenced: for each line L in {tempo slope; team-prior trailer slope; team-prior leader slope; z_off slope; defence-z slope; leader band slope; trailer strength slope; within-cell Q5-Q1 for z_off, defence-z, trailer strength}, the arm's |L_arm - L_actual| must not exceed |L_control - L_actual| by more than the floor, where floor = sqrt(paired_floor^2 + SE(L_actual)^2). Reported: per-cell trailer and leader slopes (actual / control / arm), the two trailer-13+ early cells explicitly, the (30,60] cells explicitly. G1 possession SD: registered line (loop translation), not worse than control beyond floor.
+
+Noise floor: `CA0s1` vs `CA0` on every line, lower-bounded by 2 x paired game-block bootstrap SE. Decision rule, offline: an arm WINS if it beats the floor on P1 AND P2 on fold 2, fold 1 confirms both signs, and no gate fails. If both `CA1` and `CA1E` win, `CA1E` is preferred only if it beats `CA1` on P1 by more than the floor AND is closer to actual on at least two within-cell env lines beyond floor; otherwise the simpler `CA1` is the winner (ties to the simpler model).
+
+Closed loop: 500 verified fold-2 games x 25 paired seeds, four control draws, local, is a SCREEN only ("proceed" / "stop"; seed-count check, raise to 50 if a deciding line sits inside its floor). Lines at the screen: H2 36-40 possessions, 13+ last-2-min points, tie rate, leader possession seconds at 4:00 and 2:00, G1 SD, possessions-on-env, every s45 veto, MD1-MD6 as no-regression vetoes. "Proceed" needs at least one of {13+ last-2-min points, tie rate, leader seconds at 2:00} closer to actual beyond floor and no veto fail.
+
+CANDIDATE is declared ONLY on the full-size read: 5,710 fold-2 games x 200 paired seeds on the AWS spot box, four 200-seed control draws (round-10 draws at offsets 1000-4000 reused ONLY after an engine sha + parity v10 check on the box and an inputs-hash match; else fresh, logged). Full-size lines = the screen lines read at 200 vs 200 plus every s45 veto as a hard veto; the primaries at full size are 13+ last-2-min points and leader seconds at 2:00 (closer to actual beyond floor, not past it), with H2 36-40 possessions and tie rate as must-not-regress lines. Adoption needs a paired-seed served-stack sim with no gate regressed, parity v10 bit-identical with flags off, and an explicit PM freeze lift.
+
+Compute: offline fits and screen local (box if > ~2 h); full read on the box, 200 GB disk, ~$1.5-5. Multi-level evidence at every stage: overall, per game, per team prior quintile, per possession start type, per cell. Results append as s50. Status changes go to the ledger in the same commit.
