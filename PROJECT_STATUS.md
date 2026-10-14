@@ -1,6 +1,6 @@
 # PROJECT_STATUS.md
 
-Last updated: 2026-10-13 (short session). Season tips Nov 2, 2026.
+Last updated: 2026-10-14 (short session; full-size clock E1 read on AWS). Season tips Nov 2, 2026.
 
 ## SESSION 2026-10-13 (short; PM Fable 5.1): scheduler cleared; endgame round RUN, NO ARM ADOPTED. Read this block first.
 
@@ -25,7 +25,9 @@ PM RULINGS for the full-size read (written 2026-10-13 BEFORE any full-size E1 ou
 
 PM ruling 2026-10-13: the D3/D4 owners stay open. The next late-game/clock spec (post-freeze, a later Opus day) must register the cell-on-served-law form from finding (1) and a final-possession conversion arm for finding (3), with the dual-deviance grader from (2). The clock scoring_env_pace draft remains next in order; promote it in the commit before it runs.
 
-NEXT SESSION (in order): (1) get the user's compute decision (AWS vs local overnight), then launch ONE Opus worker for the full-size 5,710 x 200 read of E1 under rulings 1-4 above (`scripts/chain_clk10_env_full_v2.sh`, `grade_clock_env_full_v1.py`; append as section 45); then the PM rules on adoption with an explicit freeze lift. (2) Draft the endgame follow-up spec from findings (1)-(3) above (cell term ON the served law; conversion arm; dual-deviance grader). (3) Lines probe files `data/processed/lines/probe_lines_sources_v1_*.json` are untracked; commit with the next ops brief.
+USER DECISION 2026-10-14: AWS spend approved at PM discretion (no fixed cap) so full-size reads do not wait on local compute. PM RULING 2026-10-14 (supersedes the 50-seed compromise in ruling 1): on the box the four control draws run at the full 200 seeds, every deciding line read 200 vs 200; the 50-seed-draw reading is reported alongside. Full-size E1 read LAUNCHED on the spot box as the day's one Opus worker (results to clock experiments.md section 45, evidence `docs/tests/clock_env_round10_full_2026-10-14.md`).
+
+NEXT SESSION (in order): (1) [compute decided: AWS] launch ONE Opus worker for the full-size 5,710 x 200 read of E1 under rulings 1-4 above (`scripts/chain_clk10_env_full_v2.sh`, `grade_clock_env_full_v1.py`; append as section 45); then the PM rules on adoption with an explicit freeze lift. (2) Draft the endgame follow-up spec from findings (1)-(3) above (cell term ON the served law; conversion arm; dual-deviance grader). (3) Lines probe files `data/processed/lines/probe_lines_sources_v1_*.json` are untracked; commit with the next ops brief.
 
 ## SESSION 2026-10-09 (short; PM Fable 5.1): A3+R1 wired into the daily chain; tip guard; scheduler registered. Read this block first.
 
