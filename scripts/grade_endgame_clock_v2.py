@@ -108,6 +108,8 @@ Full verdict (`full`, s46 4.3): CANDIDATE iff the same conditions hold at 5,710 
     .venv/Scripts/python.exe scripts/grade_endgame_clock_v2.py select-m
     .venv/Scripts/python.exe scripts/grade_endgame_clock_v2.py offline --block A
     .venv/Scripts/python.exe scripts/grade_endgame_clock_v2.py offline --block B
+    .venv/Scripts/python.exe scripts/grade_endgame_clock_v2.py offline --block C   # s46 2.C C-pre (added 2026-10-14
+        # before any block-C fit; definitions in the `offline --block C` comment block below)
     .venv/Scripts/python.exe scripts/grade_endgame_clock_v2.py loop --block A --control <tag> --draws <4 tags> \
         --arm <tag> --loop-dir results/endgame_clock_v2/loop --disp-dir results/endgame_clock_v2/dispersion --out <json>
     .venv/Scripts/python.exe scripts/grade_endgame_clock_v2.py full --block A --control <tag> --draws <4 tags> \
@@ -142,7 +144,7 @@ MIN_SLOPE = 3000          # s46 3: slopes on < 3,000 rows UNDERPOWERED
 GRID = np.arange(91, dtype=np.float64)
 M_GRID = (20, 50, 100)
 
-CONTROL = {"A": "CA0", "B": "FP0"}
+CONTROL = {"A": "CA0", "B": "FP0", "C": "E0"}
 NOISE = {"A": "CA0s1", "B": "FP0s1"}
 RANK = {"CA0": 0, "CA3": 1, "CA2": 2, "CA1": 3, "FP0": 0, "FP1": 1, "FP2": 2, "FP3": 3}
 PRIM = {"A": ("dev_pos", "cal"), "B": ("mll", "make_dev")}
@@ -643,6 +645,279 @@ def select_m() -> int:
 
 
 # =====================================================================================================================
+# MODE `offline --block C`  (s46 2.C, 2.D, 4.1 and rulings 5, 6, 10; added 2026-10-14 BEFORE any block-C fit existed)
+# =====================================================================================================================
+# Rows, scoring and every round-9 line are IMPORTED UNCHANGED from `grade_clock_env_v1.py` (load_rows, score_arm, Agg,
+# segment_lines, team_sign_share): regulation possessions of clock-complete test-season games, each arm's IMPLIED
+# possession time given the realised chances, game-level implied possessions pm = 1200 n / sum t (actual pa = 1200 n /
+# sum of actual durations). Arms: E0 = served K2 (control), E0s1 = K2 refit seed 1, ED/EG/EM/EH =
+# `clock/s46C_<arm>/<fold>`, <arm>s1 = the same under --seed 1 (noise-floor arms, never selectable).
+# Lines s46 adds (game-level; per-game sufficient statistics so the same 200 game-block bootstrap weights apply):
+#   ratio_env         round 9 / round 10 primary in offline form: slope(pm on env) / slope(pa on env). C-pre (i).
+#   ratio_env_h1      the same on first-half rows only. C-pre (iv).
+#   xq51              offence-team quintile (team mean of x_off = off_c(offence) + def_c(defence) over its test rows)
+#                     of game possessions per team-game, Q5 mean - Q1 mean (round-10 loop team-table definition, the
+#                     game-level count assigned to each offence's team-game). C-pre (ii): model <= actual + floor,
+#                     actual = the offline actual on the same games (binding); the loop's literal +0.35 is printed.
+#   envq{k}_gap       game env quintile k (edges over the fold's test games): mean(pa - pm). C-pre (iii): no quintile
+#                     with |arm gap| - |control gap| > its floor.
+#   g1_sd             SD over games of pm (actual: of pa). Offline form of the G1 possession SD co-primary; the
+#                     expectation SD lacks the within-game sampling term, so the loop translation
+#                     sqrt(5.629^2 + var_arm - var_ctrl) is REPORTED beside it (never a selector offline).
+#   ratio_tot         offline form of the round-10 total-on-env primary: implied total = 2 pm x the game's realised
+#                     points per possession (the clock does not change PPP); slope ratio on env. REPORTED.
+#   pergame_abs       mean over games |pm - pa| (multi-level, per game).
+# C-pre (s46 2.C as tightened by ruling 6; fold 2; hard gate; an arm failing any item is OUT, no refit to pass):
+#   (i) 0.7 <= ratio_env <= 1.15; (ii) xq51 <= actual xq51 + floor; (iii) no env quintile further from 0 than the
+#   control's beyond its floor; (iv) 0.7 <= ratio_env_h1 <= 1.15; (v) deviance on the control's positive-mass rows not
+#   worse than the control's beyond its floor. Fold 1 confirms the sign of the env move (reported).
+# Offline vetoes REPORTED with C-pre (round-9 41.A s5 vetoes and responsiveness holds): |count gap| worse by > 0.10;
+#   any start type |gap| worse by > 0.20 s; any Nov-Mar month worse by > 0.25 s; offence-tempo quintile slope and game
+#   tempo elasticity not below the control beyond floor. The section-45 hard-veto list is closed-loop only.
+# Floor per line = max(|<arm>s1 - <arm>| reseed difference, 2 x SD of the paired game-block bootstrap of arm - E0
+#   (200 draws, numpy seed 12345)). Blind: tables under coded labels, key after.
+C_ARMS = ("EG", "ED", "EM", "EH")          # s46 rank (fewest degrees of freedom first)
+C_LINES = ("deviance", "deviance_pos", "ratio_env", "ratio_env_h1", "xq51", "g1_sd", "ratio_tot", "pergame_abs",
+           "slope_oq", "elast_ratio", "slope_zq", "slope_dq", "ratio_gap", "count_gap",
+           *[f"envq{k}_gap" for k in range(1, 6)])
+G1_LOOP_CTRL = 5.629
+
+
+def _c_manifest(arm: str, fold: str) -> Path:
+    ckd = ROOT / "data/processed/models/clock"
+    if arm in ("E0", "E0s1"):
+        return ckd / "r8_K2" / (fold if arm == "E0" else f"{fold}_seed1") / "manifest.json"
+    base, s1 = (arm[:-2], True) if arm.endswith("s1") else (arm, False)
+    return ckd / f"s46C_{base}" / (f"{fold}_seed1" if s1 else fold) / "manifest.json"
+
+
+class LinesC:
+    """Game-level C lines over G9 rows `d` (columns t_<arm>), indexed in G9.Agg's factorize order."""
+
+    def __init__(self, d: pd.DataFrame, arms: list[str]):
+        gi, games = pd.factorize(d["game_id"])
+        self.G = len(games)
+        bc = lambda v: np.bincount(gi, weights=v, minlength=self.G)  # noqa: E731
+        h1 = d["period"].to_numpy() <= 1
+        self.n, self.A = bc(np.ones(len(d))), bc(d["dur_poss"].to_numpy(np.float64))
+        self.n1, self.A1 = bc(h1.astype(float)), bc(np.where(h1, d["dur_poss"].to_numpy(np.float64), 0.0))
+        self.T = {a: bc(d[f"t_{a}"].to_numpy()) for a in arms}
+        self.T1 = {a: bc(np.where(h1, d[f"t_{a}"].to_numpy(), 0.0)) for a in arms}
+        first = d.groupby(gi).first()
+        self.env = first["env"].to_numpy(np.float64)
+        self.ppp = bc(d["points"].to_numpy(np.float64)) / self.n
+        self.envq = quintile(self.env)
+        tg = d.groupby(["game_id", "offense_team_id"], sort=False).agg(x=("z_raw", "mean")).reset_index()
+        tm = tg.groupby("offense_team_id")["x"].mean()
+        tq = pd.Series(quintile(tm.to_numpy()), index=tm.index)
+        self.tg_g = pd.Index(games).get_indexer(tg["game_id"])
+        self.tg_q = tg["offense_team_id"].map(tq).to_numpy(np.int64)
+        self.envq_n = np.bincount(self.envq, minlength=5)
+        self.tq_teams = np.bincount(tq.to_numpy(), minlength=5)
+        self.tq_tg = np.bincount(self.tg_q, minlength=5)
+
+    @staticmethod
+    def _slope(y, x, w):
+        m = w > 0
+        xm = np.average(x[m], weights=w[m])
+        ym = np.average(y[m], weights=w[m])
+        return float(np.sum(w[m] * (x[m] - xm) * (y[m] - ym)) / np.sum(w[m] * (x[m] - xm) ** 2))
+
+    def lines(self, a: str, w: np.ndarray) -> dict:
+        m = w > 0
+        pm, pa = 1200 * self.n / self.T[a], 1200 * self.n / self.A
+        with np.errstate(invalid="ignore", divide="ignore"):
+            pm1, pa1 = 1200 * self.n1 / self.T1[a], 1200 * self.n1 / self.A1
+        ok1 = m & np.isfinite(pm1) & np.isfinite(pa1) & (self.n1 > 0)
+        w1 = np.where(ok1, w, 0.0)
+        pm1, pa1 = np.nan_to_num(pm1, posinf=0.0), np.nan_to_num(pa1, posinf=0.0)
+        out = {"ratio_env": self._slope(pm, self.env, w) / self._slope(pa, self.env, w),
+               "slope_env_model": self._slope(pm, self.env, w), "slope_env_act": self._slope(pa, self.env, w),
+               "ratio_env_h1": self._slope(pm1, self.env, w1) / self._slope(pa1, self.env, w1),
+               "ratio_tot": self._slope(2 * pm * self.ppp, self.env, w) / self._slope(2 * pa * self.ppp, self.env, w),
+               "pergame_abs": float(np.average(np.abs(pm - pa)[m], weights=w[m]))}
+        mu = np.average(pm[m], weights=w[m])
+        mua = np.average(pa[m], weights=w[m])
+        out["g1_var"] = float(np.average((pm[m] - mu) ** 2, weights=w[m]))
+        out["g1_sd"] = float(np.sqrt(out["g1_var"]))
+        out["act_g1_sd"] = float(np.sqrt(np.average((pa[m] - mua) ** 2, weights=w[m])))
+        for k in range(5):
+            s = m & (self.envq == k)
+            out[f"envq{k + 1}_gap"] = float(np.average((pa - pm)[s], weights=w[s]))
+            out[f"envq{k + 1}_pm"] = float(np.average(pm[s], weights=w[s]))
+            out[f"envq{k + 1}_pa"] = float(np.average(pa[s], weights=w[s]))
+        wt = w[self.tg_g]
+        den = np.bincount(self.tg_q, weights=wt, minlength=5)
+        qm = np.bincount(self.tg_q, weights=wt * pm[self.tg_g], minlength=5) / den
+        qa = np.bincount(self.tg_q, weights=wt * pa[self.tg_g], minlength=5) / den
+        out["xq51"], out["act_xq51"] = float(qm[4] - qm[0]), float(qa[4] - qa[0])
+        for k in range(5):
+            out[f"xq{k + 1}_pm"], out[f"xq{k + 1}_pa"] = float(qm[k]), float(qa[k])
+        return out
+
+
+def offline_C_fold(fold: str, arms: list[str], rows: pd.DataFrame) -> dict:
+    import grade_clock_env_v1 as G9
+    G8 = G9.G8
+    d = rows
+    arms = [a for a in arms if _c_manifest(a, fold).exists()]
+    if "E0" not in arms:
+        raise SystemExit("E0 (served K2) schedule missing")
+    for a in arms:
+        r = G9.score_arm(G8.load_schedule(_c_manifest(a, fold)), d)
+        for k, v in r.items():
+            d[f"{k}_{a}"] = v
+        print(f"{fold} scored {a}", flush=True)
+    pos = d["prp_E0"].to_numpy() > G9.CLIP
+    AG = G9.Agg(d, arms, pos)
+    LC = LinesC(d, arms)
+    one = np.ones(AG.G)
+
+    def all_lines(a, w):
+        return {**AG.lines(a, w), **LC.lines(a, w)}
+    val = {a: all_lines(a, one) for a in arms}
+    for a in arms:
+        st = d.groupby("prev_end").agg(m=(f"t_{a}", "mean"), act=("dur_poss", "mean"), n=("dur_poss", "size"))
+        val[a]["gap_by_start"] = (st["m"] - st["act"]).to_dict()
+        val[a]["n_by_start"] = st["n"].astype(int).to_dict()
+        mo = d.groupby("month").agg(m=(f"t_{a}", "mean"), act=("dur_poss", "mean"), n=("dur_poss", "size"))
+        val[a]["gap_by_month"] = {str(k): float(v) for k, v in (mo["m"] - mo["act"]).items()}
+    rng = np.random.default_rng(BOOT_SEED)
+    keys = [k for k in C_LINES if k in val["E0"]]
+    boots = {a: {k: [] for k in keys} for a in arms}
+    for _ in range(N_BOOT):
+        w = np.bincount(rng.integers(0, AG.G, AG.G), minlength=AG.G).astype(float)
+        for a in arms:
+            L = all_lines(a, w)
+            for k in keys:
+                boots[a][k].append(L[k])
+    e0 = val["E0"]
+    for a in arms:
+        if a == "E0":
+            continue
+        V = {}
+        for k in keys:
+            V[f"d_{k}"] = val[a][k] - e0[k]
+            V[f"boot2se_{k}"] = 2 * float(np.std(np.array(boots[a][k]) - np.array(boots["E0"][k])))
+            dabs = np.abs(np.array(boots[a][k])) - np.abs(np.array(boots["E0"][k]))
+            V[f"boot2se_abs_{k}"] = 2 * float(np.std(dabs))
+        val[a]["vs_E0"] = V
+    # reseed term and binding floors
+    for a in arms:
+        if a == "E0":
+            continue
+        s1 = None if a.endswith("s1") else f"{a}s1"
+        V = val[a]["vs_E0"]
+        for k in keys:
+            rs = abs(val[s1][k] - val[a][k]) if s1 in val else 0.0
+            V[f"reseed_{k}"] = rs
+            V[f"floor_{k}"] = max(rs, V[f"boot2se_{k}"])
+            V[f"floor_abs_{k}"] = max(rs, V[f"boot2se_abs_{k}"])
+    fr = {"n_rows": int(len(d)), "n_games": int(AG.G), "e0_zero_mass_rows": int((~pos).sum()),
+          "envq_games": LC.envq_n.tolist(), "xq_teams": LC.tq_teams.tolist(), "xq_team_games": LC.tq_tg.tolist(),
+          "arms": val}
+    fr["segments"] = G9.segment_lines(d, arms)
+    fr["team_sign_share"] = G9.team_sign_share(d, arms)
+    rp = {}
+    for a in arms:
+        if a.endswith("s1") and a[:-2] in arms:
+            rp[f"{a[:-2]}_vs_{a}_max_abs_pmf_diff"] = G9.pmf_diff(G8.load_schedule(_c_manifest(a[:-2], fold)),
+                                                                  G8.load_schedule(_c_manifest(a, fold)), d)
+    fr["reseed_proof"] = rp
+    return fr
+
+
+def c_pre(F: dict) -> dict:
+    f2, f1 = F["F2"], F.get("F1")
+    out = {"rule": ("s46 2.C C-pre as tightened by ruling 6 (fold 2): (i) 0.7 <= ratio_env <= 1.15; (ii) xq51 <= actual "
+                    "xq51 + floor; (iii) no env quintile with |arm gap| - |control gap| > floor; (iv) 0.7 <= "
+                    "ratio_env_h1 <= 1.15; (v) deviance_pos not worse than control beyond floor. Any failure = OUT."),
+           "arms": {}}
+    e0 = f2["arms"]["E0"]
+    for a in C_ARMS:
+        if a not in f2["arms"]:
+            continue
+        L, V = f2["arms"][a], f2["arms"][a]["vs_E0"]
+        c = {"i_ratio_env_in_0.7_1.15": bool(0.7 <= L["ratio_env"] <= 1.15),
+             "ii_xq51_le_actual_plus_floor": bool(L["xq51"] <= L["act_xq51"] + V["floor_xq51"]),
+             "iii_envq_not_further": bool(all(abs(L[f"envq{k}_gap"]) - abs(e0[f"envq{k}_gap"]) <= V[f"floor_abs_envq{k}_gap"]
+                                              for k in range(1, 6))),
+             "iv_ratio_env_h1_in_0.7_1.15": bool(0.7 <= L["ratio_env_h1"] <= 1.15),
+             "v_dev_pos_not_worse": bool(V["d_deviance_pos"] <= V["floor_deviance_pos"])}
+        veto = {"count_gap_worse_gt_0.10": bool(abs(L["count_gap"]) - abs(e0["count_gap"]) > 0.10),
+                "start_type_worse_gt_0.20s": bool(max(abs(L["gap_by_start"][k]) - abs(e0["gap_by_start"][k])
+                                                      for k in e0["gap_by_start"]) > 0.20),
+                "month_worse_gt_0.25s": bool(max(abs(L["gap_by_month"][k]) - abs(e0["gap_by_month"][k])
+                                                 for k in ("11", "12", "1", "2", "3") if k in e0["gap_by_month"]) > 0.25),
+                "tempo_q_slope_below_ctrl": bool(V["d_slope_oq"] < -V["floor_slope_oq"]),
+                "elasticity_below_ctrl": bool(V["d_elast_ratio"] < -V["floor_elast_ratio"])}
+        g1 = {"offline_sd": L["g1_sd"], "ctrl_sd": e0["g1_sd"], "act_sd": L["act_g1_sd"], "d": V["d_g1_sd"],
+              "floor": V["floor_g1_sd"],
+              "loop_translation": float(np.sqrt(G1_LOOP_CTRL ** 2 + L["g1_var"] - e0["g1_var"]))}
+        f1c = None
+        if f1 is not None and a in f1["arms"]:
+            L1, E1 = f1["arms"][a], f1["arms"]["E0"]
+            f1c = {"ratio_env": L1["ratio_env"], "ctrl_ratio_env": E1["ratio_env"],
+                   "env_move_same_sign_as_F2": bool(np.sign(L1["ratio_env"] - E1["ratio_env"]) ==
+                                                    np.sign(L["ratio_env"] - e0["ratio_env"])),
+                   "env_toward_1": bool(abs(L1["ratio_env"] - 1) < abs(E1["ratio_env"] - 1))}
+        out["arms"][a] = {"checks": c, "C_pre": "PASS" if all(c.values()) else "FAIL",
+                          "failed": [k for k, v in c.items() if not v], "offline_vetoes_reported": veto,
+                          "g1_sd": g1, "F1": f1c}
+    out["survivors"] = [a for a, r in out["arms"].items() if r["C_pre"] == "PASS"]
+    return out
+
+
+def offline_C(arms: list[str] | None) -> int:
+    import grade_clock_env_v1 as G9
+    arms = arms or ["E0", "E0s1", *C_ARMS, *[f"{a}s1" for a in C_ARMS]]
+    rows = G9.load_rows()
+    F = {}
+    for fold in ("F2", "F1"):
+        d = rows[fold]
+        season = 2025 if fold == "F2" else 2024
+        p4 = pd.read_parquet(G9.TK.P4 / f"possessions_{season}.parquet", columns=["game_id", "period", "poss_index", "points"])
+        p4 = p4.rename(columns={"period": "_p", "poss_index": "_i"})
+        p4["_p"], p4["_i"] = p4["_p"].astype("int64"), p4["_i"].astype("int64")
+        d["_p"], d["_i"] = d["period"].astype("int64"), d["poss_index"].astype("int64")
+        d = d.merge(p4, on=["game_id", "_p", "_i"], how="left", validate="1:1").drop(columns=["_p", "_i"])
+        d["points"] = d["points"].fillna(0.0)
+        F[fold] = offline_C_fold(fold, arms, d)
+    dec = c_pre(F)
+    codes = code_arms("C", [a for a in F["F2"]["arms"]])
+    GRADE_DIR.mkdir(parents=True, exist_ok=True)
+    md = ["# s46 block C offline grade (coded arms; key below the tables)", ""]
+    for fold in ("F2", "F1"):
+        fr = F[fold]
+        md += [f"## {fold}: {fr['n_rows']:,} rows, {fr['n_games']:,} games; control zero-mass rows {fr['e0_zero_mass_rows']}",
+               "", "| arm | dev_pos (d; floor) | ratio_env (d; floor) | ratio_env_h1 | xq51 (act) | env Q1..Q5 gap | "
+               "g1_sd (act) | ratio_tot | slope_oq | elast | pergame_abs |", "|---|---|---|---:|---|---|---|---:|---:|---:|---:|"]
+        for a in sorted(fr["arms"], key=lambda x: codes.get(x, x)):
+            L = fr["arms"][a]
+            V = L.get("vs_E0", {})
+            dp = f" ({V['d_deviance_pos']:+.4f}; {V['floor_deviance_pos']:.4f})" if V else ""
+            de = f" ({V['d_ratio_env']:+.3f}; {V['floor_ratio_env']:.3f})" if V else ""
+            gq = " / ".join(f"{L[f'envq{k}_gap']:+.2f}" for k in range(1, 6))
+            md.append(f"| {codes.get(a, a)} | {L['deviance_pos']:.4f}{dp} | {L['ratio_env']:.3f}{de} | {L['ratio_env_h1']:.3f} | "
+                      f"{L['xq51']:+.3f} ({L['act_xq51']:+.3f}) | {gq} | {L['g1_sd']:.3f} ({L['act_g1_sd']:.3f}) | "
+                      f"{L['ratio_tot']:.3f} | {L['slope_oq']:.3f} | {L['elast_ratio']:.3f} | {L['pergame_abs']:.3f} |")
+        md.append("")
+    md += ["## Key (written after the coded tables)", "",
+           *[f"- {v} = {k}" for k, v in sorted(codes.items(), key=lambda x: x[1])], "",
+           "## C-pre (literal)", "", f"Rule: {dec['rule']}", "", f"Survivors: {dec['survivors']}", ""]
+    for a, r in dec["arms"].items():
+        md.append(f"- {a}: C-pre {r['C_pre']}; failed {r['failed']}; vetoes {r['offline_vetoes_reported']}")
+    rep = {"spec": "docs/models/clock/experiments.md s46 block C", "codes": codes, "folds": F, "c_pre": dec,
+           "written_at": datetime.now(UTC).isoformat()}
+    (GRADE_DIR / "offline_C.json").write_text(json.dumps(rep, indent=1, default=float), encoding="utf-8")
+    (GRADE_DIR / "offline_C_tables.md").write_text("\n".join(md) + "\n", encoding="utf-8")
+    print("C-pre survivors:", dec["survivors"], flush=True)
+    for a, r in dec["arms"].items():
+        print(a, r["C_pre"], r["failed"], flush=True)
+    return 0
+
+
+# =====================================================================================================================
 # closed loop / full size
 # =====================================================================================================================
 PRIMARY_LOOP = {"A": [("MD4_h2_last4_poss", "act_MD4_h2_last4_poss"), ("MD5_pts13_last2", "act_MD5_pts13_last2")],
@@ -840,7 +1115,7 @@ def main() -> int:
     ap = argparse.ArgumentParser()
     sub = ap.add_subparsers(dest="mode", required=True)
     o = sub.add_parser("offline")
-    o.add_argument("--block", choices=["A", "B"], required=True)
+    o.add_argument("--block", choices=["A", "B", "C"], required=True)
     o.add_argument("--arms", nargs="*", default=None)
     sub.add_parser("select-m")
     for nm in ("loop", "full"):
@@ -858,7 +1133,7 @@ def main() -> int:
             p.add_argument("--full-dir", required=True)
     a = ap.parse_args()
     if a.mode == "offline":
-        return offline(a.block, a.arms)
+        return offline_C(a.arms) if a.block == "C" else offline(a.block, a.arms)
     if a.mode == "select-m":
         return select_m()
     if os.environ["CBB_TRUTH"] != "verified_v1":
