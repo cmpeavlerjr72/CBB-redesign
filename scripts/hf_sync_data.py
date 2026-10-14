@@ -79,12 +79,14 @@ _REL_ROOT = {
     "engine_inputs": Path("data") / "processed" / "models" / "engine",
     "model_artifacts": Path("data") / "processed" / "models",
     "engine_inputs_v3": Path("data") / "processed" / "models" / "engine_v3",
-    # only `team_rate_features_*.parquet` directly under data/processed (see TEAM_RATE_GLOB):
+    # only `team_rate_features_*.parquet` and `team_rate_variance_*.parquet` directly under data/processed (see TEAM_RATE_GLOB):
     # the estimator feature tables the Stage B trainers read via cbb_sim.team_rate_adapter.
     "team_rate_tables": Path("data") / "processed",
     "results_daily": Path("results") / "daily",
 }
 TEAM_RATE_GLOB = "team_rate_features_*.parquet"
+# 2026-10-14 data triage: the O1a variance tables (13 MB each) ride the same key (docs/ops/data_triage_2026-10-14.md)
+TEAM_RATE_GLOBS = (TEAM_RATE_GLOB, "team_rate_variance_*.parquet")
 
 # Single wave -- unlike CFB there is no multi-wave priority split here yet.
 PUSH_WAVES = [
@@ -255,9 +257,9 @@ def push(dirs: list[str], token: str, max_attempts: int) -> None:
             path_in_repo=d, commit_message=f"sync {d}",
         )
         if d == "team_rate_tables":
-            patterns = sorted(p.name for p in root.glob(TEAM_RATE_GLOB))
+            patterns = sorted(p.name for g in TEAM_RATE_GLOBS for p in root.glob(g))
             if not patterns:
-                log(f"--- {d}: no {TEAM_RATE_GLOB} under {root}, skipping upload")
+                log(f"--- {d}: no {TEAM_RATE_GLOBS} under {root}, skipping upload")
                 continue
             upload_kwargs["allow_patterns"] = patterns
             log(f"--- {d}: uploading {len(patterns)} table(s) from {root}")
@@ -362,7 +364,7 @@ def local_files(dirs: list[str]) -> set:
             # git clone, not this sync path.
             files = _model_artifacts_files(root)
         elif d == "team_rate_tables":
-            files = list(root.glob(TEAM_RATE_GLOB))
+            files = [p for g in TEAM_RATE_GLOBS for p in root.glob(g)]
         else:
             files = [p for p in root.rglob("*") if p.is_file()]
         out |= {_local_to_remote(d, p.relative_to(root).as_posix()) for p in files}
