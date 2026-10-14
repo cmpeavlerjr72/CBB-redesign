@@ -5254,3 +5254,17 @@ Compute: offline fits and screen local (box if > ~2 h); full read on the box, 20
 - Full-size box read. AWS $0; no instance launched.
 
 **Checks.** Suite 870 passed, 1 skipped (862 + 8 new). Parity v10 with flags off: PASS, bit-identical. No served default changed. Freeze ON.
+
+## 51. PRE-REGISTERED (PM Fable 5.1, 2026-10-14 afternoon, BEFORE any fit): cell term on the served K2 window law, round 3 -- `CA1R` (role-split within-cell env response, offence + defence) vs `CA1E` (disclosed comparator). NOT RUN at registration.
+
+Why (evidence only, s50): `CA1E` recovers the within-cell z_off and trailer responses but fails the team-prior leader slope (-0.013 vs actual +0.019) because one env scale applies the trailers' negative response to leaders, and fails defence-z because the defence term was screened out on fold 1. Design disclosure: this arm is informed by fold-2 gate readings in s50; fold 1 must confirm every primary and gate sign, and the only candidate call is the full-size loop read.
+
+| arm | definition | flag | fit |
+|---|---|---|---|
+| `CA0`, `CA0s1` | served K2 law; seed-1 refit = noise floor | | as s49 |
+| `CA1E` | as s49 (re-fit under this grader; disclosed) | default off | `train_endgame_clock_v3.py` |
+| `CA1R` | step 1: within-cell env scale exp(c_role,off * z_off + c_role,def * z_def) with role in {leader, trailer, tied} (6 coefficients), round-8 M2 estimator, fixed effects = 45 window cells x K2 conditional cell; both terms entered, no inclusion screen, walk-forward fit sets their size; step 2: `CA1` ratio on the de-scaled baseline, m from {20,50,100} chosen on fold 1 only; served as baseline x the row's role-env factor | `ENGINE_CLOCK=..._CA1R` default off | new trainer version (v4), walk-forward |
+
+Folds, leak and truth rules, grader (`grade_endgame_clock_v2.py`, s49 mode; one blind script), primaries P1/P2, the actual-referenced gate list with floor = sqrt(paired^2 + SE(actual)^2), per-cell reporting and multi-level evidence: all as s49, with two changes: (a) the offline G1 SD proxy is REMOVED as a gate (reported only; G1 SD is read in the loop); (b) the team-prior leader and trailer slopes and the within-cell lines are reported by role, and the gate applies per role.
+
+Offline decision rule: as s49 (beat floor on P1 and P2 on fold 2, fold 1 confirms both signs, no gate fails). Tie-break `CA1R` over `CA1E` only if `CA1R` beats it on P1 beyond floor AND is closer to actual on at least two of the within-cell lines beyond floor; else the simpler `CA1E` (which must itself pass every gate to win). Screen (500 x 25, four control draws, local, proceed/stop only, G1 SD in-loop, seed-count check) and full-size box read (5,710 x 200, four 200-seed draws, round-10 draws reused only after sha + parity + inputs-hash checks; s45 vetoes hard; primaries 13+ last-2-min points and leader seconds at 2:00 closer to actual beyond floor and not past it; H2 36-40 possessions and tie rate must not regress): as s49. CANDIDATE only on the full-size read. Adoption needs a paired-seed served-stack sim with no gate regressed, parity v10 bit-identical flags off, and an explicit PM freeze lift. Results append as s52.
