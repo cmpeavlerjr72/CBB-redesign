@@ -310,3 +310,80 @@ def fit_fp_make(period, made, p0, m_pseudo: float = 50.0) -> tuple[np.ndarray, d
         info[f"period{hh + 1}"] = {"n": int(n), "delta_mle": float(r.x), "delta_shrunk": float(delta[hh]),
                                    "mean_y": float(y.mean()) if n else None, "mean_p0": float(pc.mean()) if n else None}
     return delta, info
+
+
+# ---------------------------------------------------------------------------------------------------------------
+# CA1E (clock experiments.md s49, NOT ADOPTED, default off): within-cell env AFT scale x CA1 ratio on the de-scaled
+# baseline. Step 1: log k = X c, X = [z_off] (+ [def_c] when fold 1 resolves it), fitted by the round-8 M2 Poisson
+# pseudo-likelihood (`poisson_fe`) with fixed effects = window cell (half x 45) x K2 conditional finest cell, on
+# uncensored window rows, so c is identified from within-cell variation only. Step 2: the CA1 ratio table fitted on
+# durations (and censoring times) divided by k against the served row law. Served: p = scale_pmf(CA1(p0), k_row).
+# No coefficient is shrunk or capped; m is the CA1 pseudo-count chosen blind on fold 1.
+# ---------------------------------------------------------------------------------------------------------------
+ENV_COLS = {"zoff": ("off_rating_off_c", "def_rating_def_c"), "defz": ("def_rating_def_c",)}
+
+
+def env_design(df, cols: list[str]) -> np.ndarray:
+    """(n, len(cols)) env design; z_off = off_c(offence) + def_c(defence), defz = def_c(defence). NaN -> 0."""
+    out = np.zeros((len(df), len(cols)))
+    for j, c in enumerate(cols):
+        v = np.zeros(len(df))
+        for src in ENV_COLS[c]:
+            v = v + np.asarray(df[src], dtype=np.float64)
+        out[:, j] = np.nan_to_num(v, nan=0.0)
+    return out
+
+
+def poisson_fe_cluster_se(y, X, key, cluster, b) -> np.ndarray:
+    """Game-clustered sandwich SE of the profiled M2 Poisson coefficients at b."""
+    _, inv = np.unique(key, return_inverse=True)
+    y = np.asarray(y, dtype=np.float64)
+    ee = np.exp(X @ b)
+    mu = (np.bincount(inv, weights=y) / np.bincount(inv, weights=ee))[inv] * ee
+    wsum = np.bincount(inv, weights=mu)
+    xm = np.stack([np.bincount(inv, weights=mu * X[:, j]) for j in range(X.shape[1])], axis=1)
+    xt = X - (xm / np.maximum(wsum, 1e-300)[:, None])[inv]
+    H = (xt * mu[:, None]).T @ xt
+    _, ci = np.unique(cluster, return_inverse=True)
+    sc = np.stack([np.bincount(ci, weights=xt[:, j] * (y - mu)) for j in range(X.shape[1])], axis=1)
+    Hi = np.linalg.pinv(H)
+    V = Hi @ (sc.T @ sc) @ Hi
+    return np.sqrt(np.diag(V))
+
+
+@dataclass
+class CA1ELaw:
+    ca1: CA1Law
+    cols: list
+    coef: np.ndarray
+    info: dict
+
+    def log_k(self, df) -> np.ndarray:
+        return env_design(df, self.cols) @ self.coef
+
+    def apply(self, p0, period, sec, m, df=None, end1=None) -> np.ndarray:
+        return scale_pmf(self.ca1.apply(p0, period, sec, m), np.exp(self.log_k(df)))
+
+    def apply_end(self, p0, period, sec, m, df=None, end1=None) -> np.ndarray:
+        return scale_pmf(self.ca1.apply_end(p0, period, sec, m), np.exp(self.log_k(df)))
+
+    def save(self, d: Path) -> None:
+        d.mkdir(parents=True, exist_ok=True)
+        self.ca1.save(d / "ca1e_ratio.npz")
+        (d / "ca1e_env.json").write_text(json.dumps({"cols": list(self.cols), "coef": np.asarray(self.coef).tolist(),
+                                                      "info": self.info}, indent=1), encoding="utf-8")
+
+    @classmethod
+    def load(cls, d: Path) -> CA1ELaw:
+        e = json.loads((Path(d) / "ca1e_env.json").read_text(encoding="utf-8"))
+        return cls(ca1=CA1Law.load(Path(d) / "ca1e_ratio.npz"), cols=e["cols"],
+                   coef=np.asarray(e["coef"], dtype=np.float64), info=e.get("info", {}))
+
+
+def fit_env_within(y, X, fe_key) -> tuple[np.ndarray, dict]:
+    return poisson_fe(np.asarray(y, dtype=np.float64), X, fe_key)
+
+
+def descale(y, k) -> np.ndarray:
+    """Durations (or censoring times) divided by k on the integer grid (rounded, clipped to 0..90)."""
+    return np.clip(np.rint(np.asarray(y, dtype=np.float64) / np.asarray(k, dtype=np.float64)), 0, N_GRID - 1).astype(np.int64)
