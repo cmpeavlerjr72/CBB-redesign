@@ -5268,3 +5268,71 @@ Why (evidence only, s50): `CA1E` recovers the within-cell z_off and trailer resp
 Folds, leak and truth rules, grader (`grade_endgame_clock_v2.py`, s49 mode; one blind script), primaries P1/P2, the actual-referenced gate list with floor = sqrt(paired^2 + SE(actual)^2), per-cell reporting and multi-level evidence: all as s49, with two changes: (a) the offline G1 SD proxy is REMOVED as a gate (reported only; G1 SD is read in the loop); (b) the team-prior leader and trailer slopes and the within-cell lines are reported by role, and the gate applies per role.
 
 Offline decision rule: as s49 (beat floor on P1 and P2 on fold 2, fold 1 confirms both signs, no gate fails). Tie-break `CA1R` over `CA1E` only if `CA1R` beats it on P1 beyond floor AND is closer to actual on at least two of the within-cell lines beyond floor; else the simpler `CA1E` (which must itself pass every gate to win). Screen (500 x 25, four control draws, local, proceed/stop only, G1 SD in-loop, seed-count check) and full-size box read (5,710 x 200, four 200-seed draws, round-10 draws reused only after sha + parity + inputs-hash checks; s45 vetoes hard; primaries 13+ last-2-min points and leader seconds at 2:00 closer to actual beyond floor and not past it; H2 36-40 possessions and tie rate must not regress): as s49. CANDIDATE only on the full-size read. Adoption needs a paired-seed served-stack sim with no gate regressed, parity v10 bit-identical flags off, and an explicit PM freeze lift. Results append as s52.
+
+## 52. Section 51 RESULTS: offline refuted (CA1E and CA1R both fail four gates on fold 2, incl. the leader role lines); no screen, no full-size read; awaiting PM ruling (2026-10-14, Opus engine worker; registration section 51)
+
+**Literal verdict: offline refuted.** Neither arm wins. Evidence doc: `docs/tests/clock_s51_ca1r_2026-10-14.md`; tables `results/endgame_clock_v2/grade/s51_offline_tables.md` (HF `results`).
+
+**Provenance.**
+- The s51 grader mode (`a129828`: per-role within-cell gates, G1 SD proxy reported only) was committed BEFORE any s51 fit output existed.
+- The CA1R law (`endgame_v2.CA1RLaw`, additive, default off, not wired) and the new trainer `train_endgame_clock_v4.py` (`b5f3934`) were committed before any fit.
+- m was chosen blind on fold 1: CA1E m = 100, CA1R m = 100.
+- CA1E re-applied the s49 fold-1 defence-z rule (excluded again). Its artifacts are byte-identical to s49's and it reproduces the s50 numbers exactly.
+- CA0s1 is bit-identical to CA0, so the floors are the bootstrap terms.
+- Grading was blind (`s51_offline_coded.json` / `s51_offline_key.json`).
+- Reading choices stated in the grader before any fit:
+  - The within-cell lines are gated per role: z_off, defence-z and strength x {leader, trailer, tied} = nine lines.
+  - The team-prior leader and trailer lines are gated as in s49.
+  - The pooled z_off / defence-z quintile slopes stay gated pooled.
+  - The "trailer strength slope" gate stays the trailer band slope.
+  - team-prior tied and the pooled within-cell lines are reported only.
+
+**CA1R coefficients** (log k per rating point; game-clustered SE in parentheses):
+
+| coefficient | F1 | F2 |
+|---|---|---|
+| lead off | -0.00265 (0.00034) | -0.00330 (0.00026) |
+| lead def | -0.00117 (0.00039) | -0.00085 (0.00029) |
+| trail off | -0.00571 (0.00031) | -0.00556 (0.00023) |
+| trail def | +0.00156 (0.00035) | +0.00122 (0.00026) |
+| tied off | -0.00364 (0.00101) | -0.00432 (0.00075) |
+| tied def | +0.00093 (0.00109) | +0.00077 (0.00083) |
+
+Nothing was shrunk, capped or screened.
+
+**Primaries (F2 period 2; 74,164 rows, 5,110 games).** Both arms beat CA0 by a wide margin, and fold 1 confirms both signs for both arms.
+
+| arm | dev_pos delta (floor) | cal delta, s (floor) |
+|---|---|---|
+| CA1E | -0.1531 (0.0067) | -1.8847 (0.0339) |
+| CA1R | -0.1553 (0.0063) | -1.8855 (0.0339) |
+
+**Gates failing on F2.** Both arms fail the same four (excess / floor):
+
+| gate | CA1E | CA1R |
+|---|---|---|
+| defence-z | +0.0108 / 0.0073 | +0.0127 / 0.0073 |
+| team-prior leader (actual +0.0192) | +0.0261 / 0.0111 (CA1E -0.0131) | +0.0114 / 0.0110 (CA1R +0.0016) |
+| within-cell z_off, leader (actual -0.30) | +0.884 / 0.264 (CA1E -1.23) | +0.662 / 0.264 (CA1R -1.01) |
+| within-cell strength, leader (actual -0.21) | +0.534 / 0.204 (CA1E -0.79) | +0.238 / 0.203 (CA1R -0.49) |
+
+- All other gates pass, including the three tied-role lines (2,138 rows, UNDERPOWERED, gated as registered) and every trailer line. On wc z_off trailer, CA1R gives -1.28 against an actual of -1.51.
+- F1 (reported): CA1E fails team-prior leader, wc z_off leader and wc strength leader. CA1R fails only wc z_off leader.
+- G1 SD translation (reported only): CA1E 5.825, CA1R 5.817, control 5.629, actual 5.474.
+- The CA1R-over-CA1E preference was not reached: dev_pos -0.0022 vs floor 0.0025, and 0 of 9 within-cell role lines are closer beyond floor.
+
+**Reading (evidence only).**
+- The role split moves every leader line toward actual relative to CA1E, but not inside the floor on F2.
+- The fitted leader z_off coefficient is resolved negative on both folds and overshoots the 2024-25 within-cell leader response (actual -0.30, SE 0.23). The positive actual leader slopes sit in the (30,60] cells, which neither arm carries.
+- Pooled defence-z remains failed with role defence terms entered.
+
+**Multi-level.**
+- Per-game absolute error: CA0 2.026, CA1E 1.908, CA1R 1.906.
+- Team right-sign share (206 teams): CA1E 0.670, CA1R 0.684.
+- Per-cell (all 45, both folds; 39 of 45 UNDERPOWERED for slopes) and start-type tables are in the evidence doc.
+
+**Not run (not triggered by the rule):**
+- Screen (500 x 25). The grader's `loop --spec s51` is wired; neither arm is wired in the engine.
+- Full-size box read. AWS $0; no instance launched.
+
+**Checks.** Suite 876 passed, 1 skipped (870 + 6 new). Parity v10 with flags off: PASS, bit-identical. No served default changed. Freeze ON.
