@@ -5193,3 +5193,64 @@ Closed loop: 500 verified fold-2 games x 25 paired seeds, four control draws, lo
 CANDIDATE is declared ONLY on the full-size read: 5,710 fold-2 games x 200 paired seeds on the AWS spot box, four 200-seed control draws (round-10 draws at offsets 1000-4000 reused ONLY after an engine sha + parity v10 check on the box and an inputs-hash match; else fresh, logged). Full-size lines = the screen lines read at 200 vs 200 plus every s45 veto as a hard veto; the primaries at full size are 13+ last-2-min points and leader seconds at 2:00 (closer to actual beyond floor, not past it), with H2 36-40 possessions and tie rate as must-not-regress lines. Adoption needs a paired-seed served-stack sim with no gate regressed, parity v10 bit-identical with flags off, and an explicit PM freeze lift.
 
 Compute: offline fits and screen local (box if > ~2 h); full read on the box, 200 GB disk, ~$1.5-5. Multi-level evidence at every stage: overall, per game, per team prior quintile, per possession start type, per cell. Results append as s50. Status changes go to the ledger in the same commit.
+
+## 50. Section 49 RESULTS: offline refuted (CA1 and CA1E both fail actual-referenced gates); no screen, no full-size read; awaiting PM ruling (2026-10-14, Opus engine worker; registration section 49)
+
+**Literal verdict: offline refuted.** Neither arm wins. Evidence doc: `docs/tests/clock_s49_ca1e_2026-10-14.md`; tables `results/endgame_clock_v2/grade/s49_offline_tables.md` (HF `results`).
+
+**Provenance.**
+- Grader extension committed in `d2b3aa5` BEFORE any s49 fit output existed.
+- CA1E law (`endgame_v2.CA1ELaw`, additive, default off, not wired) and the new trainer `train_endgame_clock_v3.py` committed in `e04b37f` before any fit. The defence-z inclusion rule was fixed in that commit.
+- m was re-chosen blind on fold 1 by the unchanged ruling-7 rule: CA1 m = 100 and CA1E m = 100, frozen before any fold-2 fit.
+- Defence-z: fold-1 c_def = +0.00021 (clustered SE 0.00026), not resolved, so it is excluded from CA1E.
+- CA1E z_off coefficient: F1 -0.00407 (SE 0.00020), F2 -0.00435 (SE 0.00015). Nothing was shrunk or capped.
+- CA0s1 is bit-identical to CA0, so the floors are the bootstrap terms.
+- Graded blind: coded table and key are in `s49_offline_coded.json` / `s49_offline_key.json`.
+- Reading choice stated in the grader before any fit: "trailer strength slope" in s49's first gate list is graded as the trailer BAND slope (s46 `slope_trail`). Both arms pass it, and they also pass the team-prior trailer line, so the verdict does not depend on this reading.
+
+**Primaries (F2 period 2; 74,164 rows, 5,110 games; all 45 cells powered).** Both arms win both primaries by a wide margin, and fold 1 keeps both signs for both arms.
+
+| arm | dev_pos (P1), delta (floor) | cal (P2), s, delta (floor) |
+|---|---|---|
+| CA0 | 6.5967 | 2.2936 |
+| CA1 | 6.4488, -0.1479 (0.0049) | 0.4030, -1.8907 (0.0374) |
+| CA1E | 6.4436, -0.1531 (0.0067) | 0.4090, -1.8847 (0.0339) |
+
+**Actual-referenced gates.** excess = |arm - act| - |ctrl - act|, floor = sqrt(paired^2 + SE_act^2). Fold 2 decides.
+
+| line | actual | control | CA1 | excess / floor | CA1E | excess / floor |
+|---|---|---|---|---|---|---|
+| tempo | -16.31 | -5.92 | -6.51 | -0.59 / 1.56 PASS | -7.12 | -1.20 / 1.55 PASS |
+| z_off | +0.0358 | +0.0248 | +0.0840 | +0.0371 / 0.0068 **FAIL** | +0.0305 | -0.0057 / 0.0070 PASS |
+| defence-z | +0.0064 | +0.0087 | +0.0460 | +0.0372 / 0.0074 **FAIL** | +0.0196 | +0.0108 / 0.0073 **FAIL** |
+| team-prior trailer | -0.0345 | -0.0002 | +0.0064 | +0.0067 / 0.0070 PASS | -0.0227 | -0.0225 / 0.0071 PASS |
+| team-prior leader | +0.0192 | +0.0130 | +0.0260 | +0.0005 / 0.0109 PASS | -0.0131 | +0.0261 / 0.0111 **FAIL** |
+| leader band | +0.1072 | +0.0643 | +0.1242 | -0.0259 / 0.0082 PASS | +0.1176 | -0.0325 / 0.0084 PASS |
+| trailer band | -0.0389 | +0.0168 | -0.0343 | -0.0511 / 0.0065 PASS | -0.0288 | -0.0456 / 0.0067 PASS |
+| within-cell z_off | -1.010 | -1.230 | -0.010 | +0.780 / 0.132 **FAIL** | -1.120 | -0.110 / 0.133 PASS |
+| within-cell defence-z | -0.712 | -0.687 | -0.023 | +0.664 / 0.126 **FAIL** | -0.493 | +0.194 / 0.125 **FAIL** |
+| within-cell trailer strength | -0.635 | -0.007 | +0.122 | +0.129 / 0.143 PASS | -0.487 | -0.480 / 0.146 PASS |
+| G1 SD translation (act 5.474) | | 5.629 | 5.711 | +0.082 / 0.027 **FAIL** | 5.825 | +0.196 / 0.034 **FAIL** |
+
+**Fold 1 (reported).**
+- CA1 fails team-prior trailer (+0.0088 / 0.0087) and within-cell trailer strength (+0.162 / 0.149). Its z_off and defence-z lines pass on F1.
+- CA1E fails team-prior leader (+0.0268 / 0.0135). Every other F1 line passes, including all three within-cell lines.
+
+**Reading (evidence only).**
+- CA1E restores the within-cell z_off response that the served law and CA1 lack: -1.12 vs the actual -1.01 (CA1 -0.01).
+- CA1E also restores most of the within-cell trailer response: -0.49 vs -0.63 (CA1 +0.12).
+- CA1E carries a single scale for every role, so it imposes the trailer-type negative response on leaders, where the actual team-prior leader line is positive (+0.019 s/pt); CA1E's is -0.013.
+- CA1E undershoots the within-cell defence-z response (-0.49 vs -0.71) after the fold-1 rule excluded the separate defence term.
+- G1 SD caveat: the offline translation is a proxy committed before the fit. The labelled CA1 diagnostic loop moved the sim G1 SD by +0.001, against the proxy's +0.082. Without the G1 line, CA1 still fails four F2 gates and CA1E three, so the verdict does not rest on it.
+- The CA1E-vs-CA1 preference rule was not reached. Reported: dev_pos -0.0052 vs floor 0.0051; closer beyond floor on 1 of 3 within-cell lines.
+
+**Multi-level.** Per cell (all 45, both folds), per start type, per game and per team tables are in the evidence doc and the tables file.
+- 39 of 45 cells are UNDERPOWERED for slopes (< 3,000 rows).
+- Per-game absolute error: CA0 2.026, CA1 1.904, CA1E 1.908.
+- Team right-sign share (F2, 206 teams): CA1 0.665, CA1E 0.670.
+
+**Not run (not triggered by the rule):**
+- Screen (500 x 25). The `loop --spec s49` grader lines are committed. CA1E is not wired in the engine.
+- Full-size box read. AWS $0; no instance launched.
+
+**Checks.** Suite 870 passed, 1 skipped (862 + 8 new). Parity v10 with flags off: PASS, bit-identical. No served default changed. Freeze ON.
