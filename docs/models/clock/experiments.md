@@ -5051,3 +5051,118 @@ Findings, reported and selecting nothing:
 - Blocks C and D: a later day (ruling 2).
 
 Nothing adopted. No served default changed. Freeze ON. Status: blocks A+B run, awaiting PM ruling.
+
+## 48. Section 46 block C RESULTS: all four env arms FAIL C-pre offline (ED, EG, EM, EH); no screen, no full-size read; block C offline + C-pre run, awaiting PM ruling (2026-10-14, Opus engine worker; registration section 46, rulings 5, 6, 10)
+
+**Provenance.**
+- Grader: `scripts/grade_endgame_clock_v2.py offline --block C`, committed in `29f6dee` BEFORE any block-C fit existed. The C lines are new; round-9 rows, scoring and lines are imported unchanged from `grade_clock_env_v1.py`.
+- A control-only smoke reproduced the s41.B E0 values (F2 ratio_env 0.163, offence-tempo slope 0.405, dev_pos 6.6851, H1 0.135).
+- Fits are in `41366dc`:
+  - law module `cbb_sim.models.clock_env_v2`: not wired, no engine flag;
+  - trainer `train_clock_env_v2.py`: a copy of the round-9 trainer, same M2 estimator, K2 law family, S1 monthly refits, pre-tip assertion 17,960 / 17,960 games;
+  - 12 schedules: 4 arms x F1/F2, plus F2 `--seed 1` for the floor.
+- Artifacts: `data/processed/models/clock/s46C_*` (gitignored; HF `model_artifacts`).
+- Outputs: `results/endgame_clock_v2/grade/offline_C.json` and `offline_C_tables.md` (coded; the key follows the tables).
+- Reseed proof: max abs pmf difference 0.0 for E0 vs E0s1 and for every arm vs its seed-1 refit, so the binding floor is 2 x SD of the paired game-block bootstrap (200 draws, seed 12345).
+- Local compute only, about 10 minutes; AWS not used ($0).
+
+**Fitted coefficients** (F2 schedule, Nov -> Apr refits; log k per unit):
+
+| arm | coefficients |
+|---|---|
+| EG | c = -0.0140 .. -0.0147 per z_env_game |
+| ED | c_o = -0.061 .. -0.065, c_d = -0.041 .. -0.046 per unit quantile score |
+| EM | d = -0.0055 .. -0.0058 per z_gap |
+| EH | c_1 (H1) = -0.027, c_2 (H2) = -0.010 .. -0.012 per z_off |
+
+**Offline form of the lines** (game level, clock-complete test games):
+- ratio_env = slope of implied possessions on env / actual slope (round-9 primary; C-pre (i)).
+- ratio_env_h1 = the same on first-half rows (C-pre (iv)).
+- xq51 = offence-team quintile (team mean x_off) Q5 - Q1 of game possessions per team-game. This is the round-10 team-table definition; the actual is the offline actual on the same games (+0.778 F2), and the loop's literal +0.35 is the full-set loop value.
+- env Q1..Q5 gap = actual - model possessions per env quintile (383-384 games each; C-pre (iii)).
+- g1_sd = SD over games of implied possessions. This expectation SD lacks the within-game sampling term, so the loop translation sqrt(5.629^2 + var_arm - var_ctrl) is reported beside it.
+- ratio_tot = the total-on-env proxy (implied possessions x the game's realised PPP; the clock does not change PPP).
+
+Every floor is the arm-minus-control floor.
+
+**Block C, fold 2 (2024-25 test; 257,897 rows, 1,916 games; control zero-mass rows 311 = 0.12%).**
+
+| line | role | E0 (control) | EG | ED | EM | EH |
+|---|---|---:|---:|---:|---:|---:|
+| ratio_env (floor) | C-pre (i) [0.7, 1.15]; possessions-on-env primary, offline form | 0.163 | **1.015** (0.376) PASS | **1.148** (0.439) PASS | 0.170 (0.026) **FAIL** | 1.298 (0.503) **FAIL** |
+| ratio_env_h1 (floor) | C-pre (iv) [0.7, 1.15] | 0.135 | 0.933 (0.388) PASS | 1.055 (0.452) PASS | 0.142 (0.025) **FAIL** | 1.611 (0.722) **FAIL** |
+| xq51 (actual +0.778; floor) | C-pre (ii) <= actual + floor | -0.271 | +0.528 (0.055) PASS | +0.830 (0.067) PASS (+0.052 over, inside floor) | -0.306 (0.039) PASS | +0.797 (0.074) PASS |
+| env Q1 / Q2 / Q3 / Q4 / Q5 gap | C-pre (iii) no quintile further from 0 beyond floor | -1.44 / -0.45 / -0.22 / -0.43 / +0.25 | -0.67 / -0.16 / -0.22 / **-0.72** / **-0.54** **FAIL** (Q4 +0.286, floor 0.014) | -0.56 / -0.15 / -0.25 / **-0.83** / **-0.67** **FAIL** (Q4 +0.395, floor 0.026) | -1.39 / -0.42 / -0.19 / -0.39 / +0.28 PASS | -0.44 / -0.07 / -0.23 / **-0.84** / **-0.82** **FAIL** (Q4 +0.402, floor 0.017) |
+| dev_pos (d; floor) | C-pre (v) not worse beyond floor | 6.6851 | -0.0006 (0.0007) PASS | +0.0009 (0.0017) PASS | -0.0005 (0.0004) PASS | +0.0009 (0.0017) PASS |
+| **C-pre** | hard gate | | **FAIL (iii)** | **FAIL (iii)** | **FAIL (i), (iv)** | **FAIL (i), (iii), (iv)** |
+| ratio_tot (floor) | total-on-env primary, offline proxy, REPORTED | 0.768 | 1.011 (0.037) | 1.049 (0.044) | 0.769 (0.007) | 1.092 (0.050) |
+| g1_sd offline (actual 5.002; floor) | G1 SD co-primary, offline form, REPORTED | 3.208 | 3.264 (+0.057; 0.025) | 3.250 (+0.042; 0.031) | 3.217 (+0.009; 0.016) | 3.267 (+0.060; 0.034) |
+| loop translation of G1 SD (loop actual 5.474) | REPORTED | 5.629 | 5.661 (away) | 5.653 (away) | 5.634 | 5.663 (away) |
+| offence-tempo quintile slope (d; floor) | hold | 0.405 | 0.416 (+0.011; 0.005) | 0.408 | 0.406 | 0.405 |
+| tempo elasticity ratio | hold | 0.724 | 0.749 | 0.740 | 0.723 | 0.743 |
+| z_off / defence-z quintile slope | reported | 0.197 / 0.342 | 0.395 / 0.462 | 0.787 / 0.778 | 0.189 / 0.318 | 0.895 / 1.043 |
+| gap ratio | reported (unresolvable offline, s41.B) | -0.635 | -0.599 | -0.666 | 1.669 | -0.755 |
+| round-9 vetoes (count gap > 0.10, start type > 0.20 s, month > 0.25 s) | reported | | none | none | none | none |
+
+**Fold 1 confirmation** (2023-24; 226,677 rows, 1,672 games; control ratio_env 0.004, ratio_env_h1 0.056):
+
+| arm | ratio_env | H1 | xq51 (actual +0.720) | dev_pos d (floor) | env move same sign as F2 |
+|---|---:|---:|---:|---|---|
+| EG | 1.327 | 1.047 | +0.573 | -0.0014 (0.0006) | yes |
+| ED | 1.557 | 1.221 | +0.874 | -0.0005 (0.0017) | yes |
+| EM | 0.017 | 0.065 | -0.202 | -0.0009 (0.0005) | yes |
+| EH | 1.780 | 1.939 | +0.832 | +0.0003 (0.0018) | yes |
+
+On fold 1, EG and ED are also above 1.15 on ratio_env.
+
+**Multi-level (fold 2; the full segment tables are in `offline_C.json` `segments`).**
+- Per game: mean |implied - actual possessions| 3.175 (control) -> EG 3.146 (-0.029, floor 0.025), ED 3.161, EM 3.169, EH 3.155.
+- Per team: offence-team quintile possessions per team-game (Q1..Q5), 72-73 teams and 708-802 team-games per quintile, not underpowered:
+
+| source | Q1 | Q2 | Q3 | Q4 | Q5 |
+|---|---:|---:|---:|---:|---:|
+| actual | 66.94 | 67.65 | 66.99 | 67.40 | 67.72 |
+| control | 68.13 | 68.06 | 67.46 | 67.56 | 67.86 |
+| EG | 67.78 | 67.85 | 67.41 | 67.68 | 68.31 |
+| ED | 67.66 | 67.73 | 67.46 | 67.84 | 68.49 |
+
+- Team right-sign share (359 teams with >= 300 rows): EG 0.585, ED 0.593, EM 0.476, EH 0.599.
+- Per team prior quintile (offence net), ratio_env control / EG / ED: Q1 1.08 / 3.29 / 3.04, Q2 -0.22 / 0.41 / 0.44, Q3 0.41 / 1.50 / 1.62, Q4 0.34 / 2.02 / 2.13, Q5 0.39 / 1.08 / 0.80. 541-671 games per quintile; the per-quintile ratios are noisy.
+- Per possession type: no arm moves any start-type mean duration by more than 0.02 s (made_FG gap -0.200 -> -0.205 EG, period_start -0.408 -> -0.407).
+- Half: H1 ratio 0.13 -> 0.93 (EG) / 1.06 (ED); H2 0.20 -> 1.11 / 1.26.
+- Site: off_home 0.11 -> 0.89 / 1.01; off_away 0.21 -> 0.99 / 1.14; neutral (292 games) 0.12 -> 1.17 / 1.23.
+- Month: Nov-Mar each 0.71-1.36 for EG and ED. April (7 games) UNDERPOWERED.
+- Env quintile (games 383 / 383 / 383 / 383 / 384): the table above. The actual offline env-quintile means are non-monotone in Q4 (66.29 / 67.25 / 67.69 / **67.45** / 68.03).
+
+**Decision (s46 2.C C-pre as tightened by ruling 6, literal): NO ARM SURVIVES C-pre. Block C stops offline.** Ruling 10 says "the bounded by construction claims are hypotheses; C-pre is their test". The test's result for each arm:
+
+| arm | hypothesis | C-pre result |
+|---|---|---|
+| EG (game-symmetric) | | REJECTED on (iii). It passes (i), (ii), (iv) and (v): the env slope lands at 1.015 of actual, H1 0.933, offence-quintile spread +0.53 below the actual +0.78. But it pushes possessions up in env Q4 and Q5 past the actual: Q4 -0.43 -> -0.72, Q5 +0.25 -> -0.54. |
+| ED (rank-score split) | rank scores cap the tails | REJECTED on (iii) with the same Q4 / Q5 pattern (-0.83 / -0.67). The rank cap does not stop the over-push. |
+| EM (mismatch only) | | REJECTED on (i) and (iv) by construction: no env term, ratio 0.170. Its dev_pos gain (-0.0005, floor 0.0004) is not a C line. |
+| EH (half split) | | REJECTED on (i), (iii) and (iv). It is E1-like: ratio 1.298 = E1's 1.299, H1 1.611. |
+
+The round-10 R4 rule allowed two quintiles further from 0 and was a closed-loop rule; ruling 6 tightened it to "no env-quintile gap worse than control" offline. This is what binds EG and ED.
+
+**Disclosure, reported, selects nothing.**
+- The (iii) floor is the paired arm-minus-control model difference. The actual cancels in it, so it excludes the actual's own quintile sampling error, about 5.0 / sqrt(383) = 0.26 possessions per quintile.
+- The offline actual dips in Q4. At full size the round-10 loop actual is monotone (control gaps -3.30 ... -0.27; s45 4.2).
+- So the Q4 element of (iii) sits inside the actual's sampling noise, but the Q5 element does not: EG and ED cross the Q5 actual by -0.54 and -0.67.
+- The PM rules on whether (iii) should carry the actual's SE; the worker applies it as registered.
+
+**Structural finding (D, reported).** Every arm that moves the env slope also raises the between-game variance of expected possessions: offline SD +0.04 to +0.06, floor 0.025-0.034. Through the variance identity that moves the loop G1 SD away from 5.474 (translation 5.629 -> 5.65-5.66), as E1 did at full size (5.650). The G1 SD co-primary and the env primaries therefore conflict through the variance function: the latent sigma and chance-count dispersion (finding 5, `VD1`), not the env term. That is evidence for the separate variance-function spec of ruling 4, not a block-C result.
+
+**CA1 diagnostic (PM ruling 10-14).** Evidence: `docs/tests/ca1_trailer_slope_diag_2026-10-14.md`. It is labelled DIAGNOSTIC, not a selection read, and changes nothing.
+
+**NOT RUN:**
+- Closed-loop screen (s46 4.2): no arm passed C-pre.
+- Seed-count check: no screen.
+- Full-size box read: no screen, so none QUEUED; no box launched.
+- Block D (`VD1`): not this round (ruling 4).
+
+**Checks.**
+- Parity v10 with flags off: PASS, bit-identical (after the CA1 diagnostic wiring `9b3f5f3`, and again at the end).
+- Suite: 862 passed, 1 skipped (856 + 3 CA1-wiring tests + 3 clock_env_v2 tests).
+
+Nothing adopted. No served default changed. Freeze ON. Status: block C offline + C-pre run, awaiting PM ruling.
