@@ -107,3 +107,49 @@ def test_recode_blinds_arm_keys():
     assert codes["CA0"] == "CTRL" and len(set(codes.values())) == 5
     x = G.recode({"compare": {"CA1": {"dev": 1}}, "cells": [{"CA2": 3.0}]}, codes)
     assert "CA1" not in x["compare"] and codes["CA1"] in x["compare"] and codes["CA2"] in x["cells"][0]
+
+
+# ---- s46 law module (cbb_sim.models.endgame_v2) -----------------------------------------------------------------
+from cbb_sim.models import endgame_v2 as E2  # noqa: E402
+
+
+def test_ca1_ratio_is_identity_without_data_and_normalised():
+    n = 2000
+    rng = np.random.default_rng(5)
+    per, sec, m = rng.integers(1, 3, n), rng.integers(0, 241, n), rng.integers(-20, 21, n)
+    y, cen = rng.integers(0, 40, n), rng.random(n) < 0.1
+    p0 = _pmf(n, 6)
+    law = E2.fit_ca1(per, sec, m, y, cen, p0, p0, 50.0)
+    q = law.apply(p0[:20], per[:20], sec[:20], m[:20])
+    assert np.allclose(q.sum(1), 1.0)
+    one = E2.CA1Law(rm=np.ones_like(law.rm), re=np.ones_like(law.re), n=law.n, m=50.0, info={})
+    assert np.allclose(one.apply(p0[:20], per[:20], sec[:20], m[:20]), p0[:20])
+    assert np.allclose(one.apply_end(p0[:20], per[:20], sec[:20], m[:20]), p0[:20])
+
+
+def test_poisson_fe_recovers_cell_scale():
+    rng = np.random.default_rng(7)
+    n = 20000
+    key = rng.integers(0, 50, n)
+    x = (rng.random(n) < 0.5).astype(float)
+    mu = (5 + key % 7) * np.exp(0.3 * x)
+    y = rng.poisson(mu).astype(float)
+    b, _ = E2.poisson_fe(y, x[:, None], key)
+    assert abs(b[0] - 0.3) < 0.03
+    # a column the fixed effects absorb gets 0, not a singular solve
+    b2, _ = E2.poisson_fe(y, np.stack([x, (key == 3).astype(float)], 1), key)
+    assert abs(b2[0] - 0.3) < 0.03 and abs(b2[1]) < 1e-6
+
+
+def test_ca_scale_zero_is_identity_and_fps_law_scope():
+    p0 = _pmf(4)
+    per, sec, m = np.full(4, 2), np.array([45.0, 45.0, 10.0, 10.0]), np.array([15, -2, -2, 5])
+    law = E2.CAScaleLaw(arm="CA2", beta=np.zeros((2, 9, 5)), info={})
+    assert np.allclose(law.apply(p0, per, sec, m), p0, atol=1e-12)
+    fp = E2.FPLaw(r=np.array([[1.0] * 6, [0.5, 1, 1, 2, 1, 1]]), delta=np.array([0.0, -0.5]), arm="FP2", info={})
+    pr = np.full((4, 6), 1 / 6)
+    out = fp.apply(pr, per, sec, m)
+    # only row 2 (period 2, <= 30 s, trailing by 2) is in FPS
+    assert np.allclose(out[[0, 1, 3]], pr[[0, 1, 3]]) and out[2, 3] > out[2, 1] > out[2, 0]
+    mk = fp.apply_make(np.full(4, 0.4), per, sec, m)
+    assert np.allclose(mk[[0, 1, 3]], 0.4) and mk[2] < 0.4
