@@ -1,0 +1,1319 @@
+{
+  "created_at": "2026-10-25T20:56:53.414320+00:00",
+  "seasons": [
+    2022,
+    2023,
+    2024,
+    2025
+  ],
+  "rim_override_max_ft": 2.27,
+  "reconciliation": [
+    {
+      "season": 2022,
+      "shooting_rows_all_incl_ft": 873439,
+      "shooting_rows_all_located_pct": 62.1,
+      "fga_rows": 672277,
+      "fga_located_pct": 80.0
+    },
+    {
+      "season": 2023,
+      "shooting_rows_all_incl_ft": 920170,
+      "shooting_rows_all_located_pct": 64.84,
+      "fga_rows": 701446,
+      "fga_located_pct": 84.33
+    },
+    {
+      "season": 2024,
+      "shooting_rows_all_incl_ft": 957173,
+      "shooting_rows_all_located_pct": 66.79,
+      "fga_rows": 724063,
+      "fga_located_pct": 87.55
+    },
+    {
+      "season": 2025,
+      "shooting_rows_all_incl_ft": 948715,
+      "shooting_rows_all_located_pct": 75.03,
+      "fga_rows": 716446,
+      "fga_located_pct": 98.63
+    }
+  ],
+  "by_season": [
+    {
+      "season": 2022,
+      "n": 672277,
+      "located": 537854,
+      "coverage_pct": 80.0
+    },
+    {
+      "season": 2023,
+      "n": 701446,
+      "located": 591564,
+      "coverage_pct": 84.33
+    },
+    {
+      "season": 2024,
+      "n": 724063,
+      "located": 633884,
+      "coverage_pct": 87.55
+    },
+    {
+      "season": 2025,
+      "n": 716446,
+      "located": 706606,
+      "coverage_pct": 98.63
+    }
+  ],
+  "by_season_class": [
+    {
+      "season": 2022,
+      "shot_class": "FGA_3",
+      "n": 256236,
+      "located": 206705,
+      "coverage_pct": 80.67
+    },
+    {
+      "season": 2022,
+      "shot_class": "FGA_jump2",
+      "n": 177166,
+      "located": 140453,
+      "coverage_pct": 79.28
+    },
+    {
+      "season": 2022,
+      "shot_class": "FGA_rim",
+      "n": 238875,
+      "located": 190696,
+      "coverage_pct": 79.83
+    },
+    {
+      "season": 2023,
+      "shot_class": "FGA_3",
+      "n": 264735,
+      "located": 224841,
+      "coverage_pct": 84.93
+    },
+    {
+      "season": 2023,
+      "shot_class": "FGA_jump2",
+      "n": 181559,
+      "located": 151653,
+      "coverage_pct": 83.53
+    },
+    {
+      "season": 2023,
+      "shot_class": "FGA_rim",
+      "n": 255152,
+      "located": 215070,
+      "coverage_pct": 84.29
+    },
+    {
+      "season": 2024,
+      "shot_class": "FGA_3",
+      "n": 270755,
+      "located": 238613,
+      "coverage_pct": 88.13
+    },
+    {
+      "season": 2024,
+      "shot_class": "FGA_jump2",
+      "n": 186116,
+      "located": 162194,
+      "coverage_pct": 87.15
+    },
+    {
+      "season": 2024,
+      "shot_class": "FGA_rim",
+      "n": 267192,
+      "located": 233077,
+      "coverage_pct": 87.23
+    },
+    {
+      "season": 2025,
+      "shot_class": "FGA_3",
+      "n": 280450,
+      "located": 278323,
+      "coverage_pct": 99.24
+    },
+    {
+      "season": 2025,
+      "shot_class": "FGA_jump2",
+      "n": 169243,
+      "located": 167040,
+      "coverage_pct": 98.7
+    },
+    {
+      "season": 2025,
+      "shot_class": "FGA_rim",
+      "n": 266753,
+      "located": 261243,
+      "coverage_pct": 97.93
+    }
+  ],
+  "by_season_site": [
+    {
+      "season": 2022,
+      "site": "away",
+      "n": 334040,
+      "located": 264671,
+      "coverage_pct": 79.23
+    },
+    {
+      "season": 2022,
+      "site": "home",
+      "n": 338237,
+      "located": 273183,
+      "coverage_pct": 80.77
+    },
+    {
+      "season": 2023,
+      "site": "away",
+      "n": 349115,
+      "located": 293053,
+      "coverage_pct": 83.94
+    },
+    {
+      "season": 2023,
+      "site": "home",
+      "n": 352331,
+      "located": 298511,
+      "coverage_pct": 84.72
+    },
+    {
+      "season": 2024,
+      "site": "away",
+      "n": 360937,
+      "located": 313569,
+      "coverage_pct": 86.88
+    },
+    {
+      "season": 2024,
+      "site": "home",
+      "n": 363126,
+      "located": 320315,
+      "coverage_pct": 88.21
+    },
+    {
+      "season": 2025,
+      "site": "away",
+      "n": 356030,
+      "located": 351209,
+      "coverage_pct": 98.65
+    },
+    {
+      "season": 2025,
+      "site": "home",
+      "n": 360416,
+      "located": 355397,
+      "coverage_pct": 98.61
+    }
+  ],
+  "by_season_month": [
+    {
+      "season": 2022,
+      "month": 1,
+      "n": 157713,
+      "located": 133752,
+      "coverage_pct": 84.81
+    },
+    {
+      "season": 2022,
+      "month": 2,
+      "n": 163936,
+      "located": 141756,
+      "coverage_pct": 86.47
+    },
+    {
+      "season": 2022,
+      "month": 3,
+      "n": 71798,
+      "located": 45710,
+      "coverage_pct": 63.66
+    },
+    {
+      "season": 2022,
+      "month": 4,
+      "n": 507,
+      "located": 89,
+      "coverage_pct": 17.55
+    },
+    {
+      "season": 2022,
+      "month": 11,
+      "n": 152367,
+      "located": 117367,
+      "coverage_pct": 77.03
+    },
+    {
+      "season": 2022,
+      "month": 12,
+      "n": 125956,
+      "located": 99180,
+      "coverage_pct": 78.74
+    },
+    {
+      "season": 2023,
+      "month": 1,
+      "n": 163047,
+      "located": 145615,
+      "coverage_pct": 89.31
+    },
+    {
+      "season": 2023,
+      "month": 2,
+      "n": 157154,
+      "located": 138590,
+      "coverage_pct": 88.19
+    },
+    {
+      "season": 2023,
+      "month": 3,
+      "n": 63506,
+      "located": 40883,
+      "coverage_pct": 64.38
+    },
+    {
+      "season": 2023,
+      "month": 4,
+      "n": 340,
+      "located": 34,
+      "coverage_pct": 10.0
+    },
+    {
+      "season": 2023,
+      "month": 11,
+      "n": 170410,
+      "located": 139384,
+      "coverage_pct": 81.79
+    },
+    {
+      "season": 2023,
+      "month": 12,
+      "n": 146989,
+      "located": 127058,
+      "coverage_pct": 86.44
+    },
+    {
+      "season": 2024,
+      "month": 1,
+      "n": 161752,
+      "located": 149472,
+      "coverage_pct": 92.41
+    },
+    {
+      "season": 2024,
+      "month": 2,
+      "n": 159921,
+      "located": 147745,
+      "coverage_pct": 92.39
+    },
+    {
+      "season": 2024,
+      "month": 3,
+      "n": 92947,
+      "located": 70394,
+      "coverage_pct": 75.74
+    },
+    {
+      "season": 2024,
+      "month": 4,
+      "n": 733,
+      "located": 121,
+      "coverage_pct": 16.51
+    },
+    {
+      "season": 2024,
+      "month": 11,
+      "n": 163432,
+      "located": 138869,
+      "coverage_pct": 84.97
+    },
+    {
+      "season": 2024,
+      "month": 12,
+      "n": 145278,
+      "located": 127283,
+      "coverage_pct": 87.61
+    },
+    {
+      "season": 2025,
+      "month": 1,
+      "n": 165556,
+      "located": 162506,
+      "coverage_pct": 98.16
+    },
+    {
+      "season": 2025,
+      "month": 2,
+      "n": 156556,
+      "located": 154708,
+      "coverage_pct": 98.82
+    },
+    {
+      "season": 2025,
+      "month": 3,
+      "n": 89157,
+      "located": 87791,
+      "coverage_pct": 98.47
+    },
+    {
+      "season": 2025,
+      "month": 4,
+      "n": 2064,
+      "located": 2053,
+      "coverage_pct": 99.47
+    },
+    {
+      "season": 2025,
+      "month": 11,
+      "n": 169865,
+      "located": 167681,
+      "coverage_pct": 98.71
+    },
+    {
+      "season": 2025,
+      "month": 12,
+      "n": 133248,
+      "located": 131867,
+      "coverage_pct": 98.96
+    }
+  ],
+  "by_playtype_season": [
+    {
+      "season": 2022,
+      "playType": "DunkShot",
+      "n": 23505,
+      "located": 18391,
+      "coverage_pct": 78.24
+    },
+    {
+      "season": 2022,
+      "playType": "JumpShot",
+      "n": 436474,
+      "located": 350238,
+      "coverage_pct": 80.24
+    },
+    {
+      "season": 2022,
+      "playType": "LayUpShot",
+      "n": 210763,
+      "located": 169110,
+      "coverage_pct": 80.24
+    },
+    {
+      "season": 2022,
+      "playType": "Not Available",
+      "n": 26,
+      "located": 18,
+      "coverage_pct": 69.23
+    },
+    {
+      "season": 2022,
+      "playType": "TipShot",
+      "n": 1509,
+      "located": 97,
+      "coverage_pct": 6.43
+    },
+    {
+      "season": 2023,
+      "playType": "DunkShot",
+      "n": 24957,
+      "located": 20894,
+      "coverage_pct": 83.72
+    },
+    {
+      "season": 2023,
+      "playType": "JumpShot",
+      "n": 449816,
+      "located": 380032,
+      "coverage_pct": 84.49
+    },
+    {
+      "season": 2023,
+      "playType": "LayUpShot",
+      "n": 225418,
+      "located": 190515,
+      "coverage_pct": 84.52
+    },
+    {
+      "season": 2023,
+      "playType": "Not Available",
+      "n": 69,
+      "located": 53,
+      "coverage_pct": 76.81
+    },
+    {
+      "season": 2023,
+      "playType": "TipShot",
+      "n": 1186,
+      "located": 70,
+      "coverage_pct": 5.9
+    },
+    {
+      "season": 2024,
+      "playType": "DunkShot",
+      "n": 25303,
+      "located": 21999,
+      "coverage_pct": 86.94
+    },
+    {
+      "season": 2024,
+      "playType": "JumpShot",
+      "n": 461065,
+      "located": 405001,
+      "coverage_pct": 87.84
+    },
+    {
+      "season": 2024,
+      "playType": "LayUpShot",
+      "n": 236934,
+      "located": 206831,
+      "coverage_pct": 87.29
+    },
+    {
+      "season": 2024,
+      "playType": "TipShot",
+      "n": 761,
+      "located": 53,
+      "coverage_pct": 6.96
+    },
+    {
+      "season": 2025,
+      "playType": "DunkShot",
+      "n": 24460,
+      "located": 24113,
+      "coverage_pct": 98.58
+    },
+    {
+      "season": 2025,
+      "playType": "JumpShot",
+      "n": 462118,
+      "located": 457788,
+      "coverage_pct": 99.06
+    },
+    {
+      "season": 2025,
+      "playType": "LayUpShot",
+      "n": 220693,
+      "located": 215762,
+      "coverage_pct": 97.77
+    },
+    {
+      "season": 2025,
+      "playType": "TipShot",
+      "n": 9175,
+      "located": 8943,
+      "coverage_pct": 97.47
+    }
+  ],
+  "per_team_coverage": [
+    {
+      "season": 2022,
+      "n_teams": 369,
+      "min": 0.0,
+      "p10": 55.87,
+      "median": 89.49,
+      "p90": 97.96,
+      "max": 100.0,
+      "share_teams_below_40pct": 5.96
+    },
+    {
+      "season": 2023,
+      "n_teams": 374,
+      "min": 0.0,
+      "p10": 65.02,
+      "median": 91.95,
+      "p90": 99.01,
+      "max": 100.0,
+      "share_teams_below_40pct": 4.28
+    },
+    {
+      "season": 2024,
+      "n_teams": 376,
+      "min": 0.0,
+      "p10": 78.87,
+      "median": 93.69,
+      "p90": 99.1,
+      "max": 100.0,
+      "share_teams_below_40pct": 2.13
+    },
+    {
+      "season": 2025,
+      "n_teams": 378,
+      "min": 88.3,
+      "p10": 96.81,
+      "median": 99.15,
+      "p90": 99.5,
+      "max": 100.0,
+      "share_teams_below_40pct": 0.0
+    }
+  ],
+  "per_game_coverage": [
+    {
+      "season": 2022,
+      "n_games": 5832,
+      "share_games_zero": 5.11,
+      "share_games_full": 56.14,
+      "p10": 9.73,
+      "median": 99.08
+    },
+    {
+      "season": 2023,
+      "n_games": 6115,
+      "share_games_zero": 3.63,
+      "share_games_full": 58.79,
+      "p10": 15.83,
+      "median": 99.1
+    },
+    {
+      "season": 2024,
+      "n_games": 6151,
+      "share_games_zero": 2.57,
+      "share_games_full": 56.75,
+      "p10": 40.52,
+      "median": 99.1
+    },
+    {
+      "season": 2025,
+      "n_games": 6135,
+      "share_games_zero": 0.16,
+      "share_games_full": 74.56,
+      "p10": 98.06,
+      "median": 99.21
+    }
+  ],
+  "make_rate_located_vs_not": [
+    {
+      "season": 2022,
+      "shot_class": "FGA_3",
+      "located": false,
+      "n": 49531,
+      "make": 33.314
+    },
+    {
+      "season": 2022,
+      "shot_class": "FGA_3",
+      "located": true,
+      "n": 206705,
+      "make": 33.672
+    },
+    {
+      "season": 2022,
+      "shot_class": "FGA_jump2",
+      "located": false,
+      "n": 36713,
+      "make": 37.028
+    },
+    {
+      "season": 2022,
+      "shot_class": "FGA_jump2",
+      "located": true,
+      "n": 140453,
+      "make": 37.511
+    },
+    {
+      "season": 2022,
+      "shot_class": "FGA_rim",
+      "located": false,
+      "n": 48179,
+      "make": 61.392
+    },
+    {
+      "season": 2022,
+      "shot_class": "FGA_rim",
+      "located": true,
+      "n": 190696,
+      "make": 58.438
+    },
+    {
+      "season": 2023,
+      "shot_class": "FGA_3",
+      "located": false,
+      "n": 39894,
+      "make": 33.667
+    },
+    {
+      "season": 2023,
+      "shot_class": "FGA_3",
+      "located": true,
+      "n": 224841,
+      "make": 34.017
+    },
+    {
+      "season": 2023,
+      "shot_class": "FGA_jump2",
+      "located": false,
+      "n": 29906,
+      "make": 37.972
+    },
+    {
+      "season": 2023,
+      "shot_class": "FGA_jump2",
+      "located": true,
+      "n": 151653,
+      "make": 37.946
+    },
+    {
+      "season": 2023,
+      "shot_class": "FGA_rim",
+      "located": false,
+      "n": 40082,
+      "make": 62.275
+    },
+    {
+      "season": 2023,
+      "shot_class": "FGA_rim",
+      "located": true,
+      "n": 215070,
+      "make": 58.32
+    },
+    {
+      "season": 2024,
+      "shot_class": "FGA_3",
+      "located": false,
+      "n": 32142,
+      "make": 33.567
+    },
+    {
+      "season": 2024,
+      "shot_class": "FGA_3",
+      "located": true,
+      "n": 238613,
+      "make": 33.801
+    },
+    {
+      "season": 2024,
+      "shot_class": "FGA_jump2",
+      "located": false,
+      "n": 23922,
+      "make": 41.255
+    },
+    {
+      "season": 2024,
+      "shot_class": "FGA_jump2",
+      "located": true,
+      "n": 162194,
+      "make": 38.955
+    },
+    {
+      "season": 2024,
+      "shot_class": "FGA_rim",
+      "located": false,
+      "n": 34115,
+      "make": 61.741
+    },
+    {
+      "season": 2024,
+      "shot_class": "FGA_rim",
+      "located": true,
+      "n": 233077,
+      "make": 57.728
+    },
+    {
+      "season": 2025,
+      "shot_class": "FGA_3",
+      "located": false,
+      "n": 2127,
+      "make": 35.308
+    },
+    {
+      "season": 2025,
+      "shot_class": "FGA_3",
+      "located": true,
+      "n": 278323,
+      "make": 33.804
+    },
+    {
+      "season": 2025,
+      "shot_class": "FGA_jump2",
+      "located": false,
+      "n": 2203,
+      "make": 58.647
+    },
+    {
+      "season": 2025,
+      "shot_class": "FGA_jump2",
+      "located": true,
+      "n": 167040,
+      "make": 38.795
+    },
+    {
+      "season": 2025,
+      "shot_class": "FGA_rim",
+      "located": false,
+      "n": 5510,
+      "make": 81.47
+    },
+    {
+      "season": 2025,
+      "shot_class": "FGA_rim",
+      "located": true,
+      "n": 261243,
+      "make": 58.13
+    }
+  ],
+  "make_rate_located_vs_not_partial_games": [
+    {
+      "season": 2022,
+      "shot_class": "FGA_3",
+      "located": false,
+      "n": 31662,
+      "make": 32.951
+    },
+    {
+      "season": 2022,
+      "shot_class": "FGA_3",
+      "located": true,
+      "n": 12805,
+      "make": 35.869
+    },
+    {
+      "season": 2022,
+      "shot_class": "FGA_jump2",
+      "located": false,
+      "n": 24422,
+      "make": 35.918
+    },
+    {
+      "season": 2022,
+      "shot_class": "FGA_jump2",
+      "located": true,
+      "n": 8125,
+      "make": 38.782
+    },
+    {
+      "season": 2022,
+      "shot_class": "FGA_rim",
+      "located": false,
+      "n": 28260,
+      "make": 59.784
+    },
+    {
+      "season": 2022,
+      "shot_class": "FGA_rim",
+      "located": true,
+      "n": 12939,
+      "make": 62.084
+    },
+    {
+      "season": 2023,
+      "shot_class": "FGA_3",
+      "located": false,
+      "n": 25502,
+      "make": 33.421
+    },
+    {
+      "season": 2023,
+      "shot_class": "FGA_3",
+      "located": true,
+      "n": 11961,
+      "make": 34.83
+    },
+    {
+      "season": 2023,
+      "shot_class": "FGA_jump2",
+      "located": false,
+      "n": 19423,
+      "make": 36.905
+    },
+    {
+      "season": 2023,
+      "shot_class": "FGA_jump2",
+      "located": true,
+      "n": 7973,
+      "make": 39.546
+    },
+    {
+      "season": 2023,
+      "shot_class": "FGA_rim",
+      "located": false,
+      "n": 23096,
+      "make": 59.456
+    },
+    {
+      "season": 2023,
+      "shot_class": "FGA_rim",
+      "located": true,
+      "n": 12299,
+      "make": 60.826
+    },
+    {
+      "season": 2024,
+      "shot_class": "FGA_3",
+      "located": false,
+      "n": 21672,
+      "make": 33.49
+    },
+    {
+      "season": 2024,
+      "shot_class": "FGA_3",
+      "located": true,
+      "n": 11572,
+      "make": 33.797
+    },
+    {
+      "season": 2024,
+      "shot_class": "FGA_jump2",
+      "located": false,
+      "n": 15412,
+      "make": 38.483
+    },
+    {
+      "season": 2024,
+      "shot_class": "FGA_jump2",
+      "located": true,
+      "n": 7423,
+      "make": 40.792
+    },
+    {
+      "season": 2024,
+      "shot_class": "FGA_rim",
+      "located": false,
+      "n": 20092,
+      "make": 57.874
+    },
+    {
+      "season": 2024,
+      "shot_class": "FGA_rim",
+      "located": true,
+      "n": 11628,
+      "make": 60.346
+    },
+    {
+      "season": 2025,
+      "shot_class": "FGA_3",
+      "located": false,
+      "n": 1253,
+      "make": 34.158
+    },
+    {
+      "season": 2025,
+      "shot_class": "FGA_3",
+      "located": true,
+      "n": 1861,
+      "make": 33.799
+    },
+    {
+      "season": 2025,
+      "shot_class": "FGA_jump2",
+      "located": false,
+      "n": 851,
+      "make": 37.72
+    },
+    {
+      "season": 2025,
+      "shot_class": "FGA_jump2",
+      "located": true,
+      "n": 1089,
+      "make": 38.2
+    },
+    {
+      "season": 2025,
+      "shot_class": "FGA_rim",
+      "located": false,
+      "n": 1051,
+      "make": 59.848
+    },
+    {
+      "season": 2025,
+      "shot_class": "FGA_rim",
+      "located": true,
+      "n": 1777,
+      "make": 60.945
+    }
+  ],
+  "frame": {
+    "x_min": 0.0,
+    "x_max": 940.0,
+    "y_min": 0.0,
+    "y_max": 500.0,
+    "share_x_left_half": 0.4994,
+    "make_by_folded_distance": [
+      {
+        "dbin": "[0, 1)",
+        "value": 2,
+        "n": 95839,
+        "make": 70.64
+      },
+      {
+        "dbin": "[0, 1)",
+        "value": 3,
+        "n": 142,
+        "make": 0.7
+      },
+      {
+        "dbin": "[1, 2)",
+        "value": 2,
+        "n": 117949,
+        "make": 70.11
+      },
+      {
+        "dbin": "[1, 2)",
+        "value": 3,
+        "n": 61,
+        "make": 11.48
+      },
+      {
+        "dbin": "[2, 3)",
+        "value": 2,
+        "n": 214225,
+        "make": 63.77
+      },
+      {
+        "dbin": "[2, 3)",
+        "value": 3,
+        "n": 124,
+        "make": 8.06
+      },
+      {
+        "dbin": "[3, 4)",
+        "value": 2,
+        "n": 200565,
+        "make": 57.13
+      },
+      {
+        "dbin": "[3, 4)",
+        "value": 3,
+        "n": 149,
+        "make": 8.72
+      },
+      {
+        "dbin": "[4, 6)",
+        "value": 2,
+        "n": 285733,
+        "make": 47.61
+      },
+      {
+        "dbin": "[4, 6)",
+        "value": 3,
+        "n": 235,
+        "make": 9.79
+      },
+      {
+        "dbin": "[6, 8)",
+        "value": 2,
+        "n": 152279,
+        "make": 39.03
+      },
+      {
+        "dbin": "[6, 8)",
+        "value": 3,
+        "n": 145,
+        "make": 17.93
+      },
+      {
+        "dbin": "[8, 10)",
+        "value": 2,
+        "n": 101783,
+        "make": 36.02
+      },
+      {
+        "dbin": "[8, 10)",
+        "value": 3,
+        "n": 96,
+        "make": 9.38
+      },
+      {
+        "dbin": "[10, 12)",
+        "value": 2,
+        "n": 80545,
+        "make": 36.08
+      },
+      {
+        "dbin": "[10, 12)",
+        "value": 3,
+        "n": 71,
+        "make": 11.27
+      },
+      {
+        "dbin": "[12, 14)",
+        "value": 2,
+        "n": 74912,
+        "make": 36.21
+      },
+      {
+        "dbin": "[12, 14)",
+        "value": 3,
+        "n": 54,
+        "make": 11.11
+      },
+      {
+        "dbin": "[14, 16)",
+        "value": 2,
+        "n": 68177,
+        "make": 36.34
+      },
+      {
+        "dbin": "[14, 16)",
+        "value": 3,
+        "n": 73,
+        "make": 8.22
+      },
+      {
+        "dbin": "[16, 18)",
+        "value": 2,
+        "n": 63535,
+        "make": 36.22
+      },
+      {
+        "dbin": "[16, 18)",
+        "value": 3,
+        "n": 49,
+        "make": 2.04
+      },
+      {
+        "dbin": "[18, 20)",
+        "value": 2,
+        "n": 43134,
+        "make": 36.41
+      },
+      {
+        "dbin": "[18, 20)",
+        "value": 3,
+        "n": 65,
+        "make": 6.15
+      },
+      {
+        "dbin": "[20, 22)",
+        "value": 2,
+        "n": 19310,
+        "make": 38.04
+      },
+      {
+        "dbin": "[20, 22)",
+        "value": 3,
+        "n": 1955,
+        "make": 28.95
+      },
+      {
+        "dbin": "[22, 24)",
+        "value": 2,
+        "n": 2656,
+        "make": 24.55
+      },
+      {
+        "dbin": "[22, 24)",
+        "value": 3,
+        "n": 311174,
+        "make": 35.14
+      },
+      {
+        "dbin": "[24, 26)",
+        "value": 2,
+        "n": 512,
+        "make": 12.89
+      },
+      {
+        "dbin": "[24, 26)",
+        "value": 3,
+        "n": 443498,
+        "make": 33.91
+      },
+      {
+        "dbin": "[26, 28)",
+        "value": 2,
+        "n": 200,
+        "make": 8.5
+      },
+      {
+        "dbin": "[26, 28)",
+        "value": 3,
+        "n": 145692,
+        "make": 32.33
+      },
+      {
+        "dbin": "[28, 30)",
+        "value": 2,
+        "n": 50,
+        "make": 8.0
+      },
+      {
+        "dbin": "[28, 30)",
+        "value": 3,
+        "n": 33183,
+        "make": 30.71
+      },
+      {
+        "dbin": "[30, 35)",
+        "value": 2,
+        "n": 17,
+        "make": 11.76
+      },
+      {
+        "dbin": "[30, 35)",
+        "value": 3,
+        "n": 10230,
+        "make": 27.57
+      },
+      {
+        "dbin": "[35, 47)",
+        "value": 2,
+        "n": 5,
+        "make": 0.0
+      },
+      {
+        "dbin": "[35, 47)",
+        "value": 3,
+        "n": 1484,
+        "make": 17.79
+      },
+      {
+        "dbin": "[47, 100)",
+        "value": 3,
+        "n": 2,
+        "make": 100.0
+      }
+    ],
+    "make_by_left_basket_distance_unfolded": [
+      {
+        "dbin_left": "[0, 1)",
+        "n": 47150,
+        "make": 70.91
+      },
+      {
+        "dbin_left": "[1, 2)",
+        "n": 55300,
+        "make": 70.5
+      },
+      {
+        "dbin_left": "[2, 3)",
+        "n": 104064,
+        "make": 64.38
+      },
+      {
+        "dbin_left": "[3, 4)",
+        "n": 98267,
+        "make": 57.62
+      },
+      {
+        "dbin_left": "[4, 6)",
+        "n": 147045,
+        "make": 48.24
+      },
+      {
+        "dbin_left": "[6, 8)",
+        "n": 78431,
+        "make": 39.19
+      },
+      {
+        "dbin_left": "[8, 10)",
+        "n": 52292,
+        "make": 36.01
+      },
+      {
+        "dbin_left": "[10, 12)",
+        "n": 40465,
+        "make": 36.13
+      },
+      {
+        "dbin_left": "[12, 14)",
+        "n": 37491,
+        "make": 35.98
+      },
+      {
+        "dbin_left": "[14, 16)",
+        "n": 34437,
+        "make": 36.11
+      },
+      {
+        "dbin_left": "[16, 18)",
+        "n": 31718,
+        "make": 36.01
+      },
+      {
+        "dbin_left": "[18, 20)",
+        "n": 21827,
+        "make": 36.02
+      },
+      {
+        "dbin_left": "[20, 22)",
+        "n": 10642,
+        "make": 36.66
+      },
+      {
+        "dbin_left": "[22, 24)",
+        "n": 160639,
+        "make": 35.02
+      },
+      {
+        "dbin_left": "[24, 26)",
+        "n": 220081,
+        "make": 33.87
+      },
+      {
+        "dbin_left": "[26, 28)",
+        "n": 71169,
+        "make": 31.99
+      },
+      {
+        "dbin_left": "[28, 30)",
+        "n": 16303,
+        "make": 30.86
+      },
+      {
+        "dbin_left": "[30, 35)",
+        "n": 5413,
+        "make": 27.93
+      },
+      {
+        "dbin_left": "[35, 47)",
+        "n": 999,
+        "make": 15.72
+      },
+      {
+        "dbin_left": "[47, 100)",
+        "n": 1236175,
+        "make": 43.83
+      }
+    ],
+    "share_nearer_right_basket": 0.5006,
+    "per_team_period_left_share_quantiles": {
+      "p05": 0.0,
+      "p25": 0.0,
+      "p50": 0.5202,
+      "p75": 1.0,
+      "p95": 1.0
+    },
+    "share_team_periods_one_end_ge95pct": 0.9987,
+    "share_team_games_switch_end_at_half": 0.9998,
+    "median_folded_distance_by_playtype": {
+      "DunkShot": 2.27,
+      "JumpShot": 23.22,
+      "LayUpShot": 3.36,
+      "Not Available": 6.05,
+      "TipShot": 0.39
+    },
+    "three_pt_distance_quantiles_ft": {
+      "p01": 22.04,
+      "p05": 22.54,
+      "p50": 24.63
+    }
+  },
+  "design_join": {
+    "n_design_rows": 2239678,
+    "matched_pct": 100.0,
+    "unmatched_rows": 0,
+    "matched_pct_made": 100.0,
+    "matched_pct_missed": 100.0,
+    "located_pct": 88.701,
+    "located_pct_by_season": {
+      "2022": 79.593,
+      "2023": 84.488,
+      "2024": 89.256,
+      "2025": 98.668
+    },
+    "located_pct_by_season_class": {
+      "2022_FGA_rim": 79.375,
+      "2022_FGA_jump2": 78.92,
+      "2022_FGA_3": 80.277,
+      "2023_FGA_rim": 84.398,
+      "2023_FGA_jump2": 83.554,
+      "2023_FGA_3": 85.239,
+      "2024_FGA_rim": 88.851,
+      "2024_FGA_jump2": 89.058,
+      "2024_FGA_3": 89.795,
+      "2025_FGA_rim": 97.963,
+      "2025_FGA_jump2": 98.759,
+      "2025_FGA_3": 99.285
+    }
+  }
+}

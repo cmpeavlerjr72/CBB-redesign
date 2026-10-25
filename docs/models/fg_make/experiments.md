@@ -2338,3 +2338,114 @@ NO WINNER by the pre-registered rule. `TSR` wins the primary (harness |1 - slope
 ## 30. Lane A day round 4: RESULTS (run 2026-10-01 09:52-10:24 EDT; pre-registration section 29, commit 069ce71)
 
 Owner diagnosis: by the registered rule neither T1 nor T2 owns the drift (T1 holds for March, +1.38 pp as-of minus realised, but not November; T2 36% / 48% < 50%); the league jumper rate rises Nov-Feb and falls in March, a season-to-date as-of lags both, and TS-R's trees absorb the training-season lag as a +0.6 pp level. Arms: **TSRJ1 (TS-R + 28-day rolling league offset) is an OFFLINE WINNER**: harness |1 - slope| 0.0880 -> 0.0033 / 0.0028 (4.7 floors; close agrees; margin SD 8.86), team-game make slopes 0.85 / 0.96 / 0.86, every powered month cell within +-1.0 pp (jumper March +0.97 / +0.95), level, log-loss and D8 guards pass both seeds, fold 1 same direction, parity exact. TSRJ2 fails the month line (jumper January +1.01). No served-structure arm passes (aLJ1: D8 seed-0 jumper and fold-1 November; aLJ2: January +1.23). Wired default-off as ENGINE_FG_MAKE=g9ts_TSRJ1 (commit 7b35024; parity v9 bit-identical), HF pushed, local tap direction toward slope 1 (underpowered), full-size read requested (box d1001_A_1). Nothing adopted. Tables: docs/tests/g9_slope_team_response_2026-10-01.md section 9.
+
+## 31. PAE shot-location team rating round (pre-registration, written and COMMITTED before any arm ran)
+
+**Origin.** PM brief 2026-10-25. The idea is the collaborator's Layer 2 (rfq-collab `CBB Model/Heuermann/README.md`, "Layer 2: shot-location points-above-expected (PAE) solver" and "Shot locations"): a per-team points-above-expected rating from shot coordinates. We test the idea with our own data, our own as-of discipline and our own code, not his. Offline evidence only: the served stack is FROZEN. No adoption, no served-default change, no paired sim run, no engine wiring. The served fg_make is `ENGINE_FG_MAKE=round4_B1` (the `adapters.py` default since 2026-09-11; the brief named `round3_shooter_S_C_s1`, which the header of `model.md` still calls served). The control is the lane-A reference `aR` (sections 23-30): the served B1 spec refit under the round's seed.
+
+At this commit no fit output exists: `data/processed/models/fg_make/pae_v1/` and `data/processed/models/fg_make/round_pae/` do not exist. Code committed with this section: `scripts/build_pae_shot_rating_v1.py` (only `--part coverage` has been run), `scripts/train_fg_make_v5_pae_v1.py`, `scripts/grade_fg_make_pae_v1.py`.
+
+### 31.1 Step-1 coverage reconciliation (diagnostic, no fit; `build_pae_shot_rating_v1.py --part coverage`, `docs/tests/fg_make_pae_coverage_2026-10-25.json`)
+
+CBBD season labels (2022 = 2021-22). FGA rows = the project's `classify_frame` with the v2 rim override (2.27 ft), de-duplicated on (gameId, id). Season 2026 was not opened.
+
+**Coverage by season and class (share of FGA rows with both `shot_location_x` and `_y`).**
+
+| season | all shooting rows incl. FT | FGA | rim | jump2 | three | home | away |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| 2022 | 62.10% | 80.00% | 79.83% | 79.28% | 80.67% | 80.77% | 79.23% |
+| 2023 | 64.84% | 84.33% | 84.29% | 83.53% | 84.93% | 84.72% | 83.94% |
+| 2024 | 66.79% | 87.55% | 87.23% | 87.15% | 88.13% | 88.21% | 86.88% |
+| 2025 | 75.03% | 98.63% | 97.93% | 98.70% | 99.24% | 98.61% | 98.65% |
+
+The PM's spot-check figures (63.7 / 69.8 / 74.9%) are the first column: `shootingPlay` includes free throws, which never carry a coordinate. On FGA rows coverage is 80-88% in 2022-2024 and 98.6% in 2025, matching the 78-88% / 97-99% in `features.md`. Site is flat (home minus away 0.0-1.5 pp).
+
+**By month.** 2022-2024: Nov 77-85%, Dec 79-88%, Jan 85-92%, Feb 86-92%, **March 64-76%** (postseason / neutral-site broadcasts), April 10-18% (a few hundred rows). 2025: 98.2-99.5% in every month.
+
+**Per team (teams with >= 200 FGA).** min / p10 / median / p90: 2022 0.0 / 55.9 / 89.5 / 98.0%; 2023 0.0 / 65.0 / 92.0 / 99.0%; 2024 0.0 / 78.9 / 93.7 / 99.1%; 2025 88.3 / 96.8 / 99.2 / 99.5%. Teams below 40%: 6.0 / 4.3 / 2.1 / 0.0%. **Per game:** games with zero located FGA 5.1 / 3.6 / 2.6 / 0.16%; p10 game coverage 9.7 / 15.8 / 40.5 / 98.1%. Coverage is a property of the GAME (a broadcast either charts or does not). Per-team p10 is above 40% in every season, but the bottom of the distribution in 2022-2024 is heterogeneous. The design below keeps missingness in the precision of the rating (fewer shots feed it), never in whether an attempt row exists.
+
+**Missingness is informative, and its direction changes across seasons.** Make rate, unlocated / located, per class (%):
+
+| season | rim | jump2 | three |
+|---|---|---|---|
+| 2022 | 61.39 / 58.44 | 37.03 / 37.51 | 33.31 / 33.67 |
+| 2023 | 62.28 / 58.32 | 37.97 / 37.95 | 33.67 / 34.02 |
+| 2024 | 61.74 / 57.73 | 41.26 / 38.96 | 33.57 / 33.80 |
+| 2025 | **81.47 / 58.13** (n unloc 5,510) | **58.65 / 38.80** (n 2,203) | 35.31 / 33.80 (n 2,127) |
+
+Within partially charted games (5-95% coverage) in 2022-2024 the sign is the OPPOSITE: located attempts make MORE (rim +1.4 to +2.5 pp, jump2 +2.3 to +2.9, three +0.3 to +2.9). In 2025 the residual 1-2% of unlocated two-point attempts are mostly makes. An attempt's own missing-coordinate flag is therefore not safely pre-outcome (the chart entry may be written after the play), and its relation to the outcome is not stable across the train/test boundary. This is disclosed for both arms and is the reason for the extra P2 guard in 31.6.
+
+**Coordinate frame (resolved).** Raw x spans 0-940, y 0-500 (tenths of a foot, full court). 49.9% of located shots have x < 470. A team shoots at ONE end per half (99.87% of team-periods with >= 8 located shots have >= 95% of them in one half) and switches ends at halftime in 99.98% of team-games. The baskets are at (52.5, 250) and (887.5, 250) (`cbb_sim.pbp.events.BASKET_XY`). **x is folded to the half court** (x' = 940 - x when x > 470, so the basket is at x' = 52.5), which needs no knowledge of which end a team attacks. Check: make rate by folded distance peaks at the rim and decays (2-pt: 70.6% at 0-1 ft, 70.1% at 1-2, 63.8% at 2-3, 57.1% at 3-4, 47.6% at 4-6, 39.0% at 6-8, then a flat ~36% mid-range; 3-pt: 35.1% at 22-24 ft, 33.9% at 24-26, 32.3% at 26-28, 27.6% at 30-35). Median folded distance: TipShot 0.39 ft, DunkShot 2.27, LayUpShot 3.36, JumpShot 23.2; 3PA p01 22.04 ft (the line is 22.15 ft). Without folding, 50.1% of shots sit 47+ ft from the left basket.
+
+**Design <-> pbp join.** Every design row is matched to its pbp FGA row on (cbbd game, period, seconds remaining, `shot_shooter_id`, class, made) plus the ordinal within duplicate keys in event order: **100.0000% matched** (2,239,678 / 2,239,678; made and missed both 100%), so the join cannot carry an outcome-dependent coverage pattern. Located design rows: 79.6 / 84.5 / 89.3 / 98.7% by season.
+
+### 31.2 Feature construction (as-of, strictly before tipoff)
+
+All in `build_pae_shot_rating_v1.py --part build`, over the fg_make design population (the same games and attempts as every served team-form feature).
+
+- **Cell baseline.** Folded half court. Grid g is chosen from {`g10`: 10x10, `g15`: 15x15, `g25`: 25x25 xy cells over 47 ft x 50 ft; `da15`: 15 distance bins of 2 ft (last bin 28+ ft) x 15 angle bins over [-90, 90] degrees}. The choice uses fold-1 TRAINING seasons only: leave-one-season-out log loss of the cell baseline alone (fit cells on 2022, score 2023 located shots, and the reverse; attempt-weighted mean). The baseline is per (cell, shot value), smoothed toward the value-level mean with a FIXED 20 pseudo-attempts. This is a stated constant, not tuned; it only regularises sparse edge cells.
+- **Prior seasons only.** The baseline for season S is fit on located shots of season S-1. **Season 2022 has no earlier CBBD season on disk, so its baseline is the 2023 season.** This touches 2022 TRAINING rows only, never a test row (2024 uses 2023, 2025 uses 2024). It is a disclosed deviation from "prior seasons only", forced by the data window.
+- **Residual.** r = actual points - shot value x cell make rate, on located shots only.
+- **Team ratings.** Offence PAE (own located shots) and defence PAE-allowed (located shots faced). One rating each per team, over all three classes, in points per located attempt:
+  `rating = (k (lg + mu) + S) / (k + n) - lg`, with `mu = rho x prev_final_c`.
+  - S and n are the residual sum and count over the team's games strictly before this one in the season.
+  - `lg` is the league mean residual per located attempt over games strictly before this DATE. It is the snapshot league mean, so the rating is centred on its own snapshot (CLAUDE.md).
+  - `prev_final_c` is the team's previous-season final mean residual minus that season's league mean. It is 0 when absent, including all of 2022.
+  - Offence and defence get separate (k, rho).
+- **k, rho on fold 1.** Grid k in {50, 100, 200, 400, 800, 1600, 3200} located attempts x rho in {0, 0.25, 0.5, 0.75, 1.0}. Criterion: located-attempt-weighted squared error of the as-of rating against the game's own realised centred mean residual, over **season 2023 games** (fold-1 training; its prior is the 2022 final PAE). Neither test season (2024, 2025) is touched by g, k or rho. All three are frozen before any arm is fitted.
+- **Estimation variance (G-A1b form).** `v = s2 / (k + n)`, where s2 is the per-shot residual variance over 2022-2023 located shots.
+  - **v is NOT a model feature and not a precision weight.** The shrunk posterior mean already weights the observed residual by its precision. This follows the round-4 result: `shooter_shrunk_dev_c` with the count implicit beat the arms that added the count (section 20).
+  - v is written to the table and checked with the G-A1b(ii) statistic: the SD of z = (game centred mean residual - rating) / sqrt(v + s2 / n_game), over team-games with >= 10 located attempts, per side and season. Reported, not gated.
+- **Coverage only changes n.** In P1 a design row is never dropped or flagged for its own coordinate; an uncharted game simply adds nothing to S and n. A coverage miss in the rating join (a design row with no rating key) RAISES (features.md section 6).
+- **Leak test before any arm**, on both ratings. `cbb_sim.analysis.leak_test` change-form correlation with the team's own-game margin from the VERIFIED finals (`eval.reference.load_actual_games`), team-grouped, per season and pooled. Gate |corr| <= 0.15 (honest baseline 0.04-0.08). A LEAK on either rating in any powered season REFUSES every arm that reads it, in every class, with no re-tuning.
+
+### 31.3 Arms (per shot class, three classes as always; LightGBM, frozen ladder params, S1 monthly schedule)
+
+| arm | features | run |
+|---|---|---|
+| `R` | served B1 (`TEAM_FEATURES` + `R2_SAFE_STATE` + `shooter_shrunk_dev_c`) | `train_fg_make_v5_pae_v1.py --arm R --seed 0` (control; = lane-A `aR`) |
+| `R_seed` | `R` under seed 1 | `--arm R --seed 1`: the noise floor |
+| `P1` (primary) | `R` + `pae_off_c` (shooting team) + `pae_def_c` (defending team) | `--arm P1 --seed 0` |
+| `P2` (secondary, disclosed drift risk) | `P1` + `cell_p` (the attempt's own prior-season cell make rate where located, else the prior-season class mean) + `loc_missing` | `--arm P2 --seed 0` |
+
+P2 is the per-attempt form that `features.md` rejected for drift. It is entered only because CBBD coverage is flatter across folds than hoopR's. Section 31.1 shows the attempt's own missingness flag is outcome-related with a season-unstable sign, so P2 carries a located-rows guard on top of the brief's rule (31.6).
+
+All arms run with `--arms B1 --no-floor --no-leak` (the B1 shooter leak test ran in round 4; the floor is the explicit `R_seed` run), on both folds, on local compute.
+
+### 31.4 Folds
+
+- Fold 1: train 2022-2023, test 2024.
+- Fold 2: train 2022-2024, test 2025. This is the SELECTION fold. 2025-26 stays sealed.
+- g, k and rho are fixed as in 31.2 before fold 2 is read, in fact before any arm is fitted.
+- The shooter `m` inside B1 is the wrapped trainer's own (chosen on 2024, identical for every arm). The lane-A fold-1 caveat applies unchanged.
+
+### 31.5 Metrics (one grader, `scripts/grade_fg_make_pae_v1.py`, blind codes until the tables are written)
+
+- **Primary:** attempt-level log loss on F2, per class. Brier is reported.
+- **Floor per class:** `max(|LL(R) - LL(R_seed)|, paired game-block bootstrap SE of LL(arm) - LL(R))`, 200 replicates.
+- **Calibration:** the `FG.score` decile battery (worst gap, level, shape).
+- **Served Decision-8 drivers** (`shooter_make_c`, `def_allow_c`), via `FG.score`.
+- **PAE responsiveness (the CLAUDE.md matchup rule).** Predicted vs realised make rate by quintile of the shooting team's `pae_off_c` (rows with `pae_off_n` > 0) and of the defending team's `pae_def_c` (rows with `pae_def_n` > 0), for every arm.
+  - R's line shows whether existing features already carry the information. P1's must slope with actuals.
+  - Tolerance: the Decision-8 battery (slope ratio in [0.8, 1.2] and >= 4 of 4 monotone steps; when the realised span is < 2 pp the `low_span_exempt` reading applies), PLUS a positive slope ratio in every case.
+- **Segments:** home / away / neutral; month (Nov, Dec, Jan, Feb, Mar+Apr); located / unlocated. Each segment's gain gets its own paired bootstrap SE. Cells under 5,000 attempts are UNDERPOWERED and do not count.
+- **P2 drift check (mandatory).** Log loss on located vs unlocated rows for R and P2 in each test season (2024 on F1, 2025 on F2), and the P2 - R gain separately on located and unlocated rows.
+
+### 31.6 Decision rule (per class, read on F2; F1 reported, not gated)
+
+- **REFUSED**, for every class, if the leak test fails on either rating (31.2). Not re-tuned.
+- **P1 is CANDIDATE (offline)** only if all of the following hold:
+  1. Its F2 log-loss gain over R exceeds the floor (31.5).
+  2. It passes the 2.0 pp decile gate, and its worst gap is not worse than R's by more than `max(|gap(R) - gap(R_seed)|, 0.10 pp)`.
+  3. Both PAE responsiveness lines pass (31.5).
+  4. No powered segment regresses (P1 worse than R by more than 2 of that segment's paired bootstrap SEs).
+  5. Decision 8 on the served drivers does not flip PASS -> FAIL relative to R.
+- **P2 is CANDIDATE (offline)** only if all of the following hold:
+  - P1 is CANDIDATE in that class, and P2 itself meets 1-5.
+  - Its gain on UNLOCATED rows is not negative beyond the floor.
+  - Its gain on LOCATED rows alone exceeds the floor. This clause is added to the brief because of 31.1, so that a P2 win cannot rest on the missingness flag.
+- If both are CANDIDATE, P2 is preferred only if it beats P1 by more than the floor; otherwise P1 (ties go to the simpler arm).
+- Otherwise the verdict is **NOT CANDIDATE**. Ties go to R.
+- Nothing stronger than CANDIDATE (offline) is stated. A candidate would need its own engine columns, a default-off flag and a paired-seed sim run, none of which this round does.
+
+<!-- RESULTS FOR THE PAE ROUND APPEND BELOW THIS LINE -->
