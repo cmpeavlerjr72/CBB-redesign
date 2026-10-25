@@ -2449,3 +2449,151 @@ All arms run with `--arms B1 --no-floor --no-leak` (the B1 shooter leak test ran
 - Nothing stronger than CANDIDATE (offline) is stated. A candidate would need its own engine columns, a default-off flag and a paired-seed sim run, none of which this round does.
 
 <!-- RESULTS FOR THE PAE ROUND APPEND BELOW THIS LINE -->
+
+## 32. PAE shot-location team rating round: RESULTS (run 2026-10-25 17:00-17:12 EDT; pre-registration section 31, commit fe34135)
+
+**Verdicts by the registered rule (F2):**
+
+| class | P1 | P2 |
+|---|---|---|
+| `FGA_rim` | **CANDIDATE (offline)**, +2.12 floors | **CANDIDATE (offline)**, +39.4 floors; preferred over P1 (31.6) |
+| `FGA_jump2` | NOT CANDIDATE (0.99 floors; calibration not-worse clause; `pae_off_c` slope 0.786) | NOT CANDIDATE (blocked only by "P1 must be CANDIDATE"; +13.6 floors on its own) |
+| `FGA_3` | NOT CANDIDATE (0.41 floors) | NOT CANDIDATE (blocked only by "P1 must be CANDIDATE"; +4.96 floors on its own) |
+
+Nothing is adopted or wired, and the freeze stays ON. **P2 is not servable by the current engine**: the engine does not sample a shot location, so `cell_p` has no simulated value (the same status B4 had in round 4). Two caveats are below (32.6). Run: `train_fg_make_v5_pae_v1.py`, 8 runs (4 arms x 2 folds, n_jobs 6, local), graded by `grade_fg_make_pae_v1.py` (blind codes). `R` on F2 reproduces the served B1 / lane-G `S0` log loss to 6 decimals (0.667252 / 0.666385 / 0.637738).
+
+### 32.1 Hyperparameters (fixed before any arm was fitted; `pae_v1/build_report_v1.json`)
+
+**Grid, chosen by leave-one-season-out log loss of the cell baseline on 2022 <-> 2023 located shots:**
+
+| grid | LOSO log loss |
+|---|---:|
+| g10 | 0.656021 |
+| g15 | 0.652729 |
+| g25 | 0.651768 |
+| **da15** (2 ft distance x 12 deg angle) | **0.651351** (chosen) |
+
+**k and rho, chosen on season 2023 by located-attempt-weighted MSE of the as-of rating vs the game's realised centred mean residual:**
+
+| side | k (located attempts) | rho | MSE at the chosen point | k neighbours at rho 0.5 | MSE at rho 0 / 1.0 |
+|---|---:|---:|---:|---|---|
+| offence | **800** | **0.5** | 0.031860 | k 400: 0.032056, k 1600: 0.031873 | 0.032055 / 0.032428 |
+| defence | **1600** | **0.5** | 0.031921 | k 800: 0.031931, k 3200: 0.032020 | 0.032215 / 0.032610 |
+
+Residual variance s2 = 1.342 (points squared per located attempt, 2022-2023).
+
+Rating SD by season, offence / defence (points per located attempt):
+
+| season | offence SD | defence SD |
+|---|---:|---:|
+| 2022 | 0.028 | 0.018 |
+| 2023 | 0.039 | 0.034 |
+| 2024 | 0.042 | 0.033 |
+| 2025 | 0.045 | 0.032 |
+
+2022 has no prior-season carry, so its ratings are shrunk harder.
+
+**G-A1b(ii)** z SD (reported, not gated): offence 1.068-1.085, defence 1.086-1.099 by season. Both sit at the top of the 0.90-1.10 band. v slightly understates the game-to-game spread, so the next-game residual is a little over-dispersed relative to binomial-like noise.
+
+### 32.2 Leak test (change-form, team-grouped, verified-final margin; gate 0.15)
+
+| rating | 2022 | 2023 | 2024 | 2025 | pooled | update corr (pooled) | level corr (pooled) |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| `pae_off_c` | +0.069 | +0.034 | +0.063 | +0.049 | **+0.054** | +0.482 | +0.191 |
+| `pae_def_c` | -0.059 | -0.048 | -0.063 | -0.079 | **-0.064** | -0.492 | -0.183 |
+
+Both pass, inside the honest 0.04-0.08 band, with n 8,150-10,526 team-games per season. The large update correlation is the healthy signature of an as-of column.
+
+### 32.3 Per-class log loss and floors
+
+Gain = LL(R) - LL(arm). Floor = max(seed diff, paired game-block bootstrap SE).
+
+| fold | class | LL(R) | seed diff | P1 gain (floor, floors) | P2 gain (floor, floors) |
+|---|---|---:|---:|---|---|
+| **F2** | rim | 0.667252 | 4.4e-5 | **+1.67e-4** (7.9e-5, **2.12**) | **+2.198e-2** (5.6e-4, **39.4**) |
+| **F2** | jump2 | 0.666385 | 1.1e-4 | +1.30e-4 (1.32e-4, 0.99) | +4.52e-3 (3.3e-4, 13.6) |
+| **F2** | three | 0.637738 | 1.8e-5 | +3.1e-5 (7.5e-5, 0.41) | +5.12e-4 (1.0e-4, 4.96) |
+| F1 | rim | 0.669428 | 2.5e-5 | +2.59e-4 (9.2e-5, 2.81) | +1.94e-2 (5.5e-4, 35.4) |
+| F1 | jump2 | 0.666016 | 1.3e-4 | **-2.54e-4** (1.3e-4, -1.93) | +2.97e-3 (2.8e-4, 10.5) |
+| F1 | three | 0.638229 | 2.7e-5 | +3.6e-5 (9.2e-5, 0.40) | +5.14e-4 (1.0e-4, 4.93) |
+
+F2 rim, P2 vs P1: +2.198e-2 against a floor of 5.5e-4, so P2 is preferred.
+
+### 32.4 Responsiveness on the PAE quintile lines (slope ratio of predicted on realised span; all 4/4 steps; realised span in pp)
+
+| fold | class | `pae_off_c` span | R | P1 | P2 | `pae_def_c` span | R | P1 | P2 |
+|---|---|---:|---:|---:|---:|---:|---:|---:|---:|
+| F2 | rim | 6.70 | 0.90 | 1.08 | 1.12 | 4.47 | **0.80 FAIL** | 0.97 | 0.92 |
+| F2 | jump2 | 4.32 | **0.55** | **0.79 FAIL** | 0.82 | 3.25 | 0.98 | 1.01 | 0.98 |
+| F2 | three | 3.63 | **0.65** | 0.87 | 0.88 | 2.19 | **0.79** | 0.90 | 0.84 |
+| F1 | rim | 6.59 | 0.79 | 0.94 | 0.94 | 4.11 | 0.82 | 0.97 | 0.90 |
+| F1 | jump2 | 3.35 | 0.60 | 0.94 | 0.85 | 2.89 | 1.19 | **1.30** | **1.40** |
+| F1 | three | 2.95 | 0.65 | 0.84 | 0.83 | 1.43 (low span) | 1.20 | 1.28 | 1.20 |
+
+**The matchup finding stands on its own.** The served structure is FLAT on the offence-PAE line for jumpers and threes (R slope 0.55 / 0.65 on F2, 0.60 / 0.65 on F1): its existing team features do not carry where-and-how-well a team shoots. P1 moves both lines into or near the band (0.79 / 0.87 F2) at a log-loss gain the floor cannot resolve. The information is real at the team level but small per attempt.
+
+### 32.5 Calibration, served Decision 8, segments
+
+**Worst decile gap, F2 (pp; level / shape in brackets):**
+
+| class | R | R_seed | P1 | P2 |
+|---|---|---|---|---|
+| rim | 1.13 (-0.03 / 1.09) | 1.50 | 1.31 | 1.24 (-0.24 / 1.01) |
+| jump2 | 1.49 | 1.44 | **1.69** (> R + 0.10, fails clause 2) | 1.21 |
+| three | 1.82 | 1.64 | 1.57 | 1.62 (-0.13 / 1.50) |
+
+Every arm passes the 2.0 pp gate on F2. On F1, jumper calibration fails the gate for every arm (R 2.77, R_seed 3.21, P1 3.41, P2 2.60), and R three is 1.91 / 2.12 seed.
+
+**Served Decision 8:** passes for every arm on F2. On F1, `FGA_3` R fails (shooter slope 0.75) and P1 / P2 pass (0.80): no flip in the wrong direction.
+
+**Segments, F2, gain x 1e4 (paired bootstrap SE):**
+
+| arm, class | away | home | neutral | Nov | Dec | Jan | Feb | Mar+Apr | located | unlocated |
+|---|---|---|---|---|---|---|---|---|---|---|
+| P1 rim | 0.2 (1.3) | 3.0 (1.4) | 2.2 (2.5) | 2.3 (1.9) | 2.8 (2.1) | 2.4 (1.7) | 0.9 (1.5) | -0.5 (2.0) | 1.6 (0.9) | 3.3 (5.8), UNDERPOWERED n 4,794 |
+| P2 rim | 230 (8) | 222 (7) | 192 (17) | 203 (11) | 252 (14) | 223 (12) | 223 (11) | 207 (15) | **203 (5)** | 1,122 (100), UNDERPOWERED |
+| P2 jump2 | 49 (4) | 46 (5) | 30 (9) | 50 (7) | 53 (7) | 59 (8) | 34 (6) | 22 (8) | **37 (3)** | 679 (132), UNDERPOWERED |
+| P2 three | 3.9 (1.5) | 6.9 (1.4) | 3.3 (2.8) | 6.0 (2.3) | 3.5 (2.2) | 8.5 (2.2) | 2.6 (2.0) | 3.6 (2.8) | **5.1 (1.0)** | 3.3 (14.7), UNDERPOWERED |
+
+No powered segment regresses for P1 rim or for any P2 class on F2. On F1, P1 jumper regresses on away rows (-5.7, SE 1.9) and on unlocated rows (-9.0, SE 4.0).
+
+### 32.6 P2 drift check and the two caveats
+
+**P2 drift check: log loss on located / unlocated test rows.**
+
+| fold (season) | class | R located / unlocated | P2 located / unlocated |
+|---|---|---|---|
+| F2 (2025) | rim | 0.6689 / 0.5873 | 0.6486 / **0.4752** |
+| F2 (2025) | jump2 | 0.6653 / 0.7564 | 0.6615 / 0.6885 |
+| F1 (2024) | rim | 0.6712 / 0.6551 | 0.6506 / 0.6452 |
+
+- **The P2 gain on LOCATED rows alone is 36-38 floors on rim (F2 / F1), 11-13 on jumpers and 5 on threes.** This is where the gain lives, so the registered located-rows guard holds.
+- **Caveat 1, the missingness channel is visible.** On 2025's 1-2% of unlocated two-point attempts (81% / 59% make rates, 31.1), P2's per-row gain is 5-18x its located gain: the `loc_missing` flag is acting partly as an outcome proxy there. Its F1 (2024) unlocated gain is about half its located gain. It does not drive the verdict (UNDERPOWERED cells, and the located-only gain clears the floor by a wide margin), but any engine version must not carry an attempt-level missingness flag.
+- **Caveat 2, canned pixels.** 9.0-9.2% of located rim attempts sit on three canned pixels (raw (56, 250), (883, 250), (874, 260): about 0.35 ft from the basket, the L16 placeholder). They make 69-70%, against 57% elsewhere. Median release distance is 2.7-2.8 ft for makes and 3.5-3.7 ft for misses. Both are consistent with genuine shot quality (tips and dunks are placed there whether made or missed; their make rate is not 100%). However, this round cannot exclude that the vendor's charting of a shot's position depends partly on its outcome. That would make the per-attempt coordinate partly post-outcome, the round-4 `sh_assisted_share` pattern in a new place. **The P2 effect size (+0.022 log loss on rim, about 2x the round-1 state block's whole rim contribution of 0.0103, model.md 5.1) needs a coordinate-placement audit before anyone builds on it.**
+
+### 32.7 Reading
+
+1. **The PAE team rating (P1) is a real but small team-level signal.**
+   - It clears the floor only on rim (2.1 floors F2, 2.8 F1).
+   - It is inside the floor on threes on both folds.
+   - On jumpers it is inside the floor on F2 and negative beyond the floor on F1.
+   - Its clearest value is responsiveness: it repairs the served model's flat offence-PAE slope on jumpers and threes.
+   - By the rule, P1 is CANDIDATE (offline) on rim only.
+2. **Almost all the location information is per attempt, not per team (P2).**
+   - The served model knows the shot class but not where inside the class the shot came from. The prior-season cell make rate is worth 39 / 14 / 5 floors.
+   - That signal is unservable until the engine samples a location, which is a shot-location sub-model (where a team shoots, given the matchup) upstream of fg_make. Heuermann's README describes exactly that layer.
+   - It must clear caveat 2 first.
+3. **The cascade rule applies.** A P2-style per-attempt rate in fg_make without a location sampler would be fed the class mean in simulation, which is a train/serve skew. Adopting it would require building the shot-location stage first and gating that stage on its own.
+
+Artifacts (gitignored, HF `model_artifacts`, pushed 2026-10-25), with sha256 prefixes:
+
+| artifact | sha256 prefix |
+|---|---|
+| `pae_v1/design_pae_cols_v1.parquet` | 93bb463bf560 |
+| `pae_v1/team_ratings_v1.parquet` | 4a7f85e220ad |
+| `round_pae/{R_s0,R_s1,P1_s0,P2_s0}_{F1,F2}/` preds: P1 F2 | a3d81b8e59fb |
+| P2 F2 | 3dc67dda6cef |
+| R F2 | 163905d603f4 |
+| R_seed F2 | 3d0f1042a2e9 |
+
+Grader output: `results/fg_make_pae_v1/grade_v1.json` (2f9c4e721c8d). Evidence: `docs/models/fg_make/pae_round_v1_results.md`.
