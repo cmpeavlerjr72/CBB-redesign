@@ -381,3 +381,37 @@ Evidence `docs/tests/shot_location_round2_2026-10-27.md`; results appended as se
 the same commit; suite re-run; parity v10 unchanged.
 
 <!-- RESULTS FOR ROUND 2 APPEND BELOW THIS LINE AS SECTION 4 -->
+
+## 4. Round 2 results (RUN 2026-10-27, Sonnet worker; appended, sections 1-3 untouched)
+
+Evidence with every table, floor, UNDERPOWERED label and the worker disclosures: `docs/tests/shot_location_round2_2026-10-27.md`. Grade: `results/shot_location_v2/grade_V.json`, `grade_P.json` (ONE blind grader `scripts/grade_shot_location_v2.py`, block V committed `c2a3504`, block P committed `f13137f`, both before they ran; build `18b8f69`, trainer `84350bf` before the first fit). Freeze ON; nothing adopted, wired or served.
+
+### 4.1 Block V (diagnostic): DEFECT CONFIRMED for the possession-outcome owner on 3PA, rim, jump2 and TOV
+
+Served `round2_s1` F2 2025 (853,931 chances, 10,890 team-games; log loss reproduces 1.51543 / 1.49976). Over-dispersion ratio = SD of the team-game share residual / SD implied by the sum of Bernoulli variances; parametric-bootstrap null mean 0.999-1.001; floor = max(null SD, game-bootstrap SE).
+
+| class | ratio | floor | excess (floors) | outcome | latent s2 | **latent SD (logit-normal, registered)** |
+|---|---|---|---|---|---|---|
+| 3PA share | 1.253 | 0.0088 | +28.8 | DEFECT CONFIRMED | 0.0369 | **0.192** |
+| rim share | 1.360 | 0.0097 | +37.0 | DEFECT CONFIRMED | 0.0560 | **0.237** |
+| jump2 share | 1.473 | 0.0119 | +39.8 | DEFECT CONFIRMED | 0.1034 | 0.322 |
+| TOV share | 1.104 | 0.0073 | +14.2 | DEFECT CONFIRMED | 0.0221 | 0.149 |
+| FT trips | 0.946 | 0.0068 | -7.8 | NOT CONFIRMED (under-dispersed) | -0.0140 | 0 |
+
+Bands (B2, team-games with >= 5 located attempts): short2 1.258, corner3 1.200, wing3 1.097, top3 1.144 (F2); 1.255 / 1.181 / 1.085 / 1.118 (F1, BIASED SUBSET); latent SD 0.455 / 0.353 / 0.200 / 0.259 (F2), 0.441 / 0.351 / 0.195 / 0.244 (F1). The ratio is flat across offence quintiles (3PA 1.20-1.28), site does not correlate with any residual, margin correlates with TOV (-0.22) and weakly with rim / 3PA / FT (+0.06 to +0.08).
+
+**V-C: the band latent and the class latent are NOT one.** The 3PA residual is uncorrelated with every band residual (raw -0.015 to +0.010 against null +/-0.001; disattenuated -0.06 to +0.03, SE 0.025-0.04); PC1 of the nine residuals carries 18.2% against 18.5% under the null. The only coupling is the rim / short-jumper boundary (rim vs short2 -0.135 raw, null -0.0005, disattenuated -0.33; jump2 vs short2 +0.141; rim vs jump2 -0.448 against a null -0.281), the boundary the 2.27 ft rim override acts on (round-1 diagnostic 1). The class latent (3PA, rim, jump2, TOV; SDs above) belongs in possession outcome; the band latent is a separate location-stage quantity. F1 class part NOT RUN (no F1 served artifacts).
+
+### 4.2 Block P: NOT CANDIDATE under the literal 3.2 rule (F2; F1 agrees)
+
+Reliability (shooter-seasons >= 100 located attempts; 764 jump2, 2,427 three): band share 0.934 (short2) / 0.817, 0.585, 0.837 (corner3, wing3, top3); make rate 0.257 / 0.302 (short2 / long2), 0.058 / 0.135 (corner3 / non-corner); make-rate contrasts 0.173 and 0.044. Leak test PASS (worst abs corr 0.041). Player map: `player_crosswalk_v2`, attempt join 100%, player-game to hoopR box 99.86% (2025) / 99.78% (2024). k: k_s 5 / 20, k_m 200 / 400 (jump2 / three), fold-1 training.
+
+| read (F2) | jump2 | three |
+|---|---|---|
+| P-A P1 vs P0 LL gain (floor) | +4.83e-4 (1.63e-4) = +2.96 floors, gate held, SIGNAL | -5.2e-5 (1.30e-4) = -0.40 floors, NO SIGNAL |
+| P-A P0 vs R (round-1 A1 replicated) | +5.77 floors | +1.18 floors |
+| P-B BP vs B2 LL gain (floor) | +0.0477 (0.0010) = +47.5 floors, short2 line 0.99 | +0.0219 (0.00047) = +46.7 floors, lines 0.99 / 0.92 / 1.03 |
+
+P-C (player-game, attempts held at actual, 71,159 3PM / 95,038 FGM player-games): 3PM MAE 0.6827 -> 0.6823, gain +0.000425 = **+2.18 floors**, no tier worse (+1.81 / +0.14 / +2.00 floors); FGM +0.000782 = +3.80 floors; dispersion ratios 1.005 / 1.003 (3PM). **Responsiveness by shooter-profile quintile (3PM): slope ratio 2.05 (F1 1.35), outside [0.8, 1.2] -> clause fails; FGM line passes (0.99; F1 1.15).** Post-hoc, descriptive: the slope of (actual - R-implied) on the shift is 0.78 [0.63, 0.93] F2 and 0.88 [0.75, 1.00] F1; the registered ratio has a small denominator (realised span 0.7 pp) and a bootstrap 95% interval [1.10, 8.11] (F2). Verdict: **NOT CANDIDATE** (clauses 1, 2, 4 hold; clause 3 fails).
+
+Not run: block V class part on F1; sensitivity fit under the second-best (k_s, k_m). Suite and parity v10 in the evidence doc (section 4).
