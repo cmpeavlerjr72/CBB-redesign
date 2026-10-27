@@ -252,3 +252,41 @@ into this round's training table:
 
 
 <!-- RESULTS FOR ROUND 1 APPEND BELOW THIS LINE AS SECTION 2 -->
+
+## 2. Round 1 results (RUN 2026-10-27, Opus worker; appended, section 1 untouched)
+
+Evidence with every table, floor, UNDERPOWERED label and the worker disclosures:
+`docs/tests/shot_location_round1_2026-10-27.md`. Grade: `results/shot_location_v1/grade_v1.json` (one blind grader,
+`scripts/grade_shot_location_v1.py`, committed `ada9729` before it ran; build and trainer scripts committed `5f44dcb`
+before the first fit). Freeze ON; nothing adopted, wired or served.
+
+### 2.1 Settings fixed before any arm
+
+| item | value | evidence |
+|---|---|---|
+| bands, cells | section 1.2 exactly; `da15` not re-chosen; `cell_p` reproduces the PAE table to 3e-8 | build report |
+| k / rho, offence | 100 / 0.5 (second-best 100 / 0.75) | fold-1 training seasons 2022-2023, located-attempt-weighted squared error |
+| k / rho, defence | 200 / 0.5 (second-best 400 / 0.5) | same |
+| leak test | PASS both families, worst abs corr 0.023 (offence) / 0.035 (defence), every season | evidence T4 |
+| population | located 79.6 / 84.5 / 89.3 / 98.7% of design FGA, 2022-2025; rebound miss rows joined to the fg design 88.0% (99.3% within shared games) | evidence section 1 |
+
+### 2.2 Verdicts (section 1.6 on F2; F1 reported)
+
+| class | Read B | Read A make | Read C, carried arm B2 | verdict F2 | F1 |
+|---|---|---|---|---|---|
+| `FGA_jump2` | MATCHUP | SIGNAL | nothing improves (eFG -0.02, OREB +0.41, and-one +0.84 floors) | **NOT CANDIDATE** (clauses 2, 3) | NOT CANDIDATE |
+| `FGA_3` | MATCHUP | SIGNAL | 3P make +1.17 and OREB +1.07 floors, and-one -1.95 floors (worse); responsiveness lines fail | **NOT CANDIDATE** (clauses 2, 3) | NOT CANDIDATE (clause 3) |
+
+Read A per channel (F2, gain in floors, A1 / A2): make jump2 +5.77 / +12.07 SIGNAL; make three +1.18 / +2.36 SIGNAL;
+and-one jump2 +10.08 / +6.23 SIGNAL; and-one three +0.04 / -0.38 NO SIGNAL; rebound jump2 +1.76 / +1.89 SIGNAL;
+rebound three +2.56 / +7.62 SIGNAL. Decile gate held in every F2 cell (F1: A1 make jump2 and A1 rebound three not held).
+
+Read B (F2, floors = paired game-block bootstrap SE): B1 vs B0 +24.5 (jump2) / +22.6 (three); B2 vs B1 +8.9 / +16.8;
+every B2 offence and defence line passes (slopes 0.93-1.05); B3 vs B2 +2.3 / +2.6 on F2 but -0.7 / +0.2 on F1
+(recorded; GLM carried); B2alt vs B2 +0.0 / +2.2.
+
+The registered finding clause (Read A SIGNAL with Read B FLAT) does not fire. Not run: rebound arms on the served
+`S1_weekly` calendar (S0 used, disclosed). Registered diagnostics: the 2.27 ft rim override fires on makes more than
+misses within game by +0.85 / +1.05 / +0.98 / +3.34 pp (SE 0.05-0.08) for 2022-2025, so it goes to the possession-layer
+queue; hoopR vs CBBD bands differ on 3.5% (jumpers) / 4.4% (threes) of attempts from 2025-02-10; split-half reliability
+on this round's table 0.88 / 0.76 / 0.61 / 0.76 offence, 0.67 / 0.71 / 0.46 / 0.71 defence.

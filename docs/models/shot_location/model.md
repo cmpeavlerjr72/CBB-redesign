@@ -1,6 +1,6 @@
 # Shot-location stage (L3, between possession outcome and make / foul / rebound)
 
-Status: ROUND 1 PRE-REGISTERED 2026-10-27 (`experiments.md` section 1). Nothing fitted, nothing served, freeze ON.
+Status: ROUND 1 RUN 2026-10-27 (`experiments.md` sections 1-2): **NOT CANDIDATE in either class** under the registered rule. Nothing served, freeze ON.
 Companion docs: `features.md`, `experiments.md`. Origin and evidence trail: `docs/tests/coordinate_audit_2026-10-27.md`,
 `gamezone_*_2026-10-27.md`, `sportradar_*_2026-10-27.md`, `docs/research/shot_coordinate_sources_2026-10-27.md`.
 
@@ -20,10 +20,27 @@ game aggregates. Primary decision on B + C. Registered measurement ceiling: spli
 profiles 0.89 / 0.79 / 0.67 / 0.80 offence, 0.69 / 0.76 / 0.52 / 0.75 defence.
 
 ## 4. Winner
-Not yet run.
+No winner.
+
+- **Read B carried arm: `B2`** (multinomial logit on the offence's and the defence's as-of band log-odds, plus site and state). It is MATCHUP in both classes on F2.
+  - B2 beats the league-average null B0 by 25.2 floors (jumpers) and 27.9 floors (threes) on attempt log loss.
+  - The defence profile adds 8.9 / 16.8 floors over the offence profile alone.
+  - Team-game band-share MAE falls from 16.30 to 14.37 pp (short2) and by 0.25-0.72 pp across the three-point bands.
+  - Every B2 responsiveness line passes, with slope ratios 0.93-1.05.
+- **Read C does not carry the stage.** Marginalising the band-aware make, and-one and rebound models over B2's predicted mix moves team-game MAE by at most about one bootstrap SE against the class-level pair.
+  - Jumpers: no target improves.
+  - Threes: 3P make rate +1.17 floors and OREB +1.07 floors, but and-one -1.95 floors, and the responsiveness lines fail.
+- **Read A (ceiling)** is SIGNAL for make (both classes), rebound (both classes) and and-one on made jumpers. It is NO SIGNAL for and-one on made threes.
+- Full numbers: `experiments.md` section 2 and `docs/tests/shot_location_round1_2026-10-27.md`.
 
 ## 5. Robustness check
-Not yet run (segments registered in `experiments.md` 1.3).
+- **Segments.** Site, month, offence tier and located-share-of-game quartile, per read (evidence doc tables T5 and T8 segment blocks). Cells under 5,000 attempts (2,000 rebound opportunities) are labelled UNDERPOWERED.
+- **Read B's defence-profile gain is strongly site-asymmetric.**
+  - Jumpers: +5.6e-3 log loss when the offence is away against -8.8e-4 when it is at home.
+  - Threes: +6.1e-3 away against +1.5e-3 home.
+  - A venue-charting component, where the home crew charts the home defence's allowed profile, is plausible and not separated.
+- **Fold 1 confirms the Read B verdicts.** B3's edge over B2 on F2 does not reproduce on F1.
+- **Team-game band shares are over-dispersed against the multinomial**: z SD 1.31 short2, 1.11-1.22 threes. A served stage would need a per-game shot-selection latent.
 
 ## 6. Decisions log
 - Rim excluded (ruling 11): outcome-dependent rim placement in ESPN 2022-25 and Sportradar 2013-18.
@@ -34,7 +51,17 @@ Not yet run (segments registered in `experiments.md` 1.3).
 None. No engine column, no flag. Serving needs its own paired-seed sim round.
 
 ## 8. Artifacts
-None at this commit. Round 1 writes under `data/processed/models/shot_location/round1/` (gitignored, HF `model_artifacts`).
+All under `data/processed/models/shot_location/round1/` (gitignored, HF `model_artifacts`), plus `results/shot_location_v1/`.
+
+| Path | What it is |
+|---|---|
+| `design_loc_cols_v1.parquet` | row-aligned to `fg_make/design_v2_shotshooter.parquet`: located flag, folded xf / y, d, theta, band, band one-hots, `cell_p`, as-of `off_/def_<band>_c` (and `_alt` under the second-best k / rho), as-of shares, prior counts |
+| `rebound_loc_cols_v1.parquet` | row-aligned to `rebound/round3/design_round3.parquet`: fg design row of a jump2 / three miss, its band, d, theta, located |
+| `team_band_profiles_v1.parquet` | per (side, season, game, team) located band counts and as-of profiles |
+| `build_report_v1.json`, `diag_report_v1.json` | join, cell check, k / rho grid, leak test; registered diagnostics 1.7 |
+| `readB/F{1,2}/preds.parquet`, `run_report.json` | B0-B3 and B2alt band probabilities on every test-season attempt of the class; GLM coefficients |
+| `make/`, `andone/`, `rebound/<arm>_s<seed>_<fold>/` | Read A wrapper runs: preds, scored-row index, counterfactual per-band predictions (`cf_*.parquet`, R and A1) |
+| `results/shot_location_v1/grade_v1.json` | the blind grade: all reads, both folds, section 1.6 per class |
 
 ## 9. Known gaps / followups
 `experiments.md` section 1.10.
