@@ -47,22 +47,53 @@ def _open_url(url, *a, **k):
         return False
 
 
+SA_KEY_DEFAULT = Path.home() / ".config" / "pydata" / "bigquery_sa_key.json"
+SA_KEY = None      # set from --sa-key in main(); falls back to SA_KEY_DEFAULT when that file exists
+AUTH_PORT = 8085   # fixed port so a Remote-SSH user can forward it (VS Code Ports panel)
+
+
+def _sa_key_path():
+    if SA_KEY:
+        return Path(SA_KEY)
+    return SA_KEY_DEFAULT if SA_KEY_DEFAULT.exists() else None
+
+
 def get_credentials(interactive=False):
+    """Three ways in, tried in this order:
+    1. a service-account JSON key (--sa-key, or the default path above): no browser at all,
+       the right choice on a headless box;
+    2. cached user credentials from an earlier --auth;
+    3. interactive --auth: prints the Google URL, listens on 127.0.0.1:AUTH_PORT for the
+       redirect, never opens a browser itself. On a headless box forward that port
+       (VS Code: Ports panel -> Forward a Port -> 8085) and open the printed URL on the laptop.
+    """
     import pydata_google_auth
     import pydata_google_auth.cache as pcache
+    key = _sa_key_path()
+    if key is not None:
+        from google.oauth2 import service_account
+        return service_account.Credentials.from_service_account_file(str(key), scopes=SCOPES)
     if interactive:
-        import webbrowser
-        global _REAL_OPEN
-        _REAL_OPEN = webbrowser.open
-
-        class _B:
-            open = staticmethod(_open_url)
-        webbrowser.get = lambda *a, **k: _B()
-        return pydata_google_auth.get_user_credentials(SCOPES, use_local_webserver=True)
+        from google_auth_oauthlib.flow import InstalledAppFlow
+        from pydata_google_auth.auth import DESKTOP_CLIENT_ID, DESKTOP_CLIENT_SECRET
+        cfg = {"installed": {"client_id": DESKTOP_CLIENT_ID, "client_secret": DESKTOP_CLIENT_SECRET,
+                             "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+                             "token_uri": "https://oauth2.googleapis.com/token",
+                             "redirect_uris": [f"http://localhost:{AUTH_PORT}/"]}}
+        flow = InstalledAppFlow.from_client_config(cfg, scopes=SCOPES)
+        print(f"Listening on http://localhost:{AUTH_PORT}/ for the redirect. "
+              f"Open the URL below in a browser that can reach this machine's localhost:{AUTH_PORT} "
+              f"(forward the port first if you are on Remote SSH).", flush=True)
+        creds = flow.run_local_server(host="localhost", bind_addr="127.0.0.1", port=AUTH_PORT,
+                                      open_browser=False,
+                                      authorization_prompt_message="AUTH URL: {url}",
+                                      success_message="Signed in. You can close this tab.")
+        pcache.ReadWriteCredentialsCache().save(creds)
+        return creds
     # cached only: never opens a browser
     if pcache.ReadWriteCredentialsCache().load() is None:
-        sys.exit("No cached Google credentials. Run once: "
-                 "scripts/pull_bigquery_ncaa_v1.py --project P --auth")
+        sys.exit("No cached Google credentials and no service-account key. Run once: "
+                 "scripts/pull_bigquery_ncaa_v1.py --project P --auth   (or pass --sa-key KEY.json)")
     return pydata_google_auth.get_user_credentials(SCOPES)
 
 
@@ -212,6 +243,7 @@ def cmd_pull(args):
 
 
 def main():
+    global SA_KEY, AUTH_PORT
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--project", required=True, help="GCP sandbox project id")
     ap.add_argument("--auth", action="store_true")
@@ -220,7 +252,11 @@ def main():
     ap.add_argument("--pull", metavar="TABLE")
     ap.add_argument("--dry-run", action="store_true")
     ap.add_argument("--max-gb", type=float, default=50.0)
+    ap.add_argument("--port", type=int, default=AUTH_PORT, help="local redirect port for --auth")
+    ap.add_argument("--sa-key", metavar="JSON", help="service-account key file (no browser needed)")
     args = ap.parse_args()
+    SA_KEY = args.sa_key
+    AUTH_PORT = args.port
     if args.auth:
         cmd_auth(args)
     elif args.list:
