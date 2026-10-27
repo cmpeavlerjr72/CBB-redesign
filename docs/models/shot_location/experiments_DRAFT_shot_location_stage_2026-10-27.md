@@ -42,6 +42,13 @@ the second.
 - Fold 1: train 2022-2023, test 2024 (87.5% located; missing games skew to power-conference,
   neutral-site and postseason games: labelled BIASED SUBSET, reported, not gated).
 - Fold 2: train 2022-2024, test 2025 (98.6% located). SELECTION fold and the "vacuum" read.
+- Measurement reliability, REGISTERED (docs/tests/gamezone_frame_calibration_2026-10-27.md section 2):
+  split-half (Spearman-Brown) reliability of CBBD 2022-25 team-season band shares, team-seasons with
+  >= 200 located attempts in the class: offence short2 / corner3 / wing3 / top3 = 0.89 / 0.79 / 0.67 /
+  0.80; defence 0.69 / 0.76 / 0.52 / 0.75. These are the measurement ceiling on every Read B and
+  Read C responsiveness line: a predicted-vs-realised slope is read against sqrt(reliability), and
+  wing3 and all defence lines are labelled WEAKER in every table. Independent-vendor evidence
+  (Sportradar 2013-18, GameZone 2017-24) confirmed the rim exclusion and is summarised in section 9.
 - Coverage handling, fixed in advance: a location feature is NEVER imputed for an unlocated
   attempt. Attempt-level reads (section 3) use located rows only and report the located share
   per cell. Team-game reads (sections 4-5) use realised aggregates from ALL attempts, located or
@@ -181,7 +188,10 @@ class mix with the served make / rebound models, which is `B0` x `R`).
 2. Second-source check on 2025 only, from 2025-02-10 (the window where hoopR and CBBD agree within
    1 ft on 91-95% of pairs): band shares per team-game from hoopR vs CBBD, and the share of
    attempts whose band differs between the two. Descriptive.
-3. Band drift by season and month (section 2).
+3. Band drift by season and month (section 2), with the Sportradar 2015-18 league shares alongside as
+   an older-era reference (docs/tests/sportradar_inventory_2026-10-27.md part 3).
+4. Split-half reliability of the team band profiles on the round's own design table, to confirm the
+   registered section-1 numbers on the exact population used.
 
 ## 8. Scripts, artifacts, grader
 
@@ -203,12 +213,17 @@ class mix with the served make / rebound models, which is `B0` x `R`).
 Status 2026-10-27 (sources: `docs/research/shot_coordinate_sources_2026-10-27.md`,
 `shot_chart_gui_sources_2026-10-27.md`, `bigquery_ncaa_basketball_2026-10-27.md`):
 
-| source | vendor | seasons | independent of ESPN | status |
+| source | vendor | seasons | independent of ESPN | status (2026-10-27 closing) |
 |---|---|---|---|---|
-| Google BigQuery public `ncaa_basketball.mbb_pbp_sr` | Sportradar | 2013-14 onward (end season UNVERIFIED) | yes | USER RULING 2026-10-27: private internal research, within the Sportradar notice; puller `scripts/pull_bigquery_ncaa_v1.py`, runbook `docs/ops/bigquery_ncaa_pull_runbook.md`; needs the user's one-time Google sign-in and a sandbox project (no billing) |
-| `JackLich10/gamezoneR-data` frozen files | STATS LLC / Stats Perform GameZone (third-party scrape, live feed dead since 2024) | 2017-18 to 2024-01-15 (files back to 2008-09 of doubtful content) | yes | NEEDS USER TERMS DECISION: no licence on the data repo; vendor terms unreadable (403). Covers ~39% of our 2022-23 games, 90% of postseason games, 19% of our unlocated 2022-23 games |
-| Any GUI via API Anything (ESPN widget, Sidearm, Genius LiveStats, StatBroadcast, CBS, FOX, Yahoo, NCAA.com) | various | n/a | ESPN widget: no (identical feed) | NOT USABLE: no public x/y found, or terms bar automated collection, or NCAA surface |
-| hoopR pre-2022 | ESPN | 2014-2021 at 10-21% of FGA | no | CLOSED (sparse, biased) |
+| Google BigQuery public `ncaa_basketball.mbb_pbp_sr` | Sportradar | 2013-14 to 2017-18 ONLY (frozen May 2018) | yes | PULLED (user ruling: private internal research). Rim placement shows the same make-vs-miss asymmetry as ESPN 2022-25 (gap -8.3 to -11.1 pts). About a third of D-I games, lopsided per team: league-level shot-mix window only; band shares from 2015-16 match CBBD 2022-25 within 1-3 pts. CLOSED for team profiles. |
+| `JackLich10/gamezoneR-data` frozen files | STATS LLC / Stats Perform GameZone | 2008-09 to 2024-01-15 | yes | PULLED (user ruling). Rim canned on two pixels (outcome-encoding in 2008-11); jumper/three placement 4.9-5.8 ft from CBBD on the same shots, frame unmappable, own band profiles noise (reliability -0.03 to 0.72). CLOSED as a calibration reference and as a training source; descriptive use only. Would cover 23-26% of our unlocated 2022-24 games. |
+| Any GUI via API Anything | various | n/a | ESPN widget: no | NOT USABLE (no public x/y, or terms, or NCAA surface) |
+| hoopR pre-2022 | ESPN | 2014-2021 at 10-21% of FGA | no | CLOSED (sparse, biased); ESPN 2014-17 shows NO rim asymmetry, so the artefact is vendor- and vintage-specific |
+
+Rim verdict: outcome-dependent rim placement is present in two of three vendors and the data cannot
+separate charting from physics (missed layups may genuinely start farther out). Rim location is
+CLOSED as a training input from every source on disk (PM ruling 11). The data question for this
+round is settled: CBBD 2022-2025 alone.
 
 What a second vendor would be used for, each as its own pre-registered round, never by union
 into this round's training table:
