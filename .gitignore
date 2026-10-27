@@ -176,3 +176,6 @@ data/processed/team_rate_variance_*.parquet
 # fg_make PAE round 2026-10-25 (fg_make experiments.md s31): row-aligned design columns + team ratings (> 20 MB) and the arm runs; HF `model_artifacts` key
 data/processed/models/fg_make/pae_v1/*.parquet
 data/processed/models/fg_make/round_pae/
+# GCP service-account keys never belong in the repo
+graphic-centaur-*.json
+*_sa_key.json

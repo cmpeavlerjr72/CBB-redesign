@@ -27,7 +27,7 @@ import zlib
 from pathlib import Path
 
 DATASET = "bigquery-public-data.ncaa_basketball"
-SCOPES = ["https://www.googleapis.com/auth/bigquery.readonly"]
+SCOPES = ["https://www.googleapis.com/auth/bigquery"]  # query jobs need the full scope; .readonly cannot create jobs
 ROOT = Path(__file__).resolve().parent.parent
 OUT = ROOT / "data" / "raw" / "bigquery_ncaa"
 N_CHUNKS = 20
