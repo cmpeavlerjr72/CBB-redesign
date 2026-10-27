@@ -198,11 +198,28 @@ class mix with the served make / rebound models, which is `B0` x `R`).
 - Suite re-run; parity v10 bit-identical (no `src` change is expected; if one is needed it is
   behind a default-off flag and disclosed).
 
-## 9. Data-extension options (pending, outside this round)
+## 9. Data-extension options (outside this round; second-vendor sources enter only through a registered agreement check)
 
-Filled when the 2026-10-27 GUI-source survey and the BigQuery fact sheet land. Any second vendor's
-coordinates enter only through a registered agreement check (section 7, item 2 pattern) in a later
-round, never by union into the training table of this one.
+Status 2026-10-27 (sources: `docs/research/shot_coordinate_sources_2026-10-27.md`,
+`shot_chart_gui_sources_2026-10-27.md`, `bigquery_ncaa_basketball_2026-10-27.md`):
+
+| source | vendor | seasons | independent of ESPN | status |
+|---|---|---|---|---|
+| Google BigQuery public `ncaa_basketball.mbb_pbp_sr` | Sportradar | 2013-14 onward (end season UNVERIFIED) | yes | USER RULING 2026-10-27: private internal research, within the Sportradar notice; puller `scripts/pull_bigquery_ncaa_v1.py`, runbook `docs/ops/bigquery_ncaa_pull_runbook.md`; needs the user's one-time Google sign-in and a sandbox project (no billing) |
+| `JackLich10/gamezoneR-data` frozen files | STATS LLC / Stats Perform GameZone (third-party scrape, live feed dead since 2024) | 2017-18 to 2024-01-15 (files back to 2008-09 of doubtful content) | yes | NEEDS USER TERMS DECISION: no licence on the data repo; vendor terms unreadable (403). Covers ~39% of our 2022-23 games, 90% of postseason games, 19% of our unlocated 2022-23 games |
+| Any GUI via API Anything (ESPN widget, Sidearm, Genius LiveStats, StatBroadcast, CBS, FOX, Yahoo, NCAA.com) | various | n/a | ESPN widget: no (identical feed) | NOT USABLE: no public x/y found, or terms bar automated collection, or NCAA surface |
+| hoopR pre-2022 | ESPN | 2014-2021 at 10-21% of FGA | no | CLOSED (sparse, biased) |
+
+What a second vendor would be used for, each as its own pre-registered round, never by union
+into this round's training table:
+1. **Rim charting-bias measurement**: the audit's make-vs-miss placement asymmetry and the
+   located-share gap, re-measured on the same games under the second vendor. If the asymmetry is
+   absent there, the rim channel can be re-opened with the vendor's rim placement.
+2. **Gap fill for 2022-24**: the unlocated ESPN games (skewed to power / neutral / postseason) read
+   under the second vendor, entered only after the band-agreement check of section 7 item 2 passes
+   on the games both locate.
+3. **Backward extension (2013-14 onward, Sportradar)**: a longer training window for the as-of
+   band profiles and prior-season carry-over, with the vendor-vs-ESPN agreement check as the gate.
 
 ## 10. Known gaps this spec does not close
 
