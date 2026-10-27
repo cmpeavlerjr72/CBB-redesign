@@ -36,3 +36,24 @@ set PYTHONIOENCODING=utf-8
 - 10 GiB lifetime storage; tables expire after 60 days. We only read public tables and write locally, so storage limits should not bind.
 - No billing account or credit card required.
 - Dry-run estimates use the pre-execution bound; the actual bytes are printed after each query.
+
+
+## Headless box: use a service-account key (added 2026-10-27 after the browser flow failed twice)
+
+This machine is reached over Remote SSH, so a browser opened "here" shows nothing, and Google now
+BLOCKS the shared desktop OAuth client that `pydata-google-auth` ships ("This app is blocked. This
+app tried to access sensitive info in your Google Account"). The browser route is therefore dead
+unless you register your own OAuth client. The supported route is a service-account key:
+
+1. Console (https://console.cloud.google.com), project `graphic-centaur-381400`: IAM & Admin ->
+   Service Accounts -> Create service account. Name `cbb-bq-reader`. Grant role **BigQuery User**
+   (lets it run query jobs in this project; the public dataset is readable by everyone).
+2. Open the account -> Keys -> Add key -> Create new key -> JSON. The file downloads to the laptop.
+3. Put it on this server as `C:\Users\devuser\.config\pydata\bigquery_sa_key.json` (drag the file
+   into that folder in the VS Code Explorer, or `scp` it). Never put it inside the repo.
+4. Every command then works with no `--auth` at all:
+   `.venv/Scripts/python.exe scripts/pull_bigquery_ncaa_v1.py --project graphic-centaur-381400 --list`
+   (`--sa-key PATH` overrides the default location.)
+
+The `--auth --port 8085` browser flow remains in the script for a machine with a browser; on
+Remote SSH it also needs the port forwarded in the VS Code Ports panel.
