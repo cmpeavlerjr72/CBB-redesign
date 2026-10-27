@@ -17,6 +17,7 @@ continuously reads as "blocked" (rebound round 3, section 2).
 """
 from __future__ import annotations
 
+import hashlib
 from pathlib import Path
 
 import numpy as np
@@ -93,13 +94,20 @@ class ShotBlock:
         return 1.0 / (1.0 + np.exp(-eta))
 
 
+def _content_key(arm: str, inp):
+    """Cache key on content (arm, n games, hash of game ids in order), never id(inp):
+    id() is reused after garbage collection and served a stale table (2026-10-27)."""
+    gid = np.ascontiguousarray(inp.games["game_id"].to_numpy())
+    return (arm, len(gid), hashlib.sha1(gid.astype(str).tobytes() if gid.dtype == object else gid.tobytes()).hexdigest())
+
+
 def load(arm: str | None, inp):
     """None for the served path (unset / 'reference'), else the arm's lookups."""
     if not arm or arm == "reference":
         return None
     if arm not in ARMS:
         raise KeyError(f"unknown ENGINE_SHOT_BLOCK={arm!r}; known: {sorted(ARMS)} or 'reference'")
-    key = (arm, id(inp))
+    key = _content_key(arm, inp)
     if key not in _CACHE:
         _CACHE[key] = ShotBlock(arm, inp)
     return _CACHE[key]
