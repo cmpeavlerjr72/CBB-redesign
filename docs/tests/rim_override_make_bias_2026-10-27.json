@@ -1,0 +1,1420 @@
+{
+  "created_at": "2026-10-27T16:24:55.271156+00:00",
+  "part1_make_rates_v1_vs_v2": [
+    {
+      "season": 2022,
+      "class": "rim",
+      "n_v1": 235777,
+      "n_v2": 238875,
+      "make_v1": 0.5902908256530536,
+      "make_v2": 0.5903380429094714,
+      "shift_pp": 0.004721725641787522,
+      "boot_se_pp": 0.013940346977230417
+    },
+    {
+      "season": 2022,
+      "class": "jump2",
+      "n_v1": 180264,
+      "n_v2": 177166,
+      "make_v1": 0.3778902054764124,
+      "make_v2": 0.3741124143458677,
+      "shift_pp": -0.3777791130544661,
+      "boot_se_pp": 0.024424342006605447
+    },
+    {
+      "season": 2023,
+      "class": "rim",
+      "n_v1": 251561,
+      "n_v2": 255152,
+      "make_v1": 0.58879158534113,
+      "make_v2": 0.589413369285759,
+      "shift_pp": 0.062178394462908404,
+      "boot_se_pp": 0.014287883057046124
+    },
+    {
+      "season": 2023,
+      "class": "jump2",
+      "n_v1": 185150,
+      "n_v2": 181559,
+      "make_v1": 0.3844180394274912,
+      "make_v2": 0.3795019800725935,
+      "shift_pp": -0.4916059354897695,
+      "boot_se_pp": 0.024950944811684313
+    },
+    {
+      "season": 2024,
+      "class": "rim",
+      "n_v1": 262998,
+      "n_v2": 267192,
+      "make_v1": 0.5820044258891702,
+      "make_v2": 0.5824014192041678,
+      "shift_pp": 0.03969933149975402,
+      "boot_se_pp": 0.01589731650542335
+    },
+    {
+      "season": 2024,
+      "class": "jump2",
+      "n_v1": 190310,
+      "n_v2": 186116,
+      "make_v1": 0.3972360884872051,
+      "make_v2": 0.3925025253067979,
+      "shift_pp": -0.47335631804071854,
+      "boot_se_pp": 0.026350131801363738
+    },
+    {
+      "season": 2025,
+      "class": "rim",
+      "n_v1": 254328,
+      "n_v2": 266753,
+      "make_v1": 0.5822402566764179,
+      "make_v2": 0.5861189939757003,
+      "shift_pp": 0.3878737299282453,
+      "boot_se_pp": 0.023586453955767948
+    },
+    {
+      "season": 2025,
+      "class": "jump2",
+      "n_v1": 181668,
+      "n_v2": 169243,
+      "make_v1": 0.40934011493493627,
+      "make_v2": 0.39053313874133644,
+      "shift_pp": -1.8806976193599834,
+      "boot_se_pp": 0.045101273368620264
+    }
+  ],
+  "part2_override_make_share": [
+    {
+      "season": 2022,
+      "band": "all located v1-jump2",
+      "n": 143551,
+      "make_share": 0.3798371310544684,
+      "kind": "jump2_all"
+    },
+    {
+      "season": 2022,
+      "band": "overridden (0-2.27)",
+      "n": 3098,
+      "make_share": 0.5939315687540349,
+      "boot_se": 0.010376559805289745,
+      "kind": "override"
+    },
+    {
+      "season": 2022,
+      "band": "overridden at spike pixel (0.39 ft)",
+      "n": 181,
+      "share_of_overridden": 0.05842479018721756,
+      "make_share": 0.5027624309392266,
+      "kind": "override_spike"
+    },
+    {
+      "season": 2022,
+      "band": "overridden not at spike",
+      "n": 2917,
+      "make_share": 0.5995886184436064,
+      "kind": "override_nonspike"
+    },
+    {
+      "season": 2022,
+      "band": "0-1",
+      "n": 502,
+      "make_share": 0.6095617529880478,
+      "boot_se": 0.025657747618164445,
+      "kind": "override_band",
+      "native_rim_n": 18663,
+      "native_rim_make_share": 0.7156405722552645
+    },
+    {
+      "season": 2022,
+      "band": "1-2",
+      "n": 1748,
+      "make_share": 0.6149885583524027,
+      "boot_se": 0.012862799524703171,
+      "kind": "override_band",
+      "native_rim_n": 22158,
+      "native_rim_make_share": 0.7183410055059121
+    },
+    {
+      "season": 2022,
+      "band": "2-2.27",
+      "n": 848,
+      "make_share": 0.5412735849056604,
+      "boot_se": 0.017523624295635348,
+      "kind": "override_band",
+      "native_rim_n": 12204,
+      "native_rim_make_share": 0.6737135365453949
+    },
+    {
+      "season": 2022,
+      "band": "2.27-3.5 (native v1/v2 jump2, not overridden)",
+      "n": 6004,
+      "make_share": 0.5133244503664224,
+      "kind": "ref_jump2"
+    },
+    {
+      "season": 2022,
+      "band": "3.5-5 (native v1/v2 jump2, not overridden)",
+      "n": 8555,
+      "make_share": 0.4289888953828171,
+      "kind": "ref_jump2"
+    },
+    {
+      "season": 2023,
+      "band": "all located v1-jump2",
+      "n": 155244,
+      "make_share": 0.3853224601272835,
+      "kind": "jump2_all"
+    },
+    {
+      "season": 2023,
+      "band": "overridden (0-2.27)",
+      "n": 3591,
+      "make_share": 0.6329713171818435,
+      "boot_se": 0.009375155722830167,
+      "kind": "override"
+    },
+    {
+      "season": 2023,
+      "band": "overridden at spike pixel (0.39 ft)",
+      "n": 178,
+      "share_of_overridden": 0.04956836535783904,
+      "make_share": 0.5674157303370787,
+      "kind": "override_spike"
+    },
+    {
+      "season": 2023,
+      "band": "overridden not at spike",
+      "n": 3413,
+      "make_share": 0.6363902724875476,
+      "kind": "override_nonspike"
+    },
+    {
+      "season": 2023,
+      "band": "0-1",
+      "n": 596,
+      "make_share": 0.6593959731543624,
+      "boot_se": 0.021100620614809332,
+      "kind": "override_band",
+      "native_rim_n": 22454,
+      "native_rim_make_share": 0.7115881357441881
+    },
+    {
+      "season": 2023,
+      "band": "1-2",
+      "n": 2090,
+      "make_share": 0.6492822966507177,
+      "boot_se": 0.011853630112184446,
+      "kind": "override_band",
+      "native_rim_n": 25629,
+      "native_rim_make_share": 0.7104061804986539
+    },
+    {
+      "season": 2023,
+      "band": "2-2.27",
+      "n": 905,
+      "make_share": 0.5779005524861879,
+      "boot_se": 0.01785409488405521,
+      "kind": "override_band",
+      "native_rim_n": 14164,
+      "native_rim_make_share": 0.6695142615080486
+    },
+    {
+      "season": 2023,
+      "band": "2.27-3.5 (native v1/v2 jump2, not overridden)",
+      "n": 6474,
+      "make_share": 0.5148285449490269,
+      "kind": "ref_jump2"
+    },
+    {
+      "season": 2023,
+      "band": "3.5-5 (native v1/v2 jump2, not overridden)",
+      "n": 9391,
+      "make_share": 0.4368011926312427,
+      "kind": "ref_jump2"
+    },
+    {
+      "season": 2024,
+      "band": "all located v1-jump2",
+      "n": 166388,
+      "make_share": 0.39503449768012117,
+      "kind": "jump2_all"
+    },
+    {
+      "season": 2024,
+      "band": "overridden (0-2.27)",
+      "n": 4194,
+      "make_share": 0.6072961373390557,
+      "boot_se": 0.00924496617866505,
+      "kind": "override"
+    },
+    {
+      "season": 2024,
+      "band": "overridden at spike pixel (0.39 ft)",
+      "n": 254,
+      "share_of_overridden": 0.06056270863137816,
+      "make_share": 0.6417322834645669,
+      "kind": "override_spike"
+    },
+    {
+      "season": 2024,
+      "band": "overridden not at spike",
+      "n": 3940,
+      "make_share": 0.6050761421319797,
+      "kind": "override_nonspike"
+    },
+    {
+      "season": 2024,
+      "band": "0-1",
+      "n": 780,
+      "make_share": 0.6448717948717949,
+      "boot_se": 0.017650729897622633,
+      "kind": "override_band",
+      "native_rim_n": 24235,
+      "native_rim_make_share": 0.7048483598101919
+    },
+    {
+      "season": 2024,
+      "band": "1-2",
+      "n": 2336,
+      "make_share": 0.6091609589041096,
+      "boot_se": 0.010335291090484273,
+      "kind": "override_band",
+      "native_rim_n": 28076,
+      "native_rim_make_share": 0.7019874626015102
+    },
+    {
+      "season": 2024,
+      "band": "2-2.27",
+      "n": 1078,
+      "make_share": 0.5760667903525046,
+      "boot_se": 0.015846313030190937,
+      "kind": "override_band",
+      "native_rim_n": 14674,
+      "native_rim_make_share": 0.6618508927354505
+    },
+    {
+      "season": 2024,
+      "band": "2.27-3.5 (native v1/v2 jump2, not overridden)",
+      "n": 7810,
+      "make_share": 0.5404609475032011,
+      "kind": "ref_jump2"
+    },
+    {
+      "season": 2024,
+      "band": "3.5-5 (native v1/v2 jump2, not overridden)",
+      "n": 10917,
+      "make_share": 0.45607767701749563,
+      "kind": "ref_jump2"
+    },
+    {
+      "season": 2025,
+      "band": "all located v1-jump2",
+      "n": 179465,
+      "make_share": 0.40716574262391,
+      "kind": "jump2_all"
+    },
+    {
+      "season": 2025,
+      "band": "overridden (0-2.27)",
+      "n": 12425,
+      "make_share": 0.665513078470825,
+      "boot_se": 0.004690121590630617,
+      "kind": "override"
+    },
+    {
+      "season": 2025,
+      "band": "overridden at spike pixel (0.39 ft)",
+      "n": 8676,
+      "share_of_overridden": 0.6982696177062374,
+      "make_share": 0.6878745965882895,
+      "kind": "override_spike"
+    },
+    {
+      "season": 2025,
+      "band": "overridden not at spike",
+      "n": 3749,
+      "make_share": 0.6137636703120832,
+      "kind": "override_nonspike"
+    },
+    {
+      "season": 2025,
+      "band": "0-1",
+      "n": 9106,
+      "make_share": 0.6872391829562926,
+      "boot_se": 0.005081463000851318,
+      "kind": "override_band",
+      "native_rim_n": 19503,
+      "native_rim_make_share": 0.7090703994257294
+    },
+    {
+      "season": 2025,
+      "band": "1-2",
+      "n": 2298,
+      "make_share": 0.6070496083550914,
+      "boot_se": 0.011879691025019916,
+      "kind": "override_band",
+      "native_rim_n": 33614,
+      "native_rim_make_share": 0.7022669125959422
+    },
+    {
+      "season": 2025,
+      "band": "2-2.27",
+      "n": 1021,
+      "make_share": 0.6033300685602351,
+      "boot_se": 0.015380278647383241,
+      "kind": "override_band",
+      "native_rim_n": 17015,
+      "native_rim_make_share": 0.6646488392594769
+    },
+    {
+      "season": 2025,
+      "band": "2.27-3.5 (native v1/v2 jump2, not overridden)",
+      "n": 7427,
+      "make_share": 0.5313046990709573,
+      "kind": "ref_jump2"
+    },
+    {
+      "season": 2025,
+      "band": "3.5-5 (native v1/v2 jump2, not overridden)",
+      "n": 10897,
+      "make_share": 0.4562723685418005,
+      "kind": "ref_jump2"
+    }
+  ],
+  "part3_by_located_share_quartile": [
+    {
+      "season": 2022,
+      "quartile": 0,
+      "games": 5832,
+      "mean_loc_share": 0.8000481944198596,
+      "located_jumpshots": 143551,
+      "overridden": 3098,
+      "override_make_share": 0.5939315687540349,
+      "override_pct_of_makes": 3.37453691816748,
+      "override_pct_of_misses": 1.4130862117382756,
+      "within_game_diff_pp": 1.6303080034467534,
+      "within_game_boot_se_pp": 0.10587604480257694
+    },
+    {
+      "season": 2022,
+      "quartile": 1,
+      "games": 1430,
+      "mean_loc_share": 0.22326411614208366,
+      "located_jumpshots": 9421,
+      "overridden": 324,
+      "override_make_share": 0.5709876543209876,
+      "override_pct_of_makes": 5.006765899864682,
+      "override_pct_of_misses": 2.427523576667831,
+      "within_game_diff_pp": 2.270514390391563,
+      "within_game_boot_se_pp": 0.45548777296395543
+    },
+    {
+      "season": 2022,
+      "quartile": 2,
+      "games": 1502,
+      "mean_loc_share": 0.9829236801551744,
+      "located_jumpshots": 44545,
+      "overridden": 904,
+      "override_make_share": 0.5907079646017699,
+      "override_pct_of_makes": 3.1812224472774933,
+      "override_pct_of_misses": 1.3329010411037863,
+      "within_game_diff_pp": 1.6091520058969282,
+      "within_game_boot_se_pp": 0.19142877682095633
+    },
+    {
+      "season": 2022,
+      "quartile": 3,
+      "games": 1417,
+      "mean_loc_share": 0.9940084132112407,
+      "located_jumpshots": 44470,
+      "overridden": 938,
+      "override_make_share": 0.582089552238806,
+      "override_pct_of_makes": 3.291734490866341,
+      "override_pct_of_misses": 1.405874547215149,
+      "within_game_diff_pp": 1.5270708872174081,
+      "within_game_boot_se_pp": 0.19118035449806622
+    },
+    {
+      "season": 2022,
+      "quartile": 4,
+      "games": 1486,
+      "mean_loc_share": 1.0,
+      "located_jumpshots": 45115,
+      "overridden": 932,
+      "override_make_share": 0.6169527896995708,
+      "override_pct_of_makes": 3.293618971245274,
+      "override_pct_of_misses": 1.29081245254366,
+      "within_game_diff_pp": 1.6262085927844043,
+      "within_game_boot_se_pp": 0.18807951797223368
+    },
+    {
+      "season": 2023,
+      "quartile": 0,
+      "games": 6115,
+      "mean_loc_share": 0.8433493098542154,
+      "located_jumpshots": 155244,
+      "overridden": 3591,
+      "override_make_share": 0.6329713171818435,
+      "override_pct_of_makes": 3.799796051421789,
+      "override_pct_of_misses": 1.3811894157715483,
+      "within_game_diff_pp": 2.122693999916012,
+      "within_game_boot_se_pp": 0.11059618898189356
+    },
+    {
+      "season": 2023,
+      "quartile": 1,
+      "games": 1503,
+      "mean_loc_share": 0.3937683192481838,
+      "located_jumpshots": 18157,
+      "overridden": 425,
+      "override_make_share": 0.6047058823529412,
+      "override_pct_of_makes": 3.5853794642857144,
+      "override_pct_of_misses": 1.5288015288015286,
+      "within_game_diff_pp": 1.7724604160593345,
+      "within_game_boot_se_pp": 0.2607440969759641
+    },
+    {
+      "season": 2023,
+      "quartile": 2,
+      "games": 1582,
+      "mean_loc_share": 0.9855384036359282,
+      "located_jumpshots": 45516,
+      "overridden": 1063,
+      "override_make_share": 0.676387582314205,
+      "override_pct_of_makes": 4.09010751464816,
+      "override_pct_of_misses": 1.2313419479543257,
+      "within_game_diff_pp": 2.4594272474861576,
+      "within_game_boot_se_pp": 0.20127354382252624
+    },
+    {
+      "season": 2023,
+      "quartile": 3,
+      "games": 1472,
+      "mean_loc_share": 0.9940921869742987,
+      "located_jumpshots": 45231,
+      "overridden": 1021,
+      "override_make_share": 0.6356513222331048,
+      "override_pct_of_makes": 3.7824921319501112,
+      "override_pct_of_misses": 1.3251166601360738,
+      "within_game_diff_pp": 2.1878856579830783,
+      "within_game_boot_se_pp": 0.2183465932074612
+    },
+    {
+      "season": 2023,
+      "quartile": 4,
+      "games": 1561,
+      "mean_loc_share": 1.0,
+      "located_jumpshots": 46340,
+      "overridden": 1082,
+      "override_make_share": 0.5988909426987061,
+      "override_pct_of_makes": 3.6172825722898287,
+      "override_pct_of_misses": 1.52677126574263,
+      "within_game_diff_pp": 1.8627819240081438,
+      "within_game_boot_se_pp": 0.18529497023564467
+    },
+    {
+      "season": 2024,
+      "quartile": 0,
+      "games": 6151,
+      "mean_loc_share": 0.8754542077139696,
+      "located_jumpshots": 166388,
+      "overridden": 4194,
+      "override_make_share": 0.6072961373390557,
+      "override_pct_of_makes": 3.8750019017480866,
+      "override_pct_of_misses": 1.6362173278097338,
+      "within_game_diff_pp": 1.8229249228917297,
+      "within_game_boot_se_pp": 0.09889161346438549
+    },
+    {
+      "season": 2024,
+      "quartile": 1,
+      "games": 1521,
+      "mean_loc_share": 0.5231471251160118,
+      "located_jumpshots": 24764,
+      "overridden": 721,
+      "override_make_share": 0.6296809986130375,
+      "override_pct_of_makes": 4.508888668189492,
+      "override_pct_of_misses": 1.8169445389588295,
+      "within_game_diff_pp": 2.1633985999749457,
+      "within_game_boot_se_pp": 0.27760366227511685
+    },
+    {
+      "season": 2024,
+      "quartile": 2,
+      "games": 1580,
+      "mean_loc_share": 0.9852333495381623,
+      "located_jumpshots": 47897,
+      "overridden": 1434,
+      "override_make_share": 0.600418410041841,
+      "override_pct_of_makes": 4.550258957826868,
+      "override_pct_of_misses": 1.977566867989646,
+      "within_game_diff_pp": 2.0730732907608145,
+      "within_game_boot_se_pp": 0.20031474541405767
+    },
+    {
+      "season": 2024,
+      "quartile": 3,
+      "games": 1493,
+      "mean_loc_share": 0.9934370079827639,
+      "located_jumpshots": 46756,
+      "overridden": 1032,
+      "override_make_share": 0.6046511627906976,
+      "override_pct_of_makes": 3.4001743679163035,
+      "override_pct_of_misses": 1.436417405999155,
+      "within_game_diff_pp": 1.5813594023716522,
+      "within_game_boot_se_pp": 0.17562379956234828
+    },
+    {
+      "season": 2024,
+      "quartile": 4,
+      "games": 1560,
+      "mean_loc_share": 1.0,
+      "located_jumpshots": 46971,
+      "overridden": 1007,
+      "override_make_share": 0.6037735849056604,
+      "override_pct_of_makes": 3.306863918198629,
+      "override_pct_of_misses": 1.395836977435718,
+      "within_game_diff_pp": 1.631202897061175,
+      "within_game_boot_se_pp": 0.18610520770436653
+    },
+    {
+      "season": 2025,
+      "quartile": 0,
+      "games": 6135,
+      "mean_loc_share": 0.9862655385053445,
+      "located_jumpshots": 179465,
+      "overridden": 12425,
+      "override_make_share": 0.665513078470825,
+      "override_pct_of_makes": 11.31623604116488,
+      "override_pct_of_misses": 3.906272029174852,
+      "within_game_diff_pp": 6.633060554896416,
+      "within_game_boot_se_pp": 0.1597884786849127
+    },
+    {
+      "season": 2025,
+      "quartile": 1,
+      "games": 1527,
+      "mean_loc_share": 0.9558321050515879,
+      "located_jumpshots": 43239,
+      "overridden": 3228,
+      "override_make_share": 0.65272614622057,
+      "override_pct_of_makes": 12.020081008614296,
+      "override_pct_of_misses": 4.360171139634383,
+      "within_game_diff_pp": 6.928772532372562,
+      "within_game_boot_se_pp": 0.3175625459152454
+    },
+    {
+      "season": 2025,
+      "quartile": 2,
+      "games": 1575,
+      "mean_loc_share": 0.9912121533574152,
+      "located_jumpshots": 44774,
+      "overridden": 3029,
+      "override_make_share": 0.6797622977880489,
+      "override_pct_of_makes": 11.192042180790345,
+      "override_pct_of_misses": 3.677446259999242,
+      "within_game_diff_pp": 6.657916219033677,
+      "within_game_boot_se_pp": 0.31601406646011265
+    },
+    {
+      "season": 2025,
+      "quartile": 3,
+      "games": 1475,
+      "mean_loc_share": 0.9980179888449062,
+      "located_jumpshots": 46732,
+      "overridden": 4112,
+      "override_make_share": 0.6755836575875487,
+      "override_pct_of_makes": 14.455198251639088,
+      "override_pct_of_misses": 4.848440793777713,
+      "within_game_diff_pp": 8.910599300181705,
+      "within_game_boot_se_pp": 0.3267212649145204
+    },
+    {
+      "season": 2025,
+      "quartile": 4,
+      "games": 1561,
+      "mean_loc_share": 1.0,
+      "located_jumpshots": 44720,
+      "overridden": 2056,
+      "override_make_share": 0.644455252918288,
+      "override_pct_of_makes": 7.390673806336457,
+      "override_pct_of_misses": 2.728426395939086,
+      "within_game_diff_pp": 3.9425650329775195,
+      "within_game_boot_se_pp": 0.2600209799044397
+    }
+  ],
+  "part4_served_fg_make_calibration_F2": {
+    "rim": {
+      "design_rows": 235348,
+      "matched": 235348,
+      "matched_pct": 100.0,
+      "master_rows_this_class": 266753,
+      "groups": {
+        "all": {
+          "n": 235348,
+          "pred": 0.5840469902777694,
+          "actual": 0.5843771776263236,
+          "level_pp": 0.03301873485541673,
+          "worst_decile_gap_pp": 1.126791383471587,
+          "shape_pp": 1.0937726486161703,
+          "deciles": [
+            {
+              "pred": 0.456206061096238,
+              "actual": 0.4674739749309539,
+              "n": 23535
+            },
+            {
+              "pred": 0.5016826952078386,
+              "actual": 0.5103462927554706,
+              "n": 23535
+            },
+            {
+              "pred": 0.526623952071984,
+              "actual": 0.532823454429573,
+              "n": 23535
+            },
+            {
+              "pred": 0.5480074195039264,
+              "actual": 0.5446781389420012,
+              "n": 23535
+            },
+            {
+              "pred": 0.5686412311962947,
+              "actual": 0.56192904185256,
+              "n": 23535
+            },
+            {
+              "pred": 0.5902201865749743,
+              "actual": 0.5873380072232844,
+              "n": 23535
+            },
+            {
+              "pred": 0.6137067395197552,
+              "actual": 0.6113872955173146,
+              "n": 23535
+            },
+            {
+              "pred": 0.639878653012996,
+              "actual": 0.6383683875079669,
+              "n": 23535
+            },
+            {
+              "pred": 0.6701140914401471,
+              "actual": 0.6661850939066882,
+              "n": 23534
+            },
+            {
+              "pred": 0.7253985361510766,
+              "actual": 0.723251465964137,
+              "n": 23534
+            }
+          ],
+          "level_boot_se_pp": 0.11703814666281535,
+          "log_loss": 0.6672522417203798
+        },
+        "overridden (v1 jump2)": {
+          "n": 10485,
+          "pred": 0.6309276798515701,
+          "actual": 0.6612303290414878,
+          "level_pp": 3.0302649189917763,
+          "worst_decile_gap_pp": 5.936195627674512,
+          "shape_pp": 2.9059307086827357,
+          "deciles": [
+            {
+              "pred": 0.4858350550031322,
+              "actual": 0.5433746425166825,
+              "n": 1049
+            },
+            {
+              "pred": 0.5541130689688863,
+              "actual": 0.5843660629170638,
+              "n": 1049
+            },
+            {
+              "pred": 0.5974540589758764,
+              "actual": 0.6568160152526216,
+              "n": 1049
+            },
+            {
+              "pred": 0.6233287227919204,
+              "actual": 0.6549094375595805,
+              "n": 1049
+            },
+            {
+              "pred": 0.639981942912492,
+              "actual": 0.674928503336511,
+              "n": 1049
+            },
+            {
+              "pred": 0.6527796057776323,
+              "actual": 0.6698473282442748,
+              "n": 1048
+            },
+            {
+              "pred": 0.6643386983716824,
+              "actual": 0.6851145038167938,
+              "n": 1048
+            },
+            {
+              "pred": 0.6764570387622735,
+              "actual": 0.691793893129771,
+              "n": 1048
+            },
+            {
+              "pred": 0.6913104638663702,
+              "actual": 0.7051526717557252,
+              "n": 1048
+            },
+            {
+              "pred": 0.7239204384581495,
+              "actual": 0.7461832061068703,
+              "n": 1048
+            }
+          ],
+          "level_boot_se_pp": 0.513325974958985,
+          "log_loss": 0.6362765744732435
+        },
+        "native rim, located": {
+          "n": 220069,
+          "pred": 0.5815796753474927,
+          "actual": 0.5755240401873958,
+          "level_pp": -0.6055635160096884,
+          "worst_decile_gap_pp": -1.2473979594863294,
+          "shape_pp": 1.2127128076032223,
+          "deciles": [
+            {
+              "pred": 0.4552817128822198,
+              "actual": 0.46135320579815514,
+              "n": 22007
+            },
+            {
+              "pred": 0.5002941202803828,
+              "actual": 0.5015676830099514,
+              "n": 22007
+            },
+            {
+              "pred": 0.524835509071523,
+              "actual": 0.5262870904712137,
+              "n": 22007
+            },
+            {
+              "pred": 0.545743617578274,
+              "actual": 0.5385559140273549,
+              "n": 22007
+            },
+            {
+              "pred": 0.5657673080103449,
+              "actual": 0.5533693824692143,
+              "n": 22007
+            },
+            {
+              "pred": 0.5866206459120207,
+              "actual": 0.5757259053937384,
+              "n": 22007
+            },
+            {
+              "pred": 0.6094595809991443,
+              "actual": 0.5987640296269369,
+              "n": 22007
+            },
+            {
+              "pred": 0.6355152160891869,
+              "actual": 0.628027445812696,
+              "n": 22007
+            },
+            {
+              "pred": 0.6672201967076001,
+              "actual": 0.6547462171127368,
+              "n": 22007
+            },
+            {
+              "pred": 0.7250653659465298,
+              "actual": 0.7168499500136326,
+              "n": 22006
+            }
+          ],
+          "level_boot_se_pp": 0.11632474395090037,
+          "log_loss": 0.6704694513536946
+        },
+        "native rim, unlocated/unmatched": {
+          "n": 4794,
+          "pred": 0.5947761307053375,
+          "actual": 0.8226950354609929,
+          "level_pp": 22.791890475565534,
+          "worst_decile_gap_pp": 29.919682901501766,
+          "shape_pp": 8.519469802140222,
+          "deciles": [
+            {
+              "pred": 0.46538650431831563,
+              "actual": 0.7645833333333333,
+              "n": 480
+            },
+            {
+              "pred": 0.5120862180249366,
+              "actual": 0.7916666666666666,
+              "n": 480
+            },
+            {
+              "pred": 0.5372660993552029,
+              "actual": 0.79375,
+              "n": 480
+            },
+            {
+              "pred": 0.5596408788023358,
+              "actual": 0.83125,
+              "n": 480
+            },
+            {
+              "pred": 0.5799651366039988,
+              "actual": 0.8079331941544885,
+              "n": 479
+            },
+            {
+              "pred": 0.6015593483948928,
+              "actual": 0.8413361169102297,
+              "n": 479
+            },
+            {
+              "pred": 0.6265778827618829,
+              "actual": 0.8183716075156576,
+              "n": 479
+            },
+            {
+              "pred": 0.6526613360346228,
+              "actual": 0.8517745302713987,
+              "n": 479
+            },
+            {
+              "pred": 0.6798227661258721,
+              "actual": 0.8225469728601252,
+              "n": 479
+            },
+            {
+              "pred": 0.7334313053626721,
+              "actual": 0.9039665970772442,
+              "n": 479
+            }
+          ],
+          "level_boot_se_pp": 1.0174925580380012,
+          "log_loss": 0.5873131020233164
+        },
+        "native rim, located, dist<2.27": {
+          "n": 62626,
+          "pred": 0.5987531944074682,
+          "actual": 0.6938811356305687,
+          "level_pp": 9.512794122310053,
+          "worst_decile_gap_pp": 12.540174850253083,
+          "shape_pp": 3.0273807279430294,
+          "deciles": [
+            {
+              "pred": 0.464251772174461,
+              "actual": 0.5896535206769918,
+              "n": 6263
+            },
+            {
+              "pred": 0.511902650331601,
+              "actual": 0.6274948107935494,
+              "n": 6263
+            },
+            {
+              "pred": 0.5392773070628646,
+              "actual": 0.6616637394220022,
+              "n": 6263
+            },
+            {
+              "pred": 0.5631349333522914,
+              "actual": 0.669327798179786,
+              "n": 6263
+            },
+            {
+              "pred": 0.5869060491657012,
+              "actual": 0.6844962478045665,
+              "n": 6263
+            },
+            {
+              "pred": 0.6107419923232781,
+              "actual": 0.7050934057161105,
+              "n": 6263
+            },
+            {
+              "pred": 0.6344469223101007,
+              "actual": 0.722612583839029,
+              "n": 6262
+            },
+            {
+              "pred": 0.6578595814453895,
+              "actual": 0.7274033854998403,
+              "n": 6262
+            },
+            {
+              "pred": 0.6838228686273957,
+              "actual": 0.7507186202491217,
+              "n": 6262
+            },
+            {
+              "pred": 0.7352383790130003,
+              "actual": 0.8003832641328649,
+              "n": 6262
+            }
+          ],
+          "level_boot_se_pp": 0.23141767022470972,
+          "log_loss": 0.6277639571514578
+        },
+        "overridden at spike pixel": {
+          "n": 7454,
+          "pred": 0.6545646180709932,
+          "actual": 0.6859404346659511,
+          "level_pp": 3.1375816594957917,
+          "worst_decile_gap_pp": 7.288469486592042,
+          "shape_pp": 4.15088782709625,
+          "deciles": [
+            {
+              "pred": 0.5598230799330072,
+              "actual": 0.6327077747989276,
+              "n": 746
+            },
+            {
+              "pred": 0.6154364631801817,
+              "actual": 0.6635388739946381,
+              "n": 746
+            },
+            {
+              "pred": 0.6326986723284321,
+              "actual": 0.6796246648793566,
+              "n": 746
+            },
+            {
+              "pred": 0.6448778943851807,
+              "actual": 0.6514745308310992,
+              "n": 746
+            },
+            {
+              "pred": 0.6543293008690657,
+              "actual": 0.687248322147651,
+              "n": 745
+            },
+            {
+              "pred": 0.6633623759230062,
+              "actual": 0.6953020134228188,
+              "n": 745
+            },
+            {
+              "pred": 0.672459893810073,
+              "actual": 0.6832214765100671,
+              "n": 745
+            },
+            {
+              "pred": 0.6827958097840292,
+              "actual": 0.6885906040268457,
+              "n": 745
+            },
+            {
+              "pred": 0.6955810659556935,
+              "actual": 0.7208053691275168,
+              "n": 745
+            },
+            {
+              "pred": 0.7245036679808029,
+              "actual": 0.7570469798657719,
+              "n": 745
+            }
+          ],
+          "level_boot_se_pp": 0.5750730312302279,
+          "log_loss": 0.6222523552938495
+        },
+        "overridden not at spike": {
+          "n": 3031,
+          "pred": 0.5727984362067066,
+          "actual": 0.6004618937644342,
+          "level_pp": 2.766345755772759,
+          "worst_decile_gap_pp": 12.417128882817202,
+          "shape_pp": 9.650783127044443,
+          "deciles": [
+            {
+              "pred": 0.4481971322244595,
+              "actual": 0.5723684210526315,
+              "n": 304
+            },
+            {
+              "pred": 0.4937621170120662,
+              "actual": 0.5346534653465347,
+              "n": 303
+            },
+            {
+              "pred": 0.5178130308632664,
+              "actual": 0.5082508250825083,
+              "n": 303
+            },
+            {
+              "pred": 0.536714401328371,
+              "actual": 0.5874587458745875,
+              "n": 303
+            },
+            {
+              "pred": 0.5565417243545617,
+              "actual": 0.5610561056105611,
+              "n": 303
+            },
+            {
+              "pred": 0.5765296544175371,
+              "actual": 0.6039603960396039,
+              "n": 303
+            },
+            {
+              "pred": 0.599735478463618,
+              "actual": 0.636963696369637,
+              "n": 303
+            },
+            {
+              "pred": 0.6248168082908165,
+              "actual": 0.6402640264026402,
+              "n": 303
+            },
+            {
+              "pred": 0.6574715004011913,
+              "actual": 0.6567656765676567,
+              "n": 303
+            },
+            {
+              "pred": 0.7168137401368635,
+              "actual": 0.7029702970297029,
+              "n": 303
+            }
+          ],
+          "level_boot_se_pp": 1.0062551365711458,
+          "log_loss": 0.6707656967969661
+        }
+      }
+    },
+    "jump2": {
+      "design_rows": 148773,
+      "matched": 148773,
+      "matched_pct": 100.0,
+      "master_rows_this_class": 169243,
+      "groups": {
+        "all": {
+          "n": 148773,
+          "pred": 0.39074094891067035,
+          "actual": 0.3905412944553111,
+          "level_pp": -0.019965445535924387,
+          "worst_decile_gap_pp": -1.4840322403663786,
+          "shape_pp": 1.4640667948304542,
+          "deciles": [
+            {
+              "pred": 0.31055173847437356,
+              "actual": 0.3236322086301922,
+              "n": 14878
+            },
+            {
+              "pred": 0.34541619158421244,
+              "actual": 0.35643231617152843,
+              "n": 14878
+            },
+            {
+              "pred": 0.3623275892034292,
+              "actual": 0.3673880897970157,
+              "n": 14878
+            },
+            {
+              "pred": 0.3748847656812927,
+              "actual": 0.3761511057336829,
+              "n": 14877
+            },
+            {
+              "pred": 0.3858107453088362,
+              "actual": 0.3941654903542381,
+              "n": 14877
+            },
+            {
+              "pred": 0.3962978530867256,
+              "actual": 0.3890569335215433,
+              "n": 14877
+            },
+            {
+              "pred": 0.406989003270717,
+              "actual": 0.4014250184849096,
+              "n": 14877
+            },
+            {
+              "pred": 0.4191904726453804,
+              "actual": 0.4141291927135847,
+              "n": 14877
+            },
+            {
+              "pred": 0.4352396746476065,
+              "actual": 0.42716945620756874,
+              "n": 14877
+            },
+            {
+              "pred": 0.47071180186860967,
+              "actual": 0.4558714794649459,
+              "n": 14877
+            }
+          ],
+          "level_boot_se_pp": 0.1406634117327542,
+          "log_loss": 0.6663850371700918
+        },
+        "located, 2.27-3.5 ft": {
+          "n": 6253,
+          "pred": 0.39946915210920414,
+          "actual": 0.5199104429873661,
+          "level_pp": 12.044129087816197,
+          "worst_decile_gap_pp": 16.842914108420352,
+          "shape_pp": 4.798785020604155,
+          "deciles": [
+            {
+              "pred": 0.31704974673348163,
+              "actual": 0.41054313099041534,
+              "n": 626
+            },
+            {
+              "pred": 0.35303325605785024,
+              "actual": 0.4520766773162939,
+              "n": 626
+            },
+            {
+              "pred": 0.36939696301745883,
+              "actual": 0.48881789137380194,
+              "n": 626
+            },
+            {
+              "pred": 0.38156205722220543,
+              "actual": 0.5088,
+              "n": 625
+            },
+            {
+              "pred": 0.3925596198186185,
+              "actual": 0.5136,
+              "n": 625
+            },
+            {
+              "pred": 0.40300978605437865,
+              "actual": 0.5088,
+              "n": 625
+            },
+            {
+              "pred": 0.4146448815358658,
+              "actual": 0.5504,
+              "n": 625
+            },
+            {
+              "pred": 0.42835120431530066,
+              "actual": 0.536,
+              "n": 625
+            },
+            {
+              "pred": 0.44616743140591514,
+              "actual": 0.5728,
+              "n": 625
+            },
+            {
+              "pred": 0.4891708589157964,
+              "actual": 0.6576,
+              "n": 625
+            }
+          ],
+          "level_boot_se_pp": 0.6956682136672188,
+          "log_loss": 0.7142452626489971
+        },
+        "located, 3.5-5 ft": {
+          "n": 9377,
+          "pred": 0.39817964274935536,
+          "actual": 0.44886424229497707,
+          "level_pp": 5.068459954562171,
+          "worst_decile_gap_pp": 7.019396366061653,
+          "shape_pp": 1.950936411499482,
+          "deciles": [
+            {
+              "pred": 0.3194021090565618,
+              "actual": 0.3795309168443497,
+              "n": 938
+            },
+            {
+              "pred": 0.35311141654932693,
+              "actual": 0.4051172707889126,
+              "n": 938
+            },
+            {
+              "pred": 0.3690055435946776,
+              "actual": 0.40405117270788915,
+              "n": 938
+            },
+            {
+              "pred": 0.3811283598498203,
+              "actual": 0.43390191897654584,
+              "n": 938
+            },
+            {
+              "pred": 0.39165576346057523,
+              "actual": 0.43390191897654584,
+              "n": 938
+            },
+            {
+              "pred": 0.4020874862327737,
+              "actual": 0.4722814498933902,
+              "n": 938
+            },
+            {
+              "pred": 0.4129485651366286,
+              "actual": 0.4594882729211087,
+              "n": 938
+            },
+            {
+              "pred": 0.4259897701142485,
+              "actual": 0.4727854855923159,
+              "n": 937
+            },
+            {
+              "pred": 0.44337087750725174,
+              "actual": 0.4951974386339381,
+              "n": 937
+            },
+            {
+              "pred": 0.4832650720166252,
+              "actual": 0.5325506937033084,
+              "n": 937
+            }
+          ],
+          "level_boot_se_pp": 0.5661588131015838,
+          "log_loss": 0.6891592661468549
+        },
+        "located, >5 ft": {
+          "n": 131053,
+          "pred": 0.38981867786442786,
+          "actual": 0.37704592798333497,
+          "level_pp": -1.2772749881092893,
+          "worst_decile_gap_pp": -3.6344122810626542,
+          "shape_pp": 2.357137292953365,
+          "deciles": [
+            {
+              "pred": 0.3098428416525462,
+              "actual": 0.3161910575309019,
+              "n": 13106
+            },
+            {
+              "pred": 0.34466712317891945,
+              "actual": 0.3470929345338013,
+              "n": 13106
+            },
+            {
+              "pred": 0.36157773731425463,
+              "actual": 0.3563253471692355,
+              "n": 13106
+            },
+            {
+              "pred": 0.3741670963488483,
+              "actual": 0.3635253719954216,
+              "n": 13105
+            },
+            {
+              "pred": 0.3850987574298444,
+              "actual": 0.3802365509347577,
+              "n": 13105
+            },
+            {
+              "pred": 0.3955775369194163,
+              "actual": 0.3758107592521938,
+              "n": 13105
+            },
+            {
+              "pred": 0.40625389329895606,
+              "actual": 0.38580694391453646,
+              "n": 13105
+            },
+            {
+              "pred": 0.4182972198689159,
+              "actual": 0.40244181610072494,
+              "n": 13105
+            },
+            {
+              "pred": 0.434094396279902,
+              "actual": 0.41075925219381915,
+              "n": 13105
+            },
+            {
+              "pred": 0.468621879392084,
+              "actual": 0.43227775658145745,
+              "n": 13105
+            }
+          ],
+          "level_boot_se_pp": 0.13990684680208654,
+          "log_loss": 0.66107414504099
+        },
+        "unlocated/unmatched": {
+          "n": 1846,
+          "pred": 0.38745922800453947,
+          "actual": 0.5937161430119177,
+          "level_pp": 20.62569150073782,
+          "worst_decile_gap_pp": 33.026334727955444,
+          "shape_pp": 12.400643227217625,
+          "deciles": [
+            {
+              "pred": 0.3028255444036379,
+              "actual": 0.44324324324324327,
+              "n": 185
+            },
+            {
+              "pred": 0.33998836060799004,
+              "actual": 0.5135135135135135,
+              "n": 185
+            },
+            {
+              "pred": 0.35780032518263644,
+              "actual": 0.5837837837837838,
+              "n": 185
+            },
+            {
+              "pred": 0.37227623285178874,
+              "actual": 0.5621621621621622,
+              "n": 185
+            },
+            {
+              "pred": 0.38325016623395913,
+              "actual": 0.7135135135135136,
+              "n": 185
+            },
+            {
+              "pred": 0.3933005646057535,
+              "actual": 0.6108108108108108,
+              "n": 185
+            },
+            {
+              "pred": 0.4044739609401867,
+              "actual": 0.6358695652173914,
+              "n": 184
+            },
+            {
+              "pred": 0.41791437159085515,
+              "actual": 0.5978260869565217,
+              "n": 184
+            },
+            {
+              "pred": 0.4347085856428442,
+              "actual": 0.6413043478260869,
+              "n": 184
+            },
+            {
+              "pred": 0.4690069624104254,
+              "actual": 0.6358695652173914,
+              "n": 184
+            }
+          ],
+          "level_boot_se_pp": 1.9491953683208618,
+          "log_loss": 0.7563763318332983
+        }
+      }
+    }
+  },
+  "part5_engine_version": {
+    "DEFAULT_POSSESSION_VERSION": "v1",
+    "events.RIM_OVERRIDE_MAX_FT (classify_frame default)": 2.27,
+    "fg_make.DEFAULT_VERSION": "v2",
+    "fg_make design_v2_shotshooter.parquet attrs": {
+      "n_attempts": 2241195,
+      "n_no_shooter": 1517,
+      "possessions_version": "v2",
+      "rim_override_max_ft": 2.27,
+      "first_chance_form": false
+    },
+    "note": "see report text: the served engine names v2 explicitly in fg_make (design + engine inputs) and in the possession_outcome round-2 team block (build_engine_event_round2.py); DEFAULT_POSSESSION_VERSION only binds callers that name no version."
+  }
+}

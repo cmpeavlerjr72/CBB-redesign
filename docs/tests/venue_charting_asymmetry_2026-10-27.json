@@ -1,0 +1,931 @@
+{
+  "created_at": "2026-10-27T16:18:56.779354+00:00",
+  "rows_non_neutral": 1933306,
+  "part1_band_shares": {
+    "jump2": [
+      {
+        "stat": "short2",
+        "team_seasons": 1339,
+        "mean_diff_home_minus_away": 0.009238141313777735,
+        "boot_se_paired": 0.0030734579639134815,
+        "boot_z": 3.0057809224156973,
+        "median_abs_diff": 0.07394758049042555,
+        "pct_teams_abs_z_gt_2": 16.056758775205378,
+        "pct_teams_z_gt_2": 9.260642270351008,
+        "pct_teams_z_lt_m2": 6.796116504854369,
+        "mean_perm_se": 0.07409835364720185
+      },
+      {
+        "stat": "long2",
+        "team_seasons": 1339,
+        "mean_diff_home_minus_away": -0.009238141313777733,
+        "boot_se_paired": 0.002886862155062711,
+        "boot_z": -3.200063188876801,
+        "median_abs_diff": 0.0739475804904256,
+        "pct_teams_abs_z_gt_2": 16.056758775205378,
+        "pct_teams_z_gt_2": 6.796116504854369,
+        "pct_teams_z_lt_m2": 9.260642270351008,
+        "mean_perm_se": 0.07409835364720185
+      }
+    ],
+    "jump2__by_season": {
+      "2022": [
+        {
+          "stat": "short2",
+          "team_seasons": 304,
+          "mean_diff_home_minus_away": 0.00529219950468162,
+          "boot_se_paired": 0.006943458001851942,
+          "boot_z": 0.7621849953251101,
+          "median_abs_diff": 0.08308741269745898,
+          "pct_teams_abs_z_gt_2": 15.131578947368421,
+          "pct_teams_z_gt_2": 8.223684210526317,
+          "pct_teams_z_lt_m2": 6.907894736842106,
+          "mean_perm_se": 0.07974452067391959
+        },
+        {
+          "stat": "long2",
+          "team_seasons": 304,
+          "mean_diff_home_minus_away": -0.00529219950468162,
+          "boot_se_paired": 0.0070205039437204195,
+          "boot_z": -0.7538204589166703,
+          "median_abs_diff": 0.08308741269745899,
+          "pct_teams_abs_z_gt_2": 15.131578947368421,
+          "pct_teams_z_gt_2": 6.907894736842106,
+          "pct_teams_z_lt_m2": 8.223684210526317,
+          "mean_perm_se": 0.07974452067391959
+        }
+      ],
+      "2023": [
+        {
+          "stat": "short2",
+          "team_seasons": 319,
+          "mean_diff_home_minus_away": 0.009719987360578199,
+          "boot_se_paired": 0.006137185961414746,
+          "boot_z": 1.583785699453947,
+          "median_abs_diff": 0.07144710024087453,
+          "pct_teams_abs_z_gt_2": 16.30094043887147,
+          "pct_teams_z_gt_2": 9.717868338557993,
+          "pct_teams_z_lt_m2": 6.583072100313479,
+          "mean_perm_se": 0.07724356011296446
+        },
+        {
+          "stat": "long2",
+          "team_seasons": 319,
+          "mean_diff_home_minus_away": -0.009719987360578195,
+          "boot_se_paired": 0.0061324733315020205,
+          "boot_z": -1.5850027933505075,
+          "median_abs_diff": 0.07144710024087453,
+          "pct_teams_abs_z_gt_2": 16.30094043887147,
+          "pct_teams_z_gt_2": 6.583072100313479,
+          "pct_teams_z_lt_m2": 9.717868338557993,
+          "mean_perm_se": 0.07724356011296446
+        }
+      ],
+      "2024": [
+        {
+          "stat": "short2",
+          "team_seasons": 352,
+          "mean_diff_home_minus_away": 0.01508455076626175,
+          "boot_se_paired": 0.005702358815993693,
+          "boot_z": 2.645317710269889,
+          "median_abs_diff": 0.0694010919581336,
+          "pct_teams_abs_z_gt_2": 15.909090909090908,
+          "pct_teams_z_gt_2": 9.375,
+          "pct_teams_z_lt_m2": 6.534090909090909,
+          "mean_perm_se": 0.07065109494291656
+        },
+        {
+          "stat": "long2",
+          "team_seasons": 352,
+          "mean_diff_home_minus_away": -0.01508455076626175,
+          "boot_se_paired": 0.006008540105656575,
+          "boot_z": -2.5105184455806184,
+          "median_abs_diff": 0.06940109195813371,
+          "pct_teams_abs_z_gt_2": 15.909090909090908,
+          "pct_teams_z_gt_2": 6.534090909090909,
+          "pct_teams_z_lt_m2": 9.375,
+          "mean_perm_se": 0.07065109494291656
+        }
+      ],
+      "2025": [
+        {
+          "stat": "short2",
+          "team_seasons": 364,
+          "mean_diff_home_minus_away": 0.006457705307628002,
+          "boot_se_paired": 0.00547817254373619,
+          "boot_z": 1.1788064826493687,
+          "median_abs_diff": 0.07166646670076973,
+          "pct_teams_abs_z_gt_2": 16.758241758241756,
+          "pct_teams_z_gt_2": 9.615384615384617,
+          "pct_teams_z_lt_m2": 7.142857142857142,
+          "mean_perm_se": 0.0699601103098611
+        },
+        {
+          "stat": "long2",
+          "team_seasons": 364,
+          "mean_diff_home_minus_away": -0.006457705307628,
+          "boot_se_paired": 0.005118541303194456,
+          "boot_z": -1.2616300084552952,
+          "median_abs_diff": 0.07166646670076976,
+          "pct_teams_abs_z_gt_2": 16.758241758241756,
+          "pct_teams_z_gt_2": 7.142857142857142,
+          "pct_teams_z_lt_m2": 9.615384615384617,
+          "mean_perm_se": 0.0699601103098611
+        }
+      ]
+    },
+    "three": [
+      {
+        "stat": "corner3",
+        "team_seasons": 1379,
+        "mean_diff_home_minus_away": 0.011937339425116225,
+        "boot_se_paired": 0.0018095237616290911,
+        "boot_z": 6.59695090954163,
+        "median_abs_diff": 0.042449215643750454,
+        "pct_teams_abs_z_gt_2": 14.938361131254533,
+        "pct_teams_z_gt_2": 8.339376359680928,
+        "pct_teams_z_lt_m2": 6.598984771573605,
+        "mean_perm_se": 0.04724607065548799
+      },
+      {
+        "stat": "wing3",
+        "team_seasons": 1379,
+        "mean_diff_home_minus_away": -0.0017434958314696848,
+        "boot_se_paired": 0.0018747693435293038,
+        "boot_z": -0.9299788464577231,
+        "median_abs_diff": 0.04452690166975881,
+        "pct_teams_abs_z_gt_2": 13.63306744017404,
+        "pct_teams_z_gt_2": 7.1065989847715745,
+        "pct_teams_z_lt_m2": 6.526468455402465,
+        "mean_perm_se": 0.051328908431562126
+      },
+      {
+        "stat": "top3",
+        "team_seasons": 1379,
+        "mean_diff_home_minus_away": -0.010193843593646543,
+        "boot_se_paired": 0.0017907507717044515,
+        "boot_z": -5.692497110552106,
+        "median_abs_diff": 0.04165533742998534,
+        "pct_teams_abs_z_gt_2": 10.224800580130529,
+        "pct_teams_z_gt_2": 4.1334300217548945,
+        "pct_teams_z_lt_m2": 6.091370558375635,
+        "mean_perm_se": 0.051065377187479645
+      }
+    ],
+    "three__by_season": {
+      "2022": [
+        {
+          "stat": "corner3",
+          "team_seasons": 323,
+          "mean_diff_home_minus_away": 0.016700522117874674,
+          "boot_se_paired": 0.004139115384741489,
+          "boot_z": 4.034804678178285,
+          "median_abs_diff": 0.05156175488793513,
+          "pct_teams_abs_z_gt_2": 16.09907120743034,
+          "pct_teams_z_gt_2": 9.287925696594428,
+          "pct_teams_z_lt_m2": 6.811145510835913,
+          "mean_perm_se": 0.05214188755406893
+        },
+        {
+          "stat": "wing3",
+          "team_seasons": 323,
+          "mean_diff_home_minus_away": -0.002697794387128929,
+          "boot_se_paired": 0.004325337158666469,
+          "boot_z": -0.6237188658746495,
+          "median_abs_diff": 0.052871680898350704,
+          "pct_teams_abs_z_gt_2": 13.93188854489164,
+          "pct_teams_z_gt_2": 6.5015479876160995,
+          "pct_teams_z_lt_m2": 7.430340557275541,
+          "mean_perm_se": 0.05670918567676435
+        },
+        {
+          "stat": "top3",
+          "team_seasons": 323,
+          "mean_diff_home_minus_away": -0.014002727730745746,
+          "boot_se_paired": 0.003753887118799048,
+          "boot_z": -3.7301941394619056,
+          "median_abs_diff": 0.04323917137476463,
+          "pct_teams_abs_z_gt_2": 9.287925696594428,
+          "pct_teams_z_gt_2": 2.786377708978328,
+          "pct_teams_z_lt_m2": 6.5015479876160995,
+          "mean_perm_se": 0.05597097597791372
+        }
+      ],
+      "2023": [
+        {
+          "stat": "corner3",
+          "team_seasons": 339,
+          "mean_diff_home_minus_away": 0.008694105052708257,
+          "boot_se_paired": 0.004263669533346403,
+          "boot_z": 2.03911325319919,
+          "median_abs_diff": 0.04435654008438819,
+          "pct_teams_abs_z_gt_2": 16.519174041297934,
+          "pct_teams_z_gt_2": 8.849557522123893,
+          "pct_teams_z_lt_m2": 7.669616519174041,
+          "mean_perm_se": 0.05040019160637108
+        },
+        {
+          "stat": "wing3",
+          "team_seasons": 339,
+          "mean_diff_home_minus_away": -0.0027043616319799616,
+          "boot_se_paired": 0.0037536171311481842,
+          "boot_z": -0.7204681611075052,
+          "median_abs_diff": 0.04611075199310494,
+          "pct_teams_abs_z_gt_2": 13.569321533923304,
+          "pct_teams_z_gt_2": 7.374631268436578,
+          "pct_teams_z_lt_m2": 6.1946902654867255,
+          "mean_perm_se": 0.05442144588194918
+        },
+        {
+          "stat": "top3",
+          "team_seasons": 339,
+          "mean_diff_home_minus_away": -0.005989743420728294,
+          "boot_se_paired": 0.003382718008791914,
+          "boot_z": -1.77068954762429,
+          "median_abs_diff": 0.03870818770532236,
+          "pct_teams_abs_z_gt_2": 7.669616519174041,
+          "pct_teams_z_gt_2": 3.5398230088495577,
+          "pct_teams_z_lt_m2": 4.129793510324483,
+          "mean_perm_se": 0.054220273560982676
+        }
+      ],
+      "2024": [
+        {
+          "stat": "corner3",
+          "team_seasons": 353,
+          "mean_diff_home_minus_away": 0.012117577646746374,
+          "boot_se_paired": 0.0031447023219247916,
+          "boot_z": 3.853330587847029,
+          "median_abs_diff": 0.03969270166453265,
+          "pct_teams_abs_z_gt_2": 14.44759206798867,
+          "pct_teams_z_gt_2": 7.64872521246459,
+          "pct_teams_z_lt_m2": 6.79886685552408,
+          "mean_perm_se": 0.04452035712422965
+        },
+        {
+          "stat": "wing3",
+          "team_seasons": 353,
+          "mean_diff_home_minus_away": -0.0007727087146742279,
+          "boot_se_paired": 0.0035850970997660103,
+          "boot_z": -0.2155335526964278,
+          "median_abs_diff": 0.04252657911194491,
+          "pct_teams_abs_z_gt_2": 14.164305949008499,
+          "pct_teams_z_gt_2": 6.79886685552408,
+          "pct_teams_z_lt_m2": 7.365439093484419,
+          "mean_perm_se": 0.04900359069725049
+        },
+        {
+          "stat": "top3",
+          "team_seasons": 353,
+          "mean_diff_home_minus_away": -0.01134486893207215,
+          "boot_se_paired": 0.0031982107361862903,
+          "boot_z": -3.5472549709467707,
+          "median_abs_diff": 0.04477004477004476,
+          "pct_teams_abs_z_gt_2": 11.614730878186968,
+          "pct_teams_z_gt_2": 5.382436260623229,
+          "pct_teams_z_lt_m2": 6.232294617563739,
+          "mean_perm_se": 0.048616177509981685
+        }
+      ],
+      "2025": [
+        {
+          "stat": "corner3",
+          "team_seasons": 364,
+          "mean_diff_home_minus_away": 0.010556362365363151,
+          "boot_se_paired": 0.0031851943567626877,
+          "boot_z": 3.3141972460645204,
+          "median_abs_diff": 0.039806960881353076,
+          "pct_teams_abs_z_gt_2": 12.912087912087914,
+          "pct_teams_z_gt_2": 7.6923076923076925,
+          "pct_teams_z_lt_m2": 5.21978021978022,
+          "mean_perm_se": 0.0426075569630242
+        },
+        {
+          "stat": "wing3",
+          "team_seasons": 364,
+          "mean_diff_home_minus_away": -0.0009432648215187989,
+          "boot_se_paired": 0.0033383491810188527,
+          "boot_z": -0.2825542716987196,
+          "median_abs_diff": 0.037947491908304515,
+          "pct_teams_abs_z_gt_2": 12.912087912087914,
+          "pct_teams_z_gt_2": 7.6923076923076925,
+          "pct_teams_z_lt_m2": 5.21978021978022,
+          "mean_perm_se": 0.04592956066873381
+        },
+        {
+          "stat": "top3",
+          "team_seasons": 364,
+          "mean_diff_home_minus_away": -0.009613097543844352,
+          "boot_se_paired": 0.0029847737356379993,
+          "boot_z": -3.2207123203560153,
+          "median_abs_diff": 0.03766418427544771,
+          "pct_teams_abs_z_gt_2": 12.087912087912088,
+          "pct_teams_z_gt_2": 4.670329670329671,
+          "pct_teams_z_lt_m2": 7.417582417582418,
+          "mean_perm_se": 0.04614930357821879
+        }
+      ]
+    }
+  },
+  "part2_located_and_distance": {
+    "rim": [
+      {
+        "stat": "located_share",
+        "team_seasons": 1423,
+        "mean_diff_home_minus_away": 0.006462021094867478,
+        "boot_se_paired": 0.003419931600820475,
+        "boot_z": 1.8895176421999713,
+        "median_abs_diff": 0.015747120526532266,
+        "pct_teams_abs_z_gt_2": 5.270555165144062,
+        "pct_teams_z_gt_2": 2.52986647926915,
+        "pct_teams_z_lt_m2": 2.7406886858749124,
+        "mean_perm_se": 0.054695382247148525
+      },
+      {
+        "stat": "dist_median",
+        "team_seasons": 1377,
+        "mean_diff_home_minus_away": -0.06888042901371214,
+        "boot_se_paired": 0.025058949713969877,
+        "boot_z": -2.74873567327974,
+        "median_abs_diff": 0.5858603889946692,
+        "pct_teams_abs_z_gt_2": 31.445170660856935,
+        "pct_teams_z_gt_2": 12.926652142338416,
+        "pct_teams_z_lt_m2": 18.51851851851852,
+        "mean_perm_se": 0.4734571684341709
+      },
+      {
+        "stat": "dist_p90",
+        "team_seasons": 1377,
+        "mean_diff_home_minus_away": -0.4481394954156981,
+        "boot_se_paired": 0.0346520018884063,
+        "boot_z": -12.932571597418573,
+        "median_abs_diff": 0.9190536329657544,
+        "pct_teams_abs_z_gt_2": 25.49019607843137,
+        "pct_teams_z_gt_2": 7.4074074074074066,
+        "pct_teams_z_lt_m2": 18.082788671023962,
+        "mean_perm_se": 0.7649213240069276
+      }
+    ],
+    "jump2": [
+      {
+        "stat": "located_share",
+        "team_seasons": 1397,
+        "mean_diff_home_minus_away": 0.007770571095117254,
+        "boot_se_paired": 0.003277842354377378,
+        "boot_z": 2.3706360022897637,
+        "median_abs_diff": 0.011956378925239819,
+        "pct_teams_abs_z_gt_2": 3.722261989978525,
+        "pct_teams_z_gt_2": 1.4316392269148175,
+        "pct_teams_z_lt_m2": 2.2906227630637077,
+        "mean_perm_se": 0.05669345951929667
+      },
+      {
+        "stat": "dist_median",
+        "team_seasons": 1339,
+        "mean_diff_home_minus_away": -0.21812480931532124,
+        "boot_se_paired": 0.04538128934215888,
+        "boot_z": -4.806492113318713,
+        "median_abs_diff": 1.0708827718903589,
+        "pct_teams_abs_z_gt_2": 16.50485436893204,
+        "pct_teams_z_gt_2": 6.123973114264376,
+        "pct_teams_z_lt_m2": 10.380881254667662,
+        "mean_perm_se": 1.118447567193044
+      },
+      {
+        "stat": "dist_p90",
+        "team_seasons": 1339,
+        "mean_diff_home_minus_away": -0.16085003362545278,
+        "boot_se_paired": 0.031686746080785144,
+        "boot_z": -5.0762559593644205,
+        "median_abs_diff": 0.7027665552730333,
+        "pct_teams_abs_z_gt_2": 10.156833457804332,
+        "pct_teams_z_gt_2": 3.4353995519044065,
+        "pct_teams_z_lt_m2": 6.721433905899925,
+        "mean_perm_se": 0.906157760425983
+      }
+    ],
+    "three": [
+      {
+        "stat": "located_share",
+        "team_seasons": 1425,
+        "mean_diff_home_minus_away": 0.008264825554058585,
+        "boot_se_paired": 0.0033087643033131225,
+        "boot_z": 2.4978586555055835,
+        "median_abs_diff": 0.004807692307692291,
+        "pct_teams_abs_z_gt_2": 2.526315789473684,
+        "pct_teams_z_gt_2": 1.1228070175438596,
+        "pct_teams_z_lt_m2": 1.4035087719298245,
+        "mean_perm_se": 0.05058006777467148
+      },
+      {
+        "stat": "dist_median",
+        "team_seasons": 1379,
+        "mean_diff_home_minus_away": -0.028447283541776096,
+        "boot_se_paired": 0.016012983459405026,
+        "boot_z": -1.776513640565084,
+        "median_abs_diff": 0.35236079611667037,
+        "pct_teams_abs_z_gt_2": 26.61348803480783,
+        "pct_teams_z_gt_2": 11.240029006526468,
+        "pct_teams_z_lt_m2": 15.373459028281363,
+        "mean_perm_se": 0.2979290484621439
+      },
+      {
+        "stat": "dist_p90",
+        "team_seasons": 1379,
+        "mean_diff_home_minus_away": -0.3113937022904748,
+        "boot_se_paired": 0.02686198889262952,
+        "boot_z": -11.592354666482498,
+        "median_abs_diff": 0.6669056942789773,
+        "pct_teams_abs_z_gt_2": 24.2929659173314,
+        "pct_teams_z_gt_2": 8.411892675852068,
+        "pct_teams_z_lt_m2": 15.881073241479331,
+        "mean_perm_se": 0.5698701150922815
+      }
+    ]
+  },
+  "part3_venue_fe": {
+    "jump2": {
+      "n_train": 321160,
+      "n_test": 127074,
+      "venues_train": 362,
+      "venues_test_unseen_share": 0.008530462565119537,
+      "test_logloss": {
+        "off": 0.6740187525869628,
+        "off+def": 0.6715069449626178,
+        "off+venue": 0.6693153298144005,
+        "off+def+venue": 0.6685985519108028
+      },
+      "gains": {
+        "all": {
+          "def_profile_given_off (off -> off+def)": {
+            "gain_per_attempt": 0.002511807624345023,
+            "boot_se": 0.00029606639223666843,
+            "n": 127074,
+            "deviance": 638.370884112039
+          },
+          "def_profile_given_off_and_venue (off+venue -> off+def+venue)": {
+            "gain_per_attempt": 0.0007167779035977645,
+            "boot_se": 0.00012258117249033291,
+            "n": 127074,
+            "deviance": 182.16767064356463
+          },
+          "venue_given_off (off -> off+venue)": {
+            "gain_per_attempt": 0.004703422772562319,
+            "boot_se": 0.0005612975282663597,
+            "n": 127074,
+            "deviance": 1195.3654908011683
+          },
+          "venue_given_off_and_def (off+def -> off+def+venue)": {
+            "gain_per_attempt": 0.0029083930518150605,
+            "boot_se": 0.0004933503502131972,
+            "n": 127074,
+            "deviance": 739.162277332694
+          }
+        },
+        "offence_away": {
+          "def_profile_given_off (off -> off+def)": {
+            "gain_per_attempt": 0.005937795962870635,
+            "boot_se": 0.00042709646870660214,
+            "n": 65670,
+            "deviance": 779.8701217634292
+          },
+          "def_profile_given_off_and_venue (off+venue -> off+def+venue)": {
+            "gain_per_attempt": 0.0006713766768681674,
+            "boot_se": 0.00013993049974079708,
+            "n": 65670,
+            "deviance": 88.17861273986512
+          },
+          "venue_given_off (off -> off+venue)": {
+            "gain_per_attempt": 0.009075278283939057,
+            "boot_se": 0.0008276919537088449,
+            "n": 65670,
+            "deviance": 1191.9470498125559
+          },
+          "venue_given_off_and_def (off+def -> off+def+venue)": {
+            "gain_per_attempt": 0.0038088589979365893,
+            "boot_se": 0.00066467652966138,
+            "n": 65670,
+            "deviance": 500.25554078899165
+          }
+        },
+        "offence_home": {
+          "def_profile_given_off (off -> off+def)": {
+            "gain_per_attempt": -0.00115219886042758,
+            "boot_se": 0.0003988710891543263,
+            "n": 61404,
+            "deviance": -141.49923765139025
+          },
+          "def_profile_given_off_and_venue (off+venue -> off+def+venue)": {
+            "gain_per_attempt": 0.0007653333488347628,
+            "boot_se": 0.0001773231856644034,
+            "n": 61404,
+            "deviance": 93.98905790369955
+          },
+          "venue_given_off (off -> off+venue)": {
+            "gain_per_attempt": 2.7835653936327225e-05,
+            "boot_se": 0.000688364707010268,
+            "n": 61404,
+            "deviance": 3.418440988612474
+          },
+          "venue_given_off_and_def (off+def -> off+def+venue)": {
+            "gain_per_attempt": 0.00194536786319867,
+            "boot_se": 0.0006851192621709699,
+            "n": 61404,
+            "deviance": 238.90673654370227
+          }
+        }
+      },
+      "def_coefs_short2": {
+        "off+def": [
+          [
+            0.8035
+          ]
+        ],
+        "off+venue__venue_coef_sd": 0.29904090081343276,
+        "off+def+venue": [
+          [
+            0.3554
+          ]
+        ],
+        "off+def+venue__venue_coef_sd": 0.27758918288273693
+      }
+    },
+    "three": {
+      "n_train": 468518,
+      "n_test": 213227,
+      "venues_train": 362,
+      "venues_test_unseen_share": 0.007320836479432717,
+      "test_logloss": {
+        "off": 1.0561753251563408,
+        "off+def": 1.0523275136954184,
+        "off+venue": 1.0527339496191197,
+        "off+def+venue": 1.050626429880694
+      },
+      "gains": {
+        "all": {
+          "def_profile_given_off (off -> off+def)": {
+            "gain_per_attempt": 0.00384781146092227,
+            "boot_se": 0.00024131785274392726,
+            "n": 213227,
+            "deviance": 1640.9145887561458
+          },
+          "def_profile_given_off_and_venue (off+venue -> off+def+venue)": {
+            "gain_per_attempt": 0.0021075197384256834,
+            "boot_se": 0.00015859465758364394,
+            "n": 213227,
+            "deviance": 898.7602225305864
+          },
+          "venue_given_off (off -> off+venue)": {
+            "gain_per_attempt": 0.0034413755372211855,
+            "boot_se": 0.0005181421166722509,
+            "n": 213227,
+            "deviance": 1467.5883633501235
+          },
+          "venue_given_off_and_def (off+def -> off+def+venue)": {
+            "gain_per_attempt": 0.0017010838147245994,
+            "boot_se": 0.000474309720591425,
+            "n": 213227,
+            "deviance": 725.4339971245643
+          }
+        },
+        "offence_away": {
+          "def_profile_given_off (off -> off+def)": {
+            "gain_per_attempt": 0.006271678111054772,
+            "boot_se": 0.0003609383069080888,
+            "n": 105486,
+            "deviance": 1323.1484744454474
+          },
+          "def_profile_given_off_and_venue (off+venue -> off+def+venue)": {
+            "gain_per_attempt": 0.0017950294171034005,
+            "boot_se": 0.00020899723287610514,
+            "n": 105486,
+            "deviance": 378.7009461851386
+          },
+          "venue_given_off (off -> off+venue)": {
+            "gain_per_attempt": 0.0066970151350262495,
+            "boot_se": 0.0006194532038433875,
+            "n": 105486,
+            "deviance": 1412.8826770667579
+          },
+          "venue_given_off_and_def (off+def -> off+def+venue)": {
+            "gain_per_attempt": 0.0022203664410748777,
+            "boot_se": 0.0005156673828261173,
+            "n": 105486,
+            "deviance": 468.4351488064491
+          }
+        },
+        "offence_home": {
+          "def_profile_given_off (off -> off+def)": {
+            "gain_per_attempt": 0.0014746759094063462,
+            "boot_se": 0.0003145151965171339,
+            "n": 107741,
+            "deviance": 317.7661143106983
+          },
+          "def_profile_given_off_and_venue (off+venue -> off+def+venue)": {
+            "gain_per_attempt": 0.002413469692807046,
+            "boot_se": 0.00023851782436172991,
+            "n": 107741,
+            "deviance": 520.0592763454479
+          },
+          "venue_given_off (off -> off+venue)": {
+            "gain_per_attempt": 0.0002538758981416806,
+            "boot_se": 0.0006167812488053035,
+            "n": 107741,
+            "deviance": 54.705686283365615
+          },
+          "venue_given_off_and_def (off+def -> off+def+venue)": {
+            "gain_per_attempt": 0.0011926696815423802,
+            "boot_se": 0.000599377043400058,
+            "n": 107741,
+            "deviance": 256.99884831811517
+          }
+        }
+      },
+      "def_coefs_corner3_wing3_top3": {
+        "off+def": [
+          [
+            0.8165,
+            0.4213,
+            0.2791
+          ],
+          [
+            -0.5114,
+            -0.2963,
+            -0.5949
+          ],
+          [
+            -0.3051,
+            -0.125,
+            0.3159
+          ]
+        ],
+        "off+venue__venue_coef_sd": 0.15741632501004932,
+        "off+def+venue": [
+          [
+            -0.0865,
+            -0.4986,
+            -0.7054
+          ],
+          [
+            -0.1092,
+            -0.0891,
+            -0.1082
+          ],
+          [
+            0.1956,
+            0.5877,
+            0.8137
+          ]
+        ],
+        "off+def+venue__venue_coef_sd": 0.15294993307013705
+      }
+    }
+  },
+  "part3b_crew_transfer": {
+    "jump2": {
+      "venue_coef_corr_away_fit_vs_home_fit": [
+        0.7138686543237044
+      ],
+      "venue_coef_sd_away_fit": 0.34566683308104085,
+      "venue_coef_sd_home_fit": 0.31577297049485187,
+      "transfer_venue_fit_on_away_offence_rows_scored_on_home_offence_rows": {
+        "gain_per_attempt": -0.0018091379575582412,
+        "boot_se": 0.0008757189918291527,
+        "n": 61404
+      },
+      "transfer_venue_fit_on_home_offence_rows_scored_on_away_offence_rows": {
+        "gain_per_attempt": 0.006414487963169549,
+        "boot_se": 0.0010154505259179437,
+        "n": 65670
+      }
+    },
+    "three": {
+      "venue_coef_corr_away_fit_vs_home_fit": [
+        0.7368823380883535,
+        0.7983095908588643,
+        0.6220184973184247
+      ],
+      "venue_coef_sd_away_fit": 0.18318768985907521,
+      "venue_coef_sd_home_fit": 0.17321933967515468,
+      "transfer_venue_fit_on_away_offence_rows_scored_on_home_offence_rows": {
+        "gain_per_attempt": -0.0011357275060815443,
+        "boot_se": 0.0008130077918982477,
+        "n": 107741
+      },
+      "transfer_venue_fit_on_home_offence_rows_scored_on_away_offence_rows": {
+        "gain_per_attempt": 0.004605127706709044,
+        "boot_se": 0.0007209732802634981,
+        "n": 105486
+      }
+    }
+  },
+  "part4_two_sources_2025": {
+    "attempts_both_located": 80622,
+    "games": 1131,
+    "disagreement_by_offence_site": [
+      {
+        "class": "jump2",
+        "offence_site": "away",
+        "pairs": 15314,
+        "band_differs_pct": 3.533
+      },
+      {
+        "class": "jump2",
+        "offence_site": "home",
+        "pairs": 14901,
+        "band_differs_pct": 3.617
+      },
+      {
+        "class": "three",
+        "offence_site": "away",
+        "pairs": 25070,
+        "band_differs_pct": 4.551
+      },
+      {
+        "class": "three",
+        "offence_site": "home",
+        "pairs": 25337,
+        "band_differs_pct": 4.712
+      }
+    ],
+    "home_minus_away_cbbd": {
+      "jump2": [
+        {
+          "stat": "short2",
+          "team_seasons": 95,
+          "mean_diff_home_minus_away": 0.012656069055601824,
+          "boot_se_paired": 0.014225335175851807,
+          "boot_z": 0.889685121591097,
+          "median_abs_diff": 0.08620689655172414,
+          "pct_teams_abs_z_gt_2": 11.578947368421053,
+          "pct_teams_z_gt_2": 9.473684210526317,
+          "pct_teams_z_lt_m2": 2.1052631578947367,
+          "mean_perm_se": 0.10152280043477564
+        },
+        {
+          "stat": "long2",
+          "team_seasons": 95,
+          "mean_diff_home_minus_away": -0.012656069055601828,
+          "boot_se_paired": 0.013717758158036029,
+          "boot_z": -0.9226047660118392,
+          "median_abs_diff": 0.08620689655172409,
+          "pct_teams_abs_z_gt_2": 11.578947368421053,
+          "pct_teams_z_gt_2": 2.1052631578947367,
+          "pct_teams_z_lt_m2": 9.473684210526317,
+          "mean_perm_se": 0.10152280043477567
+        }
+      ],
+      "three": [
+        {
+          "stat": "corner3",
+          "team_seasons": 285,
+          "mean_diff_home_minus_away": -0.0007433378348219399,
+          "boot_se_paired": 0.005478070563553553,
+          "boot_z": -0.135693366158421,
+          "median_abs_diff": 0.052522746071133164,
+          "pct_teams_abs_z_gt_2": 4.56140350877193,
+          "pct_teams_z_gt_2": 2.1052631578947367,
+          "pct_teams_z_lt_m2": 2.456140350877193,
+          "mean_perm_se": 0.0773630925123684
+        },
+        {
+          "stat": "wing3",
+          "team_seasons": 285,
+          "mean_diff_home_minus_away": -0.002725349324318095,
+          "boot_se_paired": 0.005336709180948137,
+          "boot_z": -0.5106797526174924,
+          "median_abs_diff": 0.06557377049180324,
+          "pct_teams_abs_z_gt_2": 3.1578947368421053,
+          "pct_teams_z_gt_2": 2.1052631578947367,
+          "pct_teams_z_lt_m2": 1.0526315789473684,
+          "mean_perm_se": 0.08591240119375418
+        },
+        {
+          "stat": "top3",
+          "team_seasons": 285,
+          "mean_diff_home_minus_away": 0.0034686871591400347,
+          "boot_se_paired": 0.005945783956435197,
+          "boot_z": 0.5833860067158732,
+          "median_abs_diff": 0.0619517543859649,
+          "pct_teams_abs_z_gt_2": 5.614035087719298,
+          "pct_teams_z_gt_2": 2.456140350877193,
+          "pct_teams_z_lt_m2": 3.1578947368421053,
+          "mean_perm_se": 0.08675015674785037
+        }
+      ]
+    },
+    "home_minus_away_hoopr": {
+      "jump2": [
+        {
+          "stat": "short2",
+          "team_seasons": 95,
+          "mean_diff_home_minus_away": 0.01790089172575069,
+          "boot_se_paired": 0.015257934517473854,
+          "boot_z": 1.1732185444399463,
+          "median_abs_diff": 0.08864027538726332,
+          "pct_teams_abs_z_gt_2": 8.421052631578947,
+          "pct_teams_z_gt_2": 7.368421052631578,
+          "pct_teams_z_lt_m2": 1.0526315789473684,
+          "mean_perm_se": 0.11370960941962593
+        },
+        {
+          "stat": "long2",
+          "team_seasons": 95,
+          "mean_diff_home_minus_away": -0.01790089172575069,
+          "boot_se_paired": 0.0157773701060003,
+          "boot_z": -1.1345928760930055,
+          "median_abs_diff": 0.08864027538726338,
+          "pct_teams_abs_z_gt_2": 8.421052631578947,
+          "pct_teams_z_gt_2": 1.0526315789473684,
+          "pct_teams_z_lt_m2": 7.368421052631578,
+          "mean_perm_se": 0.11370960941962593
+        }
+      ],
+      "three": [
+        {
+          "stat": "corner3",
+          "team_seasons": 285,
+          "mean_diff_home_minus_away": -0.003349755496616413,
+          "boot_se_paired": 0.0052528329020094374,
+          "boot_z": -0.6377045603973022,
+          "median_abs_diff": 0.056361239288068576,
+          "pct_teams_abs_z_gt_2": 3.508771929824561,
+          "pct_teams_z_gt_2": 2.1052631578947367,
+          "pct_teams_z_lt_m2": 1.4035087719298245,
+          "mean_perm_se": 0.07695111062151752
+        },
+        {
+          "stat": "wing3",
+          "team_seasons": 285,
+          "mean_diff_home_minus_away": -0.0004146684048299835,
+          "boot_se_paired": 0.006692201725910535,
+          "boot_z": -0.061962926673966044,
+          "median_abs_diff": 0.06955266955266953,
+          "pct_teams_abs_z_gt_2": 4.56140350877193,
+          "pct_teams_z_gt_2": 3.1578947368421053,
+          "pct_teams_z_lt_m2": 1.4035087719298245,
+          "mean_perm_se": 0.09279478714670156
+        },
+        {
+          "stat": "top3",
+          "team_seasons": 285,
+          "mean_diff_home_minus_away": 0.003764423901446397,
+          "boot_se_paired": 0.007076815953957589,
+          "boot_z": 0.5319375162414965,
+          "median_abs_diff": 0.06901334037775719,
+          "pct_teams_abs_z_gt_2": 6.315789473684211,
+          "pct_teams_z_gt_2": 3.1578947368421053,
+          "pct_teams_z_lt_m2": 3.1578947368421053,
+          "mean_perm_se": 0.0943010559815797
+        }
+      ]
+    },
+    "cross_source": [
+      {
+        "class": "jump2",
+        "band": "long2",
+        "team_seasons": 95,
+        "corr_of_team_diffs": 0.8665499759590742,
+        "mean_abs_diff_between_sources": 0.0450885027674002,
+        "mean_diff_cbbd": -0.012656069055601828,
+        "mean_diff_hoopr": -0.01790089172575069
+      },
+      {
+        "class": "jump2",
+        "band": "short2",
+        "team_seasons": 95,
+        "corr_of_team_diffs": 0.8665499759590746,
+        "mean_abs_diff_between_sources": 0.04508850276740022,
+        "mean_diff_cbbd": 0.012656069055601824,
+        "mean_diff_hoopr": 0.01790089172575069
+      },
+      {
+        "class": "three",
+        "band": "corner3",
+        "team_seasons": 285,
+        "corr_of_team_diffs": 0.9205887149370975,
+        "mean_abs_diff_between_sources": 0.02633691389117801,
+        "mean_diff_cbbd": -0.0007433378348219399,
+        "mean_diff_hoopr": -0.003349755496616413
+      },
+      {
+        "class": "three",
+        "band": "top3",
+        "team_seasons": 285,
+        "corr_of_team_diffs": 0.9008092800874409,
+        "mean_abs_diff_between_sources": 0.02312464539322877,
+        "mean_diff_cbbd": 0.0034686871591400347,
+        "mean_diff_hoopr": 0.003764423901446397
+      },
+      {
+        "class": "three",
+        "band": "wing3",
+        "team_seasons": 285,
+        "corr_of_team_diffs": 0.8956755023383675,
+        "mean_abs_diff_between_sources": 0.033875412000990084,
+        "mean_diff_cbbd": -0.002725349324318095,
+        "mean_diff_hoopr": -0.0004146684048299835
+      }
+    ]
+  }
+}
