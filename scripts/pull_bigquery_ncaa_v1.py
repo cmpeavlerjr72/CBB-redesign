@@ -34,15 +34,18 @@ N_CHUNKS = 20
 SEASON_CANDIDATES = ("season", "game_season", "season_id")
 
 
+_REAL_OPEN = None
+
+
 def _open_url(url, *a, **k):
-    """Windows `start` mangles URLs containing &; use ShellExecute and print the URL."""
-    import os
-    print("If no browser opens, paste this URL into one:", url, flush=True)
+    """Print the full auth URL on its own line first, then open it with webbrowser.open."""
+    print("
+Open this URL in a browser on THIS machine if the page does not open or errors:")
+    print(url, flush=True)
     try:
-        os.startfile(url)
+        return _REAL_OPEN(url)
     except Exception:
         return False
-    return True
 
 
 def get_credentials(interactive=False):
@@ -50,13 +53,13 @@ def get_credentials(interactive=False):
     import pydata_google_auth.cache as pcache
     if interactive:
         import webbrowser
+        global _REAL_OPEN
+        _REAL_OPEN = webbrowser.open
+
         class _B:
             open = staticmethod(_open_url)
         webbrowser.get = lambda *a, **k: _B()
-        webbrowser.open = _open_url
-        webbrowser.open_new = _open_url
-        webbrowser.open_new_tab = _open_url
-        return pydata_google_auth.get_user_credentials(SCOPES, auth_local_webserver=True)
+        return pydata_google_auth.get_user_credentials(SCOPES, use_local_webserver=True)
     # cached only: never opens a browser
     if pcache.ReadWriteCredentialsCache().load() is None:
         sys.exit("No cached Google credentials. Run once: "

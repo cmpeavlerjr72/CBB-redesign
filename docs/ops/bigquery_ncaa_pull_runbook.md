@@ -11,6 +11,7 @@ The dataset carries a Sportradar notice (secondary source, wording UNVERIFIED): 
 1. Create a BigQuery sandbox project at console.cloud.google.com (no billing account or card needed) and note the project id.
 2. Run once: `.venv/Scripts/python.exe scripts/pull_bigquery_ncaa_v1.py --project <PROJECT_ID> --auth`
    A browser opens for Google sign-in (read-only BigQuery scope). Credentials are cached under `~/.config/pydata/`. The command prints the signed-in account.
+   The full auth URL is printed on its own line before the browser opens. If the page shows "Missing required parameter: redirect_uri" (Error 400: invalid_request), the browser copy of the URL was cut at the first `&`: paste the printed URL into the browser instead. The sign-in uses a local webserver on localhost to receive the code, so the browser must be on this machine (not a remote desktop or another device).
 
 ## Worker steps
 
