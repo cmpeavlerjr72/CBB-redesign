@@ -697,6 +697,24 @@ def pc_line(j, kind):
     xs = np.array([np.average(delta[q == b], weights=n[q == b]) for b in range(5)])
     ys = np.array([np.average(a[q == b] / n[q == b] - qi[q == b] / n[q == b], weights=n[q == b]) for b in range(5)])
     out["profile_quintile"]["excess_vs_shift_slope"] = float(np.polyfit(xs, ys, 1)[0]) if np.ptp(xs) > 0 else None
+    # POST-HOC DESCRIPTIVE (added after the first P-C read; NOT a decision input): player-game bootstrap of the
+    # registered slope ratio of arm (ii) and of the excess-vs-shift slope
+    rng_b = np.random.default_rng(99)
+    sr, ex = [], []
+    for _ in range(N_BOOT):
+        ii = rng_b.integers(0, len(delta), len(delta))
+        dl, nn, aa_, qi_, qii_ = delta[ii], n[ii], a[ii], qi[ii], qii[ii]
+        qq = pd.qcut(pd.Series(dl).rank(method="first"), 5, labels=False).to_numpy()
+        pa2 = np.array([np.average(qii_[qq == b] / nn[qq == b], weights=nn[qq == b]) for b in range(5)])
+        ac2 = np.array([np.average(aa_[qq == b] / nn[qq == b], weights=nn[qq == b]) for b in range(5)])
+        xs2 = np.array([np.average(dl[qq == b], weights=nn[qq == b]) for b in range(5)])
+        ys2 = np.array([np.average(aa_[qq == b] / nn[qq == b] - qi_[qq == b] / nn[qq == b], weights=nn[qq == b])
+                        for b in range(5)])
+        sr.append((pa2[-1] - pa2[0]) / (ac2[-1] - ac2[0]) if ac2[-1] != ac2[0] else np.nan)
+        ex.append(np.polyfit(xs2, ys2, 1)[0])
+    out["profile_quintile"]["post_hoc_boot"] = {
+        "slope_ratio_ii_p2.5_p50_p97.5": [float(x) for x in np.nanpercentile(sr, [2.5, 50, 97.5])],
+        "excess_slope_p2.5_p50_p97.5": [float(x) for x in np.nanpercentile(ex, [2.5, 50, 97.5])]}
     out["profile_quintile"]["quintile_mean_shift"] = [float(x) for x in xs]
     out["profile_quintile"]["quintile_mean_actual_minus_i"] = [float(y_) for y_ in ys]
     return out
@@ -833,7 +851,7 @@ def run_block_P(t0):
         tx.append(f"### P-C {fold}: player-game FGM (rim attempts held at the pooled training-seasons rim make rate in both arms)\n" + md_table_pc(pcf))
         for nm, o in (("3PM", pc3), ("FGM", pcf)):
             pq = o["profile_quintile"]
-            tx.append(f"### P-C {fold} {nm}: responsiveness by quintile of the shooter's profile shift ({pq['driver']}; delta SD {pq['delta_sd']:.4g}, range {pq['delta_range'][0]:.3g}..{pq['delta_range'][1]:.3g}); slope of (actual - (i)) on shift = {pq['excess_vs_shift_slope']}\n" +
+            tx.append(f"### P-C {fold} {nm}: responsiveness by quintile of the shooter's profile shift ({pq['driver']}; delta SD {pq['delta_sd']:.4g}, range {pq['delta_range'][0]:.3g}..{pq['delta_range'][1]:.3g}); slope of (actual - (i)) on shift = {pq['excess_vs_shift_slope']}; POST-HOC bootstrap 95% (not a decision input): slope ratio (ii) {np.round(pq['post_hoc_boot']['slope_ratio_ii_p2.5_p50_p97.5'], 3).tolist()}, excess slope {np.round(pq['post_hoc_boot']['excess_slope_p2.5_p50_p97.5'], 3).tolist()}\n" +
                       md([dict(arm="(i) R", **{k: v for k, v in pq["arm_i"].items() if k != "d8_pass"}),
                           dict(arm="(ii) P1 x BP", **{k: v for k, v in pq["arm_ii"].items() if k != "d8_pass"})]) +
                       f"\nquintile mean shift {np.round(pq['quintile_mean_shift'], 5).tolist()}; actual - (i) {np.round(pq['quintile_mean_actual_minus_i'], 5).tolist()}\n")
