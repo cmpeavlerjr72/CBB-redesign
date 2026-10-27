@@ -39,8 +39,7 @@ _REAL_OPEN = None
 
 def _open_url(url, *a, **k):
     """Print the full auth URL on its own line first, then open it with webbrowser.open."""
-    print("
-Open this URL in a browser on THIS machine if the page does not open or errors:")
+    print("Open this URL in a browser on THIS machine if the page does not open or errors:")
     print(url, flush=True)
     try:
         return _REAL_OPEN(url)
