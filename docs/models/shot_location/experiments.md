@@ -290,3 +290,94 @@ The registered finding clause (Read A SIGNAL with Read B FLAT) does not fire. No
 misses within game by +0.85 / +1.05 / +0.98 / +3.34 pp (SE 0.05-0.08) for 2022-2025, so it goes to the possession-layer
 queue; hoopR vs CBBD bands differ on 3.5% (jumpers) / 4.4% (threes) of attempts from 2025-02-10; split-half reliability
 on this round's table 0.88 / 0.76 / 0.61 / 0.76 offence, 0.67 / 0.71 / 0.46 / 0.71 defence.
+
+
+## 3. Round 2: props block (P) and variance block (V) (PRE-REGISTERED 2026-10-27 12:40 ET, PM Fable 5.1; committed BEFORE any fit)
+
+**Origin.** Round 1 (section 2) closed the location stage for team markets: the per-matchup band mix is
+predictable and known location explains outcomes, but the implied team-game aggregates sit inside the
+floor. The user asked for the two places the value could still live that do not need a clean rim source:
+(P) player props, where a shooter-specific band profile could change one player's made-threes
+distribution while the team aggregate stays put; (V) variance, where team-game band shares are 1.11-1.31x
+the multinomial SD (round 1 finding), so shot selection carries a per-game latent that would change the
+width of total and margin distributions without moving their centres. At this commit no fit output for
+round 2 exists; none of the section-3.6 scripts exist. Freeze ON. Worker: Sonnet (the day's Opus budget
+is spent on round 1); hard stop 15:30 ET, anything unfinished reported NOT RUN. The rim class stays ONE
+band (ruling 11); nothing in this round touches rim location.
+
+### 3.1 Data
+
+Round-1 design table `data/processed/models/shot_location/round1/design_loc_cols_v1.parquet` (CBBD 2022-25
+located jump2 / three attempts, folded frame, bands per 1.2, `shooter_id`, `game_id`, `game_date`) and
+the round-1 team band profiles. Folds as in 1.1 (F2 = 2025 selection; F1 reported). Player-game truth for
+block P: hoopR `player_box` (`three_point_field_goals_made / _attempted`, `field_goals_made / _attempted`)
+joined on game and athlete; the CBBD-shooter to hoopR-athlete map and its join rate are reported, and
+player-games that do not join are dropped and counted, never imputed. Class-mix data for block V: the
+possessions v2 chances tables and the SERVED possession-outcome artifact's per-chance class probabilities
+on each test season (no refit).
+
+### 3.2 Block P: shooter-specific band profile and band-specific skill
+
+Registered first, before any arm: split-half (odd / even games, Spearman-Brown) reliability of (a) the
+shooter's band shares within class and (b) the shooter's make rate by band (corner3 vs non-corner; short2
+vs long2), over shooter-seasons with >= 100 located attempts in the class; shooter-seasons under 100 are
+UNDERPOWERED. These are the measurement ceiling for every block-P responsiveness line.
+
+As-of features (strictly before tipoff, centred on the snapshot league mean, shrunk; k chosen on fold-1
+TRAINING seasons by located-attempt-weighted squared error, before any arm):
+- `sh_band_c`: the shooter's centred shrunk band log-odds within class, prior = the shooter's team
+  profile (round 1) then league.
+- `sh_band_make_c`: the shooter's centred shrunk make deviation WITHIN band, prior = the shooter's overall
+  `shooter_shrunk_dev_c` (served).
+Leak test on both, aggregated to the team-game (mean over the team's attempts) in change form against
+the verified own-game margin, |corr| <= 0.15, REFUSED on failure.
+
+| read | unit | arms | primary |
+|---|---|---|---|
+| P-A ceiling | located attempt, jump2 and three | `R` served B1 refit (round-1 R), `R_seed`, `P0` = R + band (round-1 A1, re-run), `P1` = P0 + `sh_band_make_c` | log loss gain P1 vs P0 against the 1.3 floor; decile battery; responsiveness: make rate by quintile of `sh_band_make_c` within band |
+| P-B predictability | located attempt | `B2` (round-1 carried arm) vs `BP` = B2 + `sh_band_c` | multinomial log loss gain vs floor; responsiveness by quintile of the shooter's own as-of band share |
+| P-C player-game | player-game, test season | implied E[3PM] over the player's ACTUAL 3PA in the game (attempt counts are the usage model's job and are held at actual): (i) served R; (ii) P1 marginalised over BP's band mix; same for FGM over jump2 + three attempts with rim held at the served class level | MAE and dispersion (SD of actual - implied vs implied SD) of player-game 3PM and FGM; paired player-game bootstrap floor, 200 replicates; by shooter band-profile quintile and by 3PA-per-game tier (1-2, 3-5, 6+); UNDERPOWERED under 2,000 player-games |
+
+Decision (F2): the shooter band profile is **CANDIDATE (offline, props pathway)** only if P-C improves
+player-game 3PM MAE beyond its floor with no tier worse beyond its floor, the P-C responsiveness line by
+shooter-profile quintile passes (slope ratio in [0.8, 1.2] read against sqrt(reliability)), and P-A or P-B
+beats its floor. Otherwise NOT CANDIDATE. Serving would need the usage model to carry the shooter's band
+mix and is its own round.
+
+### 3.3 Block V: the per-game shot-selection latent (DIAGNOSTIC, no arm; outcome is DEFECT CONFIRMED / NOT CONFIRMED)
+
+- **V-A structure.** Per team-game residual shares: actual minus B2-predicted band shares (jump2 and three
+  bands), and actual minus served-possession-outcome-predicted CLASS shares (3PA, rim, jump2, TOV share of
+  chances). Report: over-dispersion ratio (realised SD of the residual / SD implied by the multinomial at
+  the game's attempt count) per band and class with a parametric-bootstrap floor; the within-team-game
+  correlation matrix of residuals across bands and classes; share of variance in the first principal
+  component; correlation of the residual with possession count, final margin, site, and the opponent's
+  defence profile.
+- **V-B served under-dispersion.** For each test season: implied per-game SD of 3PA share and rim share
+  from the served possession-outcome per-chance probabilities (sum of Bernoulli variances) vs the realised
+  SD of the residual, overall, by season, by offence quintile; ratio with floor. Ratio > 1 beyond the floor
+  = DEFECT CONFIRMED for the possession-outcome owner, and the latent's SD (logit-normal random effect by
+  method of moments, per class) is the registered quantity a future variance arm must reproduce.
+- **V-C shared latent.** Correlation of the team-game residual 3PA share with the residual corner3 / wing3 /
+  top3 and short2 / long2 shares. If the band latent and the class latent are one latent, the fix belongs
+  in possession outcome, not in a location stage; state which.
+
+### 3.4 Order of work
+
+V-A, V-B, V-C first (cheap, decisive for the variance queue); then P reliability, leak test, P-B, P-A, P-C.
+
+### 3.5 Metrics conventions
+
+As in 1.3-1.5: floors are max(seed difference, paired block bootstrap SE); GLM fits have a zero seed
+floor; decile battery as served; UNDERPOWERED labels; located-only vs all-games side by side where
+applicable; F1 reported and labelled BIASED SUBSET.
+
+### 3.6 Scripts, artifacts, grader
+
+`scripts/build_shooter_band_v1.py`, `scripts/train_shot_location_v2_props_v1.py`,
+`scripts/diag_shot_selection_dispersion_v1.py`, ONE blind grader `scripts/grade_shot_location_v2.py`.
+Artifacts under `data/processed/models/shot_location/round2/` (gitignored, HF `model_artifacts`).
+Evidence `docs/tests/shot_location_round2_2026-10-27.md`; results appended as section 4; ledger row in
+the same commit; suite re-run; parity v10 unchanged.
+
+<!-- RESULTS FOR ROUND 2 APPEND BELOW THIS LINE AS SECTION 4 -->
