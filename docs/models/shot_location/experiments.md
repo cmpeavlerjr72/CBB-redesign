@@ -415,3 +415,77 @@ Reliability (shooter-seasons >= 100 located attempts; 764 jump2, 2,427 three): b
 P-C (player-game, attempts held at actual, 71,159 3PM / 95,038 FGM player-games): 3PM MAE 0.6827 -> 0.6823, gain +0.000425 = **+2.18 floors**, no tier worse (+1.81 / +0.14 / +2.00 floors); FGM +0.000782 = +3.80 floors; dispersion ratios 1.005 / 1.003 (3PM). **Responsiveness by shooter-profile quintile (3PM): slope ratio 2.05 (F1 1.35), outside [0.8, 1.2] -> clause fails; FGM line passes (0.99; F1 1.15).** Post-hoc, descriptive: the slope of (actual - R-implied) on the shift is 0.78 [0.63, 0.93] F2 and 0.88 [0.75, 1.00] F1; the registered ratio has a small denominator (realised span 0.7 pp) and a bootstrap 95% interval [1.10, 8.11] (F2). Verdict: **NOT CANDIDATE** (clauses 1, 2, 4 hold; clause 3 fails).
 
 Not run: block V class part on F1; sensitivity fit under the second-best (k_s, k_m). Suite and parity v10 in the evidence doc (section 4).
+
+## Round 3: replication of Heuermann study plan 2026-10-27 (context-normalised shooting rating)
+
+Status: SPEC, written and committed BEFORE any fit (PM brief 2026-10-28, Sonnet runner). Source: partner `STUDY_PLAN.md` and `a_audit.py b_features.py b_model.py c_ratings.py` (rfq-collab `CBB Model/Heuermann/study/`), not edited; reused code is copied into our scripts. Append-only; results go in `docs/tests/shot_location_round3_2026-10-28.md`. Freeze ON; nothing adopted, wired or served. Season id 2026 (2025-26) is sealed and never read.
+
+### R3.1 Question
+
+Does a context-normalised shooting rating (graded shot quality plus shrunk making) beat raw shooting as an as-of team rating of next-game points per FGA, and does the partner's finer grade (L2) add anything over the class decomposition our cascade already carries?
+
+### R3.2 Data and population
+
+- Plays: `data/raw/cbbd/pbp/{2024,2025}/plays_*.parquet` (season 2024 = 2023-24, 2025 = 2024-25), de-duplicated on play `id` (date files overlap), sorted by (gameId, id). Games: `data/raw/cbbd/games_{season}.parquet`.
+- FGA = playType in {JumpShot, LayUpShot, DunkShot, TipShot} with `shot_made` not null. Excluded: tournament == CBI; any game where homeConference or awayConference (games file) is null (D1 vs D1 only); heaves (secondsRemaining <= 3 and folded distance >= 35 ft). Unlocated FGA cannot be tested for the heave rule: unlocated attempts with <= 3 s left are counted and reported as the upper bound of undetected heaves; they stay in.
+- Located share is about 88% (2023-24) and 98.6% (2024-25). Rim x/y is never a feature; rim enters as class only (dunk / layup / tip from playType). Jumpers and threes may use location. Unlocated jumpers/threes carry NaN location (HistGradientBoosting handles NaN natively); a located-only log-loss is reported beside the all-FGA log-loss for every layer so the NaN handling cannot masquerade as location signal.
+- Half-court fold: folded x = 940 - x where x > 470 (and y = 500 - y), by shot position, so it is independent of which end a team attacks after half-time. Hoop at (52.5, 250) in 0.1-ft units; distance and angle as in the partner script. Fold sanity (share of located threes inside 20.75 ft, jumpers beyond 22.15 ft) is reported.
+- Neutral site: from the games file `neutralSite`, joined on pbp `gameId` = games `id`. No default to False; a failed join is a hard error. Home flag = team is the games-file home team and the game is not neutral (team-name match to `isHomeTeam` was 100% on both seasons).
+- Dates: game start date converted to US/Eastern.
+
+### R3.3 The five fixes to the partner scripts
+
+1. Score convention. CBBD `homeScore`/`awayScore` on a play row is the score AFTER that play. Checked on our files (de-duplicated, ordered by id): on made FGA the total-score change from the previous row equals the shot value 99.78% (2023-24) and 99.85% (2024-25); on missed FGA the change is 0 in 99.96% / 99.90%; reading the next row instead matches 14%. So margin before the shot = (team score - opponent score after the play) - points of the shot, as the partner wrote it. The build script re-runs this check and writes it to the build report; the check is not a gate.
+2. Neutral from the games file (R3.2).
+3. Dials are chosen on the FIT season only and scored on TEST. Grids are matched in size across arms (R3.5). The grade used for the FIT season is trained on the other season, as the plan says (disclosed risk: the FIT-season grade is learned on TEST-season shots; it carries shot-situation information only, no team identity).
+4. The both-direction rule is computed in code (R3.7).
+5. RAW has no shrinkage; RAW_SHRUNK shrinks raw toward the league mean by n/(n+K), same K grid, so the primary comparison is decomposition vs raw, not shrunk vs unshrunk.
+
+### R3.4 Part B: per-shot grade layers
+
+Model: `HistGradientBoostingClassifier(max_iter=300, learning_rate=0.05, max_leaf_nodes=31, min_samples_leaf=200, early_stopping=True, validation_fraction=0.1, random_state=0)`, categorical codes for shot_class and origin, as the partner script. Target: made. `shot_assisted` is NOT a feature (only recorded on makes); assisted rows are retained.
+
+| layer | features |
+|---|---|
+| L0 | shot_class (dunk, layup, tip, jumper2, three) |
+| L1 | L0 + dist_ft, angle_deg (jumpers/threes only; NaN otherwise), corner3 |
+| L2 (the GRADE, situation only) | L1 + origin (DRB, ORB, STEAL, DEAD_TO, DEAD, OPP_MAKE, PERIOD_START, UNKNOWN), poss_sec, after_timeout |
+| D1 (diagnostic) | L2 + home |
+| D2 (diagnostic) | L2 + period, game_sec_left, margin |
+
+Possession-context walker copied from the partner (period length 1200 s for periods 1-2, 300 s for overtime). Gain = mean log-loss reduction vs the previous layer (D1, D2 vs L2). Floor = SD of the gain over 500 resamples of TEST games (seed 0). A grade layer counts if its gain exceeds 2 floors in BOTH directions. Directions: train 2023-24 test 2024-25, and train 2024-25 test 2023-24. Per-shot EP = p x shot value; the TEST-season EP at L0 and L2 from the other-season model is saved and is the grade for part C (so the FIT season of a C direction always carries a grade trained on the other season).
+
+### R3.5 Part C: ratings and as-of prediction
+
+Team-game unit (gameId, team): FGA, points, EP sums; offence is the team, defence is the opponent. Measures per FGA. As-of: rating at date d uses games with date < d only. A team-game is predicted only if both teams have >= MIN_GAMES = 5 prior games (counts all games, identical for every arm so the scored set is identical). Home term: as-of league home edge in points per FGA from non-neutral prior games, added to the home team and subtracted from the away team, zero at neutral sites; identical in every arm. Opponent adjustment alpha: iterative offence/defence solve, 12 iterations, as the partner. Game-script weights: the partner curve is 1.0 at script index 0, 0.56 at 6, 0.25 from 12; the partner CSV is unavailable, so weights are linear interpolation between those three points (np.interp on [0, 6, 12] -> [1.0, 0.56, 0.25], flat beyond 12). Script index = |margin before shot| / max(seconds_left / 24, 5/24). Under weights ON all of pts, EP and FGA counts are weighted, and the shrinkage n is the weighted FGA.
+
+Arms (prediction = league points per FGA + offence term + defence term + home term; league = as-of weighted mean):
+
+- RAW: opponent-adjusted points-per-FGA ratings, unshrunk.
+- RAW_SHRUNK: each of the offence and defence deviations from league multiplied by n/(n+K), n = that team's FGA count behind the rating. K in {0, 250, 500, 1000, 2000, 4000, inf}; K = 0 reproduces RAW.
+- QUALITY: opponent-adjusted L2 expected-points rating (unshrunk) plus making (points minus L2 EP, opponent-adjusted separately) times n/(n+K), same K grid. Because the adjustment is linear, QUALITY with K = 0 equals RAW; the run asserts this to 1e-9.
+- CLASS: same form but the grade is L0 (class mean points, other-season model), so quality is the class-mix quality (team class-share vector x league class EP) and making is per class: excess points per FGA of class c, opponent-adjusted per class, each shrunk by n_c/(n_c + K) (n_c = that team's class-c FGA behind the rating). The making contribution is the sum over classes of mix_c x shrunk making_c, with the game mix mix_c = normalised max(share_off,c + share_def-allowed,c - league share_c, 1e-6) from the same prior games and weights. This is the decisive arm: it asks whether the L2 grade adds anything over the class decomposition.
+
+Dial grids, matched in size: alpha {0, .25, .5, .75, 1} x weights {off, on} x K {7 values} = 70 combinations for RAW_SHRUNK, QUALITY and CLASS. RAW has no K: its 10 real combinations are padded to 70 by repeating each across the 7 K indices (identical rows), so its selection set is the same size and the padding cannot change the chosen dials. Dials are chosen on FIT (min FGA-weighted MSE), frozen, scored on TEST. The partner-style RAW alpha curve on TEST is also reported.
+
+Noise floor / seed check: the grade models (L0, L2) are retrained with random_state=1; the dials chosen under seed 0 are frozen and the TEST gains vs RAW_SHRUNK recomputed. A gain that moves by more than 1 floor between seeds is flagged SEED-UNSTABLE.
+
+### R3.6 Metrics
+
+- Primary: TEST FGA-weighted MSE of points per FGA, gain of each arm vs RAW_SHRUNK (each at its own FIT-chosen dials), in floors; floor = SD over 500 paired game-block bootstrap resamples (seed 0) of the weighted MSE difference; both directions.
+- Key secondary: QUALITY vs CLASS gain in floors (CLASS minus QUALITY MSE, positive = QUALITY better), both directions.
+- Stability: split-half (odd vs even games per team ordered by date, teams with >= 100 FGA in each half) reliability of raw, quality (L2), making (L2), class-quality, class-making; offence and defence; Spearman-Brown full-length reliability; FGA to reach 0.5 = n_half x (1/r - 1). Per season.
+- Segments of the primary gain (floors, with n): month (Nov-Dec vs Jan-Apr), conference tier of the scored team (power = ACC, Big 12, Big East, Big Ten, SEC, Pac-12 vs other, games-file conference names), offence-only vs defence-only (prediction with the defence term, or the offence term, set to league; scored on the same rows). Cells with fewer than 2,000 team-games are labelled UNDERPOWERED.
+- Responsiveness: TEST team-games bucketed into quintiles of each arm's predicted points per FGA; per-quintile mean predicted vs mean actual and the FGA-weighted OLS slope of actual on predicted with a game-block bootstrap interval. The clause holds if quintile actuals are monotone and the slope lies in [0.8, 1.2].
+
+### R3.7 Pass rule (fixed now)
+
+An arm (QUALITY or CLASS) is CANDIDATE only if its gain over RAW_SHRUNK exceeds 2 floors in BOTH fold directions (computed in code, no hand reading), the seed check does not flag it SEED-UNSTABLE, and the responsiveness clause holds. Otherwise NOT CANDIDATE. Ties go to the simpler model (RAW_SHRUNK over QUALITY over CLASS if gains are within 1 floor of each other).
+
+### R3.8 Budget and deviations pre-declared
+
+Bootstrap 500 resamples; if any single run would exceed 60 min it is cut to 200 and the report says so. Not run: a QUALITY variant that also shrinks the quality term. The partner reported a 2,944-game 2024-25 subset; our pulls hold the full season, so counts differ.
+
+### R3.9 Files
+
+`scripts/build_shot_context_v1.py` (features; copies partner walker), `scripts/train_shot_grade_v1.py` (Part B and EP), `scripts/exp_shot_quality_rating_v1.py` (Part C). Artifacts in `data/processed/models/shot_location/round3/` (gitignored path). Report `docs/tests/shot_location_round3_2026-10-28.md`.
