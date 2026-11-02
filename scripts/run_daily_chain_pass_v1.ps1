@@ -5,6 +5,7 @@
 # Exit code = the chain's. Registered 2026-10-09 as \CBB\DailyChain_Evening / _Morning (docs/ops/scheduler_registration_2026-10-09.md).
 param([Parameter(Mandatory = $true)][ValidateSet("evening", "morning")][string]$Pass,
       [int]$Seeds = 200,
+      [int]$TrajectorySeeds = 2500,   # live-odds layer ON by default (owner 2026-11-02); 0 = off; records seeds < N (all of them at 2,500)
       [switch]$DryRun)
 $ErrorActionPreference = "Stop"
 Set-Location "C:\Users\devuser\CBB-clean-sheet"
@@ -13,6 +14,7 @@ $env:OMP_NUM_THREADS = "1"; $env:MKL_NUM_THREADS = "1"; $env:OPENBLAS_NUM_THREAD
 New-Item -ItemType Directory -Force "results\ops" | Out-Null
 $log = "results\ops\daily_chain_{0}_{1}.log" -f $Pass, (Get-Date -Format "yyyyMMdd")
 $argv = @("scripts\chain_daily_v3.py", "--pass", $Pass, "--seeds", $Seeds)
+if ($TrajectorySeeds -gt 0) { $argv += @("--trajectory-seeds", $TrajectorySeeds) }
 if ($DryRun) { $argv += "--dry-run" }
 "{0} start pass={1} seeds={2} dry={3}" -f (Get-Date -Format "yyyy-MM-dd HH:mm:ss K"), $Pass, $Seeds, $DryRun.IsPresent | Out-File $log -Append -Encoding utf8
 # cmd does the redirect: PowerShell 5.1 turns python's stderr (logging) into error records

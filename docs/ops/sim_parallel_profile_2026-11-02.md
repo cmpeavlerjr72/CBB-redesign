@@ -62,3 +62,15 @@ Roughly 4x the single core is the ceiling on this box without engine changes.
   total (191 s sim): no measurable cost (inside the noise of the other jobs on the box). Merge 2.0 s. Output 3,334,083 rows,
   25,000 game-seeds, 36.8 MB = 3.7 MB per game. Extrapolated to 118 games: 434 MB, merge about 25 s, sim stage +0%.
   Default stays OFF in the chain.
+
+## Switch-on (owner, 2026-11-02) and end-to-end check
+
+* `scripts/run_daily_chain_pass_v1.ps1`: new `[int]$TrajectorySeeds = 2500` parameter; when > 0 the wrapper appends `--trajectory-seeds <N>` to the
+  `chain_daily_v3.py` argv. The registered tasks (`-Pass evening|morning -Seeds 2500`) need no change; `-TrajectorySeeds 0` switches it off.
+* Dry run (live inputs, 115 games x 200 seeds, 10 workers, run id `diag_e2e`, root `results/diag/sim_parallel_2026-11-02/e2eroot`, nothing under
+  `results/daily`): sim 177.6 s, trajectory `results/trajectories/daily_2026-11-02_diag_e2e/trajectory.parquet` (3,137,452 rows, 23,000 game-seeds,
+  10 row groups, 115 games, no game split across groups, terminal scores equal `games.parquet` for all 23,000 pairs, 200 seeds per game).
+  `export_live_grid_v1.py` wrote 115 `live.json` (7.06 MB, 3.2 s) to `results/diag/sim_parallel_2026-11-02/live_out/`.
+* Cost at 2,500 seeds, writer on: no sim-stage cost measured (203 s vs 214 s for 10 games); merge ~2 s per 37 MB. 118 games: sim ~2,300 s, merge ~25 s;
+  150-game Saturday ~3,000 s; both far inside the 5 h / 4 h task limits. Disk: ~434 MB per 118-game run (3.7 MB per game), ~0.9 GB per day at two
+  passes, ~1.2 GB on a 150-game day; 350 GB free. Nothing deletes old trajectory dirs automatically (design doc: keep 3 days).
