@@ -115,3 +115,23 @@ Grading truth = the trajectory's own last-row score (same engine run): a SELF-CO
 real games. It says nothing about live-market accuracy; the layer stays unvalidated until the shadow logger (design B8) has two weeks.
 No post-hoc adjustment on engine output enters any arm; pooling uses only train seeds. Every grid is built from train seeds only; test seeds
 are never read when building tables (enforced by construction, asserted by a unit test). Compute: local, no AWS.
+
+## 8. ADDENDUM registered 2026-11-02 AFTER the primary 100-seed read (disclosed; the primary read had been scored when this was written)
+
+The primary read (section 9, appended below by the run) showed the diagnostic `R0` (no state conditioning) ahead of every eligible arm at
+100 training seeds, with the A_row - R0 M1 gap shrinking with seed count (25 -> 50 -> 100 training seeds). 100 seeds is 4% of production, so
+the primary read cannot decide the production question. Registered now, BEFORE it runs:
+
+* SCALE READ: 20 games (the first 20 ids of `results/trajectories/_inputs/replay_ids_394.parquet`), served-engine control, 2,500 seeds each
+  (`run_engine_window_v2.py --seeds 2500 --trajectory-seeds 2500 --tag live_grid_scale20_s2500`), 4 splits of 2,000 TRAIN / 500 TEST seeds per
+  game, MIN_N = round(200 x 2000/2500) = 160, same 12 checkpoints, same arms, same grader, same BEATS / floor / selection rules (floor =
+  same arm across the 4 splits). 20 games is a small game sample (game-level results labelled accordingly); the seed count per game is the point.
+* Interpretation rule: the section 6 `R0` clause is evaluated on the SCALE read as well. If `A_row` beats `R0` on M1 at 2,000 seeds, the
+  production arm is the section 6 WINNER of the scale read (same selection rule). If `R0` still beats or ties `A_row`, the result is reported as
+  "state conditioning by binning does not help at 2,000 seeds" and the exporter default stays the simplest eligible arm (`A_row`) with that
+  caveat printed in the file's `rule` string and in the exporter doc; the PM decides whether a smoothed (non-binned) conditioner is a
+  follow-up round (not entered here: it would need its own pre-registered arms).
+* If the 100-seed section 6 winner and the scale-read winner differ, the scale-read winner is the exporter default (it is the production regime);
+  the 100-seed winner stays selectable behind the flag.
+* Implementation clarification (no change to rules): quantile total-so-far bins can be thin through ties; they take the same thin-cell rule as
+  margin bins (time row for `*_row`, neighbour pooling for `*_pool`).
