@@ -4,7 +4,9 @@ chain_daily_v3.py -- the daily chain, version 3 (lane F, 2026-09-30). `chain_dai
 ingest, ratings, kenpom, injuries, overrides, inputs) are REUSED by import. The four stages v2 left as stubs are built here:
 
   9  sim       run_daily_sim_v1.run_sim_stage      refuse tipped games, live inputs, served engine, created_at < tipoff asserted
-  10 publish   run_daily_publish_v1.run_publish_stage   distribution summaries + market probabilities vs the lines at run time
+  10 publish   run_daily_publish_v1.run_publish_stage   distribution summaries + market probabilities vs the lines at run time;
+               LAST step (2026-10-29): export_site_day_v1.export_day stages the day for the site and pushes it to the HF dataset
+               mvpeav/cbb-sims-2027 (--site-export / --site-upload, default on for live passes, off for replays; never fatal)
   11 grade     grade_daily_v1.run_grade_stage      yesterday (and pending older slates) vs VERIFIED finals, running ledger
   12 bias_clv  diag_daily_bias_clv_v1.run_monitor_stage   rolling bias with SEs, per-stat bias, CLV of leans; reports and alarms only
 
@@ -120,7 +122,8 @@ def stage_sim(ctx, a, CD) -> dict:
         r = SIM.run_sim_stage(str(ctx.slate_date), season, a.fold, a.seeds, 0, ctx.now, root, None, "cbbd", str(SCHED_2027),
                               str(CROSSWALK), tips, strict=False, players=True, pass_name=pass_name,
                               ratings_dir=ctx.state.get("ratings_dir"),
-                              trajectory_seeds=int(getattr(a, "trajectory_seeds", 0) or 0))        # player rows are a deliverable (props): PM ruling 2026-10-09
+                              trajectory_seeds=int(getattr(a, "trajectory_seeds", 0) or 0),        # player rows are a deliverable (props): PM ruling 2026-10-09
+                              jobs=getattr(a, "jobs", None))
     ctx.state["sim_run_id"] = D.default_run_id(a.seeds, 0) + ("_morning" if pass_name == "morning" else "")
     return {**census, **r}
 
@@ -197,13 +200,50 @@ def stage_lines_probe(ctx, a) -> dict:
     return r
 
 
+def site_export(slate_date, run_id: str, root, export: bool, upload: bool) -> dict:
+    """LAST step of publish (2026-10-29): stage the day for the site (export_site_day_v1) and push it to the HF dataset
+    `mvpeav/cbb-sims-2027`. Never fatal: a failure is logged and reported as `site_export: failed` in the stage dict."""
+    if not export:
+        return {"site_export": "skipped"}
+    try:
+        import export_site_day_v1 as SITE
+        rep = SITE.export_day(str(slate_date), run_id, Path(root), do_upload=upload, quiet=True)
+        up = rep.get("upload")
+        out = {"site_export": "ok", "site_day_dir": rep["day_dir"], "site_n_games": rep["n_games"],
+               "site_gaps": {k: len(v) for k, v in rep["gaps"].items()}}
+        if up is not None:
+            out["site_upload"] = "ok" if up["ok"] else "incomplete"
+            out["site_url"] = up["url"]
+            if not up["ok"]:
+                out["site_upload_missing"] = up["missing"][:10] + up["failed_checks"]
+        log.info("site export ok: %d games staged -> %s; upload %s", rep["n_games"], rep["day_dir"],
+                 f"{out['site_upload']} -> {out['site_url']}" if up is not None else "skipped")
+        return out
+    except Exception as exc:  # noqa: BLE001 -- the site is downstream of the chain, never a reason to fail it
+        log.exception("site export failed (chain continues)")
+        return {"site_export": "failed", "site_export_error": f"{type(exc).__name__}: {exc}"}
+
+
 def stage_publish(ctx, a, CD) -> dict:
     run_id = ctx.state.get("sim_run_id") or D.default_run_id(a.seeds, 0)
     if ctx.dry_run:
         return {"_status": "blocked", "why": "dry run; needs the sim output and a lines fetch (CBBD /lines, 1 call)"}
     r = PUB.run_publish_stage(str(ctx.slate_date), run_id, ctx.now, ctx.root, "live", session=ctx.session, tracker=ctx.tracker)
     line = fallback_report_line(ctx.slate_date)
-    return {**r, "fallback_roster_line": line} if line and isinstance(r, dict) else r
+    if line and isinstance(r, dict):
+        r = {**r, "fallback_roster_line": line}
+    if isinstance(r, dict) and r.get("_status", "ok") == "ok":
+        r = {**r, **site_export(ctx.slate_date, run_id, ctx.root, site_flags(a, live=True)[0], site_flags(a, live=True)[1])}
+    return r
+
+
+def site_flags(a, live: bool) -> tuple[bool, bool]:
+    """(export, upload): --site-export / --site-upload default ON for live passes and OFF for replays; explicit flags win."""
+    export = getattr(a, "site_export", None)
+    upload = getattr(a, "site_upload", None)
+    export = live if export is None else bool(export)
+    upload = (live if upload is None else bool(upload)) and export
+    return export, upload
 
 
 def stage_grade(ctx, a, CD) -> dict:
@@ -249,8 +289,12 @@ def run_replay(a) -> int:
     res = []
     run_id = D.default_run_id(a.seeds, 0) + ("_morning" if rp == "morning" else "")
     V2.run_stage("sim", lambda: SIM.run_sim_stage(d, S, "F2", a.seeds, 0, now, root, None, "universe", replay=True, pass_name=rp,
-                                                  trajectory_seeds=int(getattr(a, "trajectory_seeds", 0) or 0)), res)
+                                                  trajectory_seeds=int(getattr(a, "trajectory_seeds", 0) or 0),
+                                                  jobs=getattr(a, "jobs", None)), res)
     V2.run_stage("publish", lambda: PUB.run_publish_stage(d, run_id, now, root, "replay_open", S), res)
+    export, upload = site_flags(a, live=False)                        # replays: off unless --site-export is passed
+    if export:
+        V2.run_stage("site_export", lambda: site_export(d, run_id, root, export, upload), res)
     V2.run_stage("grade", lambda: GR.run_grade_stage(d, S, gnow, root, "truth"), res)
     V2.run_stage("bias_clv", lambda: MON.run_monitor_stage(S, gnow, root, "replay_close"), res)
     for r in res:
@@ -271,6 +315,8 @@ def main(argv=None) -> int:
     ap.add_argument("--slate-date", default=None)
     ap.add_argument("--now", default=None, help="injected clock (ISO UTC) for sim / publish / grade / monitor")
     ap.add_argument("--seeds", type=int, default=200)
+    ap.add_argument("--jobs", type=int, default=None,
+                    help="sim stage worker processes, split by game (default cpu_count - 2); output identical at any value; 1 = single process")
     ap.add_argument("--trajectory-seeds", type=int, default=0,
                     help="DEFAULT 0 = off. N > 0 writes a per-possession trajectory for seeds < N to results/trajectories/daily_<date>_<run_id>/ (e.g. 20); side-channel, sim outputs unchanged")
     ap.add_argument("--fold", default="F2")
@@ -289,6 +335,12 @@ def main(argv=None) -> int:
                     help="skip the evening-pass free lines-source probe stage (default: on; never fatal)")
     ap.add_argument("--require-rosters", action="store_true", help="block the sim on empty 2027 rosters instead of warning")
     ap.add_argument("--dry-run-sim", action="store_true", help="in a dry run, still run the (tiny) sim into results/daily_dry when nothing blocks")
+    ap.add_argument("--site-export", dest="site_export", action="store_true", default=None,
+                    help="after publish, stage the day for the site (scripts/export_site_day_v1.py). DEFAULT: on for live passes, off for replays")
+    ap.add_argument("--no-site-export", dest="site_export", action="store_false")
+    ap.add_argument("--site-upload", dest="site_upload", action="store_true", default=None,
+                    help="push the staged day to the HF dataset mvpeav/cbb-sims-2027. DEFAULT: on for live passes, off for replays")
+    ap.add_argument("--no-site-upload", dest="site_upload", action="store_false")
     a = ap.parse_args(argv)
     if a.replay_season:
         if not a.slate_date:

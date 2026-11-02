@@ -108,7 +108,10 @@ def prepare_from_overlay(overlay: Path, fold: str, season: int, dest: Path, n_ro
 
 def simulate(inp: EngineInputs, fold: str, season: int, seeds, keep_players=True, games_per_block=20,
              flags: dict | None = None, adapter_dir: Path | None = None, attr_overrides: dict | None = None,
-             trajectory_writer=None):
+             trajectory_writer=None, game_rows=None):
+    # game_rows (default None = every game): the game ROW indices of `inp` to simulate, in that order. The adapters (round-2 team
+    # block, shot-block LUT) are indexed by row of the FULL input, so a caller splitting a slate across worker processes passes the
+    # whole `inp` plus its rows; every draw is keyed on (seed, game_id) by the loop's StreamBook, so the split does not change output.
     from cbb_sim.engine import adapters as AD
     from cbb_sim.engine import loop as L
     from cbb_sim.engine.adapters import Adapters
@@ -120,9 +123,10 @@ def simulate(inp: EngineInputs, fold: str, season: int, seeds, keep_players=True
         os.environ[k] = str(v)
     ad = Adapters.load(inp, fold, int(season))
     gframes, pframes = [], []
-    n = inp.n_games
+    all_rows = np.arange(inp.n_games) if game_rows is None else np.asarray(game_rows, dtype=np.int64)
+    n = len(all_rows)
     for g0 in range(0, n, games_per_block):
-        rows = np.arange(g0, min(g0 + games_per_block, n))
+        rows = all_rows[g0:min(g0 + games_per_block, n)]
         gi = np.repeat(rows, len(seeds))
         sd = np.tile(np.asarray(seeds, dtype=np.int64), len(rows))
         res = L.simulate_chunk(inp, ad, gi, sd, keep_players=keep_players, trajectory_writer=trajectory_writer)   # writer None = off

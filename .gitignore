@@ -179,3 +179,6 @@ data/processed/models/fg_make/round_pae/
 # GCP service-account keys never belong in the repo
 graphic-centaur-*.json
 *_sa_key.json
+
+# site export staging (export_site_day_v1.py): a regenerable mirror of the HF dataset mvpeav/cbb-sims-2027, like cfb-props-sim
+data/processed/site_stage*/
