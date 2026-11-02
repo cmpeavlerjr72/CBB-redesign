@@ -1,0 +1,289 @@
+{
+  "run_id": "20261102T120011_5c0036",
+  "started_at": "2026-11-02 12:00:11.819834+00:00",
+  "clock_for_patience": "2026-11-02 12:00:11.819834+00:00",
+  "root": "C:\\Users\\devuser\\CBB-clean-sheet",
+  "season": 2027,
+  "dates": [
+    "2026-11-01"
+  ],
+  "dry_run": false,
+  "warnings": [],
+  "n_schedule_rows_requested_dates": 2,
+  "n_skipped_already_complete": 0,
+  "verification_counts": {
+    "final_verified": 2
+  },
+  "box_crosscheck": {
+    "games_compared": 2,
+    "hard_disagree": {},
+    "soft_mismatch_games": 0,
+    "soft_examples": {}
+  },
+  "n_complete": 1,
+  "n_awaiting_data": 1,
+  "gaps_listed": {},
+  "pending_after": 1,
+  "rows_added": {
+    "hoopr_schedules": {
+      "rows_added": 0,
+      "rows_replaced": 0,
+      "games": 0,
+      "path": "C:\\Users\\devuser\\CBB-clean-sheet\\data\\raw\\hoopr\\schedules\\mbb_schedule_2027.parquet"
+    },
+    "hoopr_team_box": {
+      "rows_added": 2,
+      "rows_replaced": 0,
+      "games": 1,
+      "path": "C:\\Users\\devuser\\CBB-clean-sheet\\data\\raw\\hoopr\\team_box\\team_box_2027.parquet"
+    },
+    "hoopr_player_box": {
+      "rows_added": 30,
+      "rows_replaced": 0,
+      "games": 1,
+      "path": "C:\\Users\\devuser\\CBB-clean-sheet\\data\\raw\\hoopr\\player_box\\player_box_2027.parquet"
+    },
+    "hoopr_pbp": {
+      "rows_added": 533,
+      "rows_replaced": 0,
+      "games": 1,
+      "path": "C:\\Users\\devuser\\CBB-clean-sheet\\data\\raw\\hoopr\\pbp\\play_by_play_2027.parquet"
+    },
+    "hoopr_shots": {
+      "rows_added": 160,
+      "rows_replaced": 0,
+      "games": 1,
+      "path": "C:\\Users\\devuser\\CBB-clean-sheet\\data\\raw\\hoopr\\shots\\shots_2027.parquet"
+    },
+    "cbbd_games": {
+      "rows_added": 2,
+      "rows_replaced": 0,
+      "games": 2,
+      "path": "C:\\Users\\devuser\\CBB-clean-sheet\\data\\raw\\cbbd\\games_2027.parquet"
+    },
+    "cbbd_plays": {
+      "rows_added": 533,
+      "rows_replaced": 0,
+      "games": 1,
+      "path": "C:\\Users\\devuser\\CBB-clean-sheet\\data\\raw\\cbbd\\pbp\\plays_2027.parquet"
+    },
+    "games_universe": {
+      "rows_added": 1,
+      "rows_replaced": 0,
+      "games": 1,
+      "path": "C:\\Users\\devuser\\CBB-clean-sheet\\data\\processed\\games_universe.parquet"
+    },
+    "possessions_v1": {
+      "rows_added": 143,
+      "rows_replaced": 0,
+      "games": 1,
+      "path": "C:\\Users\\devuser\\CBB-clean-sheet\\data\\processed\\possessions\\possessions_2027.parquet"
+    },
+    "chances_v1": {
+      "rows_added": 170,
+      "rows_replaced": 0,
+      "games": 1,
+      "path": "C:\\Users\\devuser\\CBB-clean-sheet\\data\\processed\\possessions\\chances_2027.parquet"
+    },
+    "possessions_v2": {
+      "rows_added": 143,
+      "rows_replaced": 0,
+      "games": 1,
+      "path": "C:\\Users\\devuser\\CBB-clean-sheet\\data\\processed\\possessions_v2\\possessions_2027.parquet"
+    },
+    "chances_v2": {
+      "rows_added": 170,
+      "rows_replaced": 0,
+      "games": 1,
+      "path": "C:\\Users\\devuser\\CBB-clean-sheet\\data\\processed\\possessions_v2\\chances_2027.parquet"
+    },
+    "fg_events_v2_shotshooter": {
+      "rows_added": 117,
+      "rows_replaced": 0,
+      "games": 1,
+      "path": "C:\\Users\\devuser\\CBB-clean-sheet\\data\\processed\\models\\fg_make\\events_v2_shotshooter.parquet"
+    },
+    "usage_events_v2_shotshooter": {
+      "rows_added": 169,
+      "rows_replaced": 0,
+      "games": 1,
+      "path": "C:\\Users\\devuser\\CBB-clean-sheet\\data\\processed\\models\\usage_v2\\events_v2_shotshooter.parquet"
+    },
+    "rebound_events_v1": {
+      "rows_added": 76,
+      "rows_replaced": 0,
+      "games": 1,
+      "path": "C:\\Users\\devuser\\CBB-clean-sheet\\data\\processed\\models\\rebound\\events_v1.parquet"
+    },
+    "ft_trips_v1_era": {
+      "rows_added": 23,
+      "rows_replaced": 0,
+      "games": 1,
+      "path": "C:\\Users\\devuser\\CBB-clean-sheet\\data\\processed\\models\\free_throw\\trips_v1_era.parquet"
+    },
+    "ft_attempts_v1_era": {
+      "rows_added": 43,
+      "rows_replaced": 0,
+      "games": 1,
+      "path": "C:\\Users\\devuser\\CBB-clean-sheet\\data\\processed\\models\\free_throw\\attempts_v1_era.parquet"
+    },
+    "truth_team_game_shots_v2": {
+      "rows_added": 2,
+      "rows_replaced": 0,
+      "games": 1,
+      "path": "C:\\Users\\devuser\\CBB-clean-sheet\\data\\processed\\truth\\team_game_shots_v2.parquet"
+    },
+    "truth_player_game_v2": {
+      "rows_added": 30,
+      "rows_replaced": 0,
+      "games": 1,
+      "path": "C:\\Users\\devuser\\CBB-clean-sheet\\data\\processed\\truth\\player_game_v2.parquet"
+    },
+    "truth_game_finals_v2": {
+      "rows_added": 1,
+      "rows_replaced": 0,
+      "games": 1,
+      "path": "C:\\Users\\devuser\\CBB-clean-sheet\\data\\processed\\truth\\game_finals_v2.parquet"
+    }
+  },
+  "derived_notes": {
+    "d1_rule": "strict(>=5 conf games through the ingested date) UNION prior-season D-I teams",
+    "d1_flag_changed_by_carry": 0,
+    "d1_flips_backfilled": [],
+    "verified_games_without_cbbd_plays_not_built": 0,
+    "derived_universe": {
+      "verified_games": 1,
+      "d1_not_truncated": 1,
+      "pbp_complete": 1
+    },
+    "machine_diag_v1": {
+      "n_games": 1,
+      "n_mismatch_closes": 1,
+      "n_tech_trips": 1,
+      "n_admin_orebs": 5,
+      "n_unknown_team": 0,
+      "n_games_no_plays": 0,
+      "n_tech_lookahead_hits": 0,
+      "tech_lookahead": 0
+    },
+    "machine_diag_v2": {
+      "n_games": 1,
+      "n_mismatch_closes": 1,
+      "n_tech_trips": 1,
+      "n_admin_orebs": 5,
+      "n_unknown_team": 0,
+      "n_games_no_plays": 0,
+      "n_tech_lookahead_hits": 0,
+      "tech_lookahead": 0
+    },
+    "ft_trip_id_offset": 128808,
+    "derived_seconds": 5.2
+  },
+  "hoopr_sources": {
+    "schedules_2027": {
+      "source": "https://raw.githubusercontent.com/sportsdataverse/hoopR-mbb-data/main/mbb/schedules/parquet/mbb_schedule_2027.parquet",
+      "bytes": 429012,
+      "etag": "W/\"1acf3489dc7c7bbcf03c21b9515017e50d388730d8570432a3f4d19c01384c65\"",
+      "http_date": "Mon, 02 Nov 2026 12:00:12 GMT",
+      "last_modified": null,
+      "fetched_at": "2026-11-02 12:00:12.429050+00:00",
+      "rows": 6069
+    },
+    "team_box_2027": {
+      "source": "https://raw.githubusercontent.com/sportsdataverse/hoopR-mbb-data/main/mbb/team_box/parquet/team_box_2027.parquet",
+      "bytes": 24678,
+      "etag": "W/\"5891d83d749a7a6bd9fd1232e8aebbd3dfeef9a7196e4987f55d914ea7ce8a32\"",
+      "http_date": "Mon, 02 Nov 2026 12:00:14 GMT",
+      "last_modified": null,
+      "fetched_at": "2026-11-02 12:00:14.458423+00:00",
+      "rows": 6
+    },
+    "player_box_2027": {
+      "source": "https://raw.githubusercontent.com/sportsdataverse/hoopR-mbb-data/main/mbb/player_box/parquet/player_box_2027.parquet",
+      "bytes": 27160,
+      "etag": "W/\"3c3a6d697e2134e8adc7700d0967528947e77754350a768727f117a2df0a223b\"",
+      "http_date": "Mon, 02 Nov 2026 12:00:14 GMT",
+      "last_modified": null,
+      "fetched_at": "2026-11-02 12:00:14.944365+00:00",
+      "rows": 93
+    },
+    "pbp_2027": {
+      "source": "https://raw.githubusercontent.com/sportsdataverse/hoopR-mbb-data/main/mbb/pbp/parquet/play_by_play_2027.parquet",
+      "bytes": 80241,
+      "etag": "W/\"3230478372b36bcaa64b7c722225ad371d7b58d4532fd7a3fc4a24b8e4545432\"",
+      "http_date": "Mon, 02 Nov 2026 12:00:15 GMT",
+      "last_modified": null,
+      "fetched_at": "2026-11-02 12:00:15.540902+00:00",
+      "rows": 1482
+    },
+    "shots_2027": {
+      "source": "https://raw.githubusercontent.com/sportsdataverse/hoopR-mbb-data/main/mbb/shots/parquet/shots_2027.parquet",
+      "bytes": 14872,
+      "etag": "W/\"dcc3f73e98c713b185a4959e00dabe4030037cb4c9991780ec567f71db8c4f2c\"",
+      "http_date": "Mon, 02 Nov 2026 12:00:22 GMT",
+      "last_modified": null,
+      "fetched_at": "2026-11-02 12:00:22.776652+00:00",
+      "rows": 461
+    }
+  },
+  "cbbd_calls_total": 4,
+  "cbbd_calls": [
+    {
+      "endpoint": "/games",
+      "params": {
+        "season": 2027,
+        "startDateRange": "2026-10-31T00:00:00Z",
+        "endDateRange": "2026-11-03T23:59:59Z"
+      },
+      "rows": 185,
+      "remaining_after": 29942,
+      "at": "2026-11-02 12:00:13.845641+00:00",
+      "seconds": 1.4
+    },
+    {
+      "endpoint": "/plays/date",
+      "params": {
+        "date": "2026-11-01"
+      },
+      "rows": 533,
+      "remaining_after": 29941,
+      "at": "2026-11-02 12:00:19.288625+00:00",
+      "seconds": 3.7
+    },
+    {
+      "endpoint": "/plays/date",
+      "params": {
+        "date": "2026-11-02"
+      },
+      "rows": 493,
+      "remaining_after": 29940,
+      "at": "2026-11-02 12:00:20.987229+00:00",
+      "seconds": 1.5
+    },
+    {
+      "endpoint": "/games/teams",
+      "params": {
+        "season": 2027,
+        "startDateRange": "2026-10-31T00:00:00Z",
+        "endDateRange": "2026-11-03T23:59:59Z"
+      },
+      "rows": 6,
+      "remaining_after": 29939,
+      "at": "2026-11-02 12:00:22.233631+00:00",
+      "seconds": 1.0
+    }
+  ],
+  "cbbd_quota_remaining_last": 29939,
+  "pending_list": [
+    {
+      "game_id": "401920409",
+      "cbbd_game_id": "377910",
+      "game_date": "2026-11-01",
+      "reason": "awaiting_data",
+      "detail": "cbbd_plays"
+    }
+  ],
+  "n_out_of_scope_non_d1": 0,
+  "finished_at": "2026-11-02 12:00:29.784045+00:00",
+  "seconds": 18.0
+}

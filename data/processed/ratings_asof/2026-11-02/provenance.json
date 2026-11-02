@@ -15,8 +15,8 @@
   },
   "teams_source": "cbbd:C:\\Users\\devuser\\CBB-clean-sheet\\data\\raw\\preseason\\2027_v2_20260930\\games_2027.parquet|C:\\Users\\devuser\\CBB-clean-sheet\\data\\reference\\team_crosswalk_v2.parquet",
   "n_teams": 365,
-  "n_source_games_in_season": 0,
-  "latest_source_game_date": null,
+  "n_source_games_in_season": 1,
+  "latest_source_game_date": "2026-11-01",
   "prior_chain_seasons": [
     2022,
     2023,
@@ -26,7 +26,7 @@
   ],
   "chain_start": 2022,
   "prior_carry": "season-1 FINAL fit, weight 0.80 (eff) / 0.80 (tempo)",
-  "seconds": 8.4,
+  "seconds": 8.6,
   "policy": "manifest_uniform",
   "choices": {
     "seal_lift_approved": false,

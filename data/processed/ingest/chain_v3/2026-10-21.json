@@ -1,0 +1,151 @@
+{
+  "stages": [
+    {
+      "name": "schedule",
+      "status": "ok",
+      "detail": {
+        "cbbd_games_today": 0,
+        "cbbd_games_yesterday": 0,
+        "hoopr_games_today": 0,
+        "hoopr_games_yesterday": 0,
+        "id_overlap_today": 0,
+        "output": "C:\\Users\\devuser\\CBB-clean-sheet\\data\\raw\\schedule_daily\\2026-10-21.parquet"
+      },
+      "error": null,
+      "seconds": 5.077999999979511
+    },
+    {
+      "name": "tips",
+      "status": "ok",
+      "detail": {
+        "season": 2027,
+        "window": [
+          "2026-11-02",
+          "2026-11-02"
+        ],
+        "n_games": 196,
+        "n_placeholder": 73,
+        "n_real": 123,
+        "by_source": {
+          "cbbd": 115,
+          "cbbd_placeholder_midnight_et": 73,
+          "cbbd+hoopr_min": 8
+        },
+        "n_real_sources_disagree_gt5min": 1,
+        "hoopr_available": true,
+        "fetched_at": "2026-10-22 00:00:08.879259+00:00",
+        "latest": "C:\\Users\\devuser\\CBB-clean-sheet\\data\\processed\\ingest\\tip_times_2027.parquet"
+      },
+      "error": null,
+      "seconds": 2.0160000000614673
+    },
+    {
+      "name": "lines",
+      "status": "ok",
+      "detail": {
+        "open_rows": 0,
+        "close_rows": 0,
+        "output": "C:\\Users\\devuser\\CBB-clean-sheet\\data\\raw\\lines_daily\\2026-10-21.parquet",
+        "total_rows_in_file_after_run": 0
+      },
+      "error": null,
+      "seconds": 1.25
+    },
+    {
+      "name": "lines_snapshot",
+      "status": "ok",
+      "detail": {
+        "snapshot": {
+          "rc": 0,
+          "out": "{\"date\": \"2026-11-02\", \"captured_at\": \"2026-10-22 00:00:10+00:00\", \"espn_events\": 18, \"espn_rows\": 0, \"cbbd_games\": 181, \"cbbd_rows\": 0, \"rows_added\": 0}\n"
+        },
+        "open_close": {
+          "rc": 0,
+          "out": "no snapshots or no tip table; nothing built\n"
+        }
+      },
+      "error": null,
+      "seconds": 4.702999999979511
+    },
+    {
+      "name": "lines_probe",
+      "status": "ok",
+      "detail": {
+        "rc": 0,
+        "out": ".984\n  },\n  \"ESPN BET\": {\n   \"first_start\": \"2025-11-03 13:00:00+00:00\",\n   \"last_start\": \"2025-12-03 02:30:00+00:00\",\n   \"rows\": 1256,\n   \"spreadOpen_frac\": 0.977,\n   \"totalOpen_frac\": 0.908\n  }\n }\n}\nwrote C:\\Users\\devuser\\CBB-clean-sheet\\data\\processed\\lines\\probe_lines_sources_v1_2026-10-22.json\n"
+      },
+      "error": null,
+      "seconds": 22.405999999959022
+    },
+    {
+      "name": "ingest",
+      "status": "ok",
+      "detail": {
+        "rc": 0,
+        "season": 2027,
+        "date": "2026-10-20",
+        "verified_finals": 0,
+        "pending_list": 0,
+        "schedule_rows_for_date": 0,
+        "hoopr_schedule_download": {
+          "source": "https://raw.githubusercontent.com/sportsdataverse/hoopR-mbb-data/main/mbb/schedules/parquet/mbb_schedule_2027.parquet",
+          "bytes": 133319,
+          "etag": "W/\"1cb1891efd1a9219337907c20bfb64c07b73c4191599b7863a32647a382934a1\"",
+          "rows": 1629,
+          "fetched_at": "2026-10-22 00:00:39.023274+00:00"
+        },
+        "hoopr_dataset_http_status": {
+          "schedules": 200,
+          "team_box": 404,
+          "player_box": 404,
+          "pbp": 404,
+          "shots": 404
+        },
+        "ingest_cbbd_calls": 0
+      },
+      "error": null,
+      "seconds": 3.9840000001713634
+    },
+    {
+      "name": "ratings",
+      "status": "ok",
+      "detail": {
+        "rows": 365,
+        "policy": "manifest_uniform",
+        "out": "C:\\Users\\devuser\\CBB-clean-sheet\\data\\processed\\ratings_asof\\2026-11-02",
+        "dry_run": false
+      },
+      "error": null,
+      "seconds": 8.546999999787658
+    },
+    {
+      "name": "kenpom",
+      "status": "skipped",
+      "detail": {
+        "why": "audit gap 10: PM decision"
+      },
+      "error": null,
+      "seconds": 0.0
+    },
+    {
+      "name": "rosters",
+      "status": "skipped",
+      "detail": {
+        "why": "not due: last pull 2026-10-15 (6 d ago, cadence 7 d)"
+      },
+      "error": null,
+      "seconds": 0.0
+    },
+    {
+      "name": "injuries",
+      "status": "error",
+      "detail": {
+        "traceback": "Traceback (most recent call last):\n  File \"C:\\Users\\devuser\\CBB-clean-sheet\\scripts\\chain_daily_v2.py\", line 127, in run_stage\n    out = fn() or {}\n          ^^^^\n  File \"C:\\Users\\devuser\\CBB-clean-sheet\\scripts\\chain_daily_v3.py\", line 331, in <lambda>\n    (\"injuries\", lambda: CD.step_injuries(cctx)),\n                         ^^^^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\devuser\\CBB-clean-sheet\\scripts\\chain_daily.py\", line 513, in step_injuries\n    r.raise_for_status()\n  File \"C:\\Users\\devuser\\CBB-clean-sheet\\.venv\\Lib\\site-packages\\requests\\models.py\", line 1167, in raise_for_status\n    raise HTTPError(http_error_msg, response=self)\nrequests.exceptions.HTTPError: 504 Server Error: Gateway Time-out for url: https://www.covers.com/sport/basketball/ncaab/injuries\n"
+      },
+      "error": "HTTPError: 504 Server Error: Gateway Time-out for url: https://www.covers.com/sport/basketball/ncaab/injuries",
+      "seconds": 10.5
+    }
+  ],
+  "cbbd_calls_chain": 5,
+  "clock": "2026-10-22 00:00:01.932726+00:00"
+}
