@@ -419,11 +419,14 @@ def price(tab: Tables, t: float, m: np.ndarray, s: np.ndarray):
 
 
 def win_prob(rm: np.ndarray, m: np.ndarray) -> np.ndarray:
-    """P(m + remaining margin > 0), floored/capped at per-mille resolution."""
+    """P(m + remaining margin > 0), push (exact zero) counted as half like the client's pAbove; per-mille floor/cap."""
     cdf = np.cumsum(rm, axis=1)
     idx = np.clip(-np.asarray(m) + RM_OFF, -1, RM_N - 1)        # P(rem <= -m) = cdf[idx]
-    c = np.where(idx < 0, 0.0, cdf[np.arange(len(m)), np.maximum(idx, 0)])
-    return np.clip(1.0 - c, PMIN, PMAX)
+    r = np.arange(len(m))
+    j = np.maximum(idx, 0)
+    c = np.where(idx < 0, 0.0, cdf[r, j])
+    push = np.where((idx >= 0), rm[r, j], 0.0)
+    return np.clip(1.0 - c + 0.5 * push, PMIN, PMAX)
 
 
 def crps_discrete(pmf: np.ndarray, y_idx: np.ndarray) -> np.ndarray:

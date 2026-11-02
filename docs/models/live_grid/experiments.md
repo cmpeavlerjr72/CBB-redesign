@@ -172,3 +172,11 @@ yet `C_*` (= B + late block) wins M2/M3 by a margin that is the late block / exa
 New simplicity order (simplest first): `A_row < A_pool < D_row < D_pool < B_row < B_pool < C_row < C_pool` (the total axis, which has had no
 support in either read, is ranked as the more complex feature). All reads (primary 100-seed, confirmatory, training-size sensitivity, scale) are
 re-run with the 10-arm set; the total-axis gate is then the pair `C_x` vs `D_x` on M2 (and `B_x` vs `A_x`).
+
+## 8e. AMENDMENT: push-as-half in the win probability (grader bug vs the client; disclosed; found after the first full read)
+
+The client prices `pWinA = pCoverA(line 0)` with push counted as half (`pAbove`, `liveGrid.ts`). The grader's `win_prob` counted the exact
+`m + remaining = 0` mass as a loss. That mass is an artefact of pairing a state with an independent remaining distribution (no real final ties),
+about 2% of mass, and it showed up as a uniform ~1.1 point under-prediction of home wins even in-sample (detected by an in-sample consistency
+check, R0 at t=2200: 0.528 vs 0.543). Fix: `P(win) = P(rem > -m) + 0.5 P(rem = -m)`, identical to the client. All reads are re-run; the
+pre-fix reads (kept as `*_noD`/`*_pre8e` result dirs) selected the same arms.
