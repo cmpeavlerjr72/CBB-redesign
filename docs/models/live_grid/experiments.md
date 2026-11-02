@@ -180,3 +180,73 @@ The client prices `pWinA = pCoverA(line 0)` with push counted as half (`pAbove`,
 about 2% of mass, and it showed up as a uniform ~1.1 point under-prediction of home wins even in-sample (detected by an in-sample consistency
 check, R0 at t=2200: 0.528 vs 0.543). Fix: `P(win) = P(rem > -m) + 0.5 P(rem = -m)`, identical to the client. All reads are re-run; the
 pre-fix reads (kept as `*_noD`/`*_pre8e` result dirs) selected the same arms.
+
+## 9. RESULTS (run 2026-11-02, builder worker; grader `scripts/grade_live_grid_v1.py`; raw reports `results/diag/live_grid_bakeoff_v1*/report.md`, gitignored)
+
+All numbers after amendments 8b-8e (client geometry, per-metric reading, D arms, push-as-half). Floors = max-min of the same arm over 4 splits.
+Segments, calibration, per-game and thin-cell tables are in the reports; headline cells below. Lower is better.
+
+### 9.1 Primary: 500 games, 100 train / 25 test seeds, MIN_N = 8 (62,500 game-seeds, 4 splits x 150,000 test rows)
+
+| arm | M1 win log loss | floor | M2 CRPS rem. total | floor | M3 CRPS rem. margin | floor | M1 late (t>=2160) | thin share |
+|---|---|---|---|---|---|---|---|---|
+| R0 (diag) | 0.29937 | 0.0018 | 5.340 | 0.037 | 3.763 | 0.029 | 0.1656 | 0 |
+| A0 (diag, CFB copy) | 0.31293 | 0.0039 | 5.200 | 0.035 | 3.827 | 0.042 | 0.1802 | 0.096 |
+| A_row | 0.31605 | 0.0049 | 5.460 | 0.031 | 3.857 | 0.045 | 0.1788 | 0.091 |
+| A_pool | 0.31812 | 0.0054 | 5.482 | 0.029 | 3.868 | 0.051 | 0.1807 | 0.091 |
+| B_row (A + total axis) | 0.31605 | 0.0049 | 5.455 | 0.047 | 3.857 | 0.045 | 0.1788 | 0.091 |
+| B_pool | 0.31812 | 0.0054 | 5.455 | 0.047 | 3.868 | 0.051 | 0.1807 | 0.091 |
+| D_row (A + late block) | 0.31713 | 0.0042 | 5.219 | 0.033 | 3.851 | 0.044 | 0.1814 | 0.083 |
+| D_pool | 0.31977 | 0.0037 | 5.231 | 0.034 | 3.861 | 0.048 | 0.1846 | 0.147 |
+| C_row (D + total axis) | 0.31713 | 0.0042 | 5.188 | 0.042 | 3.851 | 0.044 | 0.1814 | 0.083 |
+| C_pool | 0.31977 | 0.0037 | 5.190 | 0.042 | 3.861 | 0.048 | 0.1846 | 0.147 |
+
+BEATS (gain > larger floor and better in all 4 splits): D_row beats A_row on M2 (+0.242, 7 floors); D_pool beats A_pool on M2 (+0.251); nothing beats
+anything on M1 or M3. Pooling (`*_pool` vs `*_row`): never beats (M1 worse by 0.002 to 0.003). Total axis: `B` vs `A` and `C` vs `D` on M2
++0.005 / +0.031 (floors 0.03-0.05): NOT beaten, so the total-so-far axis is dropped by the section 6 gate. `A_row` vs `A0`: not beaten at 100 seeds
+(A0 is 0.003 better on M1, 0.26 better on M2 via its fade); at the 2,000-seed scale read A_row beats A0 on M1 (+0.0023, 1.2 floors; True).
+Per-metric reading passes: D_row, C_row, C_pool; **winner (simplest) D_row**; literal one-sided code reading winner A_row (defective, see 8c).
+`R0` beats every state-binned arm on M1 at 100 seeds by 0.017 (9 floors): with 100 seeds, 7 margin bins and 8-seed minimum cells cost more
+variance than the conditioning gains.
+
+### 9.2 Training-size sensitivity (same test set; R0 / A_row / D_row M1)
+25 train seeds: 0.3112 / 0.3711 / 0.3708; 50: 0.3029 / 0.3435 / 0.3455; 100: 0.2994 / 0.3161 / 0.3171; 2,000 (scale read): 0.3213 / 0.3209 / 0.3210
+(different games, see 9.3). The A_row - R0 gap shrinks 0.060 -> 0.041 -> 0.017 -> -0.0004 (a tie) as seeds grow.
+
+### 9.3 SCALE READ (section 8): 20 games x 2,500 seeds, 2,000 train / 500 test, MIN_N = 160, 4 splits, 120,000 test rows per split
+
+| arm | M1 | floor | M2 | floor | M3 | floor | M1 late | floor |
+|---|---|---|---|---|---|---|---|---|
+| R0 | 0.32133 | 0.0018 | 5.371 | 0.086 | 3.725 | 0.022 | 0.18105 | 0.0030 |
+| A0 | 0.32323 | 0.0022 | 5.130 | 0.092 | 3.709 | 0.026 | 0.18751 | 0.0050 |
+| A_row | 0.32094 | 0.0019 | 5.349 | 0.086 | 3.711 | 0.024 | 0.18129 | 0.0027 |
+| A_pool | 0.32034 | 0.0019 | 5.352 | 0.085 | 3.706 | 0.026 | 0.18120 | 0.0028 |
+| B_row | 0.32094 | 0.0019 | 5.358 | 0.075 | 3.711 | 0.024 | 0.18129 | 0.0027 |
+| D_row | 0.32099 | 0.0022 | 5.105 | 0.091 | 3.702 | 0.024 | 0.18141 | 0.0034 |
+| D_pool | 0.32036 | 0.0022 | 5.099 | 0.090 | 3.697 | 0.027 | 0.18124 | 0.0034 |
+| C_row | 0.32099 | 0.0022 | 5.090 | 0.083 | 3.702 | 0.024 | 0.18141 | 0.0034 |
+| C_pool | 0.32036 | 0.0022 | 5.082 | 0.082 | 3.697 | 0.027 | 0.18124 | 0.0034 |
+
+At 2,000 seeds every state-binned arm ties R0 on M1 (differences <= 0.0006, floors 0.002): margin binning neither helps nor hurts the
+win probability; the whole measurable gain is the late block / exact end blend on M2 (D beats A by +0.243, 2.7 floors) and M3 (+0.009, inside
+floors). Pooling: tie (M1 +0.0006, floor 0.002). Total axis: C vs D on M2 +0.015 (floor 0.09), B vs A -0.010: not beaten (dropped). Per-metric
+reading passes D_row, D_pool, C_row, C_pool: **winner D_row**. Per-game M1 (20 games) vs A_row: D_row -0.00005 (SE 0.00012), A_pool +0.0006 (SE 0.0002,
+85% of games better; inside the floor). UNDERPOWERED for game-level claims: 20 games.
+Responsiveness (D_row, t = 240, favourite-strength quintiles q1..q5): mean prediction 0.305 / 0.506 / 0.640 / 0.734 / 0.872 vs actual
+0.308 / 0.515 / 0.641 / 0.737 / 0.878 (slopes with actuals). Calibration deciles (all 48,000-row deciles): predicted vs actual within 0.017 in
+every decile (decile 1: 0.072 vs 0.084; decile 2: 0.276 vs 0.293; decile 9: 0.999 vs 1.000); 20 games, so a first look, not a calibration claim.
+
+### 9.4 Confirmatory (replay394_s50, 394 games, 40 train / 10 test, MIN_N = 3)
+Same winner (D_row); R0 beats binned arms on M1 by 0.06 (3 floors) at this tiny n; D beats A on M2 by +0.24. Not used for selection.
+
+### 9.5 Verdict
+* Exporter default arm = `D_row` (100-seed winner = scale-read winner). `A_row`, `A_pool`, `B_*`, `C_*`, `D_pool` stay behind `--arm`.
+* The total-so-far axis (design B0 hypothesis, slope +0.158 per point of first-half total) is NOT supported at either seed count on M2
+  (CRPS of the remaining total): dropped by the section 6 gate. The file therefore uses margin-keyed total curves (the client's `else` branch).
+* Section 6 `R0` clause: at 2,000 seeds A_row ties R0 on M1 (does not "lose to A_row beyond the floor"), so the literal clause says "conditioning on state
+  does not matter at this seed count; ship the simplest eligible arm with that caveat". The caveat is recorded here and in the exporter doc; the PM
+  decides whether to ship D_row (default, because D beats A_row on M2 beyond floors, an effect that is the late block / exact end, not margin
+  conditioning) or the simplest arm `A_row`. A smoothed conditioner is a possible follow-up round, not entered.
+* Caveats: self-consistency of a slice of the ensemble, not real-game validation; 20-game scale read; calibration deciles at 100 seeds are
+  distorted by thin cells (decile 0: predicted 0.001 / actual 0.014); the first real 2,500-seed daily trajectory should be re-graded with
+  `grade_live_grid_v1.py --tags daily_<date>_<run>` (split by seed) before the owner relies on the live line.

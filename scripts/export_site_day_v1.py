@@ -639,6 +639,17 @@ def build_day(day: str, run_id: str | None = None, root: Path = DAILY_ROOT, stag
             (gdir / name).write_text(json.dumps(doc, separators=(",", ":")), encoding="utf-8")
 
         rel = f"days/{day}/games/{slug}"
+        # Live-odds layer (docs/ops/live_grid_exporter_2026-11-02.md): ONLY when this game's run wrote a trajectory. No file -> nothing
+        # is imported, written or changed. Failure-isolated: a live-file failure never blocks the day bundle.
+        live_path = None
+        traj = Path(root).parent / "trajectories" / f"daily_{day}_{game_run}" / "trajectory.parquet"
+        if traj.exists():
+            try:
+                import export_live_grid_v1 as XL
+                XL.write_game_live(traj, {"game_id": gid, "slug": slug, "teamA": home, "teamB": away}, gg, gdir, game_run, updated)
+                live_path = f"{rel}/live.json"
+            except Exception as e:  # noqa: BLE001
+                gaps.setdefault("live_failed", []).append({"game_id": gid, "slug": slug, "error": f"{type(e).__name__}: {e}"[:300]})
         index_games.append({
             "game_id": gid, "slug": slug, "teamA": home, "teamB": away,
             "A_espn_id": a_espn, "B_espn_id": b_espn,
@@ -646,6 +657,7 @@ def build_day(day: str, run_id: str | None = None, root: Path = DAILY_ROOT, stag
             "summary_path": f"{rel}/summary.json", "compact_path": f"{rel}/compact.json",
             "players_path": f"{rel}/players.json", "players_dist_path": f"{rel}/players_dist.json",
             "seeds_path": f"{rel}/seeds.json",
+            **({"live_path": live_path} if live_path else {}),
         })
         le = lines_entry(gid, home, away, prow, odds, home_pts, away_pts)
         if le is not None:
@@ -815,6 +827,8 @@ def print_report(rep: dict) -> None:
           f"unknown_team={len(gaps['unknown_team'])} missing_lines={len(gaps['missing_lines'])}/{rep['n_games']} "
           f"no_players={len(gaps['no_players'])} missing_sim_rows={len(gaps['missing_sim_rows'])} "
           f"placeholder_tip={len(gaps['placeholder_tip'])} dropped_stats={gaps['dropped_stats']}")
+    if gaps.get("live_failed"):
+        print(f"live files FAILED for {len(gaps['live_failed'])} game(s) (day bundle unaffected): {gaps['live_failed'][:3]}")
 
 
 def main(argv=None) -> int:

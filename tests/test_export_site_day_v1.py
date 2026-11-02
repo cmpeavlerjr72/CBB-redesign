@@ -368,3 +368,88 @@ def test_pinned_football_key_sets_match_the_live_reference_files():
     assert set(d) == FB_DIST and set(d["players"][0]) == FB_DIST_PLAYER
     sd = json.loads((gdir / "seeds.json").read_text())
     assert set(sd) == FB_SEEDS
+
+
+# ------------------------------------------------------------------------------------------------------------------------------
+# live-odds layer wiring (docs/ops/live_grid_exporter_2026-11-02.md): live.json only when the game's run wrote a trajectory
+def _traj_from_games(games: pd.DataFrame, rng, bad: bool = False) -> pd.DataFrame:
+    """Per-possession rows (65 a side, 2 halves) whose last row equals each game-seed's home_pts/away_pts (bad=True: off by one)."""
+    out = []
+    for r in games.itertuples(index=False):
+        h = rng.multinomial(int(r.home_pts) + (1 if bad else 0), np.ones(65) / 65)
+        a = rng.multinomial(int(r.away_pts), np.ones(65) / 65)
+        ch, ca = np.cumsum(h), np.cumsum(a)
+        for i in range(130):
+            side = i % 2
+            hs, as_ = int(ch[i // 2]) if side == 0 else int(ch[i // 2]) , int(ca[i // 2])
+            if side == 0:
+                hs, as_ = int(ch[i // 2]), int(ca[i // 2 - 1]) if i >= 2 else 0
+            else:
+                hs, as_ = int(ch[i // 2]), int(ca[i // 2])
+            per = 1 if i < 65 else 2
+            clock = int(1200 - (i % 65) * 18.4)
+            out.append((int(r.game_id), int(r.seed), i, per, clock, hs, as_))
+    return pd.DataFrame(out, columns=["game_id", "seed", "poss_idx", "period", "clock_start", "home_score", "away_score"])
+
+
+def _clone_with_traj(fixture_root, tmp_path, bad_game: int | None = None):
+    import shutil
+    root0, info = fixture_root
+    root = tmp_path / "daily"
+    shutil.copytree(root0, root)
+    games = pd.read_parquet(root / "sim" / DAY / RUN / "games.parquet")
+    rng = np.random.default_rng(3)
+    parts = [_traj_from_games(g, rng, bad=(bad_game is not None and int(gid) == bad_game)) for gid, g in games.groupby("game_id")]
+    tdir = tmp_path / "trajectories" / f"daily_{DAY}_{RUN}"
+    tdir.mkdir(parents=True)
+    pd.concat(parts).to_parquet(tdir / "trajectory.parquet")
+    return root, info
+
+
+def test_no_trajectory_means_no_live_files_and_unchanged_index(built):
+    stage, rep, info = built
+    assert not list((stage / "2027" / "days").rglob("live.json"))
+    idx = _load(stage, f"days/{DAY}/index.json")
+    assert all(set(g) == CBB_INDEX_GAME for g in idx["games"])            # no live_path key at all
+    assert "live_failed" not in rep["gaps"]
+
+
+def test_trajectory_present_writes_live_json_beside_summary_and_adds_live_path(fixture_root, tmp_path):
+    root, info = _clone_with_traj(fixture_root, tmp_path)
+    stage = tmp_path / "stage"
+    rep = X.build_day(DAY, RUN, root=root, stage_root=stage, roster=X.load_roster(info["roster"], espn_roster=Path("nope")),
+                      espn_ids=info["espn_ids"])
+    assert "live_failed" not in rep["gaps"], rep["gaps"].get("live_failed")
+    idx = _load(stage, f"days/{DAY}/index.json")
+    for g in idx["games"]:
+        assert set(g) == CBB_INDEX_GAME | {"live_path"}
+        assert g["live_path"] == f"days/{DAY}/games/{g['slug']}/live.json"
+        live = _load(stage, g["live_path"])
+        assert live["slug"] == g["slug"] and live["n_sims"] == g["n_sims"] == 40 and live["source_tag"] == RUN
+        assert (stage / "2027" / g["summary_path"]).parent == (stage / "2027" / g["live_path"]).parent
+    # the rest of the bundle is untouched by the live layer
+    base = tmp_path / "stage0"
+    X.build_day(DAY, RUN, root=fixture_root[0], stage_root=base, roster=X.load_roster(info["roster"], espn_roster=Path("nope")),
+                espn_ids=info["espn_ids"])
+    for g in idx["games"]:
+        for f in X.GAME_FILES:
+            a = json.loads((stage / "2027" / f"days/{DAY}/games/{g['slug']}" / f).read_text())
+            b = json.loads((base / "2027" / f"days/{DAY}/games/{g['slug']}" / f).read_text())
+            a.pop("updated", None), b.pop("updated", None)
+            assert a == b, f
+    assert json.loads((stage / "2027" / f"days/{DAY}/lines.json").read_text())["games"].keys() == \
+        json.loads((base / "2027" / f"days/{DAY}/lines.json").read_text())["games"].keys()
+
+
+def test_live_failure_is_isolated_and_logged(fixture_root, tmp_path):
+    root, info = _clone_with_traj(fixture_root, tmp_path, bad_game=401000002)
+    stage = tmp_path / "stage"
+    rep = X.build_day(DAY, RUN, root=root, stage_root=stage, roster=X.load_roster(info["roster"], espn_roster=Path("nope")),
+                      espn_ids=info["espn_ids"])
+    bad = rep["gaps"]["live_failed"]
+    assert len(bad) == 1 and bad[0]["game_id"] == 401000002 and "orientation or run mismatch" in bad[0]["error"]
+    idx = _load(stage, f"days/{DAY}/index.json")
+    by = {g["game_id"]: g for g in idx["games"]}
+    assert "live_path" not in by[401000002] and "live_path" in by[401000001] and len(idx["games"]) == 3
+    assert not (stage / "2027" / f"days/{DAY}/games/{by[401000002]['slug']}/live.json").exists()
+    assert (stage / "2027" / by[401000002]["summary_path"]).exists()
