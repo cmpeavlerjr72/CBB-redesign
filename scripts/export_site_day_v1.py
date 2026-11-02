@@ -8,6 +8,7 @@ football scoreboard reads either. No live.json / live_players.json (the site's l
 
     2027/season_index.json                                   # {sport, season, convention, layout, days: [...]}  MERGED across days
     2027/days/<YYYY-MM-DD>/index.json                        # the day: games list with paths relative to the season prefix
+    2027/days/<YYYY-MM-DD>/lines.json                        # betting-record strip input (football week lines.json shape)
     2027/days/<YYYY-MM-DD>/games/<slug>/summary.json         # headline numbers + odds (+ finals once the grade ledger has them)
     2027/days/<YYYY-MM-DD>/games/<slug>/compact.json         # score quantiles (1..99) + histograms + per-seed series
     2027/days/<YYYY-MM-DD>/games/<slug>/players.json         # per-player stat summaries (mean, p10..p90)
@@ -285,6 +286,51 @@ def odds_block(prow: pd.Series | None, lines: pd.DataFrame | None, cbbd_game_id:
 
 
 # ------------------------------------------------------------------------------------------------ per-game builders
+def lines_entry(gid: int, home: str, away: str, prow, odds: dict, home_pts: np.ndarray, away_pts: np.ndarray) -> dict | None:
+    """One game of the day's lines.json (the football week `lines.json` shape, parsed by the site's weekLines.ts): home-POV
+    spread/total with open/close, american ML, and the sim's own side probabilities at each line, computed from the same seed
+    series the compact file carries (push excluded from a side, so a pair can sum below 1; ML = A_win_prob, ties split).
+    None when the game carries no stored line at all."""
+    if prow is None or (odds["spread_current"] is None and odds["over_under_current"] is None):
+        return None
+
+    def g(col):
+        v = prow.get(col, np.nan) if col in prow.index else np.nan
+        return None if v is None or pd.isna(v) else float(v)
+
+    n_prov = int(odds["provider_count"]) or 1
+    sp_c, sp_o = g("spread"), g("spread_open")
+    to_c, to_o = g("total"), g("total_open")
+    sp_o = sp_c if sp_o is None else sp_o
+    to_o = to_c if to_o is None else to_o
+    hm, am = g("home_ml"), g("away_ml")
+    margin, total = home_pts - away_pts, home_pts + away_pts
+    n = len(margin)
+
+    def spread_p(line):
+        return None if line is None else {"home": jnum(float((margin + line > 0).sum() / n)),
+                                          "away": jnum(float((margin + line < 0).sum() / n))}
+
+    def total_p(line):
+        return None if line is None else {"over": jnum(float((total > line).sum() / n)),
+                                          "under": jnum(float((total < line).sum() / n))}
+
+    p_home = float((margin > 0).mean() + 0.5 * (margin == 0).mean())
+    return {
+        "game_id": gid, "teamA": home, "teamB": away,
+        "spread": {"open": jnum(sp_o), "close": jnum(sp_c), "n_open": n_prov if sp_o is not None else 0,
+                   "n_close": n_prov if sp_c is not None else 0},
+        "total": {"open": jnum(to_o), "close": jnum(to_c), "n_open": n_prov if to_o is not None else 0,
+                  "n_close": n_prov if to_c is not None else 0},
+        # the stored ML is the publish-time price (ml_is_close_proxy): open and close are the same snapshot
+        "ml": {"home_open": jnum(hm), "away_open": jnum(am), "home_close": jnum(hm), "away_close": jnum(am),
+               "n_open": n_prov if hm is not None else 0, "n_close": n_prov if hm is not None else 0},
+        "sim": {"n": int(n), "spread": {"open": spread_p(sp_o), "close": spread_p(sp_c)},
+                "total": {"open": total_p(to_o), "close": total_p(to_c)},
+                "ml": {"home": jnum(p_home), "away": jnum(1 - p_home)}},
+    }
+
+
 def build_compact(home_pts: np.ndarray, away_pts: np.ndarray) -> dict:
     """Verbatim football `build_compact`: 1..99 quantiles, 2-point histograms, per-seed integer series."""
     margin = home_pts - away_pts          # home minus away
@@ -487,6 +533,7 @@ def build_day(day: str, run_id: str | None = None, root: Path = DAILY_ROOT, stag
     (day_dir / "games").mkdir(parents=True, exist_ok=True)
     updated = datetime.now(timezone.utc).replace(microsecond=0).isoformat()
 
+    lines_games: dict[str, dict] = {}
     index_games, report, gaps = [], [], {"missing_espn_id": [], "unnamed": [], "unknown_team": [], "missing_lines": [],
                                          "no_players": [], "missing_sim_rows": [], "placeholder_tip": [],
                                          "dropped_stats": list(dropped_stats)}
@@ -600,9 +647,20 @@ def build_day(day: str, run_id: str | None = None, root: Path = DAILY_ROOT, stag
             "players_path": f"{rel}/players.json", "players_dist_path": f"{rel}/players_dist.json",
             "seeds_path": f"{rel}/seeds.json",
         })
+        le = lines_entry(gid, home, away, prow, odds, home_pts, away_pts)
+        if le is not None:
+            lines_games[slug] = le
         report.append({"slug": slug, "game_id": gid, "n_sims": n_sims, "players": len(psum), "seed_cols": len(series),
                        "providers": odds["provider_count"], "sizes": {f: (gdir / f).stat().st_size for f in GAME_FILES}})
 
+    # lines.json: the site's betting-record strip (Value / +Dogs / By edge / PnL) reads <day>/lines.json (weekLines.ts). `week` is
+    # the YYYYMMDD integer the site's feedPeriod uses for days.
+    (day_dir / "lines.json").write_text(json.dumps({
+        "season": SEASON, "week": int(day.replace("-", "")), "generated_at": updated,
+        "convention": ("spread/total home-POV, negative = home favored; ML american sign; the stored line at publish time "
+                       "(one snapshot: open = the slate's opener where present, close = the publish-time line); sim "
+                       "probabilities are exact over the day's seed series"),
+        "spread_total_price": -110, "sim_tag": run_id, "games": lines_games}, separators=(",", ":")), encoding="utf-8")
     has_open = any(r["providers"] > 0 for r in report)
     day_index = {
         "sport": SPORT, "season": SEASON, "day": day, "label": day_label(day),

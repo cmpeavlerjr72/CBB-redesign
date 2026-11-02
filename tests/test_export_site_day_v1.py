@@ -188,6 +188,25 @@ def test_summary_keys_win_prob_and_odds(built):
                           "open_date": "2026-11-02", "provider_count": 1}
 
 
+def test_lines_json_matches_football_shape_and_sim_probs(built):
+    stage, _, _ = built
+    lj = _load(stage, f"days/{DAY}/lines.json")
+    assert {"season", "week", "generated_at", "convention", "spread_total_price", "games"} <= set(lj)
+    assert lj["season"] == 2027 and lj["week"] == 20261102 and lj["spread_total_price"] == -110
+    assert list(lj["games"]) == ["saintmarys_illinoisstate"]          # only the game with a stored line
+    g = lj["games"]["saintmarys_illinoisstate"]
+    assert set(g) == {"game_id", "teamA", "teamB", "spread", "total", "ml", "sim"}
+    assert g["spread"] == {"open": -2.5, "close": -3.5, "n_open": 1, "n_close": 1}
+    assert g["total"]["close"] == 145.5 and g["total"]["open"] == 145.5
+    c = _load(stage, f"days/{DAY}/games/saintmarys_illinoisstate/compact.json")
+    A, B = np.array(c["A_pts"]), np.array(c["B_pts"])
+    assert g["sim"]["n"] == 40
+    assert g["sim"]["spread"]["close"]["home"] == pytest.approx(float(((A - B) - 3.5 > 0).mean()), abs=1e-4)
+    assert g["sim"]["total"]["close"]["over"] == pytest.approx(float(((A + B) > 145.5).mean()), abs=1e-4)
+    s = _load(stage, f"days/{DAY}/games/saintmarys_illinoisstate/summary.json")
+    assert g["sim"]["ml"]["home"] == pytest.approx(s["A_win_prob"], abs=1e-4)
+
+
 def test_compact_keys(built):
     stage, _, _ = built
     c = _load(stage, f"days/{DAY}/games/hawaii_seattleu/compact.json")
