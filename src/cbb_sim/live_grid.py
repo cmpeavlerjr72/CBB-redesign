@@ -52,17 +52,16 @@ class Arm:
 
 
 ARMS = {
-    "R0": Arm("R0", state=False),
+    "R0": Arm("R0", state=False, kickoff=False),
     "A0": Arm("A0", edges=FOOTBALL_EDGES, exact_end=False, kickoff=False),
-    "A_row": Arm("A_row"),
-    "A_pool": Arm("A_pool", pool="pool"),
-    "B_row": Arm("B_row", total_axis=True),
-    "B_pool": Arm("B_pool", total_axis=True, pool="pool"),
-    "C_row": Arm("C_row", total_axis=True, late_block=True),
-    "C_pool": Arm("C_pool", total_axis=True, late_block=True, pool="pool"),
-    "C_pool2": Arm("C_pool2", total_axis=True, late_block=True, pool="pool2"),
+    "A_row": Arm("A_row", kickoff=False),
+    "A_pool": Arm("A_pool", pool="pool", kickoff=False),
+    "B_row": Arm("B_row", total_axis=True, kickoff=False),
+    "B_pool": Arm("B_pool", total_axis=True, pool="pool", kickoff=False),
+    "C_row": Arm("C_row", total_axis=True, late_block=True, kickoff=False),
+    "C_pool": Arm("C_pool", total_axis=True, late_block=True, pool="pool", kickoff=False),
 }
-ELIGIBLE = ("A_row", "A_pool", "B_row", "B_pool", "C_row", "C_pool", "C_pool2")   # simplicity order
+ELIGIBLE = ("A_row", "A_pool", "B_row", "B_pool", "C_row", "C_pool")   # simplicity order
 
 
 def margin_bin(m, edges):
@@ -262,13 +261,18 @@ def _delta(L: int, i: int) -> np.ndarray:
 @dataclass
 class Tables:
     arm: Arm
-    rows: list
-    mids: np.ndarray
+    rows: list              # coarse rows (20 x 120 s; midpoints 60..2340), client geometry
+    late: list              # 30 s rows (midpoints 2175..2385) or []
+    end: "EndRow | None"
     min_n: int
     n_seeds: int
     uncond_p_win: float
     uncond_total: float
     uncond_margin: float
+
+    @property
+    def mids(self):
+        return np.array([r.mid for r in self.rows])
 
 
 def midstate(gs: GameSeeds, mid: float):
@@ -308,33 +312,21 @@ def _make_row(gs, mid, kind, edges, total_axis, pool, min_n, cache=None, coarse_
     return row
 
 
-def row_mids(arm: Arm):
-    mids = [(i + 0.5) * COARSE_TB for i in range(REG_S // COARSE_TB)]
-    if arm.late_block:
-        mids = [x for x in mids if x < LATE_START] + [LATE_START + (i + 0.5) * LATE_TB for i in range((REG_S - LATE_START) // LATE_TB)]
-    return mids
-
-
 def build_tables(gs: GameSeeds, arm: Arm, min_n: int, league_ot=None, cache=None) -> Tables:
-    """gs must contain TRAIN seeds only. league_ot = (rm_pmf, rt_pmf) fallback for tied-at-2400 OT remainder."""
-    rows = []
-    if arm.kickoff:
-        rows.append(_make_row(gs, 0.0, "kick", (), False, "row", min_n, cache))
-    mids = row_mids(arm)
-    for mid in mids:
-        late = arm.late_block and mid > LATE_START
+    """gs must contain TRAIN seeds only. league_ot = (rm_pmf, rt_pmf) fallback for tied-at-2400 OT remainder.
+    Geometry = the shipped client (B3): 20 coarse rows kept to 2400, late block replaces them from 2160, no kickoff row."""
+    rows, late = [], []
+    for i in range(REG_S // COARSE_TB):
+        mid = (i + 0.5) * COARSE_TB
         if not arm.state:
-            r = _make_row(gs, mid, "coarse", (), False, "row", min_n, cache)
-        elif late:
-            r = _make_row(gs, mid, "late", LATE_EDGES, False, arm.pool, min_n, cache,
-                          coarse_edges=COARSE_EDGES if arm.pool == "pool2" else None)
+            rows.append(_make_row(gs, mid, "coarse", (), False, "row", min_n, cache))
         else:
-            r = _make_row(gs, mid, "coarse", arm.edges, arm.total_axis, arm.pool, min_n, cache)
-        rows.append(r)
-    if arm.exact_end:
-        rows.append(make_end_row(gs, league_ot))
-    return Tables(arm, rows, np.array([r.mid for r in rows]), min_n, gs.S,
-                  float((gs.fm > 0).mean()), float(gs.ft.mean()), float(gs.fm.mean()))
+            rows.append(_make_row(gs, mid, "coarse", arm.edges, arm.total_axis, arm.pool, min_n, cache))
+    if arm.late_block:
+        for i in range((REG_S - LATE_START) // LATE_TB):
+            late.append(_make_row(gs, LATE_START + (i + 0.5) * LATE_TB, "late", LATE_EDGES, False, arm.pool, min_n, cache))
+    end = make_end_row(gs, league_ot) if arm.exact_end else None
+    return Tables(arm, rows, late, end, min_n, gs.S, float((gs.fm > 0).mean()), float(gs.ft.mean()), float(gs.fm.mean()))
 
 
 def make_end_row(gs: GameSeeds, league_ot=None) -> EndRow:
@@ -364,34 +356,58 @@ def league_ot_prior(games: list[GameSeeds]):
 # ---------------------------------------------------------------------------------------------------------------
 # lookup (the client rule): blend the two adjacent rows linearly in elapsed time
 # ---------------------------------------------------------------------------------------------------------------
+def _blend(a, b, w):
+    return tuple((1 - w) * x + w * y for x, y in zip(a, b))
+
+
+def _coarse_at(tab: Tables, el: float, m, s):
+    w = COARSE_TB
+    pos = min(max((el - w / 2) / w, 0.0), len(tab.rows) - 1)
+    lo = int(np.floor(pos))
+    a = tab.rows[lo].cell(m, s)
+    if lo == pos or lo + 1 >= len(tab.rows):
+        return a
+    return _blend(a, tab.rows[lo + 1].cell(m, s), pos - lo)
+
+
+def _late_val(tab: Tables, j: int, m, s):
+    r = tab.late[j]
+    c = r.cell(m, s)
+    if tab.arm.pool == "row":                      # thin late cell omitted -> client falls back to the coarse block
+        inv = c[2] > 0
+        if inv.any():
+            f = _coarse_at(tab, r.mid, m, s)
+            c = tuple(np.where(inv[:, None] if x.ndim == 2 else inv, y, x) for x, y in zip(c, f))
+    return c
+
+
 def price(tab: Tables, t: float, m: np.ndarray, s: np.ndarray):
-    """Vectorised over states at one elapsed t. Returns rm pmf (n,RM_N), rt pmf (n,RT_N), thin (n,), widened (n,)."""
+    """Vectorised over states at one elapsed t, the shipped client's rule. Returns rm pmf (n,RM_N), rt pmf (n,RT_N), thin, widened."""
     m = np.asarray(m)
     s = np.asarray(s)
-    mids = tab.mids
-    rows = tab.rows
-    if t >= mids[-1]:
-        j0 = j1 = len(rows) - 1
-        w = 0.0
-    elif t <= mids[0]:
-        j0 = j1 = 0
-        w = 0.0
-    else:
-        j1 = int(np.searchsorted(mids, t, side="right"))
-        j0 = j1 - 1
-        w = (t - mids[j0]) / (mids[j1] - mids[j0])
-    a = rows[j0].cell(m, s)
-    if j1 != j0 and w > 0:
-        b = rows[j1].cell(m, s)
-        out = tuple((1 - w) * x + w * y for x, y in zip(a, b))
-    else:
-        out = a
-    if (not tab.arm.exact_end) and t > mids[-1]:      # A0: CFB fade to zero over the last 60 s unless tied
-        f = min(1.0, (t - mids[-1]) / 60.0)
+    if tab.end is not None and t >= REG_S:
+        return tab.end.cell(m, s)
+    if tab.late and t >= LATE_START:
+        lw = LATE_TB
+        n = len(tab.late)
+        last_mid = LATE_START + (n - 1) * lw + lw / 2
+        if t >= last_mid:
+            a = _late_val(tab, n - 1, m, s)
+            z = tab.end.cell(m, s)
+            return _blend(a, z, min(max((t - last_mid) / (REG_S - last_mid), 0.0), 1.0))
+        lpos = min(max((t - LATE_START - lw / 2) / lw, 0.0), n - 1)
+        lo = int(np.floor(lpos))
+        a = _late_val(tab, lo, m, s)
+        if lo == lpos:
+            return a
+        return _blend(a, _late_val(tab, lo + 1, m, s), lpos - lo)
+    out = _coarse_at(tab, t, m, s)
+    last_mid = tab.rows[-1].mid
+    if tab.end is None and t > last_mid:               # A0: CFB fade to zero over the last 60 s unless tied
+        f = min(1.0, (t - last_mid) / 60.0)
         tied = (m == 0)[:, None]
-        zr, zt = _delta(RM_N, RM_OFF), _delta(RT_N, 0)
-        rm = np.where(tied, out[0], (1 - f) * out[0] + f * zr[None, :])
-        rt = np.where(tied, out[1], (1 - f) * out[1] + f * zt[None, :])
+        rm = np.where(tied, out[0], (1 - f) * out[0] + f * _delta(RM_N, RM_OFF)[None, :])
+        rt = np.where(tied, out[1], (1 - f) * out[1] + f * _delta(RT_N, 0)[None, :])
         out = (rm, rt, out[2], out[3])
     return out
 

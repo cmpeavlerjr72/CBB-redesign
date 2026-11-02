@@ -135,3 +135,20 @@ the primary read cannot decide the production question. Registered now, BEFORE i
   the 100-seed winner stays selectable behind the flag.
 * Implementation clarification (no change to rules): quantile total-so-far bins can be thin through ties; they take the same thin-cell rule as
   margin bins (time row for `*_row`, neighbour pooling for `*_pool`).
+
+## 8b. AMENDMENT registered 2026-11-02 after the PM message "match the shipped client" (disclosed; before the re-run, after the pre-amendment read)
+
+The site client (monte_site commit 6d2de56, `atStateBb`) fixes the lookup geometry. The grader's lookup is changed to be that client rule, so
+the arm that wins is the arm the file can actually express:
+
+1. No kickoff row (client clamps to the first coarse midpoint). All arms: `kickoff=False`.
+2. Arm C keeps all 20 coarse rows to 2400 (client `coarseAt`); the late block (8 rows, midpoints 2175..2385) replaces the coarse lookup for
+   elapsed >= 2160, interpolating linearly between late midpoints, clamping before 2175, and from 2385 blending toward the exact end row at 2400.
+3. A thin late cell in `C_row` is OMITTED and the client falls back to the coarse block at the late row's midpoint (design wording "thin late
+   cells fall back to the coarse block"); it replaces the earlier "late row all-seeds" rule. `C_pool` pools neighbours inside the late row (cells
+   never omitted). `C_pool2` is DROPPED: its fallback (a coarse partition of the same 30 s row) cannot be expressed in the file.
+4. The coarse total axis keeps the time-row total curve when a total cell is thin (client `time_total_sf`); the margin-keyed `total_sf_margin`
+   fallback is not shipped.
+Eligible arms are now `A_row, A_pool, B_row, B_pool, C_row, C_pool` (simplicity order unchanged). All other rules, data, splits, checkpoints,
+metrics and the section 8 scale read stand. The pre-amendment 100-seed read (kickoff row, C_row late fallback = row, C_pool2) is kept in
+section 9a as an additional record; the post-amendment read is the selection record.

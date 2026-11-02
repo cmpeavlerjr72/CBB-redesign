@@ -182,8 +182,8 @@ def summarise(df: pd.DataFrame, arms: list[str]) -> str:
         L.append("### Pairwise BEATS (X beats Y: mean gain > larger floor and better in every split)\n")
         L.append("| X | Y | M1 | M2 | M3 | mean dM1 | mean dM2 | mean dM3 |")
         L.append("|---|---|---|---|---|---|---|---|")
-        pairs = [("A_pool", "A_row"), ("B_pool", "B_row"), ("C_pool", "C_row"), ("C_pool2", "C_pool"), ("B_row", "A_row"), ("B_pool", "A_pool"),
-                 ("C_row", "B_row"), ("C_pool", "B_pool"), ("C_pool2", "B_pool"), ("A_row", "R0"), ("A_row", "A0")]
+        pairs = [("A_pool", "A_row"), ("B_pool", "B_row"), ("C_pool", "C_row"), ("B_row", "A_row"), ("B_pool", "A_pool"),
+                 ("C_row", "B_row"), ("C_pool", "B_pool"), ("A_row", "R0"), ("A_row", "A0")]
         for x, y in pairs:
             if x in arms and y in arms:
                 L.append(f"| {x} | {y} | " + " | ".join(str(beats(x, y, mn)) for mn in ("M1_logloss", "M2_crps_total", "M3_crps_margin")) + " | " +
