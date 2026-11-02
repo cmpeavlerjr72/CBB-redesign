@@ -152,3 +152,23 @@ the arm that wins is the arm the file can actually express:
 Eligible arms are now `A_row, A_pool, B_row, B_pool, C_row, C_pool` (simplicity order unchanged). All other rules, data, splits, checkpoints,
 metrics and the section 8 scale read stand. The pre-amendment 100-seed read (kickoff row, C_row late fallback = row, C_pool2) is kept in
 section 9a as an additional record; the post-amendment read is the selection record.
+
+## 8c. Reading of the section 6 selection sentence (disclosed; registered after the first post-amendment read)
+
+"Within one floor of that best arm on M1, M2 AND M3" cannot be satisfied by one "best arm" when the metrics disagree (the late block lowers M2/M3
+and the no-late arms are marginally better on M1). Fixed reading, applied to every read and shown beside the literal one-sided code result:
+an arm is eligible to win when, on EACH of M1, M2, M3 and M1-late, it is within the larger of the two arms' floors of the best eligible arm ON THAT
+METRIC. The simplest eligible arm wins. (The literal one-sided code, which lets a better arm always pass, is also printed.)
+
+## 8d. ADDENDUM: two more arms to resolve the total-axis gate (disclosed; registered after the section 8 scale read, BEFORE the arms run)
+
+The scale read and the 100-seed read both show no `B_*` arm beating its `A_*` sibling on M2 (the total-axis gate of section 6 says: drop the axis),
+yet `C_*` (= B + late block) wins M2/M3 by a margin that is the late block / exact end blend, not the total axis. The arm set has no
+"late block without the total axis", so the gate cannot be applied cleanly. Added, defined exactly as `C_*` with `total_axis=False`:
+
+* `D_row` = `A_row` + late block (coarse totals keyed by margin as in A; late rows as in C; thin late cell omitted -> coarse fallback).
+* `D_pool` = `A_pool` + late block (neighbour pooling everywhere).
+
+New simplicity order (simplest first): `A_row < A_pool < D_row < D_pool < B_row < B_pool < C_row < C_pool` (the total axis, which has had no
+support in either read, is ranked as the more complex feature). All reads (primary 100-seed, confirmatory, training-size sensitivity, scale) are
+re-run with the 10-arm set; the total-axis gate is then the pair `C_x` vs `D_x` on M2 (and `B_x` vs `A_x`).
