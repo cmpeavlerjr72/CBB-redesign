@@ -1,5 +1,6 @@
 """Tests for the daily chain v3 stages (sim guard, publish, grade, bias / CLV monitor). Synthetic frames; no engine run."""
 
+import json
 import sys
 from pathlib import Path
 
@@ -166,6 +167,30 @@ def test_lines_provider_preference_and_devig():
 
 
 @pytest.mark.skipif(not (REPO / "data/processed/games_universe.parquet").exists(), reason="needs the games universe")
+def test_sim_stage_parallel_jobs_is_bit_identical_to_single_process(tmp_path):
+    """The sim stage split across worker processes by game (jobs > 1) writes the SAME games / players rows, values and order as the
+    single in-process call: every draw is keyed on (seed, game_id). jobs is not part of the config hash. Tiny replay slate (4 games,
+    2 seeds), 2 workers so the chunk boundary does not line up with the engine's 20-game block."""
+    import run_daily_sim_v1 as SIM
+    kw = dict(seeds=2, now="2025-02-11T14:00:00Z", schedule_source="universe", replay=True, players=True, max_games=4)
+    r1 = SIM.run_sim_stage("2025-02-11", 2025, root=tmp_path / "j1", jobs=1, **kw)
+    r2 = SIM.run_sim_stage("2025-02-11", 2025, root=tmp_path / "j2", jobs=2, **kw)
+    assert r1["n_games"] == r2["n_games"] == 4 and r1["n_rows"] == r2["n_rows"] == 8
+    for name, keys in (("games.parquet", ["game_id", "seed"]), ("players.parquet", ["game_id", "seed", "athlete_id"])):
+        a, b = pd.read_parquet(Path(r1["out"]) / name), pd.read_parquet(Path(r2["out"]) / name)
+        assert list(a.columns) == list(b.columns) and len(a) == len(b) and len(a) > 0
+        assert a.equals(b), f"{name}: raw row order / values differ"
+        a, b = a.sort_values(keys).reset_index(drop=True), b.sort_values(keys).reset_index(drop=True)
+        for c in a.columns:
+            x, y = a[c].to_numpy(), b[c].to_numpy()
+            assert (np.array_equal(x, y, equal_nan=True) if a[c].dtype.kind in "fc" else a[c].equals(b[c])), f"{name}.{c} differs"
+    d1, d2 = (json.loads((Path(r["out"]) / "_DONE.json").read_text(encoding="utf-8")) for r in (r1, r2))
+    assert d1["config_hash"] == d2["config_hash"]
+    m1, m2 = (json.loads((Path(r["out"]) / "run_meta.json").read_text(encoding="utf-8")) for r in (r1, r2))
+    assert m1["adapter_flags"]["ENGINE_EVENT"] == m2["adapter_flags"]["ENGINE_EVENT"] and m1["seeds"] == m2["seeds"]
+
+
+@pytest.mark.skipif(not (REPO / "data/processed/games_universe.parquet").exists(), reason="needs the games universe")
 def test_sim_stage_strict_raises_on_tipped_game_before_any_engine_work(tmp_path):
     import run_daily_sim_v1 as SIM
     with pytest.raises(G.LeakGuardError):
@@ -193,3 +218,28 @@ def test_chain_exit_code_is_nonzero_when_a_stage_crashes():
         raise OSError("disk")
     assert V2.run_stage("ratings", boom, res).status == "error"
     assert C3.exit_code(res) == 1
+
+
+@pytest.mark.skipif(not (REPO / "data/processed/games_universe.parquet").exists(), reason="needs the games universe")
+def test_sim_stage_trajectory_parallel_shards_are_bit_identical(tmp_path):
+    """B1 (2026-11-02): --trajectory-seeds under the parallel path. Per-worker shards merged into trajectory.parquet; games / players
+    identical with the writer off, on single-process, and on 2 / 3 workers; the trajectory rows are identical (sorted on game, seed,
+    poss_idx; global game ids) and shards are gone."""
+    import run_daily_sim_v1 as SIM
+    import shutil
+    kw = dict(seeds=3, now="2025-02-11T14:00:00Z", schedule_source="universe", replay=True, players=True, max_games=4)
+    ra = SIM.run_sim_stage("2025-02-11", 2025, root=tmp_path / "off", jobs=1, **kw)
+    rs = [SIM.run_sim_stage("2025-02-11", 2025, root=tmp_path / f"on{j}", jobs=j, trajectory_seeds=2, run_id=f"pytest_b1_t{j}", **kw) for j in (1, 2, 3)]
+    for name in ("games.parquet", "players.parquet"):
+        base = pd.read_parquet(Path(ra["out"]) / name)
+        for r in rs:
+            assert base.equals(pd.read_parquet(Path(r["out"]) / name)), name
+    key = ["game_id", "seed", "poss_idx"]
+    tr = [pd.read_parquet(r["trajectory"]["path"]).sort_values(key).reset_index(drop=True) for r in rs]
+    assert len(tr[0]) > 0 and tr[0].equals(tr[1]) and tr[0].equals(tr[2])
+    games = pd.read_parquet(Path(ra["out"]) / "games.parquet")
+    assert set(tr[1].game_id) == set(games.game_id) and set(tr[1].seed) == {0, 1}
+    assert {r["trajectory"]["rows"] for r in rs} == {len(tr[0])} and {r["trajectory"]["game_seeds"] for r in rs} == {8}
+    assert not (Path(rs[1]["trajectory"]["path"]).parent / "_shards").exists()
+    for r in rs:
+        shutil.rmtree(Path(r["trajectory"]["path"]).parent, ignore_errors=True)

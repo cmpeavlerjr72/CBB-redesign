@@ -169,10 +169,11 @@ def make_recorder(st: S.GameState, gids: np.ndarray, trajectory_writer=None, see
 class TrajectoryWriter:
     """One parquet file per run (zstd, one row group per chunk). `seed_limit` > 0 records only seeds < N."""
 
-    def __init__(self, path: str | Path, seed_limit: int = 0):
+    def __init__(self, path: str | Path, seed_limit: int = 0, compression_level: int = 9):
         self.path = Path(path)
         self.path.parent.mkdir(parents=True, exist_ok=True)
         self.seed_limit = int(seed_limit)
+        self.compression_level = int(compression_level)
         self._w = None
         self.rows = 0
         self.pairs = 0
@@ -184,7 +185,7 @@ class TrajectoryWriter:
         import pyarrow.parquet as pq
         t = pa.Table.from_pandas(df, preserve_index=False)
         if self._w is None:
-            self._w = pq.ParquetWriter(self.path, t.schema, compression="zstd", compression_level=9)
+            self._w = pq.ParquetWriter(self.path, t.schema, compression="zstd", compression_level=self.compression_level)
         self._w.write_table(t.cast(self._w.schema))
         self.rows += len(df)
         self.pairs += int(df[["game_id", "seed"]].drop_duplicates().shape[0])

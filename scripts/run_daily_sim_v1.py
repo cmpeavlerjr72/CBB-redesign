@@ -150,16 +150,111 @@ def config_hash(cfg: dict) -> str:
     return hashlib.sha1(json.dumps(cfg, sort_keys=True, default=str).encode()).hexdigest()[:12]
 
 
+#: Measured 2026-11-02 (docs/ops/sim_parallel_profile_2026-11-02.md): the engine loop is memory-bandwidth bound, so total throughput
+#: plateaus at ~8-10 workers on this 20-core box (118-127 game-seeds/s at 9-18 workers); more workers only slow each other.
+MAX_DEFAULT_JOBS = 10
+
+
+def default_jobs() -> int:
+    return max(1, min(MAX_DEFAULT_JOBS, (os.cpu_count() or 1) - 2))
+
+
+def _sim_rows_worker(inp, fold: str, season: int, seed_arr: np.ndarray, rows: np.ndarray, players: bool, adir: str,
+                     shard: str | None = None, traj_seed_limit: int = 0):
+    """One worker process: the served engine on game ROWS `rows` of the full input (adapters are row-indexed), every thread pin at 1
+    (this module's import pins them before numpy loads). Returns (games, players | None, adapter flags)."""
+    for _k in ("OMP_NUM_THREADS", "OPENBLAS_NUM_THREADS", "MKL_NUM_THREADS", "NUMEXPR_NUM_THREADS", "LIGHTGBM_NUM_THREADS"):
+        os.environ[_k] = "1"
+    import run_engine_live as RL
+    tw = None
+    if shard:                                                 # this worker's own trajectory shard (whole games, so no (game, seed) is split)
+        from cbb_sim.engine.trajectory import TrajectoryWriter
+        tw = TrajectoryWriter(Path(shard), seed_limit=int(traj_seed_limit), compression_level=3)
+    g, p, ad = RL.simulate(inp, fold, season, seed_arr, keep_players=players, adapter_dir=Path(adir), game_rows=rows, trajectory_writer=tw)
+    shard_info = None
+    if tw is not None:
+        tw.close()
+        shard_info = {"path": str(tw.path) if tw.rows else None, "rows": tw.rows, "pairs": tw.pairs}
+    return g, p, ad.flags, shard_info
+
+
+def merge_trajectory_shards(infos: list, dest: Path) -> dict:
+    """Concatenate the workers' shards (chunk order) into one zstd-3 parquet, check row and (game, seed) counts, delete the shards."""
+    import pyarrow.parquet as pq
+    dest = Path(dest)
+    w, rows, pairs, paths = None, 0, 0, []
+    for si in infos:
+        if si and si["path"]:
+            paths.append(Path(si["path"]))
+            pf = pq.ParquetFile(si["path"])
+            for i in range(pf.num_row_groups):
+                t = pf.read_row_group(i)
+                if w is None:
+                    w = pq.ParquetWriter(dest, t.schema, compression="zstd", compression_level=3)
+                w.write_table(t.cast(w.schema))
+                rows += t.num_rows
+            pf.close()                                   # Windows: an open handle blocks the shard unlink below
+    if w is not None:
+        w.close()
+    want_rows = sum(si["rows"] for si in infos if si)
+    if rows != want_rows:
+        raise RuntimeError(f"trajectory merge: {rows} rows written vs {want_rows} reported by the shards")
+    pairs = sum(si["pairs"] for si in infos if si)       # games are whole per worker, so per-shard pair counts add exactly
+    for p in paths:
+        p.unlink(missing_ok=True)
+    try:
+        paths[0].parent.rmdir() if paths else None
+    except OSError:
+        pass
+    return {"rows": rows, "pairs": pairs}
+
+
+def simulate_parallel(inp, fold: str, season: int, seed_arr: np.ndarray, players: bool, adir: Path, jobs: int, traj_path: Path | None = None,
+                      traj_seed_limit: int = 0):
+    """RL.simulate split by game across `jobs` worker processes: contiguous row chunks in slate order, concatenated back in that
+    order. Draws are keyed on (seed, game_id), so games / players are bit-identical to the single call; the adapter flags are
+    deterministic (env + files) and must agree across workers. Returns (games, players | None, flags)."""
+    from concurrent.futures import ProcessPoolExecutor
+    import multiprocessing as mp
+    n = int(inp.n_games)
+    chunks = [c for c in np.array_split(np.arange(n, dtype=np.int64), min(int(jobs), n)) if len(c)]
+    t0 = time.time()
+    print(f"[sim] parallel: {n} games x {len(seed_arr)} seeds over {len(chunks)} worker processes", flush=True)
+    with ProcessPoolExecutor(max_workers=len(chunks), mp_context=mp.get_context("spawn")) as ex:
+        shards = [str(Path(traj_path).parent / "_shards" / f"part_{k}.parquet") if traj_path else None for k in range(len(chunks))]
+        futs = [ex.submit(_sim_rows_worker, inp, fold, season, seed_arr, c, players, str(adir), shards[k], traj_seed_limit)
+                for k, c in enumerate(chunks)]
+        res = [f.result() for f in futs]                      # in chunk order; a worker exception propagates here
+    flags = res[0][2]
+    for i, (_, _, fl, _) in enumerate(res[1:], 1):
+        if json.dumps(fl, sort_keys=True, default=str) != json.dumps(flags, sort_keys=True, default=str):
+            raise RuntimeError(f"adapter flags differ between worker 0 and worker {i}; refusing to merge")
+    games = pd.concat([r[0] for r in res], ignore_index=True)
+    pframes = [r[1] for r in res if r[1] is not None and len(r[1])]
+    pl = pd.concat(pframes, ignore_index=True) if pframes else None
+    print(f"[sim] parallel: done in {time.time() - t0:.1f}s", flush=True)
+    tm = None
+    if traj_path:
+        t1 = time.time()
+        tm = merge_trajectory_shards([r[3] for r in res], Path(traj_path))
+        print(f"[sim] trajectory shards merged: {tm} in {time.time() - t1:.1f}s", flush=True)
+    return games, pl, flags, tm
+
+
 def run_sim_stage(slate_date: str, season: int, fold: str = "F2", seeds: int = 20, seed_offset: int = 0, now=None,
                   root: Path = D.DAILY_ROOT, run_id: str | None = None, schedule_source: str = "universe",
                   schedule_path: str | None = None, crosswalk: str | None = None, tips: str | None = None,
                   strict: bool = False, force: bool = False, replay: bool = False, players: bool = False,
                   max_games: int = 0, pass_name: str | None = None, ratings_dir: str | None = None,
                   day1_prior: str | None = "auto", extra_input_files: dict | None = None, tip_table: str | None = None,
-                  trajectory_seeds: int = 0) -> dict:
+                  trajectory_seeds: int = 0, jobs: int | None = None) -> dict:
     # trajectory_seeds > 0 (DEFAULT 0 = off) also writes results/trajectories/daily_<date>_<run_id>/trajectory.parquet for seeds < N.
     # It is a side-channel: it is NOT part of the config / inputs hash, and game / player output is identical with it on or off.
+    # jobs (default min(10, cpu_count - 2)): worker processes the slate is split across by game (simulate_parallel). Output is bit-identical
+    # at any jobs, so it is NOT part of the config / inputs hash; jobs == 1 keeps the single in-process call (trajectory shards per worker otherwise).
     t0 = time.time()
+    jobs = default_jobs() if jobs is None else max(1, int(jobs))
+    print(f"[sim] jobs={jobs} (default = min({MAX_DEFAULT_JOBS}, cpu_count - 2) = {default_jobs()}; parallel by game when jobs > 1)", flush=True)
     now = D.utc(now) if now is not None else pd.Timestamp.now("UTC")
     run_id = run_id or D.default_run_id(seeds, seed_offset) + (f"_{pass_name}" if pass_name == "morning" else "")
     out = D.sim_dir(root, slate_date, run_id)
@@ -260,15 +355,25 @@ def run_sim_stage(slate_date: str, season: int, fold: str = "F2", seeds: int = 2
     SBL.attach(inp, out / "_adapter", as_of=now, seeded_sides=getattr(seed_fn, "seeded", None))   # seeded slots: known / shooter zero (harness parity)
     seed_arr = np.arange(seed_offset, seed_offset + seeds, dtype=np.int64)
     tw = None
-    if trajectory_seeds:
-        from cbb_sim.engine.trajectory import TrajectoryWriter
-        tw = TrajectoryWriter(Path("results/trajectories") / f"daily_{slate_date}_{run_id}" / "trajectory.parquet", seed_limit=int(trajectory_seeds))
-    games, pl, ad = RL.simulate(inp, fold, season, seed_arr, keep_players=players, adapter_dir=adir, trajectory_writer=tw)
+    traj_path = Path("results/trajectories") / f"daily_{slate_date}_{run_id}" / "trajectory.parquet" if trajectory_seeds else None
+    par_traj = None
+    if jobs > 1 and int(inp.n_games) > 1:
+        # parallel path (trajectory included since 2026-11-02): each worker writes its own shard, the parent merges them into traj_path
+        games, pl, ad_flags, par_traj = simulate_parallel(inp, fold, season, seed_arr, players, adir, jobs, traj_path, int(trajectory_seeds))
+    else:
+        if trajectory_seeds:
+            from cbb_sim.engine.trajectory import TrajectoryWriter
+            tw = TrajectoryWriter(traj_path, seed_limit=int(trajectory_seeds))
+        games, pl, ad = RL.simulate(inp, fold, season, seed_arr, keep_players=players, adapter_dir=adir, trajectory_writer=tw)
+        ad_flags = ad.flags
     traj_meta = None
-    if tw is not None:
-        tw.close()
-        traj_meta = {"path": str(tw.path), "rows": tw.rows, "game_seeds": tw.pairs, "seed_limit": int(trajectory_seeds),
-                     "bytes": tw.path.stat().st_size if tw.path.exists() else 0}
+    if tw is not None or par_traj is not None:
+        if tw is not None:
+            tw.close()
+        rows_, pairs_ = (tw.rows, tw.pairs) if tw is not None else (par_traj["rows"], par_traj["pairs"])
+        path_ = tw.path if tw is not None else traj_path
+        traj_meta = {"path": str(path_), "rows": rows_, "game_seeds": pairs_, "seed_limit": int(trajectory_seeds),
+                     "bytes": path_.stat().st_size if path_.exists() else 0}
         print(f"[sim] trajectory: {traj_meta}", flush=True)
     games = RL.stamp_rows(games, inp, now, per_game=False)         # created_at + tipoff_utc, asserts created_at < tipoff
     G.assert_created_before_tipoff(games)
@@ -287,7 +392,7 @@ def run_sim_stage(slate_date: str, season: int, fold: str = "F2", seeds: int = 2
             "slate_date": slate_date, "n_games": int(inp.n_games), "n_rows": int(len(games)), "n_skipped_tipped": int(len(late)),
             "runtime_s": round(time.time() - t0, 1), "created_at_before_tipoff_asserted": True, "config_hash": h,
             "inputs_hash": ihash, "inputs_components": icomp, "supersedes": supersedes,
-            "build_diag": {k: v for k, v in diag.items() if not isinstance(v, (dict, list))}, "day1_prior": d1p_meta, "injuries": inj_meta, **prov, "adapter_flags": ad.flags,
+            "build_diag": {k: v for k, v in diag.items() if not isinstance(v, (dict, list))}, "day1_prior": d1p_meta, "injuries": inj_meta, **prov, "adapter_flags": ad_flags,
             "engine_env": {k: v for k, v in os.environ.items() if k.startswith("ENGINE_")}, "trajectory": traj_meta}
     (out / "run_meta.json").write_text(json.dumps(meta, indent=2, default=str), encoding="utf-8")
     done.write_text(json.dumps({"config_hash": h, "inputs_hash": ihash, "inputs_components": icomp,
@@ -326,10 +431,12 @@ def main(argv=None) -> int:
     ap.add_argument("--ratings-dir", default=None, help="dir holding own_ratings_{season}.parquet with the as-of row (default: the stored batch ratings)")
     ap.add_argument("--no-day1-prior", action="store_true",
                     help="season >= 2027 only: build WITHOUT the served A3+R1 day-1 player prior (paired checks; not for serving)")
+    ap.add_argument("--jobs", type=int, default=None,
+                    help=f"worker processes the slate is split across by game (default min({MAX_DEFAULT_JOBS}, cpu_count - 2) = {default_jobs()}); output is identical at any value; 1 = single process")
     a = ap.parse_args(argv)
     r = run_sim_stage(a.slate_date, a.season, a.fold, a.seeds, a.seed_offset, a.now, Path(a.root), a.run_id, a.schedule_source,
                       a.schedule_path, a.crosswalk, a.tips, a.strict, a.force, a.replay, a.players, a.max_games, a.pass_name, a.ratings_dir,
-                      day1_prior=None if a.no_day1_prior else "auto", trajectory_seeds=a.trajectory_seeds)
+                      day1_prior=None if a.no_day1_prior else "auto", trajectory_seeds=a.trajectory_seeds, jobs=a.jobs)
     print(json.dumps(r, default=str))
     return 0
 
