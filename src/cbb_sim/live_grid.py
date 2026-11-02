@@ -58,10 +58,12 @@ ARMS = {
     "A_pool": Arm("A_pool", pool="pool", kickoff=False),
     "B_row": Arm("B_row", total_axis=True, kickoff=False),
     "B_pool": Arm("B_pool", total_axis=True, pool="pool", kickoff=False),
+    "D_row": Arm("D_row", late_block=True, kickoff=False),
+    "D_pool": Arm("D_pool", late_block=True, pool="pool", kickoff=False),
     "C_row": Arm("C_row", total_axis=True, late_block=True, kickoff=False),
     "C_pool": Arm("C_pool", total_axis=True, late_block=True, pool="pool", kickoff=False),
 }
-ELIGIBLE = ("A_row", "A_pool", "B_row", "B_pool", "C_row", "C_pool")   # simplicity order
+ELIGIBLE = ("A_row", "A_pool", "D_row", "D_pool", "B_row", "B_pool", "C_row", "C_pool")   # simplicity order
 
 
 def margin_bin(m, edges):
@@ -247,6 +249,10 @@ class EndRow:
 
     def cell(self, m: np.ndarray, s: np.ndarray):
         tied = (m == 0)[:, None]
+        if self.ot_rm is None:
+            if tied.any():
+                raise ValueError("tied at the horn but fewer than 3 tied seeds and no league OT prior")
+            return (np.repeat(self.zero_rm[None, :], len(m), 0), np.repeat(self.zero_rt[None, :], len(m), 0), np.zeros(len(m)), np.zeros(len(m)))
         return (np.where(tied, self.ot_rm[None, :], self.zero_rm[None, :]),
                 np.where(tied, self.ot_rt[None, :], self.zero_rt[None, :]),
                 np.zeros(len(m)), np.zeros(len(m)))
@@ -338,7 +344,7 @@ def make_end_row(gs: GameSeeds, league_ot=None) -> EndRow:
         return EndRow(float(REG_S), _pmf(np.bincount(om, minlength=RM_N).astype(float)),
                       _pmf(np.bincount(ot_, minlength=RT_N).astype(float)), n, False)
     if league_ot is None:
-        raise ValueError("fewer than 3 tied-at-2400 seeds and no league OT prior supplied")
+        return EndRow(float(REG_S), None, None, n, False)       # tied-at-the-horn cannot be priced: cell() raises if asked
     return EndRow(float(REG_S), league_ot[0], league_ot[1], n, True)
 
 

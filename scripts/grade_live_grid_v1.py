@@ -168,21 +168,28 @@ def summarise(df: pd.DataFrame, arms: list[str]) -> str:
     verdict = {}
     if elig:
         best = min(elig, key=lambda a: tab[(a, "M1_logloss")].mean())
-        ok = []
+        ok = []      # literal reading: one-sided distance to the best-M1 arm (defective: a better arm always passes)
+        ok2 = []     # per-metric reading (8c): within one floor of the best arm on EACH of M1, M2, M3, M1-late
+        mets = ("M1_logloss", "M2_crps_total", "M3_crps_margin", "M1_late")
+        bestm = {mn: min(elig, key=lambda a: tab[(a, mn)].mean()) for mn in mets}
         for a in elig:
-            within = all(tab[(a, mn)].mean() - tab[(best, mn)].mean() <= max(fl[(a, mn)], fl[(best, mn)])
-                         for mn in ("M1_logloss", "M2_crps_total", "M3_crps_margin"))
+            within = all(tab[(a, mn)].mean() - tab[(best, mn)].mean() <= max(fl[(a, mn)], fl[(best, mn)]) for mn in mets[:3])
             late_veto = (tab[(a, "M1_late")].mean() - tab[(best, "M1_late")].mean()) > max(fl[(a, "M1_late")], fl[(best, "M1_late")])
             if within and not late_veto:
                 ok.append(a)
-        winner = ok[0] if ok else best
-        verdict = {"best_M1": best, "winner": winner, "within_floor_no_veto": ok}
-        L.append(f"\nBest M1 among eligible: `{best}`. Within one floor on M1, M2, M3 and no late-block veto: {ok}. "
-                 f"**WINNER (simplest of those): `{winner}`**.\n")
+            if all(tab[(a, mn)].mean() - tab[(bestm[mn], mn)].mean() <= max(fl[(a, mn)], fl[(bestm[mn], mn)]) for mn in mets):
+                ok2.append(a)
+        winner_literal = ok[0] if ok else best
+        winner = ok2[0] if ok2 else best
+        verdict = {"best_M1": best, "winner_literal_one_sided": winner_literal, "winner": winner,
+                   "within_floor_per_metric": ok2, "best_per_metric": bestm}
+        L.append(f"\nBest M1 among eligible: `{best}`. Literal one-sided reading passes {ok} (winner `{winner_literal}`). "
+                 f"Per-metric reading (within one floor of the best arm on EACH of M1, M2, M3, M1-late) passes {ok2}. "
+                 f"**WINNER (simplest of those): `{winner}`**; best per metric {bestm}.\n")
         L.append("### Pairwise BEATS (X beats Y: mean gain > larger floor and better in every split)\n")
         L.append("| X | Y | M1 | M2 | M3 | mean dM1 | mean dM2 | mean dM3 |")
         L.append("|---|---|---|---|---|---|---|---|")
-        pairs = [("A_pool", "A_row"), ("B_pool", "B_row"), ("C_pool", "C_row"), ("B_row", "A_row"), ("B_pool", "A_pool"),
+        pairs = [("A_pool", "A_row"), ("B_pool", "B_row"), ("C_pool", "C_row"), ("B_row", "A_row"), ("B_pool", "A_pool"), ("D_row", "A_row"), ("D_pool", "A_pool"), ("C_row", "D_row"), ("C_pool", "D_pool"), ("D_pool", "D_row"),
                  ("C_row", "B_row"), ("C_pool", "B_pool"), ("A_row", "R0"), ("A_row", "A0")]
         for x, y in pairs:
             if x in arms and y in arms:
