@@ -1,0 +1,474 @@
+                  KALSHI MEMBER AGREEMENT
+
+PLEASE CAREFULLY READ AND MAKE SURE YOU UNDERSTAND THIS ENTIRE MEMBER
+AGREEMENT ("AGREEMENT"), INCLUDING ALL DOCUMENTS INCORPORATED BY
+REFERENCE, BEFORE YOUR CREATION AND USE OF A KALSHI ACCOUNT. CLICKING THE
+BUTTON TO CONTINUE PAST THIS AGREEMENT IS THE LEGAL EQUIVALENT OF
+MANUALLY SIGNING AND AGREEING TO BE BOUND BY THIS AGREEMENT.
+
+I.  Introduction
+
+Welcome to KalshiEX, LLC ("Kalshi" or the "Exchange"), a U.S. Commodity Futures Trading
+Commission ("CFTC") designated contract market ("DCM"). This Agreement sets out the terms and
+conditions pursuant to which an individual or entity ("You", "Your" in the possessive form)) may acquire
+trading privileges on the Exchange. You must read and accept this Agreement, including all documents
+incorporated by reference, to trade on the Exchange.
+
+II. Services
+
+Kalshi will provide You with access to a platform for trade execution (the "Platform") as provided in the
+Kalshi Rulebook and as required by the CFTC and applicable law, as well as related services ("the
+Services"). Your access to and use of the Services is fully and exclusively subject to your acceptance of
+and compliance with this Agreement, the Kalshi Klear Self-Clearing Member Agreement, the
+KalshiEX Rulebook, the Kalshi Klear Rulebook, and any other terms and agreements duly posted by on
+https://kalshi.com/regulatory or otherwise (together the "Terms"). Services may include, but are not limited
+to: facilitating the funding of a trading account on the Platform; facilitating withdrawals from a trading
+account on the Platform; facilitating the purchase of assets on the Platform; and facilitating the sale of assets
+on the Platform. Each of the Services is distinct, fully rendered and delivered upon completion, and not
+subject to cancellation, refund, return, reimbursement, rollback, or any other form of reversal other than as
+explicitly specified in the KalshiEX Rulebook.
+
+III. Event Contracts Trading Risk Disclosure
+
+There are numerous risks associated with trading on Kalshi and you hereby acknowledge and assume
+those risks. The risk of loss in trading Event Contract on Kalshi can be substantial and is a highly
+speculative activity involving volatile markets. Trading may also incur fees, which will add to losses
+and may significantly reduce earnings. Each Event Contract listed on the Exchange has specific rules
+that dictate, in addition to the Kalshi rulebook, terms including trading period, settlement, payout,
+outcome determination, among others. You are responsible for reading, understanding, and
+accepting the terms of an Event Contract prior to trading.
+
+IV. Electronic Trading Risk Disclosure
+
+Trading through the internet or other dedicated lines of communication involves many interrelated systems,
+including hardware, software, telephonic, cable, and power generation, all of which are subject to failure
+or malfunction that may adversely affect the ability to trade, place or cancel orders, and see market data. In
+the event that the Kalshi system becomes unavailable, for a period of time, it may not be possible to enter
+new orders, execute existing orders, modify or cancel orders that were previously entered, or access
+market data. Although Kalshi and its third party provider(s) have taken precautions to prevent such an
+occurrence, if the Kalshi System or one of its components suffers a catastrophic failure, orders and their
+priority in the order queue may be lost. Kalshi bears no responsibility or liability for any effect on the ability
+to trade caused by any of the foregoing. You understand that at various times trading of a particular Event
+Contract on Kalshi may cease due to a lack of bids or offers and, on certain specific trading dates, an Event
+Contract will expire pursuant to its terms even if the Kalshi System is not accessible. You freely assume
+these risks and hold Kalshi, the Parent Company, their affiliates and their respective directors, officers,
+employees, agents harmless against any such losses resulting from these risks.
+
+V. Member Obligations and Consent to Jurisdiction of Kalshi
+
+A.  You shall pay the fees and charges for the Services as specified from time to time on
+
+the Kalshi website ("Website"). Kalshi will post written notice of any changes to fees on the Website prior
+
+to implementing the changes.
+
+B.  You will be bound by, and comply with, the rules and regulations established by Kalshi
+
+applicable to the Services contained in the Kalshi rules (as supplemented or amended from time to time, the
+
+"Kalshi Rulebook"). In the event of any conflict between this Agreement and the Kalshi Rulebook, the
+
+Kalshi Rulebook will govern.
+
+C.  You hereby consent and are subject to the jurisdiction of Kalshi and its Terms. Upon
+
+the prior written request of Kalshi, You will promptly (within five Business Days, as defined in the Kalshi
+
+Rulebook) provide to Kalshi any such information as may be deemed necessary for its fulfillment of these
+
+Services. You hereby acknowledge and agree that You have received and read the Kalshi Rulebook.
+
+D.  You hereby agree and consent that Kalshi may utilize a Derivatives Clearing
+
+Organization ("DCO") of its choosing for clearing services so long as that DCO is registered by and remains
+
+in good standing with the CFTC. In the event that Kalshi determines to change from one DCO to another,
+
+You hereby agree, unless You provide affirmative notice to the Exchange otherwise and timely close your
+
+count, that You consent to the change, and You consent to the movement of Your positions and Your funds
+
+from one DCO to another.
+
+E.  You hereby agree that You will not allow any person not identified to Kalshi to access
+
+or use these Services.
+
+VI. Representations and Warranties
+
+You hereby represent, warrant and covenant to Kalshi, and each time You enter an order, effect a transaction
+or otherwise use the Services, You will be deemed by such act to represent, warrant and covenant to Kalshi,
+that: if You are not a natural person, You are duly organized, validly existing and in good standing under
+the laws of Your jurisdiction of organization and each other jurisdiction in which the nature or conduct
+of Your business requires such qualification; if You are an individual, You are of the age of majority in
+Your state of residence; You have all requisite legal authority and capacity to enter into this Agreement and
+to use the Services on Your own behalf and to perform Your obligations as a Member; You are and will be
+in compliance with all material respects of the CEA, CFTC regulations and all other applicable laws, rules,
+regulations, judgments, orders and rulings of any governmental authority or self-regulatory organization,
+authority, agency, court or body, including the laws of any jurisdiction applicable to an order or transaction
+(collectively, "Applicable Law") (including data protection and privacy laws and laws with respect to
+recording messages of Member employees, including providing and obtaining required notices or consents);
+and You are not statutorily disqualified from acting as a Member and there is no pending, or to the best of
+Your knowledge threatened, any action, suit or proceeding before or by any court or other governmental,
+regulatory or self-regulatory body to which it is a party that seeks to affect the enforceability of this
+Agreement or Your ability to act as a Member.
+
+As used in this Agreement, "Event Contracts" means any contract listed on the Exchange that is based upon
+or references the outcome of an event or events. You hereby represent, warrant, and covenant to Kalshi that
+You are not domiciled in, organized in, or located in any jurisdiction in which trading Event Contracts on
+the Platform is prohibited under Applicable Law or by Kalshi policy.
+
+Without limiting the foregoing, You acknowledge and agree that You are prohibited from trading Event
+Contracts on the Platform if You are domiciled in, organized in, or located in any of the following
+jurisdictions (collectively, the "Restricted Jurisdictions"): Afghanistan, Algeria, Angola, Australia, Belarus,
+Belgium, Bolivia, Bulgaria, Burkina Faso, Cameroon, Canada, Central African Republic, Côte d'Ivoire,
+Cuba, Democratic Republic of the Congo, Ethiopia, France, Haiti, Hungary, India, Iran, Iraq, Ireland, Italy,
+Kenya, Laos, Lebanon, Libya, Mali, Monaco, Mozambique, Myanmar (Burma), Namibia, New Zealand,
+Nicaragua, Niger, North Korea, People's Republic of China, Poland, Portugal, Russia, Singapore, Somalia,
+South Sudan, Sudan, Switzerland, Syria, Taiwan, Thailand, Ukraine, United Arab Emirates, United
+Kingdom, Venezuela, Yemen, and Zimbabwe, or any jurisdiction or territory that is the subject of
+country-wide, territory-wide, or regional economic sanctions imposed by the United States. The restrictions
+set forth in this Section apply solely to the trading of Event Contracts and do not, in and of themselves,
+prohibit membership on, or non-trading access to, the Platform.
+
+For the avoidance of doubt, the restrictions set forth in this Section apply solely to the trading of Event
+Contracts. Nothing in this Agreement shall prohibit a person or entity domiciled in, organized in, or located
+in a Restricted Jurisdiction from obtaining or maintaining membership on the Platform, accessing the
+Platform, or trading any contract or product other than an Event Contract, in each case to the extent
+permitted by Applicable Law and Kalshi policy.
+
+Notwithstanding anything to the contrary in this Agreement, Kalshi reserves the right, in its sole and
+absolute discretion, to grant, deny, condition, suspend, or revoke membership or access to the Platform to
+any person or entity, regardless of whether such person or entity is domiciled in, organized in, or located in
+a Restricted Jurisdiction. Neither the designation of a jurisdiction as a Restricted Jurisdiction nor any other
+provision of this Agreement shall limit Kalshi's discretion to permit membership on the Platform to persons
+or entities located in a Restricted Jurisdiction, subject to such terms, conditions, and limitations as Kalshi
+may impose in its sole discretion.
+
+Member Acknowledgements
+
+You further acknowledge and agree that:
+
+A.       You will abide by and be subject to the Kalshi Rulebook, as now existing and as hereafter duly
+
+amended from time to time, including the obligation to submit to arbitration;
+
+B.       Your status as a Member may be limited, conditioned, restricted or terminated by Kalshi in
+
+accordance with the Kalshi Rulebook. For the avoidance of doubt, the foregoing includes the right to grant
+
+or continue membership to any person or entity domiciled in, organized in, or located in a Restricted
+
+Jurisdiction (as defined in Section VI), subject to such terms, conditions, and limitations as Kalshi may
+
+impose;
+
+C.       You understand that pursuant to Rule 2.12 of the Kalshi Rulebook, Kalshi's board of
+
+directors approved Kalshi Trading LLC ("Trading"), an affiliate of Kalshi, to be a member of Kalshi.
+
+More     information     can             be  found                 here:       https://kalshi-public-
+
+docs.s3.amazonaws.com/regulatory/notices/emergency_rule_filing_ v2_2021.09.21.pdf.
+
+D.       This Agreement binds You and is enforceable against You;
+E.  This Agreement may be amended unilaterally by Kalshi upon notice to You. You will be
+
+deemed to agree to each such amendment if You do not terminate this Agreement prior to the effective date
+
+of the amendment;
+
+F.  You may fund your trading account in accordance with Kalshi's Rulebook. You have no right
+
+to a refund, cancellation, or return of the funds used to fund your trading account other than in a manner
+
+as may be described in Kalshi's Rulebook, including withdrawal of deposited or earned funds. The Service
+
+of account funding is complete, and the benefits are fully delivered and nonrefundable, upon the addition of
+
+funds to Your account on the Platform. Deposits are not subject to cancellation, refund, return,
+
+reimbursement, rollback, or any other form of reversal other than as explicitly specified in the KalshiEX
+Rulebook;
+
+G.  You may place a trade on the Platform and purchase assets using the funds in your trading
+
+account. The funds used for those trades will be removed from your trading account, and You will only
+
+receive further payment(s) related to those trades upon the sale of those assets on the Platform or upon a
+
+favorable final settlement of those assets;
+
+H.  You may fund your account by ACH transaction. By confirming your transaction, You
+
+acknowledge your consent to debit your linked account via ACH. You acknowledge the nature of ACH
+
+transactions and that ACH transactions may incur additional fees. You further agree that Kalshi, in its sole
+
+discretion, may use any means which Kalshi considers suitable to execute your ACH transfers, and that
+
+Kalshi may reject any ACH transfer request in the event of suspected fraud or other potential illicit activity.
+
+You understand that in the event of an ACH return or reversal, Kalshi may charge additional fees or
+
+temporarily restrict your account privileges. You further understand that an ACH debit transfer may be
+
+returned, reversed, or rejected for a variety of reasons, including, for example, a lack of sufficient funds or
+
+when the transaction is denied by the bank holding your external account. You agree that you are solely
+
+liable and responsible for any ACH fees that you incur for a returned, reversed, or rejected transaction;
+
+I.  You agree that in the event of an ACH return, reversal, or rejection of a debit transfer of funds
+
+that were utilized for trading, you will, upon Kalshi's request, deposit at least the amount of the funds that
+
+were utilized for trading into your Kalshi account. You also agree to pay Kalshi for any fees, charges, or
+
+expenses incurred by Kalshi as a direct result of the reversal of Your ACH debit transfer in any manner
+
+directed by Kalshi;
+
+J.  You understand that within 90 days of your ACH transfer to fund your trading account, those
+
+funds may only be withdrawn to the external account from which they were debited;
+
+K.  You will provide such other information as may be reasonably requested by Kalshi from time to
+
+time as may be necessary or desirable to verify Your qualifications as a Member;
+
+L.  You authorize Kalshi to verify, on an initial and a periodic basis, by investigation, the statements
+
+provided to Kalshi, which may include a criminal background check, a review of Your credit report, and
+
+such other action reasonably deemed necessary by Kalshi;
+
+M.  You authorize any governmental, regulatory or self-regulatory body, futures exchange, swap
+
+execution facility, securities exchange, national securities association, national futures association or other
+
+entity to furnish to Kalshi, upon its request, any information such entity may have concerning You, and
+
+You hereby release such entity from any and all liability of whatsoever nature by reason of furnishing such
+
+information to Kalshi;
+N.          You authorize Kalshi to make available to any governmental, regulatory or self regulatory body,
+
+futures exchange, swap execution facility, securities exchange, national securities association, national
+
+futures association, bank or other entity (upon such entity's showing of proper authority and need) any
+
+information Kalshi may have concerning You, and You hereby release Kalshi from any and all liability of
+
+whatsoever nature by reason of furnishing any such information;
+
+O.          You hereby authorize Kalshi to deduct from its account maintained on the books and records of
+
+Kalshi all fees or other charges accruing to You;
+
+P.          You will keep confidential all information related to Your account ("Member Account"),
+
+including but not limited to Your account number, except as necessary to perform Kalshi-related
+
+transfers;
+
+Q.          You hereby declare that the statements in this Agreement and in any application materials
+
+provided to Kalshi are true, complete and accurate, and that You will promptly notify Kalshi in writing if
+
+any representation, warranty or covenant made herein changes or ceases to be true;
+
+R.          You will be solely responsible, at Your own risk and expense, for acquiring, installing and
+
+maintaining all equipment, hardware and software (other than any applications, algorithms, software,
+
+interfaces or code that Kalshi may provide to You pursuant to the terms of this Agreement for purposes
+
+of accessing and utilizing the Platform), and shall ensure that any systems, facilities, servers, routers, and
+
+other equipment and software used to access and transact on the Platform are at all times protected by, and
+
+at all times comply with, all applicable information security and firewall precautions, but at all times at a
+
+level of security not less than that prevailing in the industry;
+
+S.          You acknowledge that failure to comply with this Agreement may, in Kalshi's sole discretion,
+
+lead to suspension of Services or termination of this Agreement;
+
+T.          You acknowledge that Kalshi's Rulebook allows Kalshi to implement market maker programs.
+
+Kalshi believes that these programs will promote liquidity and orderliness on the Kalshi Exchange. Under
+
+the rules, market makers will make markets on Kalshi in exchange for receiving benefits. The benefits can
+
+include monetary benefits, such as discounts on fees, rebates on fees, revenue share from fees, and other
+
+monetary benefits. Market makers who receive these benefits may be able to price their quotes in ways that
+
+are materially different from other Kalshi members who are not eligible to receive these financial benefits.
+
+Market makers may also be eligible for sophisticated risk management tools, such as order protections
+
+whereby orders are canceled if the market maker's trading session disconnects from the Exchange, and may
+
+be eligible to greater throughput to the Exchange. These risk management tools enable market makers to
+
+effectively manage the risks of their market making activity, and may not be available to members who are
+
+not market makers. These tools may give market makers a trading advantage over members who are not
+
+market makers; and
+
+U.          You further acknowledge that market makers may be required, during specific times, to
+
+maintain a maximum spread size and may be required to maintain a minimum depth within the spread.
+
+Outside of the required times, market makers are not required to, and potentially will not, maintain the
+
+maximum spread size and minimum depth. Therefore, pricing and liquidity outside of the required times
+
+may be worse than during the required times.
+
+VII. Investment of Member Funds
+
+Except as prohibited by the regulations of the CFTC, all cash and other property in Your Member Account
+or otherwise held by Kalshi's Derivatives Clearing Organization on Your behalf may, from time to time,
+without notice to You, be invested by Kalshi consistent with Commission Regulations, including
+Regulations 22.2(e)(1) and 1.25.
+
+VIII. Submitting Suggestions
+
+Kalshi allows Members to submit ideas, concepts, designs or inventions for contracts or any other relevant
+topic (collectively "Suggestions"). However, Members should not reveal to Kalshi any Suggestions for
+which a Member wants to receive any compensation or credit. By submitting Suggestions to Kalshi, You
+expressly agree to give up any and all rights You may have to such Suggestions and You agree to transfer
+to Kalshi all of Your rights pertaining to such Suggestions. By submitting any Suggestions to Kalshi, You
+expressly authorize Kalshi to use and benefit from the Suggestions as Kalshi may decide. Kalshi will not
+provide You with any compensation or credit for any Suggestions You submit, unless otherwise announced
+by Kalshi. By submitting Suggestions to Kalshi, You give up all control You might otherwise have
+concerning such Suggestions.
+
+IX. Indemnity
+
+You hereby agree to indemnify and hold harmless Kalshi and its directors, officers, employees, members,
+affiliates and agents (each, a "Related Party") from and against all expenses and costs and damages
+(including any legal fees and customary expenses), directly and actually incurred by Kalshi (including
+consequential damages awarded to the third party) as a result of third-party claims resulting from, in
+connection with, or arising out of Your use of the Services or Your activities or arising out of or relating to
+this Agreement, including any failure by You, for any reason, fraudulent, negligent, or otherwise, to comply
+with Your obligations and requirements set forth in this Agreement, or any failure to comply with the
+agreements, representations or covenants contained in this Agreement. Within 10 Business Days after
+Kalshi receives written notice of a claim that Kalshi reasonably believes falls within the scope of this
+paragraph, Kalshi will provide You with written notice of such claim; provided, however, that failure to
+provide such notice will not relieve You of its indemnity obligations hereunder except to the extent You
+are materially prejudiced thereby and will not be responsible for those expenses, costs and damages that
+Kalshi incurs solely as a result of any such delay. Your indemnity obligation will not apply to the extent
+there has been a final determination (including exhaustion of any appeals) by a court or arbitrator of
+competent jurisdiction that the expense, cost or damage arose from Kalshi's gross negligence, fraud or
+willful misconduct.
+
+X. Limitations on Liability
+
+YOU ACKNOWLEDGE AND AGREE THAT IN NO EVENT SHALL KALSHI, ITS AFFILIATES,
+SUBSIDIARIES, SUPPLIERS, AND LICENSORS OR ANY OF THE OFFICERS, DIRECTORS,
+EMPLOYEES, REPRESENTATIVES, STOCKHOLDERS, OR OWNERS OF ANY OF THE
+FOREGOING BE LIABLE FOR ANY CONSEQUENTIAL DAMAGES, SPECIAL DAMAGES,
+TRADING LOSSES, LOSS OF ANTICIPATED PROFITS OR GAIN RELATING IN ANY WAY TO
+TRADING, INCLUDING LOSS OF ANY TRADING INCENTIVE OR BONUS, LOSS BY REASON
+OF SHUTDOWN IN OPERATION OR FOR INCREASED EXPENSES OF OPERATION, SPECIAL
+PUNITIVE DAMAGES, INCIDENTAL LOSS, LOST PROFITS, LOSS OF OPPORTUNITY, OR
+INDIRECT DAMAGES, ARISING FROM ANY CAUSE WHATSOEVER, INCLUDING CAUSES
+RELATED TO OR ARISING FROM YOUR USE OF THE PLATFORM, EVEN IN THE EVENT
+KALSHI OR ANY OF THE FOREGOING PERSONS OR ENTITIES HAVE BEEN ADVISED OF THE
+POSSIBILITY OF SUCH CLAIMS, AND REGARDLESS OF THE LEGAL OR EQUITABLE THEORY
+(CONTRACT, TORT, OR OTHERWISE) UPON WHICH SUCH CLAIM IS BASED. YOU AGREE
+THAT THESE LIMITATIONS WILL SURVIVE AND APPLY EVEN IN THE EVENT ANY LIMITED
+REMEDY IS FOUND TO HAVE FAILED OF ITS ESSENTIAL PURPOSE.
+WITHOUT LIMITATION OF THE FOREGOING, KALSHI'S AGGREGATE MAXIMUM LIABILITY
+RELATED TO OR ASSOCIATED WITH YOUR USE OF THE PLATFORM SHALL IN NO EVENT
+EXCEED THE LESSER OF (1) THE PURCHASE PRICE OF ANY OF YOUR ASSETS PURCHASED
+VIA THE PLATFORM ASSOCIATED WITH THE CLAIM; OR (2) THE TOTAL FUNDS YOU HAVE
+DEPOSITED TO THE PLATFORM PRIOR TO MAKING A CLAIM.
+
+XI. Data Use Consent
+
+You hereby grant Kalshi a worldwide, perpetual, irrevocable, royalty-free, full sublicensable and freely
+assignable license to store, use, copy, display, disseminate and create derivative works from: (i) the price
+and quantity data for each transaction entered into by You that is executed via the Services and (ii) each
+bid, offer and/or order provided via the Services by You. You acknowledge and agree that Kalshi may use
+such information for business, marketing and other purposes.
+
+XII. SMS Messaging and Phone Calls
+
+Certain portions of the Services may allow Kalshi to contact You via telephone or text messages. You agree
+that Kalshi may contact You via telephone or text messages (including by an automatic telephone dialing
+system) at any of the phone numbers provided by You or on Your behalf in connection with Your use of
+the Services, including for marketing purposes. You understand that You are not required to provide this
+consent as a condition of purchasing any Services. You also understand that You may opt out of receiving
+text messages from Kalshi at any time by texting the word "STOP" to any text message you receive (using
+the mobile device that is receiving the messages), or by other described opt-out mechanisms. If You do not
+choose to opt out, Kalshi may contact You as outlined in Kalshi's Privacy Policy. SMS consent data will
+not be sold or shared with third parties for promotional or marketing purposes.
+
+XIII. Termination
+
+Subject to Applicable Law and the Kalshi Rulebook, Kalshi or You may terminate this Agreement by giving
+the other prior written notice. Termination of this Agreement will not affect liability accrued as of
+termination. Paragraph IX will survive termination of this Agreement and continue in full force and effect.
+
+XIV. No Warranty
+
+YOU UNDERSTAND THAT KALSHI, ITS AFFILIATES, AND ITS SOFTWARE, HARDWARE, AND
+SERVICE PROVIDERS PROVIDE THE KALSHI PLATFORM "AS IS" AND WITHOUT ANY
+WARRANTY OR CONDITION, EXPRESS, IMPLIED OR STATUTORY. KALSHI, ITS AFFILIATES
+AND ITS SOFTWARE, HARDWARE AND SERVICE PROVIDERS SPECIFICALLY DISCLAIM
+ANY IMPLIED WARRANTY OF TITLE, MERCHANTABILITY, FITNESS FOR A PARTICULAR
+PURPOSE, AND NON-INFRINGEMENT.
+
+XV. Complete Agreement
+
+This Agreement constitutes the entire contract between the parties relative to the subject matter hereof. Any
+other previous agreement among the parties with respect to the subject matter hereof is superseded by this
+Agreement. Nothing in this Agreement, expressed or implied, is intended to confer upon any person (other
+than the parties hereto, their respective successors and assigns permitted hereunder) any rights, remedies,
+obligations or liabilities under or by reason of this Agreement.
+XVI. Severability
+
+In the event any one or more of the provisions contained in this Agreement should be held invalid, illegal
+or unenforceable in any respect, the validity, legality and enforceability of the remaining provisions
+contained herein and therein shall not in any way be affected or impaired thereby (it being understood that
+the invalidity of a particular provision in a particular jurisdiction shall not in and of itself affect the validity
+of such provision in any other jurisdiction). The parties shall endeavor in good-faith negotiations to replace
+the invalid, illegal or unenforceable provisions with valid provisions the economic effect of which comes
+as close as possible to that of the invalid, illegal or unenforceable provisions.
+
+XVII. Counterparts
+
+This Agreement may be executed in counterparts, each of which shall constitute an original but all of which
+when taken together shall constitute a single contract. Delivery of an executed signature page to this
+Agreement by facsimile or other customary means of electronic transmission, including by PDF file, shall
+be as effective as delivery of an original signed counterpart of this Agreement.
+
+XVIII. Assignment
+
+You may not assign this Agreement, in whole or in part, without the prior written consent of Kalshi.
+
+XIX. USA PATRIOT Act Notice
+
+Kalshi hereby notifies You that pursuant to the requirements of the USA PATRIOT Act, it is required to
+obtain, verify and record information that identifies You, which information includes Your name and
+address and other information that will allow Kalshi to identify You in accordance with the USA PATRIOT
+Act.
+
+XX. Governing Law
+
+This Agreement will be governed by the laws of the State of New York. Any dispute between Kalshi and
+You arising from or in connection with this Agreement will be settled in accordance with the procedures
+set forth in the Kalshi Rulebook.
+
+BY CLICKING THE BUTTON TO CONTINUE PAST THIS AGREEMENT YOU HEREBY
+AGREE TO THE TERMS OF THIS AGREEMENT AND EXPRESSLY ACKNOWLEDGE THAT
+YOU HAVE RECEIVED, READ AND UNDERSTOOD ALL DOCUMENTS INCORPORATED
+HEREIN BY REFERENCE.
+

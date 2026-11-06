@@ -1,0 +1,1 @@
+{"error":{"code":"missing_parameters","message":"Some required information is missing","details":"Key: 'GetSocialProfileCategoryMetricRequest.Metric' Error:Field validation for 'Metric' failed on the 'required' tag","support_action":"support_chat"}}

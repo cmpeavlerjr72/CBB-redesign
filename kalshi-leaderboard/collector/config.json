@@ -1,0 +1,58 @@
+{
+  "base_url": "https://api.elections.kalshi.com",
+  "db_path": "data/collector.sqlite",
+  "tape_dir": "data/tape",
+  "log_dir": "logs",
+  "rate_per_sec": {"social": 3.0, "trade": 1.5},
+  "leaderboard": {
+    "interval_sec": 600,
+    "metrics": ["projected_pnl", "volume", "num_markets_traded"],
+    "periods": ["daily", "weekly", "monthly", "yearly", "all_time"],
+    "categories": [null, "Politics", "Sports", "Crypto", "Economics", "Mentions", "Financials", "Elections", "Companies", "World", "Entertainment", "Health"],
+    "limit": 60
+  },
+  "metrics": {
+    "interval_sec": 900,
+    "period_every_cycle": "all_time",
+    "periods_daily": ["weekly", "monthly", "yearly"],
+    "hot_rank": 20,
+    "hot_days": 7,
+    "cold_interval_sec": 7200,
+    "profile_interval_sec": 86400
+  },
+  "fills": {
+    "interval_sec": 300,
+    "visibility_recheck_sec": 86400,
+    "page_size": 100,
+    "max_pages_per_run": 500
+  },
+  "tape": {
+    "enabled": true,
+    "interval_sec": 2,
+    "limit": 1000,
+    "max_pages_per_cycle": 30,
+    "raw_min_count": 100,
+    "raw_sample_rate": 0.02,
+    "raw_retention_days": 180,
+    "raw_filter_categories": ["Sports", "Exotics", "Crypto", "Commodities"],
+    "raw_min_count_by_category": {"Exotics": 1000}
+  },
+  "orderbook": {
+    "enabled": true,
+    "interval_sec": 120,
+    "top_n": 100,
+    "depth": 10,
+    "lookback_hours": 24,
+    "exclude_categories": ["Sports", "Exotics"],
+    "always_series": ["KXCPI", "KXFED", "KXFEDDECISION", "KXPAYROLLS", "KXUNRATE", "KXGDP", "KXBTC15M", "KXETH15M", "KXGOLD15M", "KXWTI15M"]
+  },
+  "social_feed": {
+    "enabled": true,
+    "interval_sec": 3,
+    "page_size": 100,
+    "max_pages_per_cycle": 20
+  },
+  "markets": {
+    "interval_sec": 21600
+  }
+}
