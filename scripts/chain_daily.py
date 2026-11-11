@@ -534,7 +534,7 @@ def step_injuries(ctx: "ChainContext") -> dict:
             "status_code": r.status_code, "content_length": len(r.text), "parse_status": covers_status,
         }, indent=2))
         if parsed_csv is not None:
-            covers_csv_path.write_text(parsed_csv)
+            covers_csv_path.write_text(parsed_csv, encoding="utf-8")  # cp1252 default killed the chain on a non-Latin-1 name, 2026-11-10
 
     return {
         "espn_teams_checked": len(espn_ids),
